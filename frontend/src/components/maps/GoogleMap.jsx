@@ -1,0 +1,164 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { Wrapper, Status } from '@googlemaps/react-wrapper';
+import { Box, Spinner, Alert, AlertIcon, Text } from '@chakra-ui/react';
+
+const render = (status) => {
+  switch (status) {
+    case Status.LOADING:
+      return (
+        <Box display="flex" justifyContent="center" alignItems="center" h="400px">
+          <Spinner size="xl" />
+          <Text ml={3}>Loading Google Maps...</Text>
+        </Box>
+      );
+    case Status.FAILURE:
+      return (
+        <Alert status="error">
+          <AlertIcon />
+          Error loading Google Maps. Please check your API key.
+        </Alert>
+      );
+    case Status.SUCCESS:
+      return null;
+  }
+};
+
+const MapComponent = ({ 
+  center = { lat: 40.7589, lng: -73.9851 }, // Default to NYC
+  zoom = 13,
+  markers = [],
+  onMapClick,
+  onMarkerClick,
+  height = '400px',
+  directionsRenderer = null
+}) => {
+  const ref = useRef();
+  const [map, setMap] = useState();
+  const [markersArray, setMarkersArray] = useState([]);
+
+  // Initialize map
+  useEffect(() => {
+    if (ref.current && !map) {
+      const newMap = new window.google.maps.Map(ref.current, {
+        center,
+        zoom,
+        mapTypeControl: true,
+        streetViewControl: true,
+        fullscreenControl: true,
+        zoomControl: true,
+        styles: [
+          {
+            featureType: 'poi',
+            elementType: 'labels',
+            stylers: [{ visibility: 'on' }]
+          }
+        ]
+      });
+
+      // Add click listener to map
+      if (onMapClick) {
+        newMap.addListener('click', (event) => {
+          onMapClick({
+            lat: event.latLng.lat(),
+            lng: event.latLng.lng()
+          });
+        });
+      }
+
+      setMap(newMap);
+    }
+  }, [ref, map, center, zoom, onMapClick]);
+
+  // Update map center when center prop changes
+  useEffect(() => {
+    if (map && center) {
+      map.setCenter(center);
+    }
+  }, [map, center]);
+
+  // Handle markers
+  useEffect(() => {
+    if (map && markers) {
+      // Clear existing markers
+      markersArray.forEach(marker => marker.setMap(null));
+      
+      // Add new markers
+      const newMarkers = markers.map((markerData, index) => {
+        const marker = new window.google.maps.Marker({
+          position: markerData.position,
+          map,
+          title: markerData.title || `Marker ${index + 1}`,
+          icon: markerData.icon || {
+            url: markerData.type === 'pickup' 
+              ? 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDOC4xMyAyIDUgNS4xMyA1IDljMCA1LjI1IDcgMTMgNyAxM3M3LTcuNzUgNy0xM2MwLTMuODctMy4xMy03LTctN3ptMCA5LjVjLTEuMzggMC0yLjUtMS4xMi0yLjUtMi41czEuMTItMi41IDIuNS0yLjUgMi41IDEuMTIgMi41IDIuNS0xLjEyIDIuNS0yLjUgMi41eiIgZmlsbD0iIzRGOEVGNyIvPgo8L3N2Zz4K'
+              : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDOC4xMyAyIDUgNS4xMyA1IDljMCA1LjI1IDcgMTMgNyAxM3M3LTcuNzUgNy0xM2MwLTMuODctMy4xMy03LTctN3ptMCA5LjVjLTEuMzggMC0yLjUtMS4xMi0yLjUtMi41czEuMTItMi41IDIuNS0yLjUgMi41IDEuMTIgMi41IDIuNS0xLjEyIDIuNS0yLjUgMi41eiIgZmlsbD0iI0VEOEUzNiIvPgo8L3N2Zz4K',
+            scaledSize: new window.google.maps.Size(30, 30),
+            origin: new window.google.maps.Point(0, 0),
+            anchor: new window.google.maps.Point(15, 30)
+          }
+        });
+
+        // Add click listener to marker
+        if (onMarkerClick) {
+          marker.addListener('click', () => {
+            onMarkerClick(markerData, index);
+          });
+        }
+
+        // Add info window if content provided
+        if (markerData.infoWindow) {
+          const infoWindow = new window.google.maps.InfoWindow({
+            content: markerData.infoWindow
+          });
+
+          marker.addListener('click', () => {
+            infoWindow.open(map, marker);
+          });
+        }
+
+        return marker;
+      });
+
+      setMarkersArray(newMarkers);
+    }
+  }, [map, markers, onMarkerClick, markersArray]);
+
+  // Handle directions
+  useEffect(() => {
+    if (map && directionsRenderer) {
+      directionsRenderer.setMap(map);
+    }
+  }, [map, directionsRenderer]);
+
+  return <div ref={ref} style={{ height }} />;
+};
+
+const GoogleMap = (props) => {
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+  if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
+    return (
+      <Alert status="warning">
+        <AlertIcon />
+        <Box>
+          <Text fontWeight="bold">Google Maps API Key Required</Text>
+          <Text fontSize="sm">
+            Please add your Google Maps API key to the .env file as VITE_GOOGLE_MAPS_API_KEY
+          </Text>
+        </Box>
+      </Alert>
+    );
+  }
+
+  return (
+    <Wrapper 
+      apiKey={apiKey} 
+      render={render}
+      libraries={['places', 'geometry', 'directions']}
+    >
+      <MapComponent {...props} />
+    </Wrapper>
+  );
+};
+
+export default GoogleMap;

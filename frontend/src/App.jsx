@@ -16,6 +16,8 @@ import AdminOverview from './components/admin/AdminOverview';
 import AdminAnalytics from './components/admin/AdminAnalytics';
 import AdminReports from './components/admin/AdminReports';
 import AdminRegistration from './components/admin/AdminRegistration';
+import AdminStatistics from './components/admin/AdminStatistics';
+import AdminSettings from './components/admin/AdminSettings';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import RidersDashboard from './components/riders/RidersDashboard';
 import VehiclesDashboard from './components/vehicles/VehiclesDashboard';
@@ -144,6 +146,26 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={['admin']}>
             <ErrorBoundary fallbackMessage="Failed to load Admin Registration. Please try refreshing the page.">
               <AdminRegistration />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/statistics" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load Admin Statistics. Please try refreshing the page.">
+              <AdminStatistics />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/settings" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load Admin Settings. Please try refreshing the page.">
+              <AdminSettings />
             </ErrorBoundary>
           </ProtectedRoute>
         } 

@@ -114,8 +114,28 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
             }
           }
         },
-        { label: 'Statistics', icon: StarIcon, action: () => navigate('/dashboard/stats') },
-        { label: 'Settings', icon: SettingsIcon, action: () => navigate('/dashboard/settings') }
+        { 
+          label: 'Statistics', 
+          icon: StarIcon, 
+          action: () => {
+            if (user?.role === 'admin') {
+              navigate('/admin/statistics');
+            } else {
+              navigate('/dashboard/stats');
+            }
+          }
+        },
+        { 
+          label: 'Settings', 
+          icon: SettingsIcon, 
+          action: () => {
+            if (user?.role === 'admin') {
+              navigate('/admin/settings');
+            } else {
+              navigate('/dashboard/settings');
+            }
+          }
+        }
       ]
     },
     {
@@ -175,9 +195,11 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
         { label: 'Overview', icon: ViewIcon, action: () => navigate('/admin/overview') },
         { label: 'Analytics', icon: InfoIcon, action: () => navigate('/admin/analytics') },
         { label: 'Reports', icon: SearchIcon, action: () => navigate('/admin/reports') },
-        { label: 'Full Dashboard', icon: SettingsIcon, action: () => navigate('/admin') },
+        { label: 'Statistics', icon: StarIcon, action: () => navigate('/admin/statistics') },
+        { label: 'Settings', icon: SettingsIcon, action: () => navigate('/admin/settings') },
+        { label: 'Full Dashboard', icon: EditIcon, action: () => navigate('/admin') },
         { label: 'User Management', icon: AddIcon, action: () => navigate('/admin/register') },
-        { label: 'System Config', icon: EditIcon, action: () => navigate('/admin/config') },
+        { label: 'System Config', icon: SettingsIcon, action: () => navigate('/admin/config') },
         { label: 'Audit Logs', icon: TimeIcon, action: () => navigate('/admin/logs') },
         { label: 'Backup & Restore', icon: CalendarIcon, action: () => navigate('/admin/backup') }
       ]

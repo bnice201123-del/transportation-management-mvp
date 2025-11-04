@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Container,
-  Grid,
   Card,
   CardBody,
   CardHeader,
@@ -25,7 +24,6 @@ import {
   TabPanels,
   Tab,
   TabPanel,
-  Textarea,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
@@ -41,30 +39,47 @@ import {
   ModalBody,
   ModalCloseButton,
   useDisclosure,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
   Icon,
   Flex,
-  Slider,
-  SliderTrack,
-  SliderFilledTrack,
-  SliderThumb,
-  SliderMark
+  useColorModeValue,
+  Progress,
+  Stat,
+  StatLabel,
+  StatNumber,
+  InputGroup,
+  InputLeftElement,
+  Tooltip,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  ButtonGroup,
+  Fade
 } from '@chakra-ui/react';
 import {
   SettingsIcon,
   CheckIcon,
   WarningIcon,
-  InfoIcon,
-  DeleteIcon,
-  EditIcon,
-  DownloadIcon
+  SearchIcon,
+  DownloadIcon,
+  RepeatIcon,
+  ArrowUpIcon,
+  AttachmentIcon
 } from '@chakra-ui/icons';
-import { FaDatabase, FaLock, FaBell, FaMap, FaCog, FaUsers } from 'react-icons/fa';
+import { 
+  FaServer, 
+  FaShieldAlt, 
+  FaBell, 
+  FaMap, 
+  FaBuilding, 
+  FaPlug, 
+  FaRocket, 
+  FaDatabase,
+  FaHistory
+} from 'react-icons/fa';
 import axios from '../../config/axios';
 import Navbar from '../shared/Navbar';
 
@@ -73,32 +88,56 @@ const AdminSettings = () => {
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({});
   const [hasChanges, setHasChanges] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [exportLoading, setExportLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [activeTab, setActiveTab] = useState(0);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [changeHistory, setChangeHistory] = useState([]);
+  const [backupStatus, setBackupStatus] = useState('idle');
+  const scrollRef = useRef(null);
+  const fileInputRef = useRef(null);
   const toast = useToast();
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const { isOpen: isResetOpen, onOpen: onResetOpen, onClose: onResetClose } = useDisclosure();
+  const { isOpen: isExportOpen, onOpen: onExportOpen, onClose: onExportClose } = useDisclosure();
+  const { isOpen: isImportOpen, onOpen: onImportOpen, onClose: onImportClose } = useDisclosure();
+  const { isOpen: isBackupOpen, onOpen: onBackupOpen, onClose: onBackupClose } = useDisclosure();
 
-  // Mock settings data - replace with actual API calls
+  // Color mode values
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const textColor = useColorModeValue('gray.700', 'gray.100');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+
+  // Enhanced mock settings data
   const mockSettings = {
     system: {
       siteName: 'Transportation Management System',
       siteDescription: 'Comprehensive transportation management platform',
+      companyName: 'TransportCorp Inc.',
+      contactEmail: 'admin@transportcorp.com',
+      supportPhone: '+1-800-TRANS',
       maintenanceMode: false,
       debugMode: false,
       logLevel: 'info',
       maxUsers: 500,
       sessionTimeout: 30,
       autoBackup: true,
-      backupInterval: 24
+      backupInterval: 24,
+      version: '2.1.4',
+      environment: 'production'
     },
     security: {
       passwordMinLength: 8,
+      passwordMaxLength: 128,
       passwordRequireSpecial: true,
       passwordRequireNumbers: true,
       passwordRequireUppercase: true,
       maxLoginAttempts: 5,
       lockoutDuration: 15,
       twoFactorAuth: false,
-      sessionSecurity: 'standard'
+      sslRequired: true,
+      auditLogging: true
     },
     notifications: {
       emailNotifications: true,
@@ -106,7 +145,6 @@ const AdminSettings = () => {
       pushNotifications: true,
       tripAlerts: true,
       systemAlerts: true,
-      maintenanceAlerts: true,
       emergencyAlerts: true,
       notificationFrequency: 'immediate'
     },
@@ -115,10 +153,7 @@ const AdminSettings = () => {
       mapProvider: 'google',
       trafficLayer: true,
       satelliteView: false,
-      routeOptimization: true,
-      realTimeTracking: true,
-      geofencing: false,
-      mapTheme: 'standard'
+      realTimeTracking: true
     },
     business: {
       currency: 'USD',
@@ -130,18 +165,15 @@ const AdminSettings = () => {
       weekendService: true,
       holidayService: false,
       maxTripDistance: 50,
-      defaultTripType: 'standard',
       pricePerMile: 2.50,
       baseFare: 5.00
     },
     integration: {
-      googleMapsApi: true,
-      firebaseAuth: true,
-      paymentGateway: 'stripe',
-      smsProvider: 'twilio',
-      emailProvider: 'sendgrid',
-      analyticsTracking: true,
-      thirdPartyIntegrations: []
+      googleMapsApi: { enabled: true, status: 'active' },
+      firebaseAuth: { enabled: true, status: 'active' },
+      paymentGateway: { provider: 'stripe', status: 'active' },
+      smsProvider: { provider: 'twilio', status: 'active' },
+      emailProvider: { provider: 'sendgrid', status: 'active' }
     }
   };
 
@@ -152,10 +184,6 @@ const AdminSettings = () => {
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      // Replace with actual API call
-      // const response = await axios.get('/admin/settings');
-      // setSettings(response.data);
-      
       // Using mock data for now
       setTimeout(() => {
         setSettings(mockSettings);
@@ -174,27 +202,49 @@ const AdminSettings = () => {
     }
   };
 
-  const handleSettingChange = (category, field, value) => {
-    setSettings(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [field]: value
+  const handleSettingChange = (category, field, value, subField = null) => {
+    setSettings(prev => {
+      const newSettings = { ...prev };
+      if (subField) {
+        newSettings[category] = {
+          ...prev[category],
+          [field]: {
+            ...prev[category][field],
+            [subField]: value
+          }
+        };
+      } else {
+        newSettings[category] = {
+          ...prev[category],
+          [field]: value
+        };
       }
-    }));
+      return newSettings;
+    });
     setHasChanges(true);
+    
+    // Add to change history
+    const timestamp = new Date().toLocaleString();
+    setChangeHistory(prev => [
+      {
+        timestamp,
+        category,
+        field: subField ? `${field}.${subField}` : field,
+        value,
+        action: 'modified'
+      },
+      ...prev.slice(0, 49) // Keep last 50 changes
+    ]);
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Replace with actual API call
-      // await axios.put('/admin/settings', settings);
-      
       // Mock save delay
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       setHasChanges(false);
+      setLastSaved(new Date());
       toast({
         title: 'Settings saved',
         description: 'All system settings have been updated successfully',
@@ -203,10 +253,9 @@ const AdminSettings = () => {
         isClosable: true
       });
     } catch (error) {
-      console.error('Error saving settings:', error);
       toast({
         title: 'Error saving settings',
-        description: 'Failed to save system settings',
+        description: 'Failed to save settings. Please try again.',
         status: 'error',
         duration: 5000,
         isClosable: true
@@ -216,54 +265,145 @@ const AdminSettings = () => {
     }
   };
 
-  const handleReset = async () => {
+  const handleExportSettings = async () => {
+    setExportLoading(true);
     try {
-      // Reset to default settings
-      setSettings(mockSettings);
-      setHasChanges(false);
-      onResetClose();
+      const dataToExport = {
+        settings,
+        exportDate: new Date().toISOString(),
+        version: settings.system?.version || '1.0.0'
+      };
+      
+      const blob = new Blob([JSON.stringify(dataToExport, null, 2)], {
+        type: 'application/json'
+      });
+      
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transport-settings-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
       toast({
-        title: 'Settings reset',
-        description: 'All settings have been reset to default values',
-        status: 'info',
+        title: 'Settings Exported',
+        description: 'Settings have been exported successfully',
+        status: 'success',
         duration: 3000,
         isClosable: true
       });
     } catch (error) {
-      console.error('Error resetting settings:', error);
       toast({
-        title: 'Error resetting settings',
-        description: 'Failed to reset settings to defaults',
+        title: 'Export Failed',
+        description: 'Failed to export settings',
         status: 'error',
         duration: 5000,
         isClosable: true
       });
+    } finally {
+      setExportLoading(false);
+      onExportClose();
     }
   };
 
-  const SettingCard = ({ title, icon, children }) => (
-    <Card>
-      <CardHeader>
-        <HStack>
-          <Icon as={icon} color="blue.500" />
-          <Heading size="md">{title}</Heading>
-        </HStack>
-      </CardHeader>
-      <CardBody>
-        <VStack spacing={4} align="stretch">
-          {children}
-        </VStack>
-      </CardBody>
-    </Card>
+  const handleImportSettings = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setImportLoading(true);
+    try {
+      const text = await file.text();
+      const importedData = JSON.parse(text);
+      
+      if (importedData.settings) {
+        setSettings(importedData.settings);
+        setHasChanges(true);
+        
+        toast({
+          title: 'Settings Imported',
+          description: 'Settings have been imported successfully',
+          status: 'success',
+          duration: 3000,
+          isClosable: true
+        });
+      } else {
+        throw new Error('Invalid settings file format');
+      }
+    } catch (error) {
+      toast({
+        title: 'Import Failed',
+        description: 'Failed to import settings: ' + error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      });
+    } finally {
+      setImportLoading(false);
+      onImportClose();
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleBackupNow = async () => {
+    setBackupStatus('running');
+    try {
+      await new Promise(resolve => setTimeout(resolve, 3000)); // Mock backup
+      
+      setBackupStatus('completed');
+      toast({
+        title: 'Backup Completed',
+        description: 'System backup has been created successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true
+      });
+      
+      setTimeout(() => setBackupStatus('idle'), 2000);
+    } catch (error) {
+      setBackupStatus('failed');
+      toast({
+        title: 'Backup Failed',
+        description: 'Failed to create system backup',
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      });
+      setTimeout(() => setBackupStatus('idle'), 2000);
+    }
+  };
+
+  const scrollToTop = () => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const filteredTabs = [
+    { label: 'System', icon: FaServer, key: 'system' },
+    { label: 'Security', icon: FaShieldAlt, key: 'security' },
+    { label: 'Notifications', icon: FaBell, key: 'notifications' },
+    { label: 'Maps & GPS', icon: FaMap, key: 'maps' },
+    { label: 'Business', icon: FaBuilding, key: 'business' },
+    { label: 'Integration', icon: FaPlug, key: 'integration' }
+  ].filter(tab => 
+    tab.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    tab.key.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const SettingRow = ({ label, description, children }) => (
-    <HStack justify="space-between" align="start">
+  const SettingRow = ({ label, description, children, error }) => (
+    <HStack justify="space-between" align="start" spacing={4}>
       <VStack align="start" spacing={1} flex={1}>
-        <Text fontWeight="medium">{label}</Text>
+        <Text fontWeight="medium" color={textColor}>{label}</Text>
         {description && (
           <Text fontSize="sm" color="gray.500">
             {description}
+          </Text>
+        )}
+        {error && (
+          <Text fontSize="sm" color="red.500">
+            {error}
           </Text>
         )}
       </VStack>
@@ -275,7 +415,7 @@ const AdminSettings = () => {
 
   if (loading) {
     return (
-      <Box minH="100vh">
+      <Box bg={bgColor}>
         <Navbar />
         <Center mt={20}>
           <Spinner size="xl" />
@@ -285,731 +425,476 @@ const AdminSettings = () => {
   }
 
   return (
-    <Box minH="100vh">
+    <Box bg={bgColor}>
       <Navbar />
-      <Container maxW="7xl" py={6}>
-        <VStack spacing={6} align="stretch">
-          {/* Header */}
-          <Flex justify="space-between" align="center">
-            <VStack align="start" spacing={1}>
-              <Heading size="lg" color="gray.700">
-                System Settings
-              </Heading>
-              <Text color="gray.500">
-                Configure system-wide settings and preferences
-              </Text>
-            </VStack>
-            <HStack>
-              {hasChanges && (
-                <Badge colorScheme="orange" fontSize="sm">
-                  Unsaved Changes
-                </Badge>
-              )}
-              <Button
-                variant="outline"
-                onClick={onResetOpen}
-                leftIcon={<DeleteIcon />}
-              >
-                Reset to Default
-              </Button>
+      
+      {/* Scrollable Container */}
+      <Box 
+        ref={scrollRef}
+        maxH="calc(100vh - 80px)" 
+        overflowY="auto"
+        css={{
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#CBD5E0',
+            borderRadius: '4px',
+          },
+        }}
+      >
+        <Container maxW="7xl" py={6}>
+          <VStack spacing={6} align="stretch">
+            {/* Enhanced Header */}
+            <Fade in={true}>
+              <Card bg={cardBg} borderColor={borderColor} shadow="sm">
+                <CardBody>
+                  <VStack spacing={4} align="stretch">
+                    {/* Breadcrumbs */}
+                    <Breadcrumb fontSize="sm" color="gray.500">
+                      <BreadcrumbItem>
+                        <BreadcrumbLink href="/admin">Admin</BreadcrumbLink>
+                      </BreadcrumbItem>
+                      <BreadcrumbItem isCurrentPage>
+                        <BreadcrumbLink>Settings</BreadcrumbLink>
+                      </BreadcrumbItem>
+                    </Breadcrumb>
+
+                    {/* Header Content */}
+                    <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
+                      <VStack align="start" spacing={1}>
+                        <HStack>
+                          <Icon as={SettingsIcon} boxSize={6} color="blue.500" />
+                          <Heading size="lg" color={textColor}>
+                            System Settings & Configuration
+                          </Heading>
+                        </HStack>
+                        <Text color="gray.500">
+                          Configure system-wide settings, integrations, and preferences
+                        </Text>
+                        {lastSaved && (
+                          <Text fontSize="sm" color="gray.400">
+                            Last saved: {lastSaved.toLocaleString()}
+                          </Text>
+                        )}
+                      </VStack>
+
+                      {/* Action Buttons */}
+                      <HStack spacing={3} wrap="wrap">
+                        {hasChanges && (
+                          <Badge colorScheme="orange" fontSize="sm" px={3} py={1}>
+                            Pending Changes
+                          </Badge>
+                        )}
+
+                        <ButtonGroup size="sm">
+                          <Tooltip label="Export all settings">
+                            <Button
+                              leftIcon={<DownloadIcon />}
+                              onClick={onExportOpen}
+                              variant="outline"
+                              isLoading={exportLoading}
+                            >
+                              Export
+                            </Button>
+                          </Tooltip>
+
+                          <Tooltip label="Import settings">
+                            <Button
+                              leftIcon={<AttachmentIcon />}
+                              onClick={onImportOpen}
+                              variant="outline"
+                              isLoading={importLoading}
+                            >
+                              Import
+                            </Button>
+                          </Tooltip>
+
+                          <Tooltip label="Create backup">
+                            <Button
+                              leftIcon={<FaDatabase />}
+                              onClick={onBackupOpen}
+                              variant="outline"
+                              colorScheme="purple"
+                            >
+                              Backup
+                            </Button>
+                          </Tooltip>
+                        </ButtonGroup>
+
+                        <ButtonGroup size="sm">
+                          {hasChanges && (
+                            <Button
+                              onClick={() => {
+                                setSettings(mockSettings);
+                                setHasChanges(false);
+                              }}
+                              variant="ghost"
+                              colorScheme="red"
+                            >
+                              Discard
+                            </Button>
+                          )}
+                          
+                          <Button
+                            leftIcon={<CheckIcon />}
+                            onClick={handleSave}
+                            isLoading={saving}
+                            loadingText="Saving..."
+                            colorScheme="blue"
+                            isDisabled={!hasChanges}
+                          >
+                            Save All Changes
+                          </Button>
+                        </ButtonGroup>
+                      </HStack>
+                    </Flex>
+
+                    {/* Search Bar */}
+                    <InputGroup maxW="400px">
+                      <InputLeftElement pointerEvents="none">
+                        <SearchIcon color="gray.400" />
+                      </InputLeftElement>
+                      <Input
+                        placeholder="Search settings..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        bg={useColorModeValue('white', 'gray.700')}
+                      />
+                    </InputGroup>
+
+                    {/* Quick Stats */}
+                    <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+                      <Stat>
+                        <StatLabel fontSize="xs">Total Settings</StatLabel>
+                        <StatNumber fontSize="lg">
+                          {Object.keys(settings).reduce((count, category) => 
+                            count + Object.keys(settings[category] || {}).length, 0
+                          )}
+                        </StatNumber>
+                      </Stat>
+                      <Stat>
+                        <StatLabel fontSize="xs">Active Integrations</StatLabel>
+                        <StatNumber fontSize="lg">5</StatNumber>
+                      </Stat>
+                      <Stat>
+                        <StatLabel fontSize="xs">System Status</StatLabel>
+                        <StatNumber fontSize="lg" color="green.500">Healthy</StatNumber>
+                      </Stat>
+                      <Stat>
+                        <StatLabel fontSize="xs">Last Backup</StatLabel>
+                        <StatNumber fontSize="lg">2h ago</StatNumber>
+                      </Stat>
+                    </SimpleGrid>
+                  </VStack>
+                </CardBody>
+              </Card>
+            </Fade>
+
+            {/* System Status Alert */}
+            {settings.system?.maintenanceMode && (
+              <Alert status="warning" borderRadius="md">
+                <AlertIcon />
+                <AlertTitle>Maintenance Mode Active!</AlertTitle>
+                <AlertDescription>
+                  The system is currently in maintenance mode. Users may experience limited functionality.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Change History */}
+            {changeHistory.length > 0 && (
+              <Card bg={cardBg} borderColor={borderColor}>
+                <CardBody>
+                  <Flex justify="between" align="center">
+                    <HStack>
+                      <Icon as={FaHistory} color="blue.500" />
+                      <Text fontWeight="semibold" color={textColor}>Recent Changes</Text>
+                      <Badge colorScheme="blue">{changeHistory.length}</Badge>
+                    </HStack>
+                    <Button size="sm" variant="ghost" onClick={() => setChangeHistory([])}>
+                      Clear History
+                    </Button>
+                  </Flex>
+                </CardBody>
+              </Card>
+            )}
+
+            {/* Main Settings Tabs */}
+            <Card bg={cardBg} borderColor={borderColor} shadow="sm">
+              <CardBody p={0}>
+                <Tabs 
+                  index={activeTab} 
+                  onChange={setActiveTab}
+                  variant="line"
+                  colorScheme="blue"
+                >
+                  <TabList 
+                    overflowX="auto" 
+                    css={{
+                      '&::-webkit-scrollbar': { display: 'none' },
+                      scrollbarWidth: 'none'
+                    }}
+                    px={6}
+                    pt={6}
+                  >
+                    {filteredTabs.map((tab, index) => (
+                      <Tab key={tab.key} minW="fit-content">
+                        <HStack spacing={2}>
+                          <Icon as={tab.icon} boxSize={4} />
+                          <Text>{tab.label}</Text>
+                        </HStack>
+                      </Tab>
+                    ))}
+                  </TabList>
+
+                  <TabPanels>
+                    {/* System Settings Panel */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <Heading size="md" color={textColor}>System Configuration</Heading>
+                        <VStack spacing={4} align="stretch">
+                          <SettingRow
+                            label="Site Name"
+                            description="The name of your transportation system"
+                          >
+                            <Input
+                              value={settings.system?.siteName || ''}
+                              onChange={(e) => handleSettingChange('system', 'siteName', e.target.value)}
+                              placeholder="Enter site name"
+                            />
+                          </SettingRow>
+
+                          <SettingRow
+                            label="Company Name"
+                            description="Your company's official name"
+                          >
+                            <Input
+                              value={settings.system?.companyName || ''}
+                              onChange={(e) => handleSettingChange('system', 'companyName', e.target.value)}
+                              placeholder="Enter company name"
+                            />
+                          </SettingRow>
+
+                          <SettingRow
+                            label="Maximum Users"
+                            description="Maximum number of concurrent users"
+                          >
+                            <NumberInput
+                              value={settings.system?.maxUsers}
+                              onChange={(value) => handleSettingChange('system', 'maxUsers', parseInt(value))}
+                              min={1}
+                              max={10000}
+                            >
+                              <NumberInputField />
+                              <NumberInputStepper>
+                                <NumberIncrementStepper />
+                                <NumberDecrementStepper />
+                              </NumberInputStepper>
+                            </NumberInput>
+                          </SettingRow>
+
+                          <SettingRow
+                            label="Maintenance Mode"
+                            description="Enable to restrict access during maintenance"
+                          >
+                            <Switch
+                              isChecked={settings.system?.maintenanceMode}
+                              onChange={(e) => handleSettingChange('system', 'maintenanceMode', e.target.checked)}
+                              colorScheme="orange"
+                            />
+                          </SettingRow>
+                        </VStack>
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Security Settings Panel */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <Heading size="md" color={textColor}>Security & Authentication</Heading>
+                        <VStack spacing={4} align="stretch">
+                          <SettingRow
+                            label="Password Min Length"
+                            description="Minimum password length required"
+                          >
+                            <NumberInput
+                              value={settings.security?.passwordMinLength}
+                              onChange={(value) => handleSettingChange('security', 'passwordMinLength', parseInt(value))}
+                              min={6}
+                              max={50}
+                            >
+                              <NumberInputField />
+                            </NumberInput>
+                          </SettingRow>
+
+                          <SettingRow
+                            label="Two-Factor Authentication"
+                            description="Require 2FA for admin accounts"
+                          >
+                            <Switch
+                              isChecked={settings.security?.twoFactorAuth}
+                              onChange={(e) => handleSettingChange('security', 'twoFactorAuth', e.target.checked)}
+                              colorScheme="blue"
+                            />
+                          </SettingRow>
+
+                          <SettingRow
+                            label="SSL Required"
+                            description="Force HTTPS connections"
+                          >
+                            <Switch
+                              isChecked={settings.security?.sslRequired}
+                              onChange={(e) => handleSettingChange('security', 'sslRequired', e.target.checked)}
+                              colorScheme="green"
+                            />
+                          </SettingRow>
+                        </VStack>
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Additional tabs with placeholder content */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <Heading size="md" color={textColor}>Notification Settings</Heading>
+                        <Text color="gray.500">Configure notification preferences and channels.</Text>
+                      </VStack>
+                    </TabPanel>
+
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <Heading size="md" color={textColor}>Maps & GPS Configuration</Heading>
+                        <Text color="gray.500">Configure map settings and GPS tracking options.</Text>
+                      </VStack>
+                    </TabPanel>
+
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <Heading size="md" color={textColor}>Business Settings</Heading>
+                        <Text color="gray.500">Configure business rules, pricing, and operations.</Text>
+                      </VStack>
+                    </TabPanel>
+
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <Heading size="md" color={textColor}>Integration Settings</Heading>
+                        <Text color="gray.500">Manage third-party integrations and APIs.</Text>
+                      </VStack>
+                    </TabPanel>
+                  </TabPanels>
+                </Tabs>
+              </CardBody>
+            </Card>
+
+            {/* Scroll to Top Button */}
+            <Box position="fixed" bottom="20px" right="20px" zIndex={10}>
               <Button
                 colorScheme="blue"
-                onClick={handleSave}
-                isLoading={saving}
-                loadingText="Saving..."
-                leftIcon={<CheckIcon />}
-                isDisabled={!hasChanges}
+                size="sm"
+                borderRadius="full"
+                onClick={scrollToTop}
+                leftIcon={<ArrowUpIcon />}
+                shadow="lg"
               >
-                Save Changes
+                Top
               </Button>
-            </HStack>
-          </Flex>
+            </Box>
+          </VStack>
+        </Container>
+      </Box>
 
-          <Tabs variant="enclosed">
-            <TabList>
-              <Tab>System</Tab>
-              <Tab>Security</Tab>
-              <Tab>Notifications</Tab>
-              <Tab>Maps & Location</Tab>
-              <Tab>Business</Tab>
-              <Tab>Integrations</Tab>
-            </TabList>
+      {/* Export Modal */}
+      <Modal isOpen={isExportOpen} onClose={onExportClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Export Settings</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text>This will download all system settings as a JSON file.</Text>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onExportClose}>
+              Cancel
+            </Button>
+            <Button 
+              colorScheme="blue" 
+              onClick={handleExportSettings}
+              isLoading={exportLoading}
+            >
+              Export
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
-            <TabPanels>
-              {/* System Settings */}
-              <TabPanel>
-                <VStack spacing={6} align="stretch">
-                  <SettingCard title="General Settings" icon={FaCog}>
-                    <SettingRow
-                      label="Site Name"
-                      description="The name displayed across the application"
-                    >
-                      <Input
-                        value={settings.system?.siteName || ''}
-                        onChange={(e) => handleSettingChange('system', 'siteName', e.target.value)}
-                      />
-                    </SettingRow>
-                    
-                    <SettingRow
-                      label="Site Description"
-                      description="Brief description of your transportation service"
-                    >
-                      <Textarea
-                        value={settings.system?.siteDescription || ''}
-                        onChange={(e) => handleSettingChange('system', 'siteDescription', e.target.value)}
-                        rows={3}
-                      />
-                    </SettingRow>
+      {/* Import Modal */}
+      <Modal isOpen={isImportOpen} onClose={onImportClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Import Settings</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <Text>Select a settings JSON file to import.</Text>
+              <Input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleImportSettings}
+              />
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onImportClose}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
-                    <SettingRow
-                      label="Maintenance Mode"
-                      description="Enable to prevent users from accessing the system"
-                    >
-                      <Switch
-                        isChecked={settings.system?.maintenanceMode}
-                        onChange={(e) => handleSettingChange('system', 'maintenanceMode', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Debug Mode"
-                      description="Enable detailed logging for troubleshooting"
-                    >
-                      <Switch
-                        isChecked={settings.system?.debugMode}
-                        onChange={(e) => handleSettingChange('system', 'debugMode', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Log Level"
-                      description="Set the minimum level for system logging"
-                    >
-                      <Select
-                        value={settings.system?.logLevel || 'info'}
-                        onChange={(e) => handleSettingChange('system', 'logLevel', e.target.value)}
-                      >
-                        <option value="error">Error</option>
-                        <option value="warn">Warning</option>
-                        <option value="info">Info</option>
-                        <option value="debug">Debug</option>
-                      </Select>
-                    </SettingRow>
-                  </SettingCard>
-
-                  <SettingCard title="Performance & Limits" icon={SettingsIcon}>
-                    <SettingRow
-                      label="Maximum Users"
-                      description="Maximum number of concurrent users allowed"
-                    >
-                      <NumberInput
-                        value={settings.system?.maxUsers}
-                        onChange={(value) => handleSettingChange('system', 'maxUsers', parseInt(value))}
-                        min={1}
-                        max={10000}
-                      >
-                        <NumberInputField />
-                        <NumberInputStepper>
-                          <NumberIncrementStepper />
-                          <NumberDecrementStepper />
-                        </NumberInputStepper>
-                      </NumberInput>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Session Timeout"
-                      description="User session timeout in minutes"
-                    >
-                      <NumberInput
-                        value={settings.system?.sessionTimeout}
-                        onChange={(value) => handleSettingChange('system', 'sessionTimeout', parseInt(value))}
-                        min={5}
-                        max={480}
-                      >
-                        <NumberInputField />
-                        <NumberInputStepper>
-                          <NumberIncrementStepper />
-                          <NumberDecrementStepper />
-                        </NumberInputStepper>
-                      </NumberInput>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Auto Backup"
-                      description="Automatically backup system data"
-                    >
-                      <Switch
-                        isChecked={settings.system?.autoBackup}
-                        onChange={(e) => handleSettingChange('system', 'autoBackup', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Backup Interval"
-                      description="Hours between automatic backups"
-                    >
-                      <NumberInput
-                        value={settings.system?.backupInterval}
-                        onChange={(value) => handleSettingChange('system', 'backupInterval', parseInt(value))}
-                        min={1}
-                        max={168}
-                        isDisabled={!settings.system?.autoBackup}
-                      >
-                        <NumberInputField />
-                        <NumberInputStepper>
-                          <NumberIncrementStepper />
-                          <NumberDecrementStepper />
-                        </NumberInputStepper>
-                      </NumberInput>
-                    </SettingRow>
-                  </SettingCard>
-                </VStack>
-              </TabPanel>
-
-              {/* Security Settings */}
-              <TabPanel>
-                <VStack spacing={6} align="stretch">
-                  <SettingCard title="Password Policy" icon={FaLock}>
-                    <SettingRow
-                      label="Minimum Length"
-                      description="Minimum number of characters required"
-                    >
-                      <NumberInput
-                        value={settings.security?.passwordMinLength}
-                        onChange={(value) => handleSettingChange('security', 'passwordMinLength', parseInt(value))}
-                        min={6}
-                        max={50}
-                      >
-                        <NumberInputField />
-                        <NumberInputStepper>
-                          <NumberIncrementStepper />
-                          <NumberDecrementStepper />
-                        </NumberInputStepper>
-                      </NumberInput>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Require Special Characters"
-                      description="Passwords must contain special characters"
-                    >
-                      <Switch
-                        isChecked={settings.security?.passwordRequireSpecial}
-                        onChange={(e) => handleSettingChange('security', 'passwordRequireSpecial', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Require Numbers"
-                      description="Passwords must contain numeric characters"
-                    >
-                      <Switch
-                        isChecked={settings.security?.passwordRequireNumbers}
-                        onChange={(e) => handleSettingChange('security', 'passwordRequireNumbers', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Require Uppercase"
-                      description="Passwords must contain uppercase letters"
-                    >
-                      <Switch
-                        isChecked={settings.security?.passwordRequireUppercase}
-                        onChange={(e) => handleSettingChange('security', 'passwordRequireUppercase', e.target.checked)}
-                      />
-                    </SettingRow>
-                  </SettingCard>
-
-                  <SettingCard title="Authentication Security" icon={FaLock}>
-                    <SettingRow
-                      label="Max Login Attempts"
-                      description="Maximum failed login attempts before lockout"
-                    >
-                      <NumberInput
-                        value={settings.security?.maxLoginAttempts}
-                        onChange={(value) => handleSettingChange('security', 'maxLoginAttempts', parseInt(value))}
-                        min={3}
-                        max={10}
-                      >
-                        <NumberInputField />
-                        <NumberInputStepper>
-                          <NumberIncrementStepper />
-                          <NumberDecrementStepper />
-                        </NumberInputStepper>
-                      </NumberInput>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Lockout Duration"
-                      description="Account lockout duration in minutes"
-                    >
-                      <NumberInput
-                        value={settings.security?.lockoutDuration}
-                        onChange={(value) => handleSettingChange('security', 'lockoutDuration', parseInt(value))}
-                        min={5}
-                        max={1440}
-                      >
-                        <NumberInputField />
-                        <NumberInputStepper>
-                          <NumberIncrementStepper />
-                          <NumberDecrementStepper />
-                        </NumberInputStepper>
-                      </NumberInput>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Two-Factor Authentication"
-                      description="Require 2FA for all admin accounts"
-                    >
-                      <Switch
-                        isChecked={settings.security?.twoFactorAuth}
-                        onChange={(e) => handleSettingChange('security', 'twoFactorAuth', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Session Security"
-                      description="Level of session security enforcement"
-                    >
-                      <Select
-                        value={settings.security?.sessionSecurity || 'standard'}
-                        onChange={(e) => handleSettingChange('security', 'sessionSecurity', e.target.value)}
-                      >
-                        <option value="basic">Basic</option>
-                        <option value="standard">Standard</option>
-                        <option value="high">High</option>
-                        <option value="maximum">Maximum</option>
-                      </Select>
-                    </SettingRow>
-                  </SettingCard>
-                </VStack>
-              </TabPanel>
-
-              {/* Notifications Settings */}
-              <TabPanel>
-                <VStack spacing={6} align="stretch">
-                  <SettingCard title="Notification Channels" icon={FaBell}>
-                    <SettingRow
-                      label="Email Notifications"
-                      description="Send notifications via email"
-                    >
-                      <Switch
-                        isChecked={settings.notifications?.emailNotifications}
-                        onChange={(e) => handleSettingChange('notifications', 'emailNotifications', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="SMS Notifications"
-                      description="Send notifications via SMS"
-                    >
-                      <Switch
-                        isChecked={settings.notifications?.smsNotifications}
-                        onChange={(e) => handleSettingChange('notifications', 'smsNotifications', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Push Notifications"
-                      description="Send browser/mobile push notifications"
-                    >
-                      <Switch
-                        isChecked={settings.notifications?.pushNotifications}
-                        onChange={(e) => handleSettingChange('notifications', 'pushNotifications', e.target.checked)}
-                      />
-                    </SettingRow>
-                  </SettingCard>
-
-                  <SettingCard title="Notification Types" icon={FaBell}>
-                    <SettingRow
-                      label="Trip Alerts"
-                      description="Notify about trip updates and changes"
-                    >
-                      <Switch
-                        isChecked={settings.notifications?.tripAlerts}
-                        onChange={(e) => handleSettingChange('notifications', 'tripAlerts', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="System Alerts"
-                      description="Notify about system events and errors"
-                    >
-                      <Switch
-                        isChecked={settings.notifications?.systemAlerts}
-                        onChange={(e) => handleSettingChange('notifications', 'systemAlerts', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Maintenance Alerts"
-                      description="Notify about scheduled maintenance"
-                    >
-                      <Switch
-                        isChecked={settings.notifications?.maintenanceAlerts}
-                        onChange={(e) => handleSettingChange('notifications', 'maintenanceAlerts', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Emergency Alerts"
-                      description="Critical emergency notifications"
-                    >
-                      <Switch
-                        isChecked={settings.notifications?.emergencyAlerts}
-                        onChange={(e) => handleSettingChange('notifications', 'emergencyAlerts', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Notification Frequency"
-                      description="How often to send notification batches"
-                    >
-                      <Select
-                        value={settings.notifications?.notificationFrequency || 'immediate'}
-                        onChange={(e) => handleSettingChange('notifications', 'notificationFrequency', e.target.value)}
-                      >
-                        <option value="immediate">Immediate</option>
-                        <option value="5min">Every 5 minutes</option>
-                        <option value="15min">Every 15 minutes</option>
-                        <option value="hourly">Hourly</option>
-                        <option value="daily">Daily</option>
-                      </Select>
-                    </SettingRow>
-                  </SettingCard>
-                </VStack>
-              </TabPanel>
-
-              {/* Maps Settings */}
-              <TabPanel>
-                <VStack spacing={6} align="stretch">
-                  <SettingCard title="Map Configuration" icon={FaMap}>
-                    <SettingRow
-                      label="Default Zoom Level"
-                      description="Initial zoom level for maps"
-                    >
-                      <Box>
-                        <Slider
-                          value={settings.maps?.defaultZoom || 12}
-                          onChange={(value) => handleSettingChange('maps', 'defaultZoom', value)}
-                          min={1}
-                          max={20}
-                          step={1}
-                        >
-                          <SliderMark value={1} mt={2} fontSize="sm">1</SliderMark>
-                          <SliderMark value={10} mt={2} fontSize="sm">10</SliderMark>
-                          <SliderMark value={20} mt={2} fontSize="sm">20</SliderMark>
-                          <SliderTrack>
-                            <SliderFilledTrack />
-                          </SliderTrack>
-                          <SliderThumb />
-                        </Slider>
-                        <Text textAlign="center" mt={6} fontSize="sm">
-                          Current: {settings.maps?.defaultZoom}
-                        </Text>
-                      </Box>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Map Provider"
-                      description="Default map service provider"
-                    >
-                      <Select
-                        value={settings.maps?.mapProvider || 'google'}
-                        onChange={(e) => handleSettingChange('maps', 'mapProvider', e.target.value)}
-                      >
-                        <option value="google">Google Maps</option>
-                        <option value="mapbox">Mapbox</option>
-                        <option value="openstreet">OpenStreetMap</option>
-                      </Select>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Traffic Layer"
-                      description="Show real-time traffic information"
-                    >
-                      <Switch
-                        isChecked={settings.maps?.trafficLayer}
-                        onChange={(e) => handleSettingChange('maps', 'trafficLayer', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Satellite View"
-                      description="Enable satellite imagery option"
-                    >
-                      <Switch
-                        isChecked={settings.maps?.satelliteView}
-                        onChange={(e) => handleSettingChange('maps', 'satelliteView', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Route Optimization"
-                      description="Automatically optimize trip routes"
-                    >
-                      <Switch
-                        isChecked={settings.maps?.routeOptimization}
-                        onChange={(e) => handleSettingChange('maps', 'routeOptimization', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Real-time Tracking"
-                      description="Enable live vehicle tracking"
-                    >
-                      <Switch
-                        isChecked={settings.maps?.realTimeTracking}
-                        onChange={(e) => handleSettingChange('maps', 'realTimeTracking', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Geofencing"
-                      description="Enable location-based alerts and restrictions"
-                    >
-                      <Switch
-                        isChecked={settings.maps?.geofencing}
-                        onChange={(e) => handleSettingChange('maps', 'geofencing', e.target.checked)}
-                      />
-                    </SettingRow>
-                  </SettingCard>
-                </VStack>
-              </TabPanel>
-
-              {/* Business Settings */}
-              <TabPanel>
-                <VStack spacing={6} align="stretch">
-                  <SettingCard title="Business Configuration" icon={FaUsers}>
-                    <SettingRow
-                      label="Currency"
-                      description="Default currency for pricing"
-                    >
-                      <Select
-                        value={settings.business?.currency || 'USD'}
-                        onChange={(e) => handleSettingChange('business', 'currency', e.target.value)}
-                      >
-                        <option value="USD">USD - US Dollar</option>
-                        <option value="EUR">EUR - Euro</option>
-                        <option value="GBP">GBP - British Pound</option>
-                        <option value="CAD">CAD - Canadian Dollar</option>
-                      </Select>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Timezone"
-                      description="Default timezone for the system"
-                    >
-                      <Select
-                        value={settings.business?.timezone || 'America/New_York'}
-                        onChange={(e) => handleSettingChange('business', 'timezone', e.target.value)}
-                      >
-                        <option value="America/New_York">Eastern Time</option>
-                        <option value="America/Chicago">Central Time</option>
-                        <option value="America/Denver">Mountain Time</option>
-                        <option value="America/Los_Angeles">Pacific Time</option>
-                      </Select>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Weekend Service"
-                      description="Operate on weekends"
-                    >
-                      <Switch
-                        isChecked={settings.business?.weekendService}
-                        onChange={(e) => handleSettingChange('business', 'weekendService', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Holiday Service"
-                      description="Operate on holidays"
-                    >
-                      <Switch
-                        isChecked={settings.business?.holidayService}
-                        onChange={(e) => handleSettingChange('business', 'holidayService', e.target.checked)}
-                      />
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Max Trip Distance"
-                      description="Maximum trip distance in miles"
-                    >
-                      <NumberInput
-                        value={settings.business?.maxTripDistance}
-                        onChange={(value) => handleSettingChange('business', 'maxTripDistance', parseInt(value))}
-                        min={1}
-                        max={500}
-                      >
-                        <NumberInputField />
-                        <NumberInputStepper>
-                          <NumberIncrementStepper />
-                          <NumberDecrementStepper />
-                        </NumberInputStepper>
-                      </NumberInput>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Base Fare"
-                      description="Base fare for all trips"
-                    >
-                      <NumberInput
-                        value={settings.business?.baseFare}
-                        onChange={(value) => handleSettingChange('business', 'baseFare', parseFloat(value))}
-                        min={0}
-                        max={100}
-                        step={0.25}
-                        precision={2}
-                      >
-                        <NumberInputField />
-                        <NumberInputStepper>
-                          <NumberIncrementStepper />
-                          <NumberDecrementStepper />
-                        </NumberInputStepper>
-                      </NumberInput>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Price Per Mile"
-                      description="Cost per mile of travel"
-                    >
-                      <NumberInput
-                        value={settings.business?.pricePerMile}
-                        onChange={(value) => handleSettingChange('business', 'pricePerMile', parseFloat(value))}
-                        min={0}
-                        max={20}
-                        step={0.05}
-                        precision={2}
-                      >
-                        <NumberInputField />
-                        <NumberInputStepper>
-                          <NumberIncrementStepper />
-                          <NumberDecrementStepper />
-                        </NumberInputStepper>
-                      </NumberInput>
-                    </SettingRow>
-                  </SettingCard>
-                </VStack>
-              </TabPanel>
-
-              {/* Integrations Settings */}
-              <TabPanel>
-                <VStack spacing={6} align="stretch">
-                  <SettingCard title="API Integrations" icon={FaDatabase}>
-                    <SettingRow
-                      label="Google Maps API"
-                      description="Integration with Google Maps services"
-                    >
-                      <HStack>
-                        <Badge colorScheme={settings.integration?.googleMapsApi ? 'green' : 'red'}>
-                          {settings.integration?.googleMapsApi ? 'Active' : 'Inactive'}
-                        </Badge>
-                        <Button size="sm" variant="outline">
-                          Configure
-                        </Button>
-                      </HStack>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Firebase Authentication"
-                      description="Firebase auth service integration"
-                    >
-                      <HStack>
-                        <Badge colorScheme={settings.integration?.firebaseAuth ? 'green' : 'red'}>
-                          {settings.integration?.firebaseAuth ? 'Active' : 'Inactive'}
-                        </Badge>
-                        <Button size="sm" variant="outline">
-                          Configure
-                        </Button>
-                      </HStack>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Payment Gateway"
-                      description="Payment processing service"
-                    >
-                      <Select
-                        value={settings.integration?.paymentGateway || 'stripe'}
-                        onChange={(e) => handleSettingChange('integration', 'paymentGateway', e.target.value)}
-                      >
-                        <option value="stripe">Stripe</option>
-                        <option value="paypal">PayPal</option>
-                        <option value="square">Square</option>
-                      </Select>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="SMS Provider"
-                      description="SMS notification service"
-                    >
-                      <Select
-                        value={settings.integration?.smsProvider || 'twilio'}
-                        onChange={(e) => handleSettingChange('integration', 'smsProvider', e.target.value)}
-                      >
-                        <option value="twilio">Twilio</option>
-                        <option value="nexmo">Vonage (Nexmo)</option>
-                        <option value="aws-sns">AWS SNS</option>
-                      </Select>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Email Provider"
-                      description="Email service provider"
-                    >
-                      <Select
-                        value={settings.integration?.emailProvider || 'sendgrid'}
-                        onChange={(e) => handleSettingChange('integration', 'emailProvider', e.target.value)}
-                      >
-                        <option value="sendgrid">SendGrid</option>
-                        <option value="mailgun">Mailgun</option>
-                        <option value="ses">AWS SES</option>
-                      </Select>
-                    </SettingRow>
-
-                    <SettingRow
-                      label="Analytics Tracking"
-                      description="Enable usage analytics collection"
-                    >
-                      <Switch
-                        isChecked={settings.integration?.analyticsTracking}
-                        onChange={(e) => handleSettingChange('integration', 'analyticsTracking', e.target.checked)}
-                      />
-                    </SettingRow>
-                  </SettingCard>
-                </VStack>
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-        </VStack>
-      </Container>
-
-      {/* Reset Confirmation Dialog */}
-      <AlertDialog
-        isOpen={isResetOpen}
-        onClose={onResetClose}
-        leastDestructiveRef={undefined}
-      >
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Reset Settings
-            </AlertDialogHeader>
-
-            <AlertDialogBody>
-              Are you sure you want to reset all settings to their default values? 
-              This action cannot be undone.
-            </AlertDialogBody>
-
-            <AlertDialogFooter>
-              <Button onClick={onResetClose}>
-                Cancel
-              </Button>
-              <Button colorScheme="red" onClick={handleReset} ml={3}>
-                Reset
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
+      {/* Backup Modal */}
+      <Modal isOpen={isBackupOpen} onClose={onBackupClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>System Backup</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <Text>Create a complete system backup including database, files, and configurations.</Text>
+              {backupStatus === 'running' && (
+                <Progress size="lg" isIndeterminate colorScheme="blue" width="100%" />
+              )}
+              {backupStatus === 'completed' && (
+                <Alert status="success">
+                  <AlertIcon />
+                  Backup completed successfully!
+                </Alert>
+              )}
+              {backupStatus === 'failed' && (
+                <Alert status="error">
+                  <AlertIcon />
+                  Backup failed. Please try again.
+                </Alert>
+              )}
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onBackupClose}>
+              Cancel
+            </Button>
+            <Button
+              colorScheme="purple"
+              onClick={handleBackupNow}
+              isLoading={backupStatus === 'running'}
+              isDisabled={backupStatus === 'running'}
+            >
+              Start Backup
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };

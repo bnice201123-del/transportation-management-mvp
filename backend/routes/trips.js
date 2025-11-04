@@ -609,4 +609,86 @@ router.delete('/:id', authenticateToken, authorizeRoles('scheduler', 'dispatcher
   }
 });
 
+// Bulk update trips status
+router.put('/bulk-update', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatcher'), async (req, res) => {
+  try {
+    const { ids, status, assignedDriver } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Trip IDs are required' });
+    }
+
+    if (!status && !assignedDriver) {
+      return res.status(400).json({ message: 'Status or assigned driver is required' });
+    }
+
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (assignedDriver) updateData.assignedDriver = assignedDriver;
+    updateData.updatedAt = new Date();
+
+    const result = await Trip.updateMany(
+      { _id: { $in: ids } },
+      { $set: updateData }
+    );
+
+    // Log the bulk operation
+    await logActivity(
+      req.user._id,
+      'bulk_update_trips',
+      `Bulk updated ${result.modifiedCount} trips`,
+      { tripIds: ids, updateData },
+      null
+    );
+
+    res.json({
+      message: `Successfully updated ${result.modifiedCount} trips`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Bulk update trips error:', error);
+    res.status(500).json({ message: 'Server error updating trips' });
+  }
+});
+
+// Bulk delete trips
+router.delete('/bulk-delete', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatcher'), async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Trip IDs are required' });
+    }
+
+    // Update trips to cancelled status instead of actually deleting
+    const result = await Trip.updateMany(
+      { _id: { $in: ids } },
+      { 
+        $set: { 
+          status: 'cancelled',
+          cancellationReason: 'Bulk cancelled by admin',
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    // Log the bulk operation
+    await logActivity(
+      req.user._id,
+      'bulk_cancel_trips',
+      `Bulk cancelled ${result.modifiedCount} trips`,
+      { tripIds: ids },
+      null
+    );
+
+    res.json({
+      message: `Successfully cancelled ${result.modifiedCount} trips`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Bulk delete trips error:', error);
+    res.status(500).json({ message: 'Server error deleting trips' });
+  }
+});
+
 export default router;

@@ -10,6 +10,8 @@ import authRoutes from './routes/auth.js';
 import tripRoutes from './routes/trips.js';
 import userRoutes from './routes/users.js';
 import analyticsRoutes from './routes/analytics.js';
+import recurringTripsRoutes from './routes/recurringTrips.js';
+import vehiclesRoutes from './routes/vehicles.js';
 
 // Load environment variables
 dotenv.config();
@@ -22,6 +24,7 @@ const io = new Server(server, {
       "http://localhost:5173",
       "http://localhost:5174", 
       "http://localhost:5175",
+      "http://localhost:5176",
       process.env.FRONTEND_URL
     ].filter(Boolean),
     methods: ["GET", "POST"]
@@ -37,6 +40,7 @@ app.use(cors({
     "http://localhost:5173",
     "http://localhost:5174", 
     "http://localhost:5175",
+    "http://localhost:5176",
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true
@@ -49,6 +53,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/recurring-trips', recurringTripsRoutes);
+app.use('/api/vehicles', vehiclesRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

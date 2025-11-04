@@ -9,6 +9,7 @@ import TestPage from './components/TestPage';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import SchedulerDashboard from './components/scheduler/SchedulerDashboard';
+import RecurringTrips from './components/scheduler/RecurringTrips';
 import DispatcherDashboard from './components/dispatcher/DispatcherDashboard';
 import SimpleDriverDashboard from './components/driver/SimpleDriverDashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -19,6 +20,8 @@ import AdminRegistration from './components/admin/AdminRegistration';
 import AdminStatistics from './components/admin/AdminStatistics';
 import AdminSettings from './components/admin/AdminSettings';
 import ErrorBoundary from './components/shared/ErrorBoundary';
+import Layout from './components/shared/Layout';
+import ScrollTestPage from './components/test/ScrollTestPage';
 import RidersDashboard from './components/riders/RidersDashboard';
 import VehiclesDashboard from './components/vehicles/VehiclesDashboard';
 import MapsDashboard from './components/maps/MapsDashboard';
@@ -76,11 +79,205 @@ const AppRoutes = () => {
       />
 
       {/* Protected routes */}
+      {/* Scheduler Routes - Comprehensive Schedule Management */}
       <Route 
         path="/scheduler" 
         element={
-          <ProtectedRoute allowedRoles={['scheduler', 'admin']}>
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
             <SchedulerDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/dashboard" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/manage" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="manage" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/recurring" 
+        element={
+          <ProtectedRoute allowedRoles={['admin', 'scheduler', 'dispatcher']}>
+            <RecurringTrips />
+          </ProtectedRoute>
+        } 
+      />
+      {/* Legacy routes redirect to manage */}
+      <Route 
+        path="/scheduler/add-trip" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="manage" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/edit" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="manage" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/all" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="manage" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/assign-drivers" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="assign-drivers" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/assign-vehicles" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="assign-vehicles" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/calendar" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="calendar" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/timeline" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="timeline" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/map" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="map" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/history" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="history" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/completed" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="completed" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/import" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin']}>
+            <SchedulerDashboard view="import" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/export" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="export" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/templates" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="templates" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/alerts" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="alerts" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/notifications" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="notifications" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/reports" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="reports" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/analytics" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="analytics" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/share" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="share" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/print" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
+            <SchedulerDashboard view="print" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/settings" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin']}>
+            <SchedulerDashboard view="settings" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/sync" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <SchedulerDashboard view="sync" />
           </ProtectedRoute>
         } 
       />
@@ -195,6 +392,16 @@ const AppRoutes = () => {
         } 
       />
 
+      {/* Test Pages */}
+      <Route 
+        path="/test/scroll" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ScrollTestPage />
+          </ProtectedRoute>
+        } 
+      />
+
       {/* Default route redirect */}
       <Route 
         path="/" 
@@ -222,7 +429,9 @@ function App() {
         position="relative"
         overflowX="hidden"
       >
-        <AppRoutes />
+        <Layout>
+          <AppRoutes />
+        </Layout>
       </Box>
     </AuthProvider>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -60,8 +61,13 @@ import axios from 'axios';
 import '../../config/axios';
 import Navbar from '../shared/Navbar';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
+import TripManagement from './TripManagement';
+import TripManagementModal from './TripManagementModal';
 
 const SchedulerDashboard = () => {
+  const location = useLocation();
+  const isManageView = location.pathname.includes('/manage') || location.search.includes('view=manage');
+  
   const [trips, setTrips] = useState([]);
   const [dispatchers, setDispatchers] = useState([]);
   // Fixed: removed drivers state as schedulers now only assign to dispatchers
@@ -76,16 +82,7 @@ const SchedulerDashboard = () => {
     scheduledTime: '',
     notes: '',
     assignedDriver: '',
-    isRecurring: false,
-    recurringPattern: {
-      frequency: 'weekly',
-      daysOfWeek: [],
-      interval: 1,
-      endDate: '',
-      endAfterOccurrences: '',
-      isIndefinite: false,
-      customPattern: ''
-    }
+
   });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,12 +98,16 @@ const SchedulerDashboard = () => {
     onOpen: onDeleteOpen,
     onClose: onDeleteClose
   } = useDisclosure();
+  const {
+    isOpen: isTripManagementOpen,
+    onOpen: onTripManagementOpen,
+    onClose: onTripManagementClose
+  } = useDisclosure();
   
   const [tripToDelete, setTripToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
-  const [recurringTrips, setRecurringTrips] = useState([]);
-  const [showRecurringTrips, setShowRecurringTrips] = useState(false);
+
   
   // Filtering state
   const [activeTab, setActiveTab] = useState(0); // 0: Today, 1: Upcoming, 2: Past, 3: All
@@ -118,12 +119,7 @@ const SchedulerDashboard = () => {
   const cancelRef = React.useRef();
   const toast = useToast();
 
-  // Recurring trip modal
-  const {
-    isOpen: isRecurringOpen,
-    onOpen: onRecurringOpen,
-    onClose: onRecurringClose
-  } = useDisclosure();
+
 
   const fetchTrips = useCallback(async () => {
     try {
@@ -152,30 +148,15 @@ const SchedulerDashboard = () => {
     }
   }, []);
 
-  const fetchRecurringTrips = useCallback(async () => {
-    try {
-      const response = await axios.get('/trips/recurring');
-      setRecurringTrips(response.data.trips);
-    } catch (error) {
-      console.error('Error fetching recurring trips:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch recurring trips',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-    }
-  }, [toast]);
+
 
   useEffect(() => {
     const loadData = async () => {
       await fetchTrips();
       await fetchDispatchers();
-      await fetchRecurringTrips();
     };
     loadData();
-  }, [fetchTrips, fetchDispatchers, fetchRecurringTrips]);
+  }, [fetchTrips, fetchDispatchers]);
 
   // Update date and time every minute
   useEffect(() => {
@@ -318,11 +299,6 @@ const SchedulerDashboard = () => {
                   <Badge colorScheme={getStatusColor(trip.status)}>
                     {trip.status.replace('_', ' ').toUpperCase()}
                   </Badge>
-                  {showPattern && trip.isRecurring && (
-                    <Badge colorScheme="green" ml={1} fontSize="xs">
-                      RECURRING
-                    </Badge>
-                  )}
                 </Td>
                 <Td>
                   <HStack spacing={{ base: 1, md: 2 }}>
@@ -420,61 +396,7 @@ const SchedulerDashboard = () => {
     }
   };
 
-  const handleCreateRecurringTrip = async () => {
-    try {
-      setIsSubmitting(true);
-      setError('');
 
-      // Validate required fields
-      if (!formData.riderName || !formData.pickupLocation.address || 
-          !formData.dropoffLocation.address || !formData.scheduledDate || 
-          !formData.scheduledTime) {
-        setError('Please fill in all required fields');
-        return;
-      }
-
-      // Validate recurring pattern
-      if (formData.recurringPattern.frequency === 'weekly' && 
-          formData.recurringPattern.daysOfWeek.length === 0) {
-        setError('Please select at least one day of the week');
-        return;
-      }
-
-      const recurringTripData = {
-        ...formData,
-        isRecurring: true,
-        tripType: 'recurring',
-        pickupLocation: {
-          ...formData.pickupLocation,
-          lat: formData.pickupLocation.lat || 40.7589, // Default to NYC coordinates
-          lng: formData.pickupLocation.lng || -74.0060
-        },
-        dropoffLocation: {
-          ...formData.dropoffLocation,
-          lat: formData.dropoffLocation.lat || 40.7580,
-          lng: formData.dropoffLocation.lng || -73.9855
-        }
-      };
-
-      const response = await axios.post('/trips/recurring', recurringTripData);
-      
-      toast({
-        title: 'Success',
-        description: response.data.message,
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
-
-      handleCloseRecurringModal();
-      fetchTrips();
-      fetchRecurringTrips();
-    } catch (error) {
-      setError(error.response?.data?.message || 'Error creating recurring trip');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleCloseModal = () => {
     setSelectedTrip(null);
@@ -486,45 +408,10 @@ const SchedulerDashboard = () => {
       scheduledDate: '',
       scheduledTime: '',
       notes: '',
-      assignedDriver: '',
-      isRecurring: false,
-      recurringPattern: {
-        frequency: 'weekly',
-        daysOfWeek: [],
-        interval: 1,
-        endDate: '',
-        endAfterOccurrences: '',
-        isIndefinite: false,
-        customPattern: ''
-      }
+      assignedDriver: ''
     });
     setError('');
     onClose();
-  };
-
-  const handleCloseRecurringModal = () => {
-    setFormData({
-      riderName: '',
-      riderPhone: '',
-      pickupLocation: { address: '', lat: 0, lng: 0, placeId: '' },
-      dropoffLocation: { address: '', lat: 0, lng: 0, placeId: '' },
-      scheduledDate: '',
-      scheduledTime: '',
-      notes: '',
-      assignedDriver: '',
-      isRecurring: false,
-      recurringPattern: {
-        frequency: 'weekly',
-        daysOfWeek: [],
-        interval: 1,
-        endDate: '',
-        endAfterOccurrences: '',
-        isIndefinite: false,
-        customPattern: ''
-      }
-    });
-    setError('');
-    onRecurringClose();
   };
 
   const openEditModal = (trip) => {
@@ -636,6 +523,11 @@ const SchedulerDashboard = () => {
           py={{ base: 4, md: 6 }} 
           px={{ base: 4, md: 6, lg: 8 }}
         >
+          {/* Conditional rendering for Trip Management vs Dashboard views */}
+          {isManageView ? (
+            <TripManagement onTripUpdate={fetchTrips} />
+          ) : (
+            <>
           {/* Date and Time Display */}
           <Heading 
             as="h3" 
@@ -761,30 +653,19 @@ const SchedulerDashboard = () => {
               <Text display={{ base: "none", sm: "block" }}>Create New Trip</Text>
               <Text display={{ base: "block", sm: "none" }}>New Trip</Text>
             </Button>
+
             <Button 
-              leftIcon={<RepeatIcon />} 
+              leftIcon={<SearchIcon />} 
               colorScheme="green" 
-              onClick={onRecurringOpen}
+              variant="outline"
+              onClick={onTripManagementOpen}
               size={{ base: "md", md: "lg" }}
               flex={{ base: "1", sm: "none" }}
             >
-              <Text display={{ base: "none", sm: "block" }}>Create Recurring Trip</Text>
-              <Text display={{ base: "block", sm: "none" }}>Recurring</Text>
+              <Text display={{ base: "none", sm: "block" }}>Manage Trips</Text>
+              <Text display={{ base: "block", sm: "none" }}>Manage</Text>
             </Button>
-            <Button 
-              variant="outline" 
-              colorScheme={showRecurringTrips ? "green" : "gray"}
-              onClick={() => setShowRecurringTrips(!showRecurringTrips)}
-              size={{ base: "md", md: "lg" }}
-              flex={{ base: "1", sm: "none" }}
-            >
-              <Text display={{ base: "none", md: "block" }}>
-                {showRecurringTrips ? "Show All Trips" : "Show Recurring Trips"}
-              </Text>
-              <Text display={{ base: "block", md: "none" }}>
-                {showRecurringTrips ? "All" : "Recurring"}
-              </Text>
-            </Button>
+
           </Flex>
 
           {/* Enhanced Trips Management with Filtering */}
@@ -887,7 +768,6 @@ const SchedulerDashboard = () => {
                   return tripDate < todayStart;
                 }).length})</Tab>
                 <Tab>All Trips ({trips.length})</Tab>
-                {showRecurringTrips && <Tab>Recurring ({recurringTrips.length})</Tab>}
               </TabList>
 
               <TabPanels>
@@ -935,23 +815,12 @@ const SchedulerDashboard = () => {
                     getStatusColor={getStatusColor}
                   />
                 </TabPanel>
-                {showRecurringTrips && (
-                  <TabPanel px={0}>
-                    <TripsTable 
-                      trips={recurringTrips} 
-                      showPattern={true}
-                      onView={openViewModal}
-                      onEdit={openEditModal}
-                      onDelete={openDeleteDialog}
-                      formatDate={formatDate}
-                      getStatusColor={getStatusColor}
-                    />
-                  </TabPanel>
-                )}
               </TabPanels>
             </Tabs>
           </CardBody>
         </Card>
+            </>
+          )}
         </Container>
       </Box>
 
@@ -1184,317 +1053,12 @@ const SchedulerDashboard = () => {
         </AlertDialogOverlay>
       </AlertDialog>
 
-      {/* Recurring Trip Modal */}
-      <Modal isOpen={isRecurringOpen} onClose={onRecurringClose} size="lg">
-        <ModalOverlay />
-        <ModalContent maxH="90vh" overflowY="auto">
-          <ModalHeader fontSize="lg">Create Recurring Trip</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={2}>
-            <VStack spacing={3}>
-              {/* Basic Trip Info */}
-              <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={3} w="100%">
-                <FormControl isRequired>
-                  <FormLabel fontSize="sm">Rider Name</FormLabel>
-                  <Input
-                    size="sm"
-                    value={formData.riderName}
-                    onChange={(e) => setFormData({...formData, riderName: e.target.value})}
-                    placeholder="Enter rider name"
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel fontSize="sm">Phone Number</FormLabel>
-                  <Input
-                    size="sm"
-                    value={formData.riderPhone}
-                    onChange={(e) => setFormData({...formData, riderPhone: e.target.value})}
-                    placeholder="Enter phone number"
-                  />
-                </FormControl>
-              </Grid>
-
-              <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={3} w="100%">
-                <FormControl isRequired>
-                  <FormLabel fontSize="sm">Pickup Location</FormLabel>
-                  <PlacesAutocomplete
-                    size="sm"
-                    value={formData.pickupLocation.address}
-                    onChange={(address) => setFormData({
-                      ...formData,
-                      pickupLocation: { ...formData.pickupLocation, address }
-                    })}
-                    onPlaceSelected={(place) => setFormData({
-                      ...formData,
-                      pickupLocation: { 
-                        address: place.address,
-                        lat: place.location.lat,
-                        lng: place.location.lng,
-                        placeId: place.placeId
-                      }
-                    })}
-                    placeholder="Enter pickup address"
-                    isRequired
-                  />
-                </FormControl>
-
-                <FormControl isRequired>
-                  <FormLabel fontSize="sm">Dropoff Location</FormLabel>
-                  <PlacesAutocomplete
-                    size="sm"
-                    value={formData.dropoffLocation.address}
-                    onChange={(address) => setFormData({
-                      ...formData,
-                      dropoffLocation: { ...formData.dropoffLocation, address }
-                    })}
-                    onPlaceSelected={(place) => setFormData({
-                      ...formData,
-                      dropoffLocation: { 
-                        address: place.address,
-                        lat: place.location.lat,
-                        lng: place.location.lng,
-                        placeId: place.placeId
-                      }
-                    })}
-                    placeholder="Enter dropoff address"
-                    isRequired
-                  />
-                </FormControl>
-              </Grid>
-
-              <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={3} w="100%">
-                <FormControl isRequired>
-                  <FormLabel fontSize="sm">Start Date</FormLabel>
-                  <Input
-                    size="sm"
-                    type="date"
-                    value={formData.scheduledDate}
-                    onChange={(e) => setFormData({...formData, scheduledDate: e.target.value})}
-                  />
-                </FormControl>
-
-                <FormControl isRequired>
-                  <FormLabel fontSize="sm">Time</FormLabel>
-                  <Input
-                    size="sm"
-                    type="time"
-                    value={formData.scheduledTime}
-                    onChange={(e) => setFormData({...formData, scheduledTime: e.target.value})}
-                  />
-                </FormControl>
-              </Grid>
-
-              {/* Recurring Pattern Section */}
-              <Box w="100%" p={3} bg="blue.50" rounded="md" border="1px solid" borderColor="blue.200">
-                <Heading size="xs" mb={2} color="blue.700">Recurring Pattern</Heading>
-                
-                <VStack spacing={2} align="stretch">
-                  <FormControl>
-                    <FormLabel fontSize="sm">Frequency</FormLabel>
-                    <Select
-                      size="sm"
-                      value={formData.recurringPattern.frequency}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        recurringPattern: { ...formData.recurringPattern, frequency: e.target.value }
-                      })}
-                    >
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="biweekly">Every Other Week</option>
-                      <option value="monthly">Monthly</option>
-                      <option value="custom">Custom</option>
-                    </Select>
-                  </FormControl>
-
-                  {formData.recurringPattern.frequency === 'weekly' && (
-                    <FormControl>
-                      <FormLabel fontSize="sm">Days of Week</FormLabel>
-                      <HStack flexWrap="wrap" spacing={1}>
-                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
-                          <Button
-                            key={day}
-                            size="xs"
-                            variant={formData.recurringPattern.daysOfWeek.includes(index) ? "solid" : "outline"}
-                            colorScheme="blue"
-                            onClick={() => {
-                              const days = [...formData.recurringPattern.daysOfWeek];
-                              const dayIndex = days.indexOf(index);
-                              if (dayIndex > -1) {
-                                days.splice(dayIndex, 1);
-                              } else {
-                                days.push(index);
-                              }
-                              setFormData({
-                                ...formData,
-                                recurringPattern: { ...formData.recurringPattern, daysOfWeek: days.sort() }
-                              });
-                            }}
-                          >
-                            {day}
-                          </Button>
-                        ))}
-                      </HStack>
-                    </FormControl>
-                  )}
-
-                  {(formData.recurringPattern.frequency === 'weekly' || formData.recurringPattern.frequency === 'monthly') && (
-                    <FormControl>
-                      <FormLabel fontSize="sm">Every</FormLabel>
-                      <HStack>
-                        <Input
-                          size="sm"
-                          type="number"
-                          min="1"
-                          max="12"
-                          value={formData.recurringPattern.interval}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            recurringPattern: { ...formData.recurringPattern, interval: parseInt(e.target.value) || 1 }
-                          })}
-                          w="70px"
-                        />
-                        <Text fontSize="sm">
-                          {formData.recurringPattern.frequency === 'weekly' ? 'week(s)' : 'month(s)'}
-                        </Text>
-                      </HStack>
-                    </FormControl>
-                  )}
-
-                  {formData.recurringPattern.frequency === 'custom' && (
-                    <FormControl>
-                      <FormLabel fontSize="sm">Custom Pattern</FormLabel>
-                      <Input
-                        size="sm"
-                        value={formData.recurringPattern.customPattern}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          recurringPattern: { ...formData.recurringPattern, customPattern: e.target.value }
-                        })}
-                        placeholder="e.g., 'every other Tuesday'"
-                      />
-                    </FormControl>
-                  )}
-
-                  {/* End Condition */}
-                  <FormControl>
-                    <FormLabel fontSize="sm">End Condition</FormLabel>
-                    <VStack align="stretch" spacing={2}>
-                      <HStack spacing={2}>
-                        <input
-                          type="radio"
-                          name="endCondition"
-                          checked={formData.recurringPattern.isIndefinite}
-                          onChange={() => setFormData({
-                            ...formData,
-                            recurringPattern: { 
-                              ...formData.recurringPattern, 
-                              isIndefinite: true,
-                              endDate: '',
-                              endAfterOccurrences: ''
-                            }
-                          })}
-                        />
-                        <Text fontSize="sm">Continue indefinitely</Text>
-                      </HStack>
-                      
-                      <HStack spacing={2}>
-                        <input
-                          type="radio"
-                          name="endCondition"
-                          checked={!formData.recurringPattern.isIndefinite && formData.recurringPattern.endDate}
-                          onChange={() => setFormData({
-                            ...formData,
-                            recurringPattern: { 
-                              ...formData.recurringPattern, 
-                              isIndefinite: false,
-                              endAfterOccurrences: ''
-                            }
-                          })}
-                        />
-                        <Text fontSize="sm">End on:</Text>
-                        <Input
-                          type="date"
-                          value={formData.recurringPattern.endDate}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            recurringPattern: { ...formData.recurringPattern, endDate: e.target.value }
-                          })}
-                          size="sm"
-                          w="130px"
-                        />
-                      </HStack>
-
-                      <HStack spacing={2}>
-                        <input
-                          type="radio"
-                          name="endCondition"
-                          checked={!formData.recurringPattern.isIndefinite && formData.recurringPattern.endAfterOccurrences}
-                          onChange={() => setFormData({
-                            ...formData,
-                            recurringPattern: { 
-                              ...formData.recurringPattern, 
-                              isIndefinite: false,
-                              endDate: ''
-                            }
-                          })}
-                        />
-                        <Text fontSize="sm">End after:</Text>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={formData.recurringPattern.endAfterOccurrences}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            recurringPattern: { ...formData.recurringPattern, endAfterOccurrences: parseInt(e.target.value) || '' }
-                          })}
-                          size="sm"
-                          w="60px"
-                        />
-                        <Text fontSize="sm">trips</Text>
-                      </HStack>
-                    </VStack>
-                  </FormControl>
-                </VStack>
-              </Box>
-
-              <FormControl>
-                <FormLabel fontSize="sm">Notes</FormLabel>
-                <Textarea
-                  size="sm"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                  placeholder="Any special instructions or notes"
-                  rows={2}
-                />
-              </FormControl>
-
-              {error && (
-                <Alert status="error">
-                  <AlertIcon />
-                  {error}
-                </Alert>
-              )}
-            </VStack>
-          </ModalBody>
-
-          <ModalFooter pt={2}>
-            <Button size="sm" variant="ghost" mr={3} onClick={onRecurringClose}>
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              colorScheme="green"
-              onClick={handleCreateRecurringTrip}
-              isLoading={isSubmitting}
-              loadingText="Creating..."
-            >
-              Create Recurring Trip
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      {/* Trip Management Modal */}
+      <TripManagementModal
+        isOpen={isTripManagementOpen}
+        onClose={onTripManagementClose}
+        onTripUpdate={fetchTrips}
+      />
     </Box>
   );
 };

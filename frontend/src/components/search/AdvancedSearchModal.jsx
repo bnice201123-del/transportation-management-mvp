@@ -67,8 +67,7 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
     userId: '',
     status: '',
     pickupLocation: '',
-    dropoffLocation: '',
-    isRecurring: ''
+    dropoffLocation: ''
   });
 
   const [searchResults, setSearchResults] = useState([]);
@@ -153,8 +152,7 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
       userId: '',
       status: '',
       pickupLocation: '',
-      dropoffLocation: '',
-      isRecurring: ''
+      dropoffLocation: ''
     });
     setSearchResults([]);
     setHasSearched(false);
@@ -303,20 +301,6 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                             <option value="in-progress">In Progress</option>
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
-                          </Select>
-                        </FormControl>
-                        <FormControl>
-                          <FormLabel fontSize="sm">Recurring Trip</FormLabel>
-                          <Select
-                            placeholder="Any"
-                            value={searchCriteria.isRecurring}
-                            onChange={(e) => setSearchCriteria({
-                              ...searchCriteria,
-                              isRecurring: e.target.value
-                            })}
-                          >
-                            <option value="true">Yes</option>
-                            <option value="false">No</option>
                           </Select>
                         </FormControl>
                       </Grid>
@@ -574,11 +558,6 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                                 <Badge colorScheme={getStatusColor(trip.status)}>
                                   {trip.status}
                                 </Badge>
-                                {trip.isRecurring && (
-                                  <Badge ml={1} colorScheme="purple" size="sm">
-                                    Recurring
-                                  </Badge>
-                                )}
                               </Td>
                               <Td>
                                 {trip.assignedVehicle ? (

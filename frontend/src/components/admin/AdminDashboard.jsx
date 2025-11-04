@@ -28,35 +28,120 @@ import {
   Spinner,
   Center,
   useToast,
+  useDisclosure,
   VStack,
   HStack,
   Badge,
-  Progress
+  Progress,
+  Button,
+  ButtonGroup,
+  IconButton,
+  Flex,
+  Spacer,
+  Select,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  useColorModeValue,
+  SimpleGrid,
+  Divider,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  CircularProgress,
+  CircularProgressLabel,
+  Tooltip,
+  useBreakpointValue,
+  Stack,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider,
+  Icon
 } from '@chakra-ui/react';
+import {
+  CalendarIcon,
+  SearchIcon,
+  DownloadIcon,
+  RepeatIcon,
+  SettingsIcon,
+  ViewIcon,
+  InfoIcon,
+  WarningIcon,
+  CheckCircleIcon,
+  TimeIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ChevronDownIcon,
+  ExternalLinkIcon
+} from '@chakra-ui/icons';
+import {
+  FaCar,
+  FaUser,
+  FaRoute,
+  FaChartLine,
+  FaExclamationTriangle,
+  FaClock,
+  FaMapMarkerAlt,
+  FaCalendarAlt,
+  FaUsers,
+  FaMoneyBillWave,
+  FaArrowUp,
+  FaArrowDown,
+  FaEye,
+  FaFilter,
+  FaFileExport
+} from 'react-icons/fa';
 import axios from 'axios';
 import Navbar from '../shared/Navbar';
+import TripManagementModal from '../scheduler/TripManagementModal';
 
 const AdminDashboard = () => {
   const [analytics, setAnalytics] = useState(null);
   const [driverStats, setDriverStats] = useState([]);
+  const [recentTrips, setRecentTrips] = useState([]);
+  const [systemAlerts, setSystemAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [dateRange, setDateRange] = useState('7d');
+  const [activeTab, setActiveTab] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [lastRefresh, setLastRefresh] = useState(new Date());
+  
+  const { 
+    isOpen: isTripManagementOpen, 
+    onOpen: onTripManagementOpen, 
+    onClose: onTripManagementClose 
+  } = useDisclosure();
+  
   const toast = useToast();
+  const cardBg = useColorModeValue('white', 'gray.700');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const textColor = useColorModeValue('gray.600', 'gray.300');
+  const isMobile = useBreakpointValue({ base: true, md: false });
 
-  const fetchAnalytics = useCallback(async () => {
+  const fetchAnalytics = useCallback(async (showLoading = true) => {
+    if (showLoading) setRefreshing(true);
     try {
-      const response = await axios.get('/analytics/dashboard');
+      const response = await axios.get(`/analytics/dashboard?range=${dateRange}`);
       setAnalytics(response.data);
+      setLastRefresh(new Date());
     } catch (error) {
       console.error('Error fetching analytics:', error);
       toast({
         title: 'Error',
-        description: 'Failed to fetch analytics',
+        description: 'Failed to fetch analytics data',
         status: 'error',
         duration: 3000,
         isClosable: true,
       });
+    } finally {
+      if (showLoading) setRefreshing(false);
     }
-  }, [toast]);
+  }, [dateRange, toast]);
 
   const fetchDriverStats = useCallback(async () => {
     try {
@@ -64,41 +149,198 @@ const AdminDashboard = () => {
       setDriverStats(response.data);
     } catch (error) {
       console.error('Error fetching driver stats:', error);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
+  const fetchRecentTrips = useCallback(async () => {
+    try {
+      const response = await axios.get('/trips/recent?limit=10');
+      setRecentTrips(response.data);
+    } catch (error) {
+      console.error('Error fetching recent trips:', error);
+    }
+  }, []);
+
+  const fetchSystemAlerts = useCallback(async () => {
+    try {
+      const response = await axios.get('/admin/alerts');
+      setSystemAlerts(response.data);
+    } catch (error) {
+      console.error('Error fetching system alerts:', error);
+    }
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        fetchAnalytics(false),
+        fetchDriverStats(),
+        fetchRecentTrips(),
+        fetchSystemAlerts()
+      ]);
+      toast({
+        title: 'Success',
+        description: 'Dashboard data refreshed successfully',
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchAnalytics, fetchDriverStats, fetchRecentTrips, fetchSystemAlerts, toast]);
+
+  const exportData = useCallback(async (type) => {
+    try {
+      const response = await axios.get(`/admin/export/${type}`, {
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${type}-export-${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'Success',
+        description: `${type} data exported successfully`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: 'Error',
+        description: `Failed to export ${type} data`,
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  }, [toast]);
+
   useEffect(() => {
     const loadData = async () => {
-      await fetchAnalytics();
-      await fetchDriverStats();
+      setLoading(true);
+      try {
+        await Promise.all([
+          fetchAnalytics(false),
+          fetchDriverStats(),
+          fetchRecentTrips(),
+          fetchSystemAlerts()
+        ]);
+      } finally {
+        setLoading(false);
+      }
     };
     loadData();
-  }, [fetchAnalytics, fetchDriverStats]);
+  }, [fetchAnalytics, fetchDriverStats, fetchRecentTrips, fetchSystemAlerts]);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [dateRange, fetchAnalytics]);
+
+  // Auto-refresh every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      handleRefresh();
+    }, 300000); // 5 minutes
+
+    return () => clearInterval(interval);
+  }, [handleRefresh]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const formatTime = (dateString) => {
+    return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      completed: 'green',
+      'in-progress': 'blue',
+      pending: 'orange',
+      cancelled: 'red',
+      scheduled: 'purple'
+    };
+    return colors[status] || 'gray';
+  };
+
+  const getPriorityColor = (priority) => {
+    const colors = {
+      high: 'red',
+      medium: 'orange',
+      low: 'green'
+    };
+    return colors[priority] || 'gray';
+  };
+
+  const calculateTrend = (current, previous) => {
+    if (!previous || previous === 0) return { value: 0, direction: 'neutral' };
+    const change = ((current - previous) / previous) * 100;
+    return {
+      value: Math.abs(change),
+      direction: change > 0 ? 'increase' : change < 0 ? 'decrease' : 'neutral'
+    };
+  };
+
+  const filteredDrivers = driverStats.filter(driver => {
+    const matchesSearch = searchTerm === '' || 
+      `${driver.driver?.firstName} ${driver.driver?.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (filterStatus === 'all') return matchesSearch;
+    if (filterStatus === 'active') return matchesSearch && driver.totalTrips > 0;
+    if (filterStatus === 'inactive') return matchesSearch && driver.totalTrips === 0;
+    return matchesSearch;
+  });
+
 
 
   if (loading) {
     return (
-      <Box>
-        <Navbar title="Admin Dashboard" />
-        <Center h="50vh">
-          <Spinner size="xl" />
-        </Center>
+      <Box bg="gray.50">
+        <Navbar title="Transportation Management - Admin Dashboard" />
+        <Box pt={{ base: 4, md: 0 }}>
+          <Container maxW="container.xl" py={8}>
+            <Center h="60vh">
+              <VStack spacing={4}>
+                <Spinner size="xl" color="blue.500" thickness="4px" />
+                <Text>Loading dashboard data...</Text>
+              </VStack>
+            </Center>
+          </Container>
+        </Box>
       </Box>
     );
   }
 
   return (
-    <Box minH="100vh" bg="gray.50">
-      <Navbar title="Admin Dashboard" />
+    <Box bg="gray.50">
+      <Navbar title="Transportation Management - Admin Dashboard" />
       
-      <Box ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} pt={{ base: 4, md: 0 }}>
+      <Box pt={{ base: 4, md: 0 }}>
         <Container maxW="container.xl" py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>
         {analytics && (
           <>
@@ -165,6 +407,27 @@ const AdminDashboard = () => {
                 </CardBody>
               </Card>
             </Grid>
+
+            {/* Quick Actions */}
+            <HStack spacing={4} mb={6}>
+              <Button
+                leftIcon={<SearchIcon />}
+                colorScheme="blue"
+                onClick={onTripManagementOpen}
+                size="md"
+              >
+                Manage Trips
+              </Button>
+              <Button
+                leftIcon={<RepeatIcon />}
+                variant="outline"
+                onClick={() => fetchAnalytics(true)}
+                isLoading={refreshing}
+                size="md"
+              >
+                Refresh Data
+              </Button>
+            </HStack>
 
             <Tabs>
               <TabList>
@@ -347,6 +610,13 @@ const AdminDashboard = () => {
             </Tabs>
           </>
         )}
+
+        {/* Trip Management Modal */}
+        <TripManagementModal
+          isOpen={isTripManagementOpen}
+          onClose={onTripManagementClose}
+          onTripUpdate={() => fetchAnalytics(false)}
+        />
         </Container>
       </Box>
     </Box>

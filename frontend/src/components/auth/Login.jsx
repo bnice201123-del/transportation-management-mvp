@@ -60,7 +60,7 @@ const Login = () => {
   };
 
   return (
-    <Center minHeight="100vh" bg="gray.50" p={{ base: 4, md: 8 }}>
+    <Center minHeight="calc(100vh - 200px)" bg="gray.50" p={{ base: 4, md: 8 }} py={{ base: 8, md: 16 }}>
       <Container maxW={{ base: "container.sm", md: "container.md" }} centerContent>
         <Box 
           width="100%" 

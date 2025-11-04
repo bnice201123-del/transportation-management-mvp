@@ -34,9 +34,29 @@ import {
   UnlockIcon,
   HamburgerIcon,
   ChevronDownIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  RepeatIcon,
+  CopyIcon,
+  CheckIcon,
+  WarningIcon,
+  EmailIcon,
+  PhoneIcon
 } from '@chakra-ui/icons';
-import { FaCar, FaUser, FaMap } from 'react-icons/fa';
+import { 
+  FaCar, 
+  FaUser, 
+  FaMap, 
+  FaRoute, 
+  FaCalendarPlus, 
+  FaCalendarCheck, 
+  FaCalendarTimes, 
+  FaBus, 
+  FaClipboardList, 
+  FaHistory, 
+  FaPrint,
+  FaShare,
+  FaSync
+} from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import AdvancedSearchModal from '../search/AdvancedSearchModal';
@@ -73,85 +93,128 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
   });
 
   const menuItems = [
-    {
+    // Dashboard for non-admin users only
+    ...(user?.role !== 'admin' ? [{
       id: 'dashboard',
       label: 'Dashboard',
       icon: ViewIcon,
       color: 'blue.500',
       path: '/dashboard',
-      roles: ['admin', 'scheduler', 'dispatcher', 'driver'],
+      roles: ['scheduler', 'dispatcher', 'driver'],
       subItems: [
-        { 
-          label: 'Overview', 
-          icon: ViewIcon, 
-          action: () => {
-            if (user?.role === 'admin') {
-              navigate('/admin/overview');
-            } else {
-              navigate('/dashboard');
-            }
-          }
-        },
-        { 
-          label: 'Analytics', 
-          icon: InfoIcon, 
-          action: () => {
-            if (user?.role === 'admin') {
-              navigate('/admin/analytics');
-            } else {
-              navigate('/dashboard/analytics');
-            }
-          }
-        },
-        { 
-          label: 'Reports', 
-          icon: SearchIcon, 
-          action: () => {
-            if (user?.role === 'admin') {
-              navigate('/admin/reports');
-            } else {
-              navigate('/dashboard/reports');
-            }
-          }
-        },
-        { 
-          label: 'Statistics', 
-          icon: StarIcon, 
-          action: () => {
-            if (user?.role === 'admin') {
-              navigate('/admin/statistics');
-            } else {
-              navigate('/dashboard/stats');
-            }
-          }
-        },
-        { 
-          label: 'Settings', 
-          icon: SettingsIcon, 
-          action: () => {
-            if (user?.role === 'admin') {
-              navigate('/admin/settings');
-            } else {
-              navigate('/dashboard/settings');
-            }
-          }
-        }
+        { label: 'Overview', icon: ViewIcon, action: () => navigate('/dashboard') },
+        { label: 'Analytics', icon: InfoIcon, action: () => navigate('/dashboard/analytics') },
+        { label: 'Reports', icon: SearchIcon, action: () => navigate('/dashboard/reports') },
+        { label: 'Statistics', icon: StarIcon, action: () => navigate('/dashboard/stats') },
+        { label: 'Settings', icon: SettingsIcon, action: () => navigate('/dashboard/settings') }
       ]
-    },
+    }] : []),
+    // Admin Dashboard - comprehensive for admin users
+    ...(user?.role === 'admin' ? [{
+      id: 'admin-dashboard',
+      label: 'Admin Dashboard',
+      icon: ViewIcon,
+      color: 'purple.600',
+      path: '/admin',
+      roles: ['admin'],
+      subItems: [
+        { label: 'Overview', icon: ViewIcon, action: () => navigate('/admin/overview') },
+        { label: 'Analytics', icon: InfoIcon, action: () => navigate('/admin/analytics') },
+        { label: 'Statistics', icon: StarIcon, action: () => navigate('/admin/statistics') },
+        { label: 'Reports', icon: SearchIcon, action: () => navigate('/admin/reports') },
+        { label: 'Full Dashboard', icon: EditIcon, action: () => navigate('/admin') }
+      ]
+    }] : []),
     {
       id: 'schedule',
-      label: 'Schedule',
+      label: 'Schedule Management',
       icon: CalendarIcon,
       color: 'green.500',
       path: '/scheduler',
-      roles: ['scheduler', 'admin'],
+      roles: ['scheduler', 'admin', 'dispatcher'],
       subItems: [
-        { label: 'View Schedule', icon: ViewIcon, action: () => navigate('/scheduler') },
-        { label: 'Add Trip', icon: AddIcon, action: () => navigate('/scheduler/add-trip') },
-        { label: 'Edit Schedule', icon: EditIcon, action: () => navigate('/scheduler/edit') },
-        { label: 'Recurring Trips', icon: TimeIcon, action: () => navigate('/scheduler/recurring') },
-        { label: 'Calendar View', icon: CalendarIcon, action: () => navigate('/scheduler/calendar') }
-      ]
+        // Core Scheduling Features
+        { 
+          label: 'Dashboard Overview', 
+          icon: ViewIcon, 
+          action: () => navigate('/scheduler/dashboard'),
+          description: 'Main scheduling overview and metrics'
+        },
+        { 
+          label: 'Manage Trips', 
+          icon: FaClipboardList, 
+          action: () => navigate('/scheduler/manage'),
+          description: 'Create, view, edit, and delete trips - All-in-one management'
+        },
+        { 
+          label: 'Recurring Trips', 
+          icon: RepeatIcon, 
+          action: () => navigate('/scheduler/recurring'),
+          description: 'Create and manage recurring trip patterns',
+          roles: ['admin', 'scheduler', 'dispatcher']
+        },
+        
+        // Advanced Features
+        { 
+          label: 'Driver Assignment', 
+          icon: FaUser, 
+          action: () => navigate('/scheduler/assign-drivers'),
+          description: 'Assign drivers to scheduled trips'
+        },
+        { 
+          label: 'Vehicle Assignment', 
+          icon: FaBus, 
+          action: () => navigate('/scheduler/assign-vehicles'),
+          description: 'Assign vehicles to trips'
+        },
+        
+        // Calendar and Timeline Views
+        { 
+          label: 'Calendar View', 
+          icon: CalendarIcon, 
+          action: () => navigate('/scheduler/calendar'),
+          description: 'Monthly calendar interface'
+        },
+        
+        // Schedule History and Tracking
+        { 
+          label: 'Schedule History', 
+          icon: FaHistory, 
+          action: () => navigate('/scheduler/history'),
+          description: 'View past individual schedules and changes'
+        },
+        { 
+          label: 'Completed Trips', 
+          icon: FaCalendarCheck, 
+          action: () => navigate('/scheduler/completed'),
+          description: 'Review individual completed trips'
+        },
+        
+        // Communication and Sharing
+        { 
+          label: 'Share Schedules', 
+          icon: FaShare, 
+          action: () => navigate('/scheduler/share'),
+          description: 'Share schedules with drivers/riders'
+        },
+        { 
+          label: 'Print Schedules', 
+          icon: FaPrint, 
+          action: () => navigate('/scheduler/print'),
+          description: 'Print-friendly schedule formats'
+        },
+        { 
+          label: 'Sync with External', 
+          icon: FaSync, 
+          action: () => navigate('/scheduler/sync'),
+          description: 'Sync with external calendar systems',
+          roles: ['admin']
+        }
+      ].filter(item => {
+        // Filter items based on user role if item has specific role requirements
+        if (!item.roles) return true;
+        return item.roles.includes(user?.role);
+      })
     },
     {
       id: 'search',
@@ -184,41 +247,39 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
         { label: 'Route Monitor', icon: SearchIcon, action: () => navigate('/dispatcher/monitor') }
       ]
     },
-    {
-      id: 'admin',
-      label: 'Admin',
+    // System Administration - for admin users only
+    ...(user?.role === 'admin' ? [{
+      id: 'system-admin',
+      label: 'System Administration',
       icon: SettingsIcon,
-      color: 'purple.500',
-      path: '/admin',
+      color: 'red.500',
+      path: '/admin/settings',
       roles: ['admin'],
       subItems: [
-        { label: 'Overview', icon: ViewIcon, action: () => navigate('/admin/overview') },
-        { label: 'Analytics', icon: InfoIcon, action: () => navigate('/admin/analytics') },
-        { label: 'Reports', icon: SearchIcon, action: () => navigate('/admin/reports') },
-        { label: 'Statistics', icon: StarIcon, action: () => navigate('/admin/statistics') },
-        { label: 'Settings', icon: SettingsIcon, action: () => navigate('/admin/settings') },
-        { label: 'Full Dashboard', icon: EditIcon, action: () => navigate('/admin') },
+        { label: 'System Settings', icon: SettingsIcon, action: () => navigate('/admin/settings') },
         { label: 'User Management', icon: AddIcon, action: () => navigate('/admin/register') },
-        { label: 'System Config', icon: SettingsIcon, action: () => navigate('/admin/config') },
+        { label: 'System Config', icon: EditIcon, action: () => navigate('/admin/config') },
         { label: 'Audit Logs', icon: TimeIcon, action: () => navigate('/admin/logs') },
-        { label: 'Backup & Restore', icon: CalendarIcon, action: () => navigate('/admin/backup') }
+        { label: 'Backup & Restore', icon: CalendarIcon, action: () => navigate('/admin/backup') },
+        { label: 'Security', icon: UnlockIcon, action: () => navigate('/admin/security') }
       ]
-    },
-    {
-      id: 'registration',
-      label: 'Registration',
+    }] : []),
+    // User Management - for admin users only
+    ...(user?.role === 'admin' ? [{
+      id: 'user-management',
+      label: 'User Management',
       icon: UnlockIcon,
-      color: 'red.500',
+      color: 'teal.500',
       path: '/admin/register',
       roles: ['admin'],
       subItems: [
-        { label: 'Register User', icon: UnlockIcon, action: () => navigate('/admin/register') },
+        { label: 'Register New User', icon: UnlockIcon, action: () => navigate('/admin/register') },
         { label: 'Manage Users', icon: SettingsIcon, action: () => navigate('/admin/users') },
-        { label: 'User Roles', icon: InfoIcon, action: () => navigate('/admin/roles') },
+        { label: 'User Roles & Permissions', icon: InfoIcon, action: () => navigate('/admin/roles') },
         { label: 'Access Control', icon: EditIcon, action: () => navigate('/admin/access') },
-        { label: 'Bulk Import', icon: AddIcon, action: () => navigate('/admin/import') }
+        { label: 'Bulk Operations', icon: AddIcon, action: () => navigate('/admin/import') }
       ]
-    },
+    }] : []),
     {
       id: 'rider',
       label: 'Riders',

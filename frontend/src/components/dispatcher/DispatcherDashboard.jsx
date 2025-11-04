@@ -58,6 +58,7 @@ import {
 import { RepeatIcon, PhoneIcon, SearchIcon, AddIcon, EditIcon, ViewIcon, DeleteIcon } from '@chakra-ui/icons';
 import axios from 'axios';
 import Navbar from '../shared/Navbar';
+import TripManagementModal from '../scheduler/TripManagementModal';
 
 const DispatcherDashboard = () => {
   const [trips, setTrips] = useState([]);
@@ -103,6 +104,11 @@ const DispatcherDashboard = () => {
     isOpen: isAssignOpen,
     onOpen: onAssignOpen,
     onClose: onAssignClose
+  } = useDisclosure();
+  const {
+    isOpen: isTripManagementOpen,
+    onOpen: onTripManagementOpen,
+    onClose: onTripManagementClose
   } = useDisclosure();
   
   const [tripToAssign, setTripToAssign] = useState(null);
@@ -429,6 +435,14 @@ const DispatcherDashboard = () => {
         <HStack mb={6}>
           <Button leftIcon={<AddIcon />} colorScheme="blue" onClick={onOpen}>
             Create New Trip
+          </Button>
+          <Button
+            leftIcon={<SearchIcon />}
+            colorScheme="green"
+            variant="outline"
+            onClick={onTripManagementOpen}
+          >
+            Manage Trips
           </Button>
           <Button
             leftIcon={<RepeatIcon />}
@@ -971,6 +985,13 @@ const DispatcherDashboard = () => {
             </ModalFooter>
           </ModalContent>
         </Modal>
+
+        {/* Trip Management Modal */}
+        <TripManagementModal
+          isOpen={isTripManagementOpen}
+          onClose={onTripManagementClose}
+          onTripUpdate={fetchTrips}
+        />
         </Container>
       </Box>
     </Box>

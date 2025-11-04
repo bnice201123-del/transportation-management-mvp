@@ -48,6 +48,21 @@ router.get('/', authenticateToken, authorizeRoles('admin', 'dispatcher'), async 
   }
 });
 
+// Get all drivers
+router.get('/drivers', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'admin'), async (req, res) => {
+  try {
+    const drivers = await User.find({
+      role: 'driver',
+      isActive: true
+    }).select('firstName lastName phone email vehicleInfo');
+
+    res.json(drivers);
+  } catch (error) {
+    console.error('Get drivers error:', error);
+    res.status(500).json({ message: 'Server error fetching drivers' });
+  }
+});
+
 // Get available drivers
 router.get('/drivers/available', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'admin'), async (req, res) => {
   try {

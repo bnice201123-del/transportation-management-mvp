@@ -63,10 +63,12 @@ import Navbar from '../shared/Navbar';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 import TripManagement from './TripManagement';
 import TripManagementModal from './TripManagementModal';
+import CalendarOverview from './CalendarOverview';
 
-const SchedulerDashboard = () => {
+const SchedulerDashboard = ({ view }) => {
   const location = useLocation();
-  const isManageView = location.pathname.includes('/manage') || location.search.includes('view=manage');
+  const isManageView = view === 'manage' || location.pathname.includes('/manage') || location.search.includes('view=manage');
+  const isCalendarView = view === 'calendar' || location.pathname.includes('/calendar') || location.search.includes('view=calendar');
   
   const [trips, setTrips] = useState([]);
   const [dispatchers, setDispatchers] = useState([]);
@@ -523,9 +525,11 @@ const SchedulerDashboard = () => {
           py={{ base: 4, md: 6 }} 
           px={{ base: 4, md: 6, lg: 8 }}
         >
-          {/* Conditional rendering for Trip Management vs Dashboard views */}
+          {/* Conditional rendering for different views */}
           {isManageView ? (
             <TripManagement onTripUpdate={fetchTrips} />
+          ) : isCalendarView ? (
+            <CalendarOverview onTripUpdate={fetchTrips} />
           ) : (
             <>
           {/* Date and Time Display */}

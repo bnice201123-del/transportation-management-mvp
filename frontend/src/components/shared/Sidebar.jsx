@@ -135,12 +135,6 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
       subItems: [
         // Core Scheduling Features
         { 
-          label: 'Dashboard Overview', 
-          icon: ViewIcon, 
-          action: () => navigate('/scheduler/dashboard'),
-          description: 'Main scheduling overview and metrics'
-        },
-        { 
           label: 'Manage Trips', 
           icon: FaClipboardList, 
           action: () => navigate('/scheduler/manage'),

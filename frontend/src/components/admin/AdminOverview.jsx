@@ -64,7 +64,7 @@ const AdminOverview = () => {
           console.warn('Analytics API not available:', err.message);
           return { data: null };
         }),
-        axios.get('/api/health').catch((err) => {
+        axios.get('/health').catch((err) => {
           console.warn('Health API not available:', err.message);
           return { data: { status: 'Unknown', message: 'Health check failed' } };
         }),

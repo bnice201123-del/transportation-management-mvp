@@ -221,8 +221,8 @@ const TripManagement = ({ onTripUpdate }) => {
       filtered = filtered.filter(trip =>
         trip.riderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         trip.riderPhone.includes(searchTerm) ||
-        trip.pickupLocation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        trip.dropoffLocation.toLowerCase().includes(searchTerm.toLowerCase())
+        (typeof trip.pickupLocation === 'object' ? trip.pickupLocation.address : trip.pickupLocation).toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (typeof trip.dropoffLocation === 'object' ? trip.dropoffLocation.address : trip.dropoffLocation).toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -233,7 +233,12 @@ const TripManagement = ({ onTripUpdate }) => {
 
     // Driver filter
     if (driverFilter !== 'all') {
-      filtered = filtered.filter(trip => trip.assignedDriver === driverFilter);
+      filtered = filtered.filter(trip => {
+        const driverName = typeof trip.assignedDriver === 'object' && trip.assignedDriver 
+          ? `${trip.assignedDriver.firstName} ${trip.assignedDriver.lastName}` 
+          : trip.assignedDriver;
+        return driverName === driverFilter;
+      });
     }
 
     // Date filter
@@ -330,7 +335,10 @@ const TripManagement = ({ onTripUpdate }) => {
     setSelectedTrip(trip);
     setFormData({
       ...trip,
-      scheduledDate: trip.scheduledDate.split('T')[0] // Format for date input
+      scheduledDate: trip.scheduledDate.split('T')[0], // Format for date input
+      assignedDriver: typeof trip.assignedDriver === 'object' && trip.assignedDriver 
+        ? `${trip.assignedDriver.firstName} ${trip.assignedDriver.lastName}` 
+        : trip.assignedDriver || ''
     });
     onEditOpen();
   };
@@ -480,12 +488,14 @@ const TripManagement = ({ onTripUpdate }) => {
         trip.riderName,
         trip.riderPhone,
         trip.riderEmail || '',
-        trip.pickupLocation,
-        trip.dropoffLocation,
+        typeof trip.pickupLocation === 'object' ? trip.pickupLocation.address : trip.pickupLocation,
+        typeof trip.dropoffLocation === 'object' ? trip.dropoffLocation.address : trip.dropoffLocation,
         trip.scheduledDate,
         trip.scheduledTime,
         trip.status,
-        trip.assignedDriver || 'Unassigned',
+        typeof trip.assignedDriver === 'object' && trip.assignedDriver 
+          ? `${trip.assignedDriver.firstName} ${trip.assignedDriver.lastName}` 
+          : trip.assignedDriver || 'Unassigned',
         trip.fare || ''
       ].join(','))
     ].join('\n');
@@ -729,13 +739,13 @@ const TripManagement = ({ onTripUpdate }) => {
                           <HStack spacing={2}>
                             <Box w={2} h={2} bg="green.400" rounded="full" />
                             <Text fontSize="xs" color="gray.700" noOfLines={1}>
-                              {trip.pickupLocation}
+                              {typeof trip.pickupLocation === 'object' ? trip.pickupLocation.address : trip.pickupLocation}
                             </Text>
                           </HStack>
                           <HStack spacing={2}>
                             <Box w={2} h={2} bg="red.400" rounded="full" />
                             <Text fontSize="xs" color="gray.700" noOfLines={1}>
-                              {trip.dropoffLocation}
+                              {typeof trip.dropoffLocation === 'object' ? trip.dropoffLocation.address : trip.dropoffLocation}
                             </Text>
                           </HStack>
                           {trip.estimatedDistance && (
@@ -791,7 +801,9 @@ const TripManagement = ({ onTripUpdate }) => {
                       
                       <Td>
                         <Text fontSize="sm" fontWeight="medium">
-                          {trip.assignedDriver || 'Unassigned'}
+                          {typeof trip.assignedDriver === 'object' && trip.assignedDriver 
+                            ? `${trip.assignedDriver.firstName} ${trip.assignedDriver.lastName}` 
+                            : trip.assignedDriver || 'Unassigned'}
                         </Text>
                       </Td>
                       
@@ -1422,7 +1434,11 @@ const TripManagement = ({ onTripUpdate }) => {
                         <Text fontSize="sm" color="gray.600">Assigned Driver</Text>
                         <HStack>
                           <FaUser size={12} />
-                          <Text fontWeight="medium">{selectedTrip.assignedDriver}</Text>
+                          <Text fontWeight="medium">
+                            {typeof selectedTrip.assignedDriver === 'object' && selectedTrip.assignedDriver 
+                              ? `${selectedTrip.assignedDriver.firstName} ${selectedTrip.assignedDriver.lastName}` 
+                              : selectedTrip.assignedDriver}
+                          </Text>
                         </HStack>
                       </Box>
                     )}

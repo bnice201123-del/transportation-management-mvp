@@ -122,64 +122,6 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
       ]
     }] : []),
     {
-      id: 'schedule',
-      label: 'Schedule Management',
-      icon: CalendarIcon,
-      color: 'green.500',
-      path: '/scheduler',
-      roles: ['scheduler', 'admin', 'dispatcher'],
-      subItems: [
-        // Core Scheduling Features
-        { 
-          label: 'Manage Trips', 
-          icon: FaClipboardList, 
-          action: () => navigate('/scheduler/manage'),
-          description: 'Create, view, edit, and delete trips - All-in-one management'
-        },
-        { 
-          label: 'Recurring Trips', 
-          icon: RepeatIcon, 
-          action: () => navigate('/scheduler/recurring'),
-          description: 'Create and manage recurring trip patterns',
-          roles: ['admin', 'scheduler', 'dispatcher']
-        },
-        
-        // Calendar and Timeline Views
-        { 
-          label: 'Calendar View', 
-          icon: CalendarIcon, 
-          action: () => navigate('/scheduler/calendar'),
-          description: 'Monthly calendar interface'
-        },
-        
-        // Trip History
-        { 
-          label: 'Completed Trips', 
-          icon: FaCalendarCheck, 
-          action: () => navigate('/scheduler/completed'),
-          description: 'Review individual completed trips'
-        },
-        
-        // Communication and Sharing
-        { 
-          label: 'Share Schedules', 
-          icon: FaShare, 
-          action: () => navigate('/scheduler/share'),
-          description: 'Share schedules with drivers/riders'
-        },
-        { 
-          label: 'Print Schedules', 
-          icon: FaPrint, 
-          action: () => navigate('/scheduler/print'),
-          description: 'Print-friendly schedule formats'
-        }
-      ].filter(item => {
-        // Filter items based on user role if item has specific role requirements
-        if (!item.roles) return true;
-        return item.roles.includes(user?.role);
-      })
-    },
-    {
       id: 'search',
       label: 'Search & History',
       icon: SearchIcon,
@@ -191,21 +133,6 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
         { label: 'Rider History', icon: ViewIcon, action: () => navigate('/riders/history?openFilter=true') },
         { label: 'Driver Reports', icon: InfoIcon, action: () => navigate('/driver/report?openFilter=true') },
         { label: 'Vehicle Logs', icon: SettingsIcon, action: () => navigate('/vehicles/log?openFilter=true') }
-      ]
-    },
-    {
-      id: 'dispatch',
-      label: 'Dispatch',
-      icon: TimeIcon,
-      color: 'orange.500',
-      path: '/dispatcher',
-      roles: ['dispatcher', 'admin'],
-      subItems: [
-        { label: 'Active Trips', icon: ViewIcon, action: () => navigate('/dispatcher') },
-        { label: 'Assign Driver', icon: AddIcon, action: () => navigate('/dispatcher/assign') },
-        { label: 'Trip Status', icon: InfoIcon, action: () => navigate('/dispatcher/status') },
-        { label: 'Emergency', icon: StarIcon, action: () => navigate('/dispatcher/emergency') },
-        { label: 'Route Monitor', icon: SearchIcon, action: () => navigate('/dispatcher/monitor') }
       ]
     },
     // System Administration - for admin users only
@@ -241,36 +168,22 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
         { label: 'Bulk Operations', icon: AddIcon, action: () => navigate('/admin/import') }
       ]
     }] : []),
-    {
-      id: 'rider',
-      label: 'Riders',
-      icon: FaUser,
-      color: 'pink.500',
-      path: '/riders',
-      roles: ['scheduler', 'dispatcher', 'admin'],
+    // Operations - for admin users only
+    ...(user?.role === 'admin' ? [{
+      id: 'operations',
+      label: 'Operations',
+      icon: FaRoute,
+      color: 'orange.500',
+      path: '/admin/operations',
+      roles: ['admin'],
       subItems: [
-        { label: 'All Riders', icon: ViewIcon, action: () => navigate('/riders') },
-        { label: 'Add Rider', icon: AddIcon, action: () => navigate('/riders/add') },
-        { label: 'Search Riders', icon: SearchIcon, action: () => navigate('/riders/search') },
-        { label: 'Ride History', icon: TimeIcon, action: () => navigate('/riders/history') },
-        { label: 'Manage Riders', icon: SettingsIcon, action: () => navigate('/riders/manage') }
+        { label: 'Dispatch', icon: TimeIcon, action: () => navigate('/dispatcher') },
+        { label: 'Scheduler', icon: CalendarIcon, action: () => navigate('/scheduler') },
+        { label: 'Drivers', icon: StarIcon, action: () => navigate('/driver') },
+        { label: 'Riders', icon: FaUser, action: () => navigate('/riders') },
+        { label: 'Vehicles', icon: FaCar, action: () => navigate('/vehicles') }
       ]
-    },
-    {
-      id: 'vehicles',
-      label: 'Vehicles',
-      icon: FaCar,
-      color: 'cyan.500',
-      path: '/vehicles',
-      roles: ['scheduler', 'dispatcher', 'admin'],
-      subItems: [
-        { label: 'All Vehicles', icon: ViewIcon, action: () => navigate('/vehicles') },
-        { label: 'Add Vehicle', icon: AddIcon, action: () => navigate('/vehicles/add') },
-        { label: 'Vehicle Assignment', icon: SettingsIcon, action: () => navigate('/vehicles/assign') },
-        { label: 'Out of Service', icon: DeleteIcon, action: () => navigate('/vehicles/maintenance') },
-        { label: 'Vehicle Log', icon: SearchIcon, action: () => navigate('/vehicles/log?openFilter=true') }
-      ]
-    },
+    }] : []),
     {
       id: 'maps',
       label: 'Maps',
@@ -282,21 +195,6 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
         { label: 'Trip Maps', icon: ViewIcon, action: () => navigate('/maps') },
         { label: 'Route Planning', icon: SearchIcon, action: () => navigate('/maps/routes') },
         { label: 'Live Tracking', icon: TimeIcon, action: () => navigate('/maps/tracking') }
-      ]
-    },
-    {
-      id: 'driver',
-      label: 'Driver',
-      icon: StarIcon,
-      color: 'teal.500',
-      path: '/driver',
-      roles: ['driver', 'admin'],
-      subItems: [
-        { label: 'My Trips', icon: ViewIcon, action: () => navigate('/driver') },
-        { label: 'Check In/Out', icon: TimeIcon, action: () => navigate('/driver/checkin') },
-        { label: 'Vehicle Status', icon: InfoIcon, action: () => navigate('/driver/vehicle') },
-        { label: 'Driver Report', icon: SearchIcon, action: () => navigate('/driver/report?openFilter=true') },
-        { label: 'Profile', icon: SettingsIcon, action: () => navigate('/driver/profile') }
       ]
     }
   ];

@@ -23,6 +23,7 @@ import AdminReports from './components/admin/AdminReports';
 import AdminRegistration from './components/admin/AdminRegistration';
 import AdminStatistics from './components/admin/AdminStatistics';
 import AdminSettings from './components/admin/AdminSettings';
+import OperationsLanding from './components/admin/OperationsLanding';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import Layout from './components/shared/Layout';
 import ScrollTestPage from './components/test/ScrollTestPage';
@@ -375,6 +376,16 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={['admin']}>
             <ErrorBoundary fallbackMessage="Failed to load Admin Settings. Please try refreshing the page.">
               <AdminSettings />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/operations" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load Operations Center. Please try refreshing the page.">
+              <OperationsLanding />
             </ErrorBoundary>
           </ProtectedRoute>
         } 

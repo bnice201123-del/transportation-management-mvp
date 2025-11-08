@@ -25,6 +25,8 @@ const io = new Server(server, {
       "http://localhost:5174", 
       "http://localhost:5175",
       "http://localhost:5176",
+      "http://localhost:5177",
+      "http://localhost:5178",
       process.env.FRONTEND_URL
     ].filter(Boolean),
     methods: ["GET", "POST"]
@@ -41,6 +43,8 @@ app.use(cors({
     "http://localhost:5174", 
     "http://localhost:5175",
     "http://localhost:5176",
+    "http://localhost:5177",
+    "http://localhost:5178",
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true

@@ -50,12 +50,9 @@ import {
   FaCalendarPlus, 
   FaCalendarCheck, 
   FaCalendarTimes, 
-  FaBus, 
   FaClipboardList, 
-  FaHistory, 
   FaPrint,
-  FaShare,
-  FaSync
+  FaShare
 } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -121,8 +118,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
         { label: 'Overview', icon: ViewIcon, action: () => navigate('/admin/overview') },
         { label: 'Analytics', icon: InfoIcon, action: () => navigate('/admin/analytics') },
         { label: 'Statistics', icon: StarIcon, action: () => navigate('/admin/statistics') },
-        { label: 'Reports', icon: SearchIcon, action: () => navigate('/admin/reports') },
-        { label: 'Full Dashboard', icon: EditIcon, action: () => navigate('/admin') }
+        { label: 'Reports', icon: SearchIcon, action: () => navigate('/admin/reports') }
       ]
     }] : []),
     {
@@ -148,20 +144,6 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
           roles: ['admin', 'scheduler', 'dispatcher']
         },
         
-        // Advanced Features
-        { 
-          label: 'Driver Assignment', 
-          icon: FaUser, 
-          action: () => navigate('/scheduler/assign-drivers'),
-          description: 'Assign drivers to scheduled trips'
-        },
-        { 
-          label: 'Vehicle Assignment', 
-          icon: FaBus, 
-          action: () => navigate('/scheduler/assign-vehicles'),
-          description: 'Assign vehicles to trips'
-        },
-        
         // Calendar and Timeline Views
         { 
           label: 'Calendar View', 
@@ -170,13 +152,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
           description: 'Monthly calendar interface'
         },
         
-        // Schedule History and Tracking
-        { 
-          label: 'Schedule History', 
-          icon: FaHistory, 
-          action: () => navigate('/scheduler/history'),
-          description: 'View past individual schedules and changes'
-        },
+        // Trip History
         { 
           label: 'Completed Trips', 
           icon: FaCalendarCheck, 
@@ -196,13 +172,6 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
           icon: FaPrint, 
           action: () => navigate('/scheduler/print'),
           description: 'Print-friendly schedule formats'
-        },
-        { 
-          label: 'Sync with External', 
-          icon: FaSync, 
-          action: () => navigate('/scheduler/sync'),
-          description: 'Sync with external calendar systems',
-          roles: ['admin']
         }
       ].filter(item => {
         // Filter items based on user role if item has specific role requirements
@@ -219,11 +188,9 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
       roles: ['scheduler', 'dispatcher', 'admin'],
       isModal: true, // Special flag to indicate this opens a modal
       subItems: [
-        { label: 'Advanced Search', icon: SearchIcon, isModal: true },
-        { label: 'Trip History', icon: TimeIcon, action: () => navigate('/trips/history') },
-        { label: 'Rider History', icon: ViewIcon, action: () => navigate('/riders/history') },
-        { label: 'Driver Reports', icon: InfoIcon, action: () => navigate('/drivers/reports') },
-        { label: 'Vehicle Logs', icon: SettingsIcon, action: () => navigate('/vehicles/logs') }
+        { label: 'Rider History', icon: ViewIcon, action: () => navigate('/riders/history?openFilter=true') },
+        { label: 'Driver Reports', icon: InfoIcon, action: () => navigate('/driver/report?openFilter=true') },
+        { label: 'Vehicle Logs', icon: SettingsIcon, action: () => navigate('/vehicles/log?openFilter=true') }
       ]
     },
     {
@@ -301,7 +268,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
         { label: 'Add Vehicle', icon: AddIcon, action: () => navigate('/vehicles/add') },
         { label: 'Vehicle Assignment', icon: SettingsIcon, action: () => navigate('/vehicles/assign') },
         { label: 'Out of Service', icon: DeleteIcon, action: () => navigate('/vehicles/maintenance') },
-        { label: 'Vehicle Reports', icon: SearchIcon, action: () => navigate('/vehicles/reports') }
+        { label: 'Vehicle Log', icon: SearchIcon, action: () => navigate('/vehicles/log?openFilter=true') }
       ]
     },
     {
@@ -328,7 +295,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
         { label: 'My Trips', icon: ViewIcon, action: () => navigate('/driver') },
         { label: 'Check In/Out', icon: TimeIcon, action: () => navigate('/driver/checkin') },
         { label: 'Vehicle Status', icon: InfoIcon, action: () => navigate('/driver/vehicle') },
-        { label: 'Trip History', icon: SearchIcon, action: () => navigate('/driver/history') },
+        { label: 'Driver Report', icon: SearchIcon, action: () => navigate('/driver/report?openFilter=true') },
         { label: 'Profile', icon: SettingsIcon, action: () => navigate('/driver/profile') }
       ]
     }

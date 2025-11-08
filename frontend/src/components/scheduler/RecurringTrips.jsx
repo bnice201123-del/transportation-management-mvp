@@ -48,18 +48,24 @@ import {
   Flex,
   Spacer,
   SimpleGrid,
-  Divider,
+  Switch,
   Checkbox,
   CheckboxGroup,
   Stack,
-  Switch,
-  FormHelperText,
+  Divider,
+  Tooltip,
+  useColorModeValue,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
-  Tooltip
+  Grid,
+  GridItem,
+  Skeleton,
+  SkeletonText,
+  Progress,
+  FormHelperText
 } from '@chakra-ui/react';
 import {
   AddIcon,
@@ -96,15 +102,160 @@ import {
   FaPause,
   FaStop,
   FaCalendarWeek,
-  FaInfinity
+  FaInfinity,
+  FaTh,
+  FaTable,
+  FaEye
 } from 'react-icons/fa';
 import axios from '../../config/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 
+// Modern Recurring Trip Card Component (moved outside main component to avoid hooks issues)
+const RecurringTripCard = ({ trip, onEdit, onToggle, onDelete, onViewDetails }) => {
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  
+  const getFrequencyDisplay = (frequency, daysOfWeek, dayOfMonth) => {
+    switch (frequency) {
+      case 'daily':
+        return '📅 Daily';
+      case 'weekly':
+        if (daysOfWeek && daysOfWeek.length > 0) {
+          const days = daysOfWeek.map(day => {
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            return dayNames[day];
+          }).join(', ');
+          return `📅 Weekly (${days})`;
+        }
+        return '📅 Weekly';
+      case 'monthly':
+        return `📅 Monthly (Day ${dayOfMonth})`;
+      default:
+        return '📅 Custom';
+    }
+  };
+
+  const getStatusColor = (isActive) => {
+    return isActive ? 'green' : 'orange';
+  };
+
+  return (
+    <Card
+      bg={cardBg}
+      borderColor={borderColor}
+      shadow="md"
+      borderRadius="xl"
+      overflow="hidden"
+      _hover={{
+        transform: 'translateY(-4px)',
+        shadow: 'lg',
+      }}
+      transition="all 0.2s"
+    >
+      <CardHeader pb={2}>
+        <Flex justify="space-between" align="start">
+          <VStack align="start" spacing={1} flex={1}>
+            <Heading size="sm" color="purple.600" noOfLines={1}>
+              {trip.riderName}'s Trip
+            </Heading>
+            <Text fontSize="xs" color="gray.500" noOfLines={1}>
+              {trip.riderName}
+            </Text>
+          </VStack>
+          <Badge
+            colorScheme={getStatusColor(trip.isActive)}
+            variant="subtle"
+            borderRadius="full"
+          >
+            {trip.isActive ? 'Active' : 'Inactive'}
+          </Badge>
+        </Flex>
+      </CardHeader>
+
+      <CardBody py={3}>
+        <VStack align="stretch" spacing={3}>
+          {/* Route Information */}
+          <Box>
+            <HStack mb={2}>
+              <Box w="8px" h="8px" bg="green.400" borderRadius="full" />
+              <Text fontSize="xs" color="gray.600" fontWeight="medium">FROM</Text>
+            </HStack>
+            <Text fontSize="sm" noOfLines={2} pl={4}>
+              {trip.pickupLocation?.address || 'Pickup location'}
+            </Text>
+            
+            <HStack mt={2} mb={2}>
+              <Box w="8px" h="8px" bg="red.400" borderRadius="full" />
+              <Text fontSize="xs" color="gray.600" fontWeight="medium">TO</Text>
+            </HStack>
+            <Text fontSize="sm" noOfLines={2} pl={4}>
+              {trip.dropoffLocation?.address || 'Dropoff location'}
+            </Text>
+          </Box>
+
+          <Divider />
+
+          {/* Trip Details */}
+          <SimpleGrid columns={2} spacing={2}>
+            <VStack align="start" spacing={1}>
+              <Text fontSize="xs" color="gray.500">Frequency</Text>
+              <Text fontSize="xs" fontWeight="medium">
+                {getFrequencyDisplay(trip.frequency, trip.daysOfWeek, trip.dayOfMonth)}
+              </Text>
+            </VStack>
+            <VStack align="start" spacing={1}>
+              <Text fontSize="xs" color="gray.500">Time</Text>
+              <Text fontSize="xs" fontWeight="medium">
+                {trip.startTime || '09:00'}
+              </Text>
+            </VStack>
+          </SimpleGrid>
+
+          {/* Action Buttons */}
+          <Flex gap={2} pt={2}>
+            <Button
+              size="xs"
+              variant="outline"
+              colorScheme="blue"
+              onClick={() => onViewDetails(trip)}
+              flex={1}
+            >
+              View
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              colorScheme="purple"
+              onClick={() => onEdit(trip)}
+              flex={1}
+            >
+              Edit
+            </Button>
+            <IconButton
+              size="xs"
+              variant="outline"
+              colorScheme={trip.isActive ? 'orange' : 'green'}
+              icon={trip.isActive ? <FaPause /> : <FaPlay />}
+              onClick={() => onToggle(trip)}
+              aria-label={trip.isActive ? 'Pause' : 'Activate'}
+            />
+          </Flex>
+        </VStack>
+      </CardBody>
+    </Card>
+  );
+};
+
 const RecurringTrips = () => {
   const { user } = useAuth();
   const toast = useToast();
+  
+  // Color mode values
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const textColor = useColorModeValue('gray.800', 'gray.100');
   
   // State management
   const [recurringTrips, setRecurringTrips] = useState([]);
@@ -113,34 +264,40 @@ const RecurringTrips = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [frequencyFilter, setFrequencyFilter] = useState('all');
+  const [viewMode, setViewMode] = useState('grid'); // grid or table
+  const [currentStep, setCurrentStep] = useState(1); // For multi-step form
   
   // Form data for creating/editing recurring trips
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
     riderName: '',
     riderPhone: '',
     riderEmail: '',
     pickupLocation: { address: '', lat: 0, lng: 0, placeId: '' },
     dropoffLocation: { address: '', lat: 0, lng: 0, placeId: '' },
     frequency: 'weekly', // daily, weekly, monthly, custom
-    daysOfWeek: [], // For weekly frequency
+    daysOfWeek: [1], // For weekly frequency (Monday = 1)
     dayOfMonth: 1, // For monthly frequency
     customInterval: 1, // For custom frequency
-    customUnit: 'days', // days, weeks, months
-    startDate: '',
+    customUnit: 'weeks', // days, weeks, months
+    startDate: new Date().toISOString().split('T')[0],
     endDate: '',
-    startTime: '',
-    duration: 30, // minutes
+    startTime: '09:00',
+    estimatedDuration: 30, // minutes
     maxOccurrences: null,
     assignedDriver: '',
     assignedVehicle: '',
-    fare: '',
+    estimatedCost: '',
     notes: '',
     isActive: true,
     skipHolidays: true,
     skipWeekends: false,
-    autoAssign: true
+    autoAssign: true,
+    priority: 'normal', // low, normal, high
+    notificationSettings: {
+      emailReminders: true,
+      smsReminders: false,
+      reminderTime: 60 // minutes before trip
+    }
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -159,7 +316,7 @@ const RecurringTrips = () => {
       setLoading(true);
       setError('');
       
-      const response = await axios.get('/api/recurring-trips');
+      const response = await axios.get('/recurring-trips');
       setRecurringTrips(response.data || []);
     } catch (err) {
       console.error('Error fetching recurring trips:', err);
@@ -181,9 +338,8 @@ const RecurringTrips = () => {
   }, [fetchRecurringTrips]);
 
   // Filter recurring trips
-  const filteredRecurringTrips = recurringTrips.filter(trip => {
+  const filteredRecurringTrips = (Array.isArray(recurringTrips) ? recurringTrips : []).filter(trip => {
     const matchesSearch = 
-      trip.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       trip.riderName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       trip.pickupLocation?.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       trip.dropoffLocation?.address?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -202,7 +358,7 @@ const RecurringTrips = () => {
 
     try {
       // Validate required fields
-      if (!formData.title || !formData.riderName || !formData.startDate || !formData.startTime) {
+      if (!formData.riderName || !formData.startDate || !formData.startTime) {
         throw new Error('Please fill in all required fields');
       }
 
@@ -211,8 +367,8 @@ const RecurringTrips = () => {
       }
 
       const url = selectedTrip 
-        ? `/api/recurring-trips/${selectedTrip._id}`
-        : '/api/recurring-trips';
+        ? `/recurring-trips/${selectedTrip._id}`
+        : '/recurring-trips';
       
       const method = selectedTrip ? 'put' : 'post';
       
@@ -255,8 +411,6 @@ const RecurringTrips = () => {
   // Reset form
   const resetForm = () => {
     setFormData({
-      title: '',
-      description: '',
       riderName: '',
       riderPhone: '',
       riderEmail: '',
@@ -295,8 +449,6 @@ const RecurringTrips = () => {
   const handleEdit = (trip) => {
     setSelectedTrip(trip);
     setFormData({
-      title: trip.title || '',
-      description: trip.description || '',
       riderName: trip.riderName || '',
       riderPhone: trip.riderPhone || '',
       riderEmail: trip.riderEmail || '',
@@ -324,10 +476,46 @@ const RecurringTrips = () => {
     onEditOpen();
   };
 
-  // Handle view recurring trip
-  const handleView = (trip) => {
+  // Handle view recurring trip details
+  const handleViewDetails = (trip) => {
     setSelectedTrip(trip);
     onViewOpen();
+  };
+
+  // Handle view (alias for handleViewDetails)
+  const handleView = (trip) => {
+    handleViewDetails(trip);
+  };
+
+  // Handle toggle status (pause/activate)
+  const handleToggleStatus = async (trip) => {
+    try {
+      setIsSubmitting(true);
+      await axios.patch(`/recurring-trips/${trip._id}`, {
+        isActive: !trip.isActive
+      });
+      
+      toast({
+        title: trip.isActive ? 'Trip Paused' : 'Trip Activated',
+        description: `Recurring trip has been ${trip.isActive ? 'paused' : 'activated'} successfully`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      
+      fetchRecurringTrips();
+    } catch (err) {
+      console.error('Error toggling trip status:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to update trip status',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Handle delete recurring trip
@@ -341,7 +529,7 @@ const RecurringTrips = () => {
     if (!selectedTrip) return;
 
     try {
-      await axios.delete(`/api/recurring-trips/${selectedTrip._id}`);
+      await axios.delete(`/recurring-trips/${selectedTrip._id}`);
       
       toast({
         title: 'Recurring Trip Deleted',
@@ -368,7 +556,7 @@ const RecurringTrips = () => {
   // Toggle active status
   const toggleActiveStatus = async (trip) => {
     try {
-      const response = await axios.put(`/api/recurring-trips/${trip._id}`, {
+      const response = await axios.put(`/recurring-trips/${trip._id}`, {
         ...trip,
         isActive: !trip.isActive
       });
@@ -403,7 +591,6 @@ const RecurringTrips = () => {
   // Export recurring trips
   const exportRecurringTrips = () => {
     const csvData = filteredRecurringTrips.map(trip => ({
-      Title: trip.title,
       'Rider Name': trip.riderName,
       'Pickup Location': trip.pickupLocation?.address,
       'Dropoff Location': trip.dropoffLocation?.address,
@@ -494,95 +681,127 @@ const RecurringTrips = () => {
   }
 
   return (
-    <Box>
-      {/* Header Section */}
-      <Card mb={6} shadow="sm">
-        <CardHeader>
-          <Flex direction={{ base: 'column', md: 'row' }} gap={4} align="center">
-            <VStack align="start" spacing={1} flex={1}>
-              <Heading size="lg" color="purple.600">
-                🔄 Recurring Trips Management
-              </Heading>
-              <Text color="gray.600" fontSize="sm">
-                Create and manage recurring trip patterns for regular schedules
-              </Text>
-            </VStack>
-            
-            <HStack spacing={3} wrap="wrap">
-              <Button
-                leftIcon={<AddIcon />}
-                colorScheme="purple"
-                onClick={handleAdd}
-                size="sm"
-              >
-                New Recurring Trip
-              </Button>
+    <Box bg={bgColor} minH="100vh">
+      <Container maxW="8xl" py={6}>
+        {/* Modern Header with Enhanced Actions */}
+        <Card bg={cardBg} shadow="lg" borderRadius="xl" mb={6}>
+          <CardHeader pb={4}>
+            <Flex direction={{ base: 'column', md: 'row' }} gap={4} align="center">
+              <VStack align="start" spacing={2} flex={1}>
+                <HStack>
+                  <Box 
+                    bg="purple.100" 
+                    p={3} 
+                    borderRadius="lg"
+                    color="purple.600"
+                  >
+                    <FaCalendarPlus size="24px" />
+                  </Box>
+                  <VStack align="start" spacing={0}>
+                    <Heading size="lg" color={textColor}>
+                      Recurring Trips
+                    </Heading>
+                    <Text color="gray.500" fontSize="sm">
+                      Manage scheduled recurring transportation patterns
+                    </Text>
+                  </VStack>
+                </HStack>
+                
+                {/* Quick Stats */}
+                <HStack spacing={6} pt={2}>
+                  <HStack>
+                    <Badge colorScheme="green" variant="subtle">
+                      {(filteredRecurringTrips || []).filter(t => t?.isActive).length} Active
+                    </Badge>
+                    <Badge colorScheme="orange" variant="subtle">
+                      {(filteredRecurringTrips || []).filter(t => !t?.isActive).length} Inactive
+                    </Badge>
+                    <Badge colorScheme="blue" variant="subtle">
+                      {(filteredRecurringTrips || []).length} Total
+                    </Badge>
+                  </HStack>
+                </HStack>
+              </VStack>
               
-              <Button
-                leftIcon={<FaFileExport />}
-                variant="outline"
-                colorScheme="green"
-                onClick={exportRecurringTrips}
-                size="sm"
-              >
-                Export
-              </Button>
-              
-              <Button
-                leftIcon={<FaSync />}
-                variant="outline"
-                onClick={fetchRecurringTrips}
-                size="sm"
-                isLoading={loading}
-              >
-                Refresh
-              </Button>
-            </HStack>
-          </Flex>
-        </CardHeader>
-      </Card>
-
-      {/* Filters and Search */}
-      <Card mb={6} shadow="sm">
-        <CardBody>
-          <VStack spacing={4}>
-            {/* Search Bar */}
-            <InputGroup>
-              <InputLeftElement>
-                <SearchIcon color="gray.400" />
-              </InputLeftElement>
-              <Input
-                placeholder="Search by title, rider name, or location..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                bg="white"
-              />
-            </InputGroup>
-
-            {/* Filters Row */}
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4} w="full">
-              <FormControl>
-                <FormLabel fontSize="sm">Status</FormLabel>
-                <Select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  size="sm"
-                  bg="white"
+              {/* Action Buttons */}
+              <VStack spacing={3} align="stretch" minW="200px">
+                <Button
+                  leftIcon={<AddIcon />}
+                  colorScheme="purple"
+                  onClick={handleAdd}
+                  size="md"
+                  borderRadius="lg"
+                  shadow="sm"
+                  _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
                 >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="pending">Pending</option>
-                  <option value="expired">Expired</option>
-                </Select>
-              </FormControl>
-
-              <FormControl>
-                <FormLabel fontSize="sm">Frequency</FormLabel>
-                <Select
-                  value={frequencyFilter}
-                  onChange={(e) => setFrequencyFilter(e.target.value)}
-                  size="sm"
+                  Create New Pattern
+                </Button>
+                
+                <HStack spacing={2}>
+                  <Button
+                    leftIcon={<FaFileExport />}
+                    variant="outline"
+                    colorScheme="green"
+                    onClick={exportRecurringTrips}
+                    size="sm"
+                    flex={1}
+                  >
+                    Export
+                  </Button>
+                  
+                  <Button
+                    leftIcon={<FaSync />}
+                    variant="outline"
+                    onClick={fetchRecurringTrips}
+                    size="sm"
+                    isLoading={loading}
+                    flex={1}
+                  >
+                    Refresh
+                  </Button>
+                </HStack>
+              </VStack>
+            </Flex>
+          </CardHeader>
+          
+          {/* Enhanced Search and Filter Section */}
+          <CardBody pt={0}>
+            <VStack spacing={4}>
+              {/* Search Bar */}
+              <InputGroup>
+                <InputLeftElement>
+                  <SearchIcon color="gray.400" />
+                </InputLeftElement>
+                <Input
+                  placeholder="Search by rider name or location..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  bg={useColorModeValue('gray.50', 'gray.700')}
+                  border="1px"
+                  borderColor={borderColor}
+                  borderRadius="lg"
+                />
+              </InputGroup>
+              
+              {/* Filters and View Toggle */}
+              <Flex direction={{ base: 'column', md: 'row' }} gap={4} w="full" align="center">
+                <HStack spacing={4} flex={1}>
+                  <Select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    maxW="150px"
+                    size="sm"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </Select>
+                  
+                  <Select
+                    value={frequencyFilter}
+                    onChange={(e) => setFrequencyFilter(e.target.value)}
+                    maxW="150px"
+                    size="sm"
                   bg="white"
                 >
                   <option value="all">All Frequencies</option>
@@ -590,24 +809,32 @@ const RecurringTrips = () => {
                   <option value="weekly">Weekly</option>
                   <option value="monthly">Monthly</option>
                   <option value="custom">Custom</option>
-                </Select>
-              </FormControl>
-
-              <FormControl>
-                <FormLabel fontSize="sm">Actions</FormLabel>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setStatusFilter('all');
-                    setFrequencyFilter('all');
-                  }}
-                >
-                  Clear Filters
-                </Button>
-              </FormControl>
-            </SimpleGrid>
+                  </Select>
+                </HStack>
+                
+                {/* View Toggle */}
+                <HStack spacing={2}>
+                  <Text fontSize="sm" color="gray.500">View:</Text>
+                  <Button
+                    size="sm"
+                    variant={viewMode === 'grid' ? 'solid' : 'ghost'}
+                    colorScheme="purple"
+                    onClick={() => setViewMode('grid')}
+                    leftIcon={<FaTh />}
+                  >
+                    Grid
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={viewMode === 'table' ? 'solid' : 'ghost'}
+                    colorScheme="purple"
+                    onClick={() => setViewMode('table')}
+                    leftIcon={<FaTable />}
+                  >
+                    Table
+                  </Button>
+                </HStack>
+              </Flex>
           </VStack>
         </CardBody>
       </Card>
@@ -620,24 +847,38 @@ const RecurringTrips = () => {
         </Alert>
       )}
 
-      {/* Recurring Trips Table */}
-      <Card shadow="sm">
-        <CardHeader>
-          <Flex justify="space-between" align="center">
-            <Heading size="md">
-              Recurring Trips ({filteredRecurringTrips.length})
-            </Heading>
-            <Text fontSize="sm" color="gray.600">
-              Total: {recurringTrips.length} patterns
-            </Text>
-          </Flex>
-        </CardHeader>
-        <CardBody p={0}>
-          <TableContainer>
-            <Table variant="simple">
-              <Thead>
-                <Tr>
-                  <Th>Title & Rider</Th>
+        {/* Modern Recurring Trips Display */}
+        {viewMode === 'grid' ? (
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} mb={6}>
+            {filteredRecurringTrips.map((trip) => (
+              <RecurringTripCard
+                key={trip._id}
+                trip={trip}
+                onEdit={handleEdit}
+                onToggle={handleToggleStatus}
+                onDelete={handleDelete}
+                onViewDetails={handleViewDetails}
+              />
+            ))}
+          </SimpleGrid>
+        ) : (
+          <Card shadow="sm" bg={cardBg}>
+            <CardHeader>
+              <Flex justify="space-between" align="center">
+                <Heading size="md" color={textColor}>
+                  Recurring Trips ({filteredRecurringTrips.length})
+                </Heading>
+                <Text fontSize="sm" color="gray.600">
+                  Total: {Array.isArray(recurringTrips) ? recurringTrips.length : 0} patterns
+                </Text>
+              </Flex>
+            </CardHeader>
+            <CardBody p={0}>
+              <TableContainer>
+                <Table variant="simple" size="sm">
+                  <Thead>
+                    <Tr>
+                  <Th>Rider</Th>
                   <Th>Route</Th>
                   <Th>Frequency</Th>
                   <Th>Schedule</Th>
@@ -652,10 +893,7 @@ const RecurringTrips = () => {
                       <Td>
                         <VStack align="start" spacing={1}>
                           <Text fontWeight="bold" fontSize="sm">
-                            {trip.title}
-                          </Text>
-                          <Text fontSize="xs" color="gray.600">
-                            👤 {trip.riderName}
+                            👤 {trip.riderName}'s Trip
                           </Text>
                           {trip.riderPhone && (
                             <Text fontSize="xs" color="gray.500">
@@ -795,6 +1033,42 @@ const RecurringTrips = () => {
           </TableContainer>
         </CardBody>
       </Card>
+        )}
+
+        {/* Empty State for No Results */}
+        {filteredRecurringTrips.length === 0 && (
+          <Card bg={cardBg} textAlign="center" py={10}>
+            <CardBody>
+              <VStack spacing={4}>
+                <Box color="gray.300" fontSize="4xl">
+                  📅
+                </Box>
+                <Heading size="md" color="gray.500">
+                  {searchTerm || statusFilter !== 'all' || frequencyFilter !== 'all'
+                    ? 'No recurring trips match your filters'
+                    : 'No recurring trips yet'}
+                </Heading>
+                <Text color="gray.400" maxW="md">
+                  {searchTerm || statusFilter !== 'all' || frequencyFilter !== 'all'
+                    ? 'Try adjusting your search criteria or filters'
+                    : 'Create your first recurring trip pattern to get started with automated scheduling'}
+                </Text>
+                {!searchTerm && statusFilter === 'all' && frequencyFilter === 'all' && (
+                  <Button
+                    leftIcon={<AddIcon />}
+                    colorScheme="purple"
+                    onClick={handleAdd}
+                    size="md"
+                    mt={4}
+                  >
+                    Create Your First Recurring Trip
+                  </Button>
+                )}
+              </VStack>
+            </CardBody>
+          </Card>
+        )}
+      </Container>
 
       {/* Add/Edit Modal */}
       <Modal isOpen={isAddOpen || isEditOpen} onClose={isAddOpen ? onAddClose : onEditClose} size="xl" scrollBehavior="inside">
@@ -808,34 +1082,8 @@ const RecurringTrips = () => {
               </HStack>
             </ModalHeader>
             <ModalCloseButton />
-            <ModalBody>
+            <ModalBody maxH="70vh" overflowY="auto">
               <VStack spacing={6} align="stretch">
-                {/* Basic Information */}
-                <Box>
-                  <Heading size="sm" mb={4} color="purple.600">
-                    📋 Basic Information
-                  </Heading>
-                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                    <FormControl isRequired>
-                      <FormLabel>Trip Title</FormLabel>
-                      <Input
-                        value={formData.title}
-                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                        placeholder="e.g., Daily Commute to Office"
-                      />
-                    </FormControl>
-                    
-                    <FormControl>
-                      <FormLabel>Description</FormLabel>
-                      <Input
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        placeholder="Optional description"
-                      />
-                    </FormControl>
-                  </SimpleGrid>
-                </Box>
-
                 {/* Rider Information */}
                 <Box>
                   <Heading size="sm" mb={4} color="blue.600">
@@ -1173,10 +1421,7 @@ const RecurringTrips = () => {
             {selectedTrip && (
               <VStack spacing={4} align="stretch">
                 <Box>
-                  <Heading size="md" mb={2}>{selectedTrip.title}</Heading>
-                  {selectedTrip.description && (
-                    <Text color="gray.600" mb={4}>{selectedTrip.description}</Text>
-                  )}
+                  <Heading size="md" mb={2}>{selectedTrip.riderName}'s Recurring Trip</Heading>
                 </Box>
 
                 <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
@@ -1292,7 +1537,7 @@ const RecurringTrips = () => {
             <AlertDialogBody>
               Are you sure you want to delete this recurring trip pattern?
               <br /><br />
-              <strong>"{selectedTrip?.title}"</strong>
+              <strong>"{selectedTrip?.riderName}'s Recurring Trip"</strong>
               <br /><br />
               This action cannot be undone. All future trips generated from this pattern will be removed.
             </AlertDialogBody>

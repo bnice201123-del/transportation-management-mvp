@@ -81,7 +81,9 @@ const DispatcherDashboard = () => {
   const [tripToDelete, setTripToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // Filtering state
+  // Filtering state - New dispatch landing page requirements
+  const [viewMode, setViewMode] = useState('nextDay'); // 'nextDay' or 'allFuture'
+  const [displayedTrips, setDisplayedTrips] = useState([]);
   const [activeTab, setActiveTab] = useState(0); // 0: Today, 1: Upcoming, 2: Past, 3: All
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -160,6 +162,39 @@ const DispatcherDashboard = () => {
 
     return () => clearInterval(interval);
   }, [fetchTrips, fetchDrivers]);
+
+  // Filter trips based on view mode - Dispatch Landing Page Requirements
+  useEffect(() => {
+    if (trips.length > 0) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const dayAfterTomorrow = new Date(today);
+      dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+
+      let filtered = [];
+      
+      if (viewMode === 'nextDay') {
+        // Default view: Show only trips for the next day (tomorrow)
+        filtered = trips.filter(trip => {
+          const tripDate = new Date(trip.scheduledDate);
+          const tripDateOnly = new Date(tripDate.getFullYear(), tripDate.getMonth(), tripDate.getDate());
+          return tripDateOnly.getTime() === tomorrow.getTime();
+        });
+      } else if (viewMode === 'allFuture') {
+        // Filter Future Trips view: Show all future trips (from tomorrow onwards)
+        filtered = trips.filter(trip => {
+          const tripDate = new Date(trip.scheduledDate);
+          return tripDate >= tomorrow;
+        });
+      }
+
+      // Sort by scheduled date
+      filtered.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
+      setDisplayedTrips(filtered);
+    }
+  }, [trips, viewMode]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -370,6 +405,13 @@ const DispatcherDashboard = () => {
            new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const getLocationText = (location) => {
+    if (!location) return 'N/A';
+    if (typeof location === 'string') return location;
+    if (typeof location === 'object' && location.address) return location.address;
+    return 'Location not specified';
+  };
+
   if (loading) {
     return (
       <Box>
@@ -381,13 +423,20 @@ const DispatcherDashboard = () => {
     );
   }
 
-  // Filter trips by status
+  // Filter trips by status for statistics
   const activeTrips = trips.filter(trip => 
     ['pending', 'assigned', 'in_progress'].includes(trip.status)
   );
   const completedTrips = trips.filter(trip => trip.status === 'completed');
   const availableDrivers = drivers.filter(driver => driver.isAvailable);
   const busyDrivers = drivers.filter(driver => !driver.isAvailable);
+  
+  // Statistics for displayed trips only
+  const displayedActiveTrips = displayedTrips.filter(trip => 
+    ['pending', 'assigned', 'in_progress'].includes(trip.status)
+  );
+  const displayedAssignedTrips = displayedTrips.filter(trip => trip.assignedDriver);
+  const displayedUnassignedTrips = displayedTrips.filter(trip => !trip.assignedDriver);
 
   return (
     <Box minH="100vh" bg="gray.50">
@@ -395,41 +444,88 @@ const DispatcherDashboard = () => {
       
       <Box ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} pt={{ base: 4, md: 0 }}>
         <Container maxW="container.xl" py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>
-        {/* Statistics Cards */}
-        <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={6} mb={8}>
+        {/* Statistics Cards - Dispatch Landing Page */}
+        <Grid templateColumns="repeat(auto-fit, minmax(180px, 1fr))" gap={6} mb={8}>
           <Card>
             <CardBody>
-              <Text fontSize="2xl" fontWeight="bold" color="orange.500">
-                {activeTrips.length}
+              <Text fontSize="2xl" fontWeight="bold" color="blue.500">
+                {displayedTrips.length}
               </Text>
-              <Text color="gray.600">Active Trips</Text>
+              <Text color="gray.600" fontSize="sm">
+                {viewMode === 'nextDay' ? 'Tomorrow\'s Trips' : 'Future Trips'}
+              </Text>
             </CardBody>
           </Card>
           <Card>
             <CardBody>
               <Text fontSize="2xl" fontWeight="bold" color="green.500">
-                {completedTrips.length}
+                {displayedAssignedTrips.length}
               </Text>
-              <Text color="gray.600">Completed Today</Text>
+              <Text color="gray.600" fontSize="sm">Assigned</Text>
             </CardBody>
           </Card>
           <Card>
             <CardBody>
-              <Text fontSize="2xl" fontWeight="bold" color="blue.500">
-                {availableDrivers.length}
+              <Text fontSize="2xl" fontWeight="bold" color="orange.500">
+                {displayedUnassignedTrips.length}
               </Text>
-              <Text color="gray.600">Available Drivers</Text>
+              <Text color="gray.600" fontSize="sm">Need Driver</Text>
             </CardBody>
           </Card>
           <Card>
             <CardBody>
               <Text fontSize="2xl" fontWeight="bold" color="purple.500">
-                {busyDrivers.length}
+                {availableDrivers.length}
               </Text>
-              <Text color="gray.600">Busy Drivers</Text>
+              <Text color="gray.600" fontSize="sm">Available Drivers</Text>
             </CardBody>
           </Card>
         </Grid>
+
+        {/* Dispatch Landing Page Header */}
+        <Card mb={6} bg="blue.50" borderLeft="4px solid" borderLeftColor="blue.500">
+          <CardBody>
+            <VStack align="start" spacing={3}>
+              <HStack justify="space-between" w="100%">
+                <VStack align="start" spacing={1}>
+                  <Heading size="lg" color="blue.700">
+                    Dispatch Control Center
+                  </Heading>
+                  <Text color="gray.600" fontSize="sm">
+                    {viewMode === 'nextDay' 
+                      ? 'Showing trips for tomorrow only' 
+                      : 'Showing all future trips'}
+                  </Text>
+                </VStack>
+                <Button
+                  leftIcon={<SearchIcon />}
+                  colorScheme={viewMode === 'allFuture' ? 'green' : 'blue'}
+                  variant={viewMode === 'allFuture' ? 'solid' : 'outline'}
+                  onClick={() => setViewMode(viewMode === 'nextDay' ? 'allFuture' : 'nextDay')}
+                >
+                  {viewMode === 'nextDay' ? 'Filter Future Trips' : 'Back to Tomorrow'}
+                </Button>
+              </HStack>
+              
+              {/* Trip Count Display */}
+              <HStack>
+                <Text fontSize="lg" fontWeight="semibold" color="blue.600">
+                  {displayedTrips.length} trips found
+                </Text>
+                {viewMode === 'nextDay' && (
+                  <Text fontSize="sm" color="gray.500">
+                    for {new Date(Date.now() + 86400000).toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </Text>
+                )}
+              </HStack>
+            </VStack>
+          </CardBody>
+        </Card>
 
         {/* Action Buttons */}
         <HStack mb={6}>
@@ -454,10 +550,17 @@ const DispatcherDashboard = () => {
           </Button>
         </HStack>
 
-        {/* Active Trips - Full Width */}
+        {/* Upcoming Trips - Dispatch Landing Page */}
         <Card mb={6}>
           <CardHeader>
-            <Heading size="md">Active Trips</Heading>
+            <HStack justify="space-between">
+              <Heading size="md">
+                {viewMode === 'nextDay' ? 'Tomorrow\'s Scheduled Trips' : 'All Future Trips'}
+              </Heading>
+              <Badge colorScheme="blue" fontSize="md" px={3} py={1}>
+                {displayedTrips.length} trips
+              </Badge>
+            </HStack>
           </CardHeader>
           <CardBody>
             <TableContainer overflowX="auto">
@@ -474,7 +577,7 @@ const DispatcherDashboard = () => {
                   </Tr>
                 </Thead>
                   <Tbody>
-                    {activeTrips.map((trip) => (
+                    {displayedTrips.map((trip) => (
                       <Tr key={trip._id}>
                         <Td>{trip.tripId}</Td>
                         <Td>
@@ -489,8 +592,8 @@ const DispatcherDashboard = () => {
                         </Td>
                         <Td display={{ base: "none", md: "table-cell" }}>
                           <VStack align="start" spacing={0}>
-                            <Text fontSize="xs">From: {trip.pickupLocation.address.substring(0, 30)}...</Text>
-                            <Text fontSize="xs">To: {trip.dropoffLocation.address.substring(0, 30)}...</Text>
+                            <Text fontSize="xs">From: {getLocationText(trip.pickupLocation).substring(0, 30)}...</Text>
+                            <Text fontSize="xs">To: {getLocationText(trip.dropoffLocation).substring(0, 30)}...</Text>
                           </VStack>
                         </Td>
                         <Td display={{ base: "none", lg: "table-cell" }}>
@@ -588,9 +691,20 @@ const DispatcherDashboard = () => {
                   </Tbody>
                 </Table>
               </TableContainer>
-              {activeTrips.length === 0 && (
+              {displayedTrips.length === 0 && (
                 <Center py={8}>
-                  <Text color="gray.500">No active trips</Text>
+                  <VStack spacing={3}>
+                    <Text color="gray.500" fontSize="lg">
+                      {viewMode === 'nextDay' 
+                        ? 'No trips scheduled for tomorrow' 
+                        : 'No future trips found'}
+                    </Text>
+                    <Text color="gray.400" fontSize="sm">
+                      {viewMode === 'nextDay' 
+                        ? 'Click "Filter Future Trips" to see all upcoming trips' 
+                        : 'Click "Back to Tomorrow" to see tomorrow\'s trips'}
+                    </Text>
+                  </VStack>
                 </Center>
               )}
             </CardBody>

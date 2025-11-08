@@ -16,6 +16,15 @@ router.get('/', authenticateToken, async (req, res) => {
       status, 
       assignedDriver, 
       date,
+      startDate,
+      endDate,
+      riderName,
+      tripType,
+      pickupLocation,
+      dropoffLocation,
+      vehicleId,
+      sortBy = 'scheduledDate',
+      sortOrder = 'desc',
       search 
     } = req.query;
 
@@ -32,41 +41,98 @@ router.get('/', authenticateToken, async (req, res) => {
     // Add additional filters
     if (status) filter.status = status;
     if (assignedDriver) filter.assignedDriver = assignedDriver;
+    if (riderName) filter.riderName = { $regex: riderName, $options: 'i' };
+    if (tripType) filter.tripType = tripType;
+    if (pickupLocation) filter.pickupLocation = { $regex: pickupLocation, $options: 'i' };
+    if (dropoffLocation) filter.dropoffLocation = { $regex: dropoffLocation, $options: 'i' };
+    
+    // Create array to hold complex conditions
+    const andConditions = [];
+    
+    // Vehicle filtering - can match vehicleId or vehicle info in assignedDriver
+    if (vehicleId) {
+      andConditions.push({
+        $or: [
+          { vehicleId: vehicleId },
+          { 'assignedDriver.vehicleInfo.vehicleId': vehicleId },
+          { 'assignedDriver.vehicleInfo.licensePlate': vehicleId }
+        ]
+      });
+    }
+
+    // Date filtering - support both single date and date range
     if (date) {
-      const startDate = new Date(date);
-      const endDate = new Date(date);
-      endDate.setDate(endDate.getDate() + 1);
-      filter.scheduledDate = { $gte: startDate, $lt: endDate };
+      const startOfDay = new Date(date);
+      const endOfDay = new Date(date);
+      endOfDay.setDate(endOfDay.getDate() + 1);
+      andConditions.push({
+        $or: [
+          { scheduledDate: { $gte: startOfDay, $lt: endOfDay } },
+          { createdAt: { $gte: startOfDay, $lt: endOfDay } }
+        ]
+      });
+    } else if (startDate || endDate) {
+      const dateFilter = {};
+      if (startDate) dateFilter.$gte = new Date(startDate);
+      if (endDate) {
+        // Set to end of day for endDate
+        const endOfEndDate = new Date(endDate);
+        endOfEndDate.setHours(23, 59, 59, 999);
+        dateFilter.$lte = endOfEndDate;
+      }
+      andConditions.push({
+        $or: [
+          { scheduledDate: dateFilter },
+          { createdAt: dateFilter }
+        ]
+      });
     }
 
     // Add search functionality
     if (search) {
-      filter.$or = [
-        { riderName: { $regex: search, $options: 'i' } },
-        { tripId: { $regex: search, $options: 'i' } },
-        { 'pickupLocation.address': { $regex: search, $options: 'i' } },
-        { 'dropoffLocation.address': { $regex: search, $options: 'i' } }
-      ];
+      andConditions.push({
+        $or: [
+          { riderName: { $regex: search, $options: 'i' } },
+          { tripId: { $regex: search, $options: 'i' } },
+          { 'pickupLocation.address': { $regex: search, $options: 'i' } },
+          { 'dropoffLocation.address': { $regex: search, $options: 'i' } }
+        ]
+      });
+    }
+
+    // Add AND conditions to filter if any exist
+    if (andConditions.length > 0) {
+      filter.$and = andConditions;
     }
 
     const skip = (page - 1) * limit;
     
+    // Build sort object
+    const sortObj = {};
+    sortObj[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    // Add secondary sort for consistency
+    if (sortBy !== 'createdAt') sortObj.createdAt = -1;
+    
     const trips = await Trip.find(filter)
-      .populate('assignedDriver', 'firstName lastName phone vehicleInfo')
-      .populate('createdBy', 'firstName lastName')
-      .sort({ scheduledDate: -1, createdAt: -1 })
+      .populate('assignedDriver', 'firstName lastName email phone vehicleInfo')
+      .populate('createdBy', 'firstName lastName email')
+      .sort(sortObj)
       .skip(skip)
       .limit(parseInt(limit));
 
     const total = await Trip.countDocuments(filter);
 
     res.json({
-      trips,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+      success: true,
+      data: {
+        trips,
         total,
-        pages: Math.ceil(total / limit)
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / limit)
+        }
       }
     });
   } catch (error) {

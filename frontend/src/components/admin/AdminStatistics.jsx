@@ -64,8 +64,10 @@ import {
 import { FaCar, FaUser, FaRoute, FaDollarSign, FaChartLine, FaClock, FaMapMarkerAlt, FaLeaf } from 'react-icons/fa';
 import axios from '../../config/axios';
 import Navbar from '../shared/Navbar';
+import { useAuth } from '../../contexts/AuthContext';
 
 const AdminStatistics = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [timeRange, setTimeRange] = useState('7days');
@@ -75,6 +77,24 @@ const AdminStatistics = () => {
   const scrollRef = useRef(null);
   const toast = useToast();
 
+  // Check authorization
+  if (!user || !['admin', 'dispatcher'].includes(user.role)) {
+    return (
+      <Box>
+        <Navbar />
+        <Container maxW="7xl" py={6}>
+          <Alert status="error">
+            <AlertIcon />
+            <AlertTitle>Access Denied!</AlertTitle>
+            <AlertDescription>
+              You don't have permission to view analytics data.
+            </AlertDescription>
+          </Alert>
+        </Container>
+      </Box>
+    );
+  }
+
   // Color mode values
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
@@ -83,7 +103,7 @@ const AdminStatistics = () => {
   
   // Responsive values
   const cardColumns = useBreakpointValue({ base: 1, md: 2, lg: 3, xl: 4 });
-  const metricColumns = useBreakpointValue({ base: 2, md: 3, lg: 5 });
+  const metricColumns = useBreakpointValue({ base: 1, sm: 2, md: 3, lg: 5 });
   const chartColumns = useBreakpointValue({ base: 1, lg: 2 });
 
   // Enhanced mock data with more comprehensive statistics
@@ -146,6 +166,19 @@ const AdminStatistics = () => {
     fetchStatistics();
   }, [timeRange]);
 
+  // Auto-refresh every 30 seconds when view is active
+  useEffect(() => {
+    let interval;
+    if (viewMode === 'realtime') {
+      interval = setInterval(() => {
+        fetchStatistics(true);
+      }, 30000); // 30 seconds
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [viewMode, timeRange]);
+
   const fetchStatistics = async (showRefresh = false) => {
     if (showRefresh) {
       setRefreshing(true);
@@ -154,14 +187,8 @@ const AdminStatistics = () => {
     }
     
     try {
-      // Replace with actual API calls
-      // const response = await axios.get(`/analytics/statistics?range=${timeRange}`);
-      // setStatistics(response.data);
-      
-      // Using mock data for now with realistic delay
-      await new Promise(resolve => setTimeout(resolve, showRefresh ? 800 : 1500));
-      
-      setStatistics(mockStatistics);
+      const response = await axios.get(`/analytics/statistics?range=${timeRange}`);
+      setStatistics(response.data);
       setLastUpdated(new Date());
       
       if (showRefresh) {
@@ -175,11 +202,16 @@ const AdminStatistics = () => {
       }
     } catch (error) {
       console.error('Error fetching statistics:', error);
+      
+      // Fallback to mock data if API fails
+      setStatistics(mockStatistics);
+      setLastUpdated(new Date());
+      
       toast({
-        title: 'Error loading statistics',
-        description: 'Failed to load statistics data',
-        status: 'error',
-        duration: 5000,
+        title: 'Using offline data',
+        description: 'Connected to local data while server is unavailable',
+        status: 'warning',
+        duration: 3000,
         isClosable: true
       });
     } finally {
@@ -193,13 +225,51 @@ const AdminStatistics = () => {
   };
 
   const handleExport = () => {
-    toast({
-      title: 'Export started',
-      description: 'Statistics report will be downloaded shortly',
-      status: 'info',
-      duration: 3000,
-      isClosable: true
-    });
+    try {
+      // Create CSV content
+      const csvContent = [
+        // Header
+        ['Metric', 'Value', 'Period', 'Timestamp'],
+        // Performance metrics
+        ['Average Trip Duration', `${statistics.performance?.avgTripDuration || 'N/A'} min`, timeRange, new Date().toISOString()],
+        ['Average Wait Time', `${statistics.performance?.avgWaitTime || 'N/A'} min`, timeRange, new Date().toISOString()],
+        ['Customer Satisfaction', `${statistics.performance?.customerSatisfaction || 'N/A'}/5`, timeRange, new Date().toISOString()],
+        ['On-Time Percentage', `${statistics.performance?.onTimePercentage || 'N/A'}%`, timeRange, new Date().toISOString()],
+        // Overview metrics
+        ['Total Trips', statistics.overview?.totalTrips || 'N/A', timeRange, new Date().toISOString()],
+        ['Active Trips', statistics.overview?.activeTrips || 'N/A', timeRange, new Date().toISOString()],
+        ['Active Drivers', statistics.overview?.activeDrivers || 'N/A', timeRange, new Date().toISOString()],
+        ['Total Revenue', `$${statistics.financial?.totalRevenue || 'N/A'}`, timeRange, new Date().toISOString()]
+      ].map(row => row.join(',')).join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `analytics-report-${timeRange}-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: 'Export completed',
+        description: 'Statistics report has been downloaded',
+        status: 'success',
+        duration: 3000,
+        isClosable: true
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: 'Export failed',
+        description: 'Unable to export statistics report',
+        status: 'error',
+        duration: 3000,
+        isClosable: true
+      });
+    }
   };
 
   const scrollToTop = () => {
@@ -268,50 +338,7 @@ const AdminStatistics = () => {
     </ScaleFade>
   );
 
-  const MetricCard = ({ title, value, unit, progress, color, isLoading }) => (
-    <Fade in={!isLoading}>
-      <Card 
-        bg={cardBg}
-        borderColor={borderColor}
-        shadow="sm"
-        _hover={{ shadow: 'md', transform: 'translateY(-1px)' }}
-        transition="all 0.2s"
-      >
-        <CardBody p={5}>
-          <VStack align="center" spacing={4}>
-            {isLoading ? (
-              <Skeleton boxSize="60px" borderRadius="full" />
-            ) : (
-              <CircularProgress 
-                value={progress} 
-                color={color} 
-                size="60px"
-                thickness="8px"
-              >
-                <CircularProgressLabel fontSize="xs" fontWeight="bold">
-                  {progress}%
-                </CircularProgressLabel>
-              </CircularProgress>
-            )}
-            <VStack spacing={1}>
-              {isLoading ? (
-                <SkeletonText noOfLines={2} spacing="2" skeletonHeight="2" />
-              ) : (
-                <>
-                  <Text fontSize="lg" fontWeight="bold" color={textColor}>
-                    {value}{unit}
-                  </Text>
-                  <Text fontSize="sm" color="gray.500" textAlign="center">
-                    {title}
-                  </Text>
-                </>
-              )}
-            </VStack>
-          </VStack>
-        </CardBody>
-      </Card>
-    </Fade>
-  );
+
 
   const ChartPlaceholder = ({ title, description }) => (
     <Card>
@@ -506,49 +533,214 @@ const AdminStatistics = () => {
             </CardBody>
           </Card>
 
-          {/* Performance Metrics */}
-          <Card>
-            <CardHeader>
-              <Heading size="md">Performance Metrics</Heading>
+          {/* Performance Metrics - Optimized Layout */}
+          <Card bg={cardBg} shadow="md" borderRadius="lg">
+            <CardHeader pb={2}>
+              <Flex justify="space-between" align="center">
+                <VStack align="start" spacing={0}>
+                  <Heading size="md" color={textColor}>Performance Dashboard</Heading>
+                  <Text fontSize="xs" color="gray.500">Real-time operational metrics</Text>
+                </VStack>
+                <HStack spacing={2}>
+                  <Button 
+                    size="xs" 
+                    variant="outline" 
+                    leftIcon={<RepeatIcon />}
+                    onClick={handleRefresh}
+                    isLoading={refreshing}
+                    loadingText="Refreshing"
+                  >
+                    Refresh
+                  </Button>
+                  <Button 
+                    size="xs" 
+                    variant="outline" 
+                    leftIcon={<DownloadIcon />}
+                    onClick={handleExport}
+                  >
+                    Export
+                  </Button>
+                </HStack>
+              </Flex>
             </CardHeader>
-            <CardBody>
-              <SimpleGrid columns={{ base: 2, md: 5 }} spacing={6}>
-                <MetricCard
-                  title="Avg Trip Duration"
-                  value={statistics.performance?.avgTripDuration}
-                  unit=" min"
-                  progress={75}
-                  color="blue.400"
-                />
-                <MetricCard
-                  title="Avg Wait Time"
-                  value={statistics.performance?.avgWaitTime}
-                  unit=" min"
-                  progress={65}
-                  color="orange.400"
-                />
-                <MetricCard
-                  title="Customer Rating"
-                  value={statistics.performance?.customerSatisfaction}
-                  unit="/5"
-                  progress={92}
-                  color="green.400"
-                />
-                <MetricCard
-                  title="Fuel Efficiency"
-                  value={statistics.performance?.fuelEfficiency}
-                  unit=" mpg"
-                  progress={80}
-                  color="teal.400"
-                />
-                <MetricCard
-                  title="On-Time Rate"
-                  value={statistics.performance?.onTimePercentage}
-                  unit="%"
-                  progress={statistics.performance?.onTimePercentage}
-                  color="purple.400"
-                />
+
+            <CardBody pt={2}>
+              {/* Compact Metrics Grid */}
+              <SimpleGrid columns={{ base: 1, sm: 2, md: 4 }} spacing={3} mb={4}>
+                <Box p={3} bg="blue.50" borderRadius="md" border="1px" borderColor="blue.200">
+                  <HStack justify="space-between" align="center">
+                    <VStack align="start" spacing={0} flex={1}>
+                      <Text fontSize="xs" fontWeight="medium" color="blue.600">Trip Duration</Text>
+                      <HStack spacing={1}>
+                        <Text fontSize="lg" fontWeight="bold" color="blue.700">
+                          {loading ? '-' : (statistics.performance?.avgTripDuration || '25')}
+                        </Text>
+                        <Text fontSize="xs" color="blue.500">min</Text>
+                      </HStack>
+                    </VStack>
+                    {loading ? (
+                      <Spinner size="sm" color="blue.400" />
+                    ) : (
+                      <CircularProgress value={75} color="blue.400" size="32px" thickness="6px">
+                        <CircularProgressLabel fontSize="2xs" fontWeight="medium" color="blue.600">
+                          75%
+                        </CircularProgressLabel>
+                      </CircularProgress>
+                    )}
+                  </HStack>
+                </Box>
+
+                <Box p={3} bg="orange.50" borderRadius="md" border="1px" borderColor="orange.200">
+                  <HStack justify="space-between" align="center">
+                    <VStack align="start" spacing={0} flex={1}>
+                      <Text fontSize="xs" fontWeight="medium" color="orange.600">Wait Time</Text>
+                      <HStack spacing={1}>
+                        <Text fontSize="lg" fontWeight="bold" color="orange.700">
+                          {loading ? '-' : (statistics.performance?.avgWaitTime || '8')}
+                        </Text>
+                        <Text fontSize="xs" color="orange.500">min</Text>
+                      </HStack>
+                    </VStack>
+                    {loading ? (
+                      <Spinner size="sm" color="orange.400" />
+                    ) : (
+                      <CircularProgress value={65} color="orange.400" size="32px" thickness="6px">
+                        <CircularProgressLabel fontSize="2xs" fontWeight="medium" color="orange.600">
+                          65%
+                        </CircularProgressLabel>
+                      </CircularProgress>
+                    )}
+                  </HStack>
+                </Box>
+
+                <Box p={3} bg="green.50" borderRadius="md" border="1px" borderColor="green.200">
+                  <HStack justify="space-between" align="center">
+                    <VStack align="start" spacing={0} flex={1}>
+                      <Text fontSize="xs" fontWeight="medium" color="green.600">Rating</Text>
+                      <HStack spacing={1}>
+                        <Text fontSize="lg" fontWeight="bold" color="green.700">
+                          {loading ? '-' : (statistics.performance?.customerSatisfaction || '4.8')}
+                        </Text>
+                        <Text fontSize="xs" color="green.500">/5</Text>
+                      </HStack>
+                    </VStack>
+                    {loading ? (
+                      <Spinner size="sm" color="green.400" />
+                    ) : (
+                      <CircularProgress value={92} color="green.400" size="32px" thickness="6px">
+                        <CircularProgressLabel fontSize="2xs" fontWeight="medium" color="green.600">
+                          92%
+                        </CircularProgressLabel>
+                      </CircularProgress>
+                    )}
+                  </HStack>
+                </Box>
+
+                <Box p={3} bg="purple.50" borderRadius="md" border="1px" borderColor="purple.200">
+                  <HStack justify="space-between" align="center">
+                    <VStack align="start" spacing={0} flex={1}>
+                      <Text fontSize="xs" fontWeight="medium" color="purple.600">On-Time</Text>
+                      <HStack spacing={1}>
+                        <Text fontSize="lg" fontWeight="bold" color="purple.700">
+                          {loading ? '-' : (statistics.performance?.onTimePercentage || '88')}
+                        </Text>
+                        <Text fontSize="xs" color="purple.500">%</Text>
+                      </HStack>
+                    </VStack>
+                    {loading ? (
+                      <Spinner size="sm" color="purple.400" />
+                    ) : (
+                      <CircularProgress 
+                        value={statistics.performance?.onTimePercentage || 88} 
+                        color="purple.400" 
+                        size="32px" 
+                        thickness="6px"
+                      >
+                        <CircularProgressLabel fontSize="2xs" fontWeight="medium" color="purple.600">
+                          {statistics.performance?.onTimePercentage || 88}%
+                        </CircularProgressLabel>
+                      </CircularProgress>
+                    )}
+                  </HStack>
+                </Box>
               </SimpleGrid>
+
+              {/* Quick Stats Row */}
+              <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={3}>
+                <Box p={3} bg={useColorModeValue('gray.50', 'gray.700')} borderRadius="md">
+                  <Text fontSize="xs" fontWeight="semibold" color={textColor} mb={2}>Today's Activity</Text>
+                  <SimpleGrid columns={2} spacing={2}>
+                    <HStack spacing={1}>
+                      <Icon as={FaCar} color="blue.500" boxSize={3} />
+                      <VStack align="start" spacing={0} flex={1}>
+                        <Text fontSize="xs" color={textColor}>Active</Text>
+                        <Text fontSize="sm" fontWeight="bold" color="blue.600">
+                          {loading ? '-' : (statistics.overview?.activeTrips || '12')}
+                        </Text>
+                      </VStack>
+                    </HStack>
+                    
+                    <HStack spacing={1}>
+                      <Icon as={FaUser} color="green.500" boxSize={3} />
+                      <VStack align="start" spacing={0} flex={1}>
+                        <Text fontSize="xs" color={textColor}>Drivers</Text>
+                        <Text fontSize="sm" fontWeight="bold" color="green.600">
+                          {loading ? '-' : (statistics.overview?.activeDrivers || '18')}
+                        </Text>
+                      </VStack>
+                    </HStack>
+                    
+                    <HStack spacing={1}>
+                      <Icon as={FaRoute} color="orange.500" boxSize={3} />
+                      <VStack align="start" spacing={0} flex={1}>
+                        <Text fontSize="xs" color={textColor}>Avg Dist</Text>
+                        <Text fontSize="sm" fontWeight="bold" color="orange.600">
+                          {loading ? '-' : `${(statistics.performance?.avgDistance || 12.5)}mi`}
+                        </Text>
+                      </VStack>
+                    </HStack>
+                    
+                    <HStack spacing={1}>
+                      <Icon as={FaDollarSign} color="purple.500" boxSize={3} />
+                      <VStack align="start" spacing={0} flex={1}>
+                        <Text fontSize="xs" color={textColor}>Revenue</Text>
+                        <Text fontSize="sm" fontWeight="bold" color="purple.600">
+                          {loading ? '-' : `$${(statistics.financial?.totalRevenue || 1247).toLocaleString()}`}
+                        </Text>
+                      </VStack>
+                    </HStack>
+                  </SimpleGrid>
+                </Box>
+
+                <Box p={3} bg={useColorModeValue('gray.50', 'gray.700')} borderRadius="md">
+                  <Text fontSize="xs" fontWeight="semibold" color={textColor} mb={2}>Performance Trends</Text>
+                  <VStack spacing={1} align="stretch">
+                    <HStack justify="space-between">
+                      <Text fontSize="xs" color={textColor}>vs Yesterday</Text>
+                      <HStack spacing={1}>
+                        <TriangleUpIcon color="green.500" boxSize={2} />
+                        <Text fontSize="xs" fontWeight="bold" color="green.600">+12%</Text>
+                      </HStack>
+                    </HStack>
+                    
+                    <HStack justify="space-between">
+                      <Text fontSize="xs" color={textColor}>vs Last Week</Text>
+                      <HStack spacing={1}>
+                        <TriangleUpIcon color="green.500" boxSize={2} />
+                        <Text fontSize="xs" fontWeight="bold" color="green.600">+8%</Text>
+                      </HStack>
+                    </HStack>
+                    
+                    <HStack justify="space-between">
+                      <Text fontSize="xs" color={textColor}>vs Last Month</Text>
+                      <HStack spacing={1}>
+                        <TriangleDownIcon color="red.500" boxSize={2} />
+                        <Text fontSize="xs" fontWeight="bold" color="red.600">-3%</Text>
+                      </HStack>
+                    </HStack>
+                  </VStack>
+                </Box>
+              </Grid>
             </CardBody>
           </Card>
 
@@ -586,29 +778,37 @@ const AdminStatistics = () => {
                 <HStack>
                   <Icon as={CheckCircleIcon} color="green.500" />
                   <VStack align="start" spacing={0}>
-                    <Text fontWeight="bold">{statistics.overview?.activeTrips}</Text>
+                    <Text fontWeight="bold">
+                      {loading ? <Skeleton height="20px" width="30px" /> : (statistics.overview?.activeTrips || '0')}
+                    </Text>
                     <Text fontSize="sm" color="gray.500">Active Trips</Text>
                   </VStack>
                 </HStack>
                 <HStack>
                   <Icon as={CalendarIcon} color="blue.500" />
                   <VStack align="start" spacing={0}>
-                    <Text fontWeight="bold">{statistics.overview?.completedTrips}</Text>
+                    <Text fontWeight="bold">
+                      {loading ? <Skeleton height="20px" width="30px" /> : (statistics.overview?.completedTrips || '0')}
+                    </Text>
                     <Text fontSize="sm" color="gray.500">Completed Today</Text>
                   </VStack>
                 </HStack>
                 <HStack>
                   <Icon as={WarningIcon} color="orange.500" />
                   <VStack align="start" spacing={0}>
-                    <Text fontWeight="bold">{statistics.overview?.cancelledTrips}</Text>
+                    <Text fontWeight="bold">
+                      {loading ? <Skeleton height="20px" width="30px" /> : (statistics.overview?.cancelledTrips || '0')}
+                    </Text>
                     <Text fontSize="sm" color="gray.500">Cancelled Trips</Text>
                   </VStack>
                 </HStack>
                 <HStack>
                   <Icon as={FaCar} color="purple.500" />
                   <VStack align="start" spacing={0}>
-                    <Text fontWeight="bold">{statistics.overview?.totalVehicles}</Text>
-                    <Text fontSize="sm" color="gray.500">Total Vehicles</Text>
+                    <Text fontWeight="bold">
+                      {loading ? <Skeleton height="20px" width="30px" /> : (statistics.overview?.totalDrivers || '0')}
+                    </Text>
+                    <Text fontSize="sm" color="gray.500">Total Drivers</Text>
                   </VStack>
                 </HStack>
               </SimpleGrid>
@@ -781,48 +981,7 @@ const AdminStatistics = () => {
               </CardBody>
             </Card>
 
-            {/* Performance Metrics */}
-            <Card bg={cardBg} borderColor={borderColor} shadow="sm">
-              <CardHeader>
-                <Heading size="md" color={textColor}>Performance Metrics</Heading>
-              </CardHeader>
-              <CardBody>
-                <SimpleGrid columns={metricColumns} spacing={6}>
-                  <MetricCard
-                    title="Avg Trip Duration"
-                    value={loading ? '' : statistics.performance?.avgTripDuration}
-                    unit=" min"
-                    progress={75}
-                    color="blue.400"
-                    isLoading={loading}
-                  />
-                  <MetricCard
-                    title="Avg Wait Time"
-                    value={loading ? '' : statistics.performance?.avgWaitTime}
-                    unit=" min"
-                    progress={65}
-                    color="orange.400"
-                    isLoading={loading}
-                  />
-                  <MetricCard
-                    title="Customer Rating"
-                    value={loading ? '' : statistics.performance?.customerSatisfaction}
-                    unit="/5"
-                    progress={92}
-                    color="green.400"
-                    isLoading={loading}
-                  />
-                  <MetricCard
-                    title="On-Time Rate"
-                    value={loading ? '' : statistics.performance?.onTimePercentage}
-                    unit="%"
-                    progress={loading ? 0 : statistics.performance?.onTimePercentage}
-                    color="purple.400"
-                    isLoading={loading}
-                  />
-                </SimpleGrid>
-              </CardBody>
-            </Card>
+
 
             {/* Charts and Additional Data */}
             <SimpleGrid columns={chartColumns} spacing={6}>

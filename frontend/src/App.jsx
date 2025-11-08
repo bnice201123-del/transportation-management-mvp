@@ -10,8 +10,12 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import SchedulerDashboard from './components/scheduler/SchedulerDashboard';
 import RecurringTrips from './components/scheduler/RecurringTrips';
+import CompletedTrips from './components/scheduler/CompletedTrips';
+import RiderHistory from './components/riders/RiderHistory';
 import DispatcherDashboard from './components/dispatcher/DispatcherDashboard';
 import SimpleDriverDashboard from './components/driver/SimpleDriverDashboard';
+import DriverReport from './components/driver/DriverReport';
+import VehicleLog from './components/vehicles/VehicleLog';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminOverview from './components/admin/AdminOverview';
 import AdminAnalytics from './components/admin/AdminAnalytics';
@@ -109,6 +113,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={['admin', 'scheduler', 'dispatcher']}>
             <RecurringTrips />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/scheduler/completed" 
+        element={
+          <ProtectedRoute allowedRoles={['admin', 'scheduler', 'dispatcher']}>
+            <CompletedTrips />
           </ProtectedRoute>
         } 
       />
@@ -376,10 +388,34 @@ const AppRoutes = () => {
         } 
       />
       <Route 
+        path="/riders/history" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <RiderHistory />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver/report" 
+        element={
+          <ProtectedRoute allowedRoles={['driver', 'admin']}>
+            <DriverReport />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/vehicles" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
             <VehiclesDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/vehicles/log" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <VehicleLog />
           </ProtectedRoute>
         } 
       />

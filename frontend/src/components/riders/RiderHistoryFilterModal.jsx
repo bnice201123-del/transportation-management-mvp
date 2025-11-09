@@ -93,7 +93,7 @@ const RiderHistoryFilterModal = ({
       setLoadingData(true);
       
       // Get unique riders and drivers from trips
-      const response = await axios.get('/trips', {
+      const response = await axios.get('/api/trips', {
         params: {
           limit: 1000, // Get more trips to extract unique values
           status: 'all'

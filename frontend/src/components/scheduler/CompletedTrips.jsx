@@ -138,7 +138,7 @@ const CompletedTrips = () => {
       if (filters.driverName) params.assignedDriver = filters.driverName;
       if (filters.tripType !== 'all') params.tripType = filters.tripType;
 
-      const response = await axios.get('/trips', { params });
+      const response = await axios.get('/api/trips', { params });
       
       if (response.data.success) {
         setCompletedTrips(response.data.data.trips || []);

@@ -82,7 +82,7 @@ const CalendarOverview = ({ onTripUpdate }) => {
   const fetchTrips = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/trips');
+      const response = await axios.get('/api/trips');
       const tripsData = response.data?.trips || [];
       setTrips(tripsData);
     } catch (error) {

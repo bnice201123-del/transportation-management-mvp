@@ -120,7 +120,7 @@ const DispatcherDashboard = () => {
 
   const fetchTrips = useCallback(async () => {
     try {
-      const response = await axios.get('/trips');
+      const response = await axios.get('/api/trips');
       setTrips(response.data.trips || []);
     } catch (error) {
       console.error('Error fetching trips:', error);
@@ -139,7 +139,7 @@ const DispatcherDashboard = () => {
 
   const fetchDrivers = useCallback(async () => {
     try {
-      const response = await axios.get('/users?role=driver&isActive=true');
+      const response = await axios.get('/api/users?role=driver&isActive=true');
       setDrivers(response.data.users || []);
     } catch (error) {
       console.error('Error fetching drivers:', error);

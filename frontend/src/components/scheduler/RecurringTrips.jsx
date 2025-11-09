@@ -316,7 +316,7 @@ const RecurringTrips = () => {
       setLoading(true);
       setError('');
       
-      const response = await axios.get('/recurring-trips');
+      const response = await axios.get('/api/recurring-trips');
       setRecurringTrips(response.data || []);
     } catch (err) {
       console.error('Error fetching recurring trips:', err);

@@ -180,7 +180,7 @@ const DriverReport = () => {
 
       console.log('Loading driver trips with params:', params);
 
-      const response = await axios.get('/trips', { params });
+      const response = await axios.get('/api/trips', { params });
 
       if (response.data.success) {
         const trips = response.data.data.trips || [];

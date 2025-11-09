@@ -26,7 +26,7 @@ const SimpleDriverDashboard = () => {
   useEffect(() => {
     const fetchTrips = async () => {
       try {
-        const response = await axios.get('/trips');
+        const response = await axios.get('/api/trips');
         const driverTrips = response.data.trips.filter(trip => 
           trip.assignedDriver && trip.assignedDriver._id === user._id
         );

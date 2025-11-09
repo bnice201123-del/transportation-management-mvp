@@ -180,7 +180,7 @@ const RiderHistory = () => {
         params.search = `${filters.pickupLocation} ${filters.dropoffLocation}`.trim();
       }
 
-      const response = await axios.get('/trips', { params });
+      const response = await axios.get('/api/trips', { params });
       
       if (response.data.success) {
         const trips = response.data.data.trips || [];

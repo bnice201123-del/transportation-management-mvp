@@ -13,7 +13,7 @@ import RecurringTrips from './components/scheduler/RecurringTrips';
 import CompletedTrips from './components/scheduler/CompletedTrips';
 import RiderHistory from './components/riders/RiderHistory';
 import DispatcherDashboard from './components/dispatcher/DispatcherDashboard';
-import SimpleDriverDashboard from './components/driver/SimpleDriverDashboard';
+import DriverLanding from './components/driver/DriverLanding';
 import DriverReport from './components/driver/DriverReport';
 import VehicleLog from './components/vehicles/VehicleLog';
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -28,7 +28,13 @@ import ErrorBoundary from './components/shared/ErrorBoundary';
 import Layout from './components/shared/Layout';
 import ScrollTestPage from './components/test/ScrollTestPage';
 import RidersDashboard from './components/riders/RidersDashboard';
+import RidersLanding from './components/riders/RidersLanding';
+import RiderProfile from './components/riders/RiderProfile';
+import NewRider from './components/riders/NewRider';
 import VehiclesDashboard from './components/vehicles/VehiclesDashboard';
+import VehiclesLanding from './components/vehicles/VehiclesLanding';
+import VehicleProfile from './components/vehicles/VehicleProfile';
+import NewVehicle from './components/vehicles/NewVehicle';
 import MapsDashboard from './components/maps/MapsDashboard';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -305,8 +311,8 @@ const AppRoutes = () => {
       <Route 
         path="/driver" 
         element={
-          <ProtectedRoute allowedRoles={['driver']}>
-            <SimpleDriverDashboard />
+          <ProtectedRoute allowedRoles={['driver', 'admin']}>
+            <DriverLanding />
           </ProtectedRoute>
         } 
       />
@@ -390,16 +396,40 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
-      <Route 
-        path="/riders" 
+      <Route
+        path="/riders"
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
-            <RidersDashboard />
+            <RidersLanding />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/riders/history" 
+      <Route
+        path="/riders/new"
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <NewRider />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/riders/:riderId"
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <RiderProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/riders/:riderId/edit"
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <RiderProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/riders/history"
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
             <RiderHistory />
@@ -414,16 +444,56 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
-      <Route 
-        path="/vehicles" 
+      <Route
+        path="/vehicles"
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
-            <VehiclesDashboard />
+            <VehiclesLanding />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/vehicles/log" 
+      <Route
+        path="/vehicles/new"
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <NewVehicle />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vehicles/:vehicleId"
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <VehicleProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vehicles/:vehicleId/edit"
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <VehicleProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vehicles/assignment"
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <VehiclesLanding />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vehicles/out-of-service"
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <VehiclesLanding />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vehicles/log"
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
             <VehicleLog />

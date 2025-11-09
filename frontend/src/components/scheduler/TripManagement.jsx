@@ -147,7 +147,7 @@ const TripManagement = ({ onTripUpdate }) => {
   const fetchTrips = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/trips');
+      const response = await axios.get('/api/trips');
       const tripsData = response.data?.trips || [];
       setTrips(tripsData);
       setFilteredTrips(tripsData);
@@ -201,7 +201,7 @@ const TripManagement = ({ onTripUpdate }) => {
 
   const fetchDrivers = useCallback(async () => {
     try {
-      const response = await axios.get('/users/drivers');
+      const response = await axios.get('/api/users/drivers');
       setDrivers(response.data || []);
     } catch (error) {
       console.error('Error fetching drivers:', error);

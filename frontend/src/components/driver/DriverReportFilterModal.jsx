@@ -93,7 +93,7 @@ const DriverReportFilterModal = ({
       setLoadingData(true);
       
       // Get trips for this specific driver (backend automatically filters by driver role)
-      const response = await axios.get('/trips', {
+      const response = await axios.get('/api/trips', {
         params: {
           limit: 1000,
           status: 'all'

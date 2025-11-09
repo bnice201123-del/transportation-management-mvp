@@ -103,7 +103,7 @@ const VehicleLogFilterModal = ({
       setLoadingData(true);
       
       // Get all trips to extract filter options
-      const tripsResponse = await axios.get('/trips', {
+      const tripsResponse = await axios.get('/api/trips', {
         params: {
           limit: 1000,
           status: 'all'
@@ -149,7 +149,7 @@ const VehicleLogFilterModal = ({
 
       // Also try to get vehicles from a dedicated vehicles endpoint if it exists
       try {
-        const vehiclesResponse = await axios.get('/vehicles');
+        const vehiclesResponse = await axios.get('/api/vehicles');
         if (vehiclesResponse.data.success) {
           const vehicles = vehiclesResponse.data.data || vehiclesResponse.data.vehicles || [];
           const vehicleOptions = vehicles.map(vehicle => ({

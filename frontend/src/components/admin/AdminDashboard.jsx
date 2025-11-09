@@ -154,7 +154,7 @@ const AdminDashboard = () => {
 
   const fetchRecentTrips = useCallback(async () => {
     try {
-      const response = await axios.get('/trips/recent?limit=10');
+      const response = await axios.get('/api/trips/recent?limit=10');
       setRecentTrips(response.data);
     } catch (error) {
       console.error('Error fetching recent trips:', error);

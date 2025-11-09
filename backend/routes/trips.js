@@ -141,6 +141,24 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
+// Get recent trips
+router.get('/recent', authenticateToken, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    
+    const trips = await Trip.find()
+      .populate('assignedDriver', 'firstName lastName')
+      .populate('vehicleId', 'make model licensePlate')
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    res.json(trips);
+  } catch (error) {
+    console.error('Get recent trips error:', error);
+    res.status(500).json({ message: 'Server error fetching recent trips' });
+  }
+});
+
 // Advanced search endpoint for trips and ride history
 router.get('/search', authenticateToken, async (req, res) => {
   try {

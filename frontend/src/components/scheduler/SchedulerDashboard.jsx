@@ -125,7 +125,7 @@ const SchedulerDashboard = ({ view }) => {
 
   const fetchTrips = useCallback(async () => {
     try {
-      const response = await axios.get('/trips');
+      const response = await axios.get('/api/trips');
       setTrips(response.data.trips);
     } catch (error) {
       console.error('Error fetching trips:', error);
@@ -143,7 +143,7 @@ const SchedulerDashboard = ({ view }) => {
 
   const fetchDispatchers = useCallback(async () => {
     try {
-      const response = await axios.get('/users/dispatchers/available');
+      const response = await axios.get('/api/users/dispatchers/available');
       setDispatchers(response.data);
     } catch (error) {
       console.error('Error fetching dispatchers:', error);
@@ -172,7 +172,7 @@ const SchedulerDashboard = ({ view }) => {
   // Filter trips based on selected tab and filters
   useEffect(() => {
     const filterTrips = () => {
-      let filtered = [...trips];
+      let filtered = [...(trips || [])];
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const tomorrow = new Date(today);
@@ -262,14 +262,14 @@ const SchedulerDashboard = ({ view }) => {
           </Tr>
         </Thead>
         <Tbody>
-          {trips.length === 0 ? (
+          {(trips || []).length === 0 ? (
             <Tr>
               <Td colSpan={8} textAlign="center" py={8}>
                 <Text color="gray.500">No trips found</Text>
               </Td>
             </Tr>
           ) : (
-            trips.map((trip) => (
+            (trips || []).map((trip) => (
               <Tr key={trip._id}>
                 <Td>{trip.tripId?.substring(0, 8)}</Td>
                 <Td>
@@ -506,14 +506,14 @@ const SchedulerDashboard = ({ view }) => {
   // Get today's and upcoming trips
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayTrips = trips.filter(trip => {
+  const todayTrips = (trips || []).filter(trip => {
     const tripDate = new Date(trip.scheduledDate);
     tripDate.setHours(0, 0, 0, 0);
     return tripDate.getTime() === today.getTime();
   });
 
-  const pendingTrips = trips.filter(trip => trip.status === 'pending');
-  const completedTrips = trips.filter(trip => trip.status === 'completed');
+  const pendingTrips = (trips || []).filter(trip => trip.status === 'pending');
+  const completedTrips = (trips || []).filter(trip => trip.status === 'completed');
 
   return (
     <Box minH="100vh" bg="gray.50">
@@ -532,6 +532,20 @@ const SchedulerDashboard = ({ view }) => {
             <CalendarOverview onTripUpdate={fetchTrips} />
           ) : (
             <>
+          {/* Scheduler Landing Page Header */}
+          <Card mb={6} bg="green.50" borderLeft="4px solid" borderLeftColor="green.500">
+            <CardBody>
+              <VStack align="start" spacing={3}>
+                <Heading size="lg" color="green.700">
+                  Scheduler Control Center
+                </Heading>
+                <Text color="gray.600" fontSize="sm">
+                  Create, schedule, and manage all transportation trips. Access recurring trips and ride history from here.
+                </Text>
+              </VStack>
+            </CardBody>
+          </Card>
+          
           {/* Date and Time Display */}
           <Heading 
             as="h3" 
@@ -670,6 +684,30 @@ const SchedulerDashboard = ({ view }) => {
               <Text display={{ base: "block", sm: "none" }}>Manage</Text>
             </Button>
 
+            <Button 
+              leftIcon={<RepeatIcon />} 
+              colorScheme="purple" 
+              variant="outline"
+              onClick={() => window.location.href = '/scheduler/recurring'}
+              size={{ base: "md", md: "lg" }}
+              flex={{ base: "1", sm: "none" }}
+            >
+              <Text display={{ base: "none", sm: "block" }}>Recurring Trips</Text>
+              <Text display={{ base: "block", sm: "none" }}>Recurring</Text>
+            </Button>
+
+            <Button 
+              leftIcon={<CalendarIcon />} 
+              colorScheme="orange" 
+              variant="outline"
+              onClick={() => window.location.href = '/scheduler/history'}
+              size={{ base: "md", md: "lg" }}
+              flex={{ base: "1", sm: "none" }}
+            >
+              <Text display={{ base: "none", sm: "block" }}>Ride History</Text>
+              <Text display={{ base: "block", sm: "none" }}>History</Text>
+            </Button>
+
           </Flex>
 
           {/* Enhanced Trips Management with Filtering */}
@@ -751,7 +789,7 @@ const SchedulerDashboard = ({ view }) => {
           <CardBody>
             <Tabs index={activeTab} onChange={setActiveTab} variant="enclosed">
               <TabList>
-                <Tab>Today ({trips.filter(trip => {
+                <Tab>Today ({(trips || []).filter(trip => {
                   const tripDate = new Date(trip.scheduledDate);
                   const today = new Date();
                   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -759,19 +797,19 @@ const SchedulerDashboard = ({ view }) => {
                   todayEnd.setDate(todayEnd.getDate() + 1);
                   return tripDate >= todayStart && tripDate < todayEnd;
                 }).length})</Tab>
-                <Tab>Upcoming ({trips.filter(trip => {
+                <Tab>Upcoming ({(trips || []).filter(trip => {
                   const tripDate = new Date(trip.scheduledDate);
                   const tomorrow = new Date();
                   tomorrow.setDate(tomorrow.getDate() + 1);
                   return tripDate >= tomorrow;
                 }).length})</Tab>
-                <Tab>Past ({trips.filter(trip => {
+                <Tab>Past ({(trips || []).filter(trip => {
                   const tripDate = new Date(trip.scheduledDate);
                   const today = new Date();
                   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
                   return tripDate < todayStart;
                 }).length})</Tab>
-                <Tab>All Trips ({trips.length})</Tab>
+                <Tab>All Trips ({(trips || []).length})</Tab>
               </TabList>
 
               <TabPanels>

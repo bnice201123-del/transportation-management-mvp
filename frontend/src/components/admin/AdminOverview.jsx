@@ -60,19 +60,19 @@ const AdminOverview = () => {
       
       // Fetch multiple data sources for overview
       const [analyticsRes, healthRes, usersRes, tripsRes] = await Promise.all([
-        axios.get('/analytics/dashboard').catch((err) => {
+        axios.get('/api/analytics/dashboard').catch((err) => {
           console.warn('Analytics API not available:', err.message);
           return { data: null };
         }),
-        axios.get('/health').catch((err) => {
+        axios.get('/api/health').catch((err) => {
           console.warn('Health API not available:', err.message);
           return { data: { status: 'Unknown', message: 'Health check failed' } };
         }),
-        axios.get('/users').catch((err) => {
+        axios.get('/api/users').catch((err) => {
           console.warn('Users API not available:', err.message);
           return { data: [] };
         }),
-        axios.get('/trips').catch((err) => {
+        axios.get('/api/trips').catch((err) => {
           console.warn('Trips API not available:', err.message);
           return { data: [] };
         })

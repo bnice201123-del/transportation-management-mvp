@@ -180,7 +180,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
         { label: 'Dispatch', icon: TimeIcon, action: () => navigate('/dispatcher') },
         { label: 'Scheduler', icon: CalendarIcon, action: () => navigate('/scheduler') },
         { label: 'Drivers', icon: StarIcon, action: () => navigate('/driver') },
-        { label: 'Riders', icon: FaUser, action: () => navigate('/riders') },
+        { label: 'Riders', icon: FaUser, action: () => navigate('/riders?openModal=true') },
         { label: 'Vehicles', icon: FaCar, action: () => navigate('/vehicles') }
       ]
     }] : []),

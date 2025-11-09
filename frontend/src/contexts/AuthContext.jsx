@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserProfile = useCallback(async () => {
     try {
-      const response = await axios.get('/auth/verify');
+      const response = await axios.get('/api/auth/verify');
       setUser(response.data.user);
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -46,8 +46,8 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setLoading(true); // Set loading during login
-      console.log('AuthContext - Making login request to:', '/auth/login');
-      const response = await axios.post('/auth/login', { email, password });
+      console.log('AuthContext - Making login request to:', '/api/auth/login');
+      const response = await axios.post('/api/auth/login', { email, password });
       console.log('AuthContext - Login response:', response.data);
       
       const { token: newToken, user: userData } = response.data;
@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const response = await axios.post('/auth/register', userData);
+      const response = await axios.post('/api/auth/register', userData);
       const { token: newToken, user: newUser } = response.data;
       
       setToken(newToken);

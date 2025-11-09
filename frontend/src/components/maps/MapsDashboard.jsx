@@ -38,7 +38,7 @@ const MapsDashboard = () => {
   const fetchTrips = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/trips');
+      const response = await axios.get('/api/trips');
       const tripsWithCoords = response.data.filter(trip => 
         trip.pickupLocation?.coordinates && trip.dropoffLocation?.coordinates
       );

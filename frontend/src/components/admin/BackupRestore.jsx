@@ -88,28 +88,21 @@ import {
   TimeIcon,
   CalendarIcon,
   RepeatIcon,
-  DatabaseIcon,
-  FileIcon,
-  CloudIcon,
-  ShieldIcon,
   AddIcon,
   ViewIcon,
   EditIcon
 } from '@chakra-ui/icons';
 import { FaShieldAlt, FaDatabase, FaFile, FaCloud, FaHistory, FaCog, FaFilter, FaPlay, FaPause, FaStop } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
 import Navbar from '../shared/Navbar';
 
 const BackupRestore = () => {
-  const navigate = useNavigate();
   const toast = useToast();
 
   // Color mode values
   const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
 
   // State management
-  const [activeTab, setActiveTab] = useState(0);
+  const [_activeTab, setActiveTab] = useState(0);
   const [backups, setBackups] = useState([]);
   const [filteredBackups, setFilteredBackups] = useState([]);
   const [restoreHistory, setRestoreHistory] = useState([]);
@@ -299,11 +292,11 @@ const BackupRestore = () => {
 
   const getTypeIcon = (type) => {
     switch (type) {
-      case 'full': return DatabaseIcon;
+      case 'full': return FaDatabase;
       case 'database': return FaDatabase;
-      case 'incremental': return FileIcon;
+      case 'incremental': return FaFile;
       case 'files': return FaFile;
-      default: return DatabaseIcon;
+      default: return FaDatabase;
     }
   };
 

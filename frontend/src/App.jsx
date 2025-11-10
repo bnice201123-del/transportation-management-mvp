@@ -24,6 +24,13 @@ import AdminRegistration from './components/admin/AdminRegistration';
 import AdminStatistics from './components/admin/AdminStatistics';
 import AdminSettings from './components/admin/AdminSettings';
 import OperationsLanding from './components/admin/OperationsLanding';
+import LiveTrackingDashboard from './components/admin/LiveTrackingDashboard';
+import SystemAdministration from './components/admin/SystemAdministration';
+import ManageUsers from './components/admin/ManageUsers';
+import UserRolesPermissions from './components/admin/UserRolesPermissions';
+import Security from './components/admin/Security';
+import BackupRestore from './components/admin/BackupRestore';
+import AdminPlaceholder from './components/admin/AdminPlaceholder';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import Layout from './components/shared/Layout';
 import ScrollTestPage from './components/test/ScrollTestPage';
@@ -347,6 +354,16 @@ const AppRoutes = () => {
         } 
       />
       <Route 
+        path="/admin/live-tracking" 
+        element={
+          <ProtectedRoute allowedRoles={['admin', 'dispatcher']}>
+            <ErrorBoundary fallbackMessage="Failed to load Live Tracking Dashboard. Please try refreshing the page.">
+              <LiveTrackingDashboard />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/admin/reports" 
         element={
           <ProtectedRoute allowedRoles={['admin']}>
@@ -387,11 +404,111 @@ const AppRoutes = () => {
         } 
       />
       <Route 
+        path="/admin/system" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load System Administration. Please try refreshing the page.">
+              <SystemAdministration />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/admin/operations" 
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <ErrorBoundary fallbackMessage="Failed to load Operations Center. Please try refreshing the page.">
               <OperationsLanding />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/users" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load User Management. Please try refreshing the page.">
+              <ManageUsers />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/roles" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load User Roles & Permissions. Please try refreshing the page.">
+              <UserRolesPermissions />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/security" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load Security Dashboard. Please try refreshing the page.">
+              <Security />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/backup" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load Backup & Restore. Please try refreshing the page.">
+              <BackupRestore />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/access" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load Access Control. Please try refreshing the page.">
+              <AdminPlaceholder />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/import" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load Bulk Operations. Please try refreshing the page.">
+              <AdminPlaceholder />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/activity" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load User Activity Monitor. Please try refreshing the page.">
+              <AdminPlaceholder />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/config" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load System Configuration. Please try refreshing the page.">
+              <AdminPlaceholder />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/logs" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load Audit Logs. Please try refreshing the page.">
+              <AdminPlaceholder />
             </ErrorBoundary>
           </ProtectedRoute>
         } 

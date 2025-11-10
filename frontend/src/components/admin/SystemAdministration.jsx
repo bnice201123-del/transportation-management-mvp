@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Box,
   Container,
@@ -44,48 +44,59 @@ const SystemAdministration = () => {
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
   const headerBg = useColorModeValue('linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 'linear-gradient(135deg, #4a5568 0%, #2d3748 100%)');
+  const categoryBg = useColorModeValue('gray.100', 'gray.700');
+  const headingColor = useColorModeValue('gray.800', 'white');
+  const textColor = useColorModeValue('gray.600', 'gray.300');
+  const dividerColor = useColorModeValue('gray.300', 'gray.600');
 
   const adminFunctions = [
     {
-      title: 'User Management',
-      description: 'Manage system users, roles, and permissions',
+      title: 'User Management & Access Control',
+      description: 'Comprehensive user management, roles, permissions, and access control',
       icon: FaUsers,
       color: 'blue.500',
       functions: [
         {
           name: 'Register New User',
-          description: 'Add new users to the system',
+          description: 'Add new users to the system with role assignment',
           icon: FaUserPlus,
           path: '/admin/register',
           color: 'green.500'
         },
         {
           name: 'Manage Users',
-          description: 'View and edit existing users',
+          description: 'View, edit, activate/deactivate existing users',
           icon: FaUserCog,
           path: '/admin/users',
           color: 'blue.500'
         },
         {
           name: 'User Roles & Permissions',
-          description: 'Configure roles and access levels',
+          description: 'Configure roles, permissions, and access levels',
           icon: FaUserShield,
-          path: '/admin/roles', // Link to the new User Roles & Permissions dashboard
+          path: '/admin/roles',
           color: 'purple.500'
         },
         {
           name: 'Access Control',
-          description: 'Manage user access and security',
+          description: 'Manage user access, sessions, and security policies',
           icon: FaKey,
-          path: '/admin/overview', // Using existing admin overview for now
+          path: '/admin/access',
           color: 'orange.500'
         },
         {
-          name: 'Bulk Operations',
-          description: 'Import/export users in bulk',
+          name: 'Bulk User Operations',
+          description: 'Import/export users, bulk updates, and mass operations',
           icon: FaFileImport,
-          path: '/admin/overview', // Using existing admin overview for now
+          path: '/admin/import',
           color: 'teal.500'
+        },
+        {
+          name: 'User Activity Monitor',
+          description: 'Track user login history and activity patterns',
+          icon: FaHistory,
+          path: '/admin/activity',
+          color: 'cyan.500'
         }
       ]
     },
@@ -250,7 +261,7 @@ const SystemAdministration = () => {
             {adminFunctions.map((category, categoryIndex) => (
               <Box key={categoryIndex}>
                 <Box
-                  bg={useColorModeValue('gray.100', 'gray.700')}
+                  bg={categoryBg}
                   p={6}
                   borderRadius="lg"
                   mb={6}
@@ -259,11 +270,11 @@ const SystemAdministration = () => {
                 >
                   <Flex align="center" mb={2}>
                     <Icon as={category.icon} color={category.color} boxSize={7} mr={4} />
-                    <Heading size="lg" color={useColorModeValue('gray.800', 'white')} fontWeight="semibold">
+                    <Heading size="lg" color={headingColor} fontWeight="semibold">
                       {category.title}
                     </Heading>
                   </Flex>
-                  <Text color={useColorModeValue('gray.600', 'gray.300')} fontSize="md">
+                  <Text color={textColor} fontSize="md">
                     {category.description}
                   </Text>
                 </Box>
@@ -294,11 +305,11 @@ const SystemAdministration = () => {
                             >
                               <Icon as={func.icon} color={func.color} boxSize={6} />
                             </Box>
-                            <Heading size="md" color={useColorModeValue('gray.800', 'white')} flex="1" fontWeight="semibold">
+                            <Heading size="md" color={headingColor} flex="1" fontWeight="semibold">
                               {func.name}
                             </Heading>
                           </Flex>
-                          <Text color={useColorModeValue('gray.600', 'gray.300')} fontSize="sm" lineHeight="1.5" flex="1">
+                          <Text color={textColor} fontSize="sm" lineHeight="1.5" flex="1">
                             {func.description}
                           </Text>
                           <Button
@@ -313,6 +324,7 @@ const SystemAdministration = () => {
                               shadow: 'md'
                             }}
                             transition="all 0.2s"
+                            onClick={() => navigate(func.path)}
                           >
                             Access →
                           </Button>
@@ -325,7 +337,7 @@ const SystemAdministration = () => {
                 {categoryIndex < adminFunctions.length - 1 && (
                   <Divider
                     my={12}
-                    borderColor={useColorModeValue('gray.300', 'gray.600')}
+                    borderColor={dividerColor}
                     borderWidth="1px"
                     opacity={0.5}
                   />

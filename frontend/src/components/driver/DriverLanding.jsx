@@ -206,7 +206,7 @@ const DriverLanding = () => {
 
   const updateDriverLocation = useCallback(async (location) => {
     try {
-      await axios.patch(`/users/${user._id}/location`, location);
+      await axios.patch(`/api/users/${user._id}/location`, location);
     } catch (err) {
       console.error('Error updating location:', err);
     }
@@ -256,7 +256,7 @@ const DriverLanding = () => {
     }
 
     try {
-      await axios.post('/reports', {
+      await axios.post('/api/reports', {
         type: reportType,
         description: reportDescription,
         submittedBy: user._id,

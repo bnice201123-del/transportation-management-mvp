@@ -12,6 +12,7 @@ import userRoutes from './routes/users.js';
 import analyticsRoutes from './routes/analytics.js';
 import recurringTripsRoutes from './routes/recurringTrips.js';
 import vehiclesRoutes from './routes/vehicles.js';
+import locationRoutes from './routes/locations.js';
 
 // Load environment variables
 dotenv.config();
@@ -59,6 +60,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/recurring-trips', recurringTripsRoutes);
 app.use('/api/vehicles', vehiclesRoutes);
+app.use('/api/locations', locationRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

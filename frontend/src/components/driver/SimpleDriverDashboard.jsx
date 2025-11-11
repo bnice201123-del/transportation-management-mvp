@@ -27,7 +27,7 @@ const SimpleDriverDashboard = () => {
     const fetchTrips = async () => {
       try {
         const response = await axios.get('/api/trips');
-        const driverTrips = response.data.trips.filter(trip => 
+        const driverTrips = (response.data.data?.trips || []).filter(trip => 
           trip.assignedDriver && trip.assignedDriver._id === user._id
         );
         setTrips(driverTrips);

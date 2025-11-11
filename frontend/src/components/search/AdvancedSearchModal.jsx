@@ -54,6 +54,7 @@ import {
 } from '@chakra-ui/icons';
 import { FaCar, FaUser, FaRoute } from 'react-icons/fa';
 import axios from 'axios';
+import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 
 const AdvancedSearchModal = ({ isOpen, onClose }) => {
   const [searchCriteria, setSearchCriteria] = useState({
@@ -410,23 +411,31 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                       <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
                         <FormControl>
                           <FormLabel fontSize="sm">Pickup Location</FormLabel>
-                          <Input
+                          <PlacesAutocomplete
                             placeholder="Enter pickup location"
                             value={searchCriteria.pickupLocation}
-                            onChange={(e) => setSearchCriteria({
+                            onChange={(address) => setSearchCriteria({
                               ...searchCriteria,
-                              pickupLocation: e.target.value
+                              pickupLocation: address
+                            })}
+                            onPlaceSelected={(place) => setSearchCriteria({
+                              ...searchCriteria,
+                              pickupLocation: place.address
                             })}
                           />
                         </FormControl>
                         <FormControl>
                           <FormLabel fontSize="sm">Dropoff Location</FormLabel>
-                          <Input
+                          <PlacesAutocomplete
                             placeholder="Enter dropoff location"
                             value={searchCriteria.dropoffLocation}
-                            onChange={(e) => setSearchCriteria({
+                            onChange={(address) => setSearchCriteria({
                               ...searchCriteria,
-                              dropoffLocation: e.target.value
+                              dropoffLocation: address
+                            })}
+                            onPlaceSelected={(place) => setSearchCriteria({
+                              ...searchCriteria,
+                              dropoffLocation: place.address
                             })}
                           />
                         </FormControl>

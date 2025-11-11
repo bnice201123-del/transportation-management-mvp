@@ -27,8 +27,8 @@ import OperationsLanding from './components/admin/OperationsLanding';
 import LiveTrackingDashboard from './components/admin/LiveTrackingDashboard';
 import SystemAdministration from './components/admin/SystemAdministration';
 import ManageUsers from './components/admin/ManageUsers';
-import UserRolesPermissions from './components/admin/UserRolesPermissions';
-import Security from './components/admin/Security';
+import UserRolesPermissions from './components/admin/UserRolesPermissionsSimple';
+import Security from './components/admin/SecuritySimple';
 import BackupRestore from './components/admin/BackupRestore';
 import AdminPlaceholder from './components/admin/AdminPlaceholder';
 import ErrorBoundary from './components/shared/ErrorBoundary';
@@ -43,6 +43,9 @@ import VehiclesLanding from './components/vehicles/VehiclesLanding';
 import VehicleProfile from './components/vehicles/VehicleProfile';
 import NewVehicle from './components/vehicles/NewVehicle';
 import MapsDashboard from './components/maps/MapsDashboard';
+import TripMaps from './components/maps/TripMaps';
+import LiveTracking from './components/maps/LiveTracking';
+import DriverLocationTracking from './components/driver/DriverLocationTracking';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { isAuthenticated, user, loading } = useAuth();
@@ -324,6 +327,14 @@ const AppRoutes = () => {
         } 
       />
       <Route 
+        path="/driver/tracking" 
+        element={
+          <ProtectedRoute allowedRoles={['driver']}>
+            <DriverLocationTracking />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/admin" 
         element={
           <ProtectedRoute allowedRoles={['admin']}>
@@ -464,50 +475,10 @@ const AppRoutes = () => {
         } 
       />
       <Route 
-        path="/admin/access" 
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <ErrorBoundary fallbackMessage="Failed to load Access Control. Please try refreshing the page.">
-              <AdminPlaceholder />
-            </ErrorBoundary>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/admin/import" 
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <ErrorBoundary fallbackMessage="Failed to load Bulk Operations. Please try refreshing the page.">
-              <AdminPlaceholder />
-            </ErrorBoundary>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
         path="/admin/activity" 
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <ErrorBoundary fallbackMessage="Failed to load User Activity Monitor. Please try refreshing the page.">
-              <AdminPlaceholder />
-            </ErrorBoundary>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/admin/config" 
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <ErrorBoundary fallbackMessage="Failed to load System Configuration. Please try refreshing the page.">
-              <AdminPlaceholder />
-            </ErrorBoundary>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/admin/logs" 
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <ErrorBoundary fallbackMessage="Failed to load Audit Logs. Please try refreshing the page.">
               <AdminPlaceholder />
             </ErrorBoundary>
           </ProtectedRoute>
@@ -622,6 +593,22 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
             <MapsDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/maps/trips" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <TripMaps />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/maps/tracking" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <LiveTracking />
           </ProtectedRoute>
         } 
       />

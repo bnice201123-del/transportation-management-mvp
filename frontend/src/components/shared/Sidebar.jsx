@@ -58,7 +58,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import AdvancedSearchModal from '../search/AdvancedSearchModal';
 
-const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
+const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -149,10 +149,6 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
         { label: 'Register New User', icon: UnlockIcon, action: () => navigate('/admin/register') },
         { label: 'Manage Users', icon: SettingsIcon, action: () => navigate('/admin/users') },
         { label: 'User Roles & Permissions', icon: InfoIcon, action: () => navigate('/admin/roles') },
-        { label: 'Access Control', icon: EditIcon, action: () => navigate('/admin/access') },
-        { label: 'Bulk Operations', icon: AddIcon, action: () => navigate('/admin/import') },
-        { label: 'System Config', icon: EditIcon, action: () => navigate('/admin/config') },
-        { label: 'Audit Logs', icon: TimeIcon, action: () => navigate('/admin/logs') },
         { label: 'Backup & Restore', icon: CalendarIcon, action: () => navigate('/admin/backup') },
         { label: 'Security', icon: UnlockIcon, action: () => navigate('/admin/security') }
       ]
@@ -173,17 +169,32 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
         { label: 'Vehicles', icon: FaCar, action: () => navigate('/vehicles') }
       ]
     }] : []),
+    // Trip Management - for scheduler, dispatcher, and admin users
+    {
+      id: 'trip-management',
+      label: 'Trip Management',
+      icon: CalendarIcon,
+      color: 'blue.500',
+      path: '/scheduler',
+      roles: ['scheduler', 'dispatcher', 'admin'],
+      subItems: [
+        { label: 'Create New Trip', icon: AddIcon, action: () => navigate('/scheduler/add-trip?openModal=true') },
+        { label: 'Manage Trips', icon: SettingsIcon, action: () => navigate('/scheduler/manage') },
+        { label: 'Completed Trips', icon: CheckIcon, action: () => navigate('/scheduler/completed') },
+        { label: 'Recurring Trips', icon: RepeatIcon, action: () => navigate('/scheduler/recurring') }
+      ]
+    },
     {
       id: 'maps',
       label: 'Maps',
       icon: FaMap,
       color: 'green.500',
-      path: '/maps',
+      path: '/maps/trips',
       roles: ['scheduler', 'dispatcher', 'admin'],
       subItems: [
-        { label: 'Trip Maps', icon: ViewIcon, action: () => navigate('/maps') },
-        { label: 'Route Planning', icon: SearchIcon, action: () => navigate('/maps/routes') },
-        { label: 'Live Tracking', icon: TimeIcon, action: () => navigate('/maps/tracking') }
+        { label: 'Trip Maps', icon: FaRoute, action: () => navigate('/maps/trips') },
+        { label: 'Live Tracking', icon: TimeIcon, action: () => navigate('/maps/tracking') },
+        { label: 'Route Planning', icon: SearchIcon, action: () => navigate('/maps/routes') }
       ]
     }
   ];
@@ -395,43 +406,61 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
 
   // Mobile Drawer Component
   const MobileDrawer = () => (
-    <Drawer isOpen={isMobileOpen} placement="left" onClose={onMobileClose} size="xs">
-      <DrawerOverlay />
-      <DrawerContent>
-        <DrawerCloseButton />
-        <DrawerHeader borderBottomWidth="1px">
-          <Text fontSize="lg" fontWeight="bold" color="green.600">
-            TransportHub
-          </Text>
+    <Drawer 
+      isOpen={isMobileOpen} 
+      placement="left" 
+      onClose={onMobileClose} 
+      size={{ base: "xs", sm: "sm" }}
+    >
+      <DrawerOverlay bg="blackAlpha.300" />
+      <DrawerContent maxW={{ base: "280px", sm: "320px" }}>
+        <DrawerCloseButton 
+          size="md"
+          color="gray.600"
+          _hover={{ color: "gray.800", bg: "gray.100" }}
+        />
+        <DrawerHeader borderBottomWidth="1px" pb={4}>
+          <VStack align="start" spacing={1}>
+            <Text fontSize="lg" fontWeight="bold" color="green.600">
+              TransportHub
+            </Text>
+            <Text fontSize="xs" color="gray.500">
+              Transportation Management
+            </Text>
+          </VStack>
         </DrawerHeader>
-        <DrawerBody p={0}>
-          <VStack spacing={1} align="stretch">
+        <DrawerBody p={2}>
+          <VStack spacing={2} align="stretch">
             {filteredMenuItems.map((item) => (
               <Box key={item.id}>
                 <Flex
                   align="center"
                   p={4}
+                  minH="48px" // Touch-friendly minimum height
                   cursor="pointer"
                   bg={isActive(item.path) ? activeBg : 'transparent'}
                   color={isActive(item.path) ? item.color : textColor}
                   _hover={{ bg: hoverBg, color: item.color }}
+                  _active={{ bg: activeBg, transform: "scale(0.98)" }}
                   transition="all 0.2s ease"
+                  borderRadius="md"
                   onClick={() => {
                     if (item.subItems?.length > 0) {
                       toggleExpanded(item.id);
                     } else {
                       handleItemClick(item);
+                      onMobileClose(); // Close drawer after navigation
                     }
                   }}
                 >
-                  <Icon as={item.icon} boxSize={5} />
+                  <Icon as={item.icon} boxSize={6} />
                   <Text ml={3} fontSize="md" fontWeight="medium" flex={1}>
                     {item.label}
                   </Text>
                   {item.subItems?.length > 0 && (
                     <Icon
                       as={expandedItems[item.id] ? ChevronDownIcon : ChevronRightIcon}
-                      boxSize={4}
+                      boxSize={5}
                     />
                   )}
                 </Flex>
@@ -439,23 +468,27 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
                 {/* Sub Items */}
                 {item.subItems && (
                   <Collapse in={expandedItems[item.id]}>
-                    <VStack spacing={0} align="stretch" bg="gray.50">
+                    <VStack spacing={1} align="stretch" bg="gray.50" p={2} borderRadius="md" ml={2}>
                       {item.subItems.map((subItem, index) => (
                         <Flex
                           key={index}
                           align="center"
                           p={3}
-                          pl={12}
+                          pl={8}
+                          minH="44px" // Touch-friendly sub-item height
                           cursor="pointer"
                           _hover={{ bg: hoverBg, color: item.color }}
+                          _active={{ bg: activeBg, transform: "scale(0.96)" }}
                           transition="all 0.1s"
+                          borderRadius="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             subItem.action();
+                            onMobileClose(); // Close drawer after navigation
                           }}
                         >
                           <Icon as={subItem.icon} boxSize={4} />
-                          <Text ml={2} fontSize="sm">
+                          <Text ml={2} fontSize="sm" fontWeight="medium">
                             {subItem.label}
                           </Text>
                         </Flex>
@@ -475,20 +508,6 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
     <>
       <DesktopSidebar />
       <MobileDrawer />
-      
-      {/* Mobile Menu Button */}
-      <IconButton
-        aria-label="Open menu"
-        icon={<HamburgerIcon />}
-        position="fixed"
-        top={4}
-        left={4}
-        zIndex={1001}
-        display={{ base: "flex", md: "none" }}
-        onClick={onMobileOpen}
-        colorScheme="green"
-        size="sm"
-      />
 
       {/* Advanced Search Modal */}
       <AdvancedSearchModal 

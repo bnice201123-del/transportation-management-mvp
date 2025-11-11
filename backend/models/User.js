@@ -52,10 +52,29 @@ const userSchema = new mongoose.Schema({
     licensePlate: String,
     color: String
   },
+  // Enhanced location tracking
   currentLocation: {
-    lat: Number,
-    lng: Number,
-    lastUpdated: Date
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude] - GeoJSON format
+      index: '2dsphere'
+    },
+    accuracy: Number,
+    heading: Number,
+    speed: Number,
+    timestamp: Date,
+    lastSeen: Date
+  },
+  isLocationTracking: {
+    type: Boolean,
+    default: false
+  },
+  lastLocationUpdate: {
+    type: Date
   },
   isAvailable: {
     type: Boolean,

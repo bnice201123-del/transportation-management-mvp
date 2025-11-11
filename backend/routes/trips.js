@@ -33,10 +33,8 @@ router.get('/', authenticateToken, async (req, res) => {
     
     if (req.user.role === 'driver') {
       filter.assignedDriver = req.user._id;
-    } else if (req.user.role === 'scheduler') {
-      filter.createdBy = req.user._id;
     }
-    // Dispatchers and admins can see all trips
+    // Schedulers, dispatchers and admins can see all trips
 
     // Add additional filters
     if (status) filter.status = status;
@@ -365,10 +363,7 @@ router.put('/recurring/:id', authenticateToken, authorizeRoles(['scheduler', 'di
       return res.status(404).json({ message: 'Recurring trip not found' });
     }
 
-    // Check ownership for schedulers
-    if (req.user.role === 'scheduler' && trip.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
+    // Schedulers, dispatchers and admins can update any recurring trip
 
     const updatedTrip = await RecurringTripService.updateRecurringTrip(req.params.id, req.body);
 
@@ -398,10 +393,7 @@ router.delete('/recurring/:id', authenticateToken, authorizeRoles(['scheduler', 
       return res.status(404).json({ message: 'Recurring trip not found' });
     }
 
-    // Check ownership for schedulers
-    if (req.user.role === 'scheduler' && trip.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
+    // Schedulers, dispatchers and admins can cancel any recurring trip
 
     const { cancelFutureTrips = true } = req.body;
     const cancelledTrip = await RecurringTripService.cancelRecurringTrip(req.params.id, cancelFutureTrips);
@@ -460,9 +452,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     if (req.user.role === 'driver' && trip.assignedDriver?._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
-    if (req.user.role === 'scheduler' && trip.createdBy._id.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
+    // Schedulers, dispatchers and admins can view any trip
 
     res.json(trip);
   } catch (error) {
@@ -515,12 +505,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 
     // Check authorization
-    if (req.user.role === 'scheduler' && trip.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
     if (req.user.role === 'driver' && trip.assignedDriver?.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
+    // Schedulers, dispatchers and admins can update any trip
 
     // Update trip
     Object.assign(trip, req.body);
@@ -665,10 +653,7 @@ router.delete('/:id', authenticateToken, authorizeRoles('scheduler', 'dispatcher
       return res.status(404).json({ message: 'Trip not found' });
     }
 
-    // Check authorization
-    if (req.user.role === 'scheduler' && trip.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
+    // Schedulers, dispatchers and admins can cancel any trip
 
     // Soft delete - mark as cancelled instead of deleting
     trip.status = 'cancelled';

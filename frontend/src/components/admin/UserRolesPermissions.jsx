@@ -48,6 +48,7 @@ import {
   FormControl,
   FormLabel,
   Checkbox,
+  Icon,
   CheckboxGroup,
   Divider,
   Grid,
@@ -84,9 +85,18 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../shared/Navbar';
 
 const UserRolesPermissions = () => {
-  const navigate = useNavigate();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  
+  // Color mode values - must be at the top
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const headerBg = useColorModeValue('linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 'linear-gradient(135deg, #4a5568 0%, #2d3748 100%)');
+  const headingColor = useColorModeValue('gray.800', 'white');
+  const hoverBg = useColorModeValue('gray.50', 'gray.700');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  
+  // State variables
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
@@ -96,10 +106,6 @@ const UserRolesPermissions = () => {
   const [roleFilter, setRoleFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedPermissions, setSelectedPermissions] = useState([]);
-  const [isEditMode, setIsEditMode] = useState(false);
-
-  const bgColor = useColorModeValue('gray.50', 'gray.900');
-  const cardBg = useColorModeValue('white', 'gray.800');
 
   // Mock data for demonstration
   const mockUsers = [

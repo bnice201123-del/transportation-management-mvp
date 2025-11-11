@@ -145,7 +145,7 @@ const AdminDashboard = () => {
 
   const fetchDriverStats = useCallback(async () => {
     try {
-      const response = await axios.get('/analytics/drivers');
+      const response = await axios.get('/api/analytics/drivers');
       setDriverStats(response.data);
     } catch (error) {
       console.error('Error fetching driver stats:', error);
@@ -163,7 +163,7 @@ const AdminDashboard = () => {
 
   const fetchSystemAlerts = useCallback(async () => {
     try {
-      const response = await axios.get('/admin/alerts');
+      const response = await axios.get('/api/admin/alerts');
       setSystemAlerts(response.data);
     } catch (error) {
       console.error('Error fetching system alerts:', error);

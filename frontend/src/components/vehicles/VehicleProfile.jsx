@@ -102,8 +102,8 @@ const VehicleProfile = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setVehicle(response.data);
-      setRideHistory(response.data.trips || []);
-      setFilteredHistory(response.data.trips || []);
+      setRideHistory(response.data.data?.trips || []);
+      setFilteredHistory(response.data.data?.trips || []);
 
       // Set edit form data
       setEditForm({

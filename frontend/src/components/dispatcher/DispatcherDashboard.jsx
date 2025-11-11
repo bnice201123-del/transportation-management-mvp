@@ -59,6 +59,7 @@ import { RepeatIcon, PhoneIcon, SearchIcon, AddIcon, EditIcon, ViewIcon, DeleteI
 import axios from 'axios';
 import Navbar from '../shared/Navbar';
 import TripManagementModal from '../scheduler/TripManagementModal';
+import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 
 const DispatcherDashboard = () => {
   const [trips, setTrips] = useState([]);
@@ -121,7 +122,7 @@ const DispatcherDashboard = () => {
   const fetchTrips = useCallback(async () => {
     try {
       const response = await axios.get('/api/trips');
-      setTrips(response.data.trips || []);
+      setTrips(response.data.data?.trips || []);
     } catch (error) {
       console.error('Error fetching trips:', error);
       toast({
@@ -236,7 +237,7 @@ const DispatcherDashboard = () => {
 
   const assignDriver = async (tripId, driverId) => {
     try {
-      await axios.post(`/trips/${tripId}/assign`, { driverId });
+      await axios.post(`/api/trips/${tripId}/assign`, { driverId });
       toast({
         title: 'Success',
         description: 'Driver assigned successfully',
@@ -280,7 +281,7 @@ const DispatcherDashboard = () => {
       };
 
       if (selectedTrip) {
-        await axios.put(`/trips/${selectedTrip._id}`, tripData);
+        await axios.put(`/api/trips/${selectedTrip._id}`, tripData);
         toast({
           title: 'Success',
           description: 'Trip updated successfully',
@@ -289,7 +290,7 @@ const DispatcherDashboard = () => {
           isClosable: true,
         });
       } else {
-        await axios.post('/trips', tripData);
+        await axios.post('/api/trips', tripData);
         toast({
           title: 'Success',
           description: 'Trip created successfully',
@@ -355,7 +356,7 @@ const DispatcherDashboard = () => {
     
     setIsDeleting(true);
     try {
-      await axios.delete(`/trips/${tripToDelete._id}`);
+      await axios.delete(`/api/trips/${tripToDelete._id}`);
       toast({
         title: 'Success',
         description: 'Trip cancelled successfully',
@@ -392,7 +393,7 @@ const DispatcherDashboard = () => {
     
     setIsAssigning(true);
     try {
-      await axios.post(`/trips/${tripToAssign._id}/assign`, { driverId: selectedDriverId });
+      await axios.post(`/api/trips/${tripToAssign._id}/assign`, { driverId: selectedDriverId });
       toast({
         title: 'Success',
         description: 'Driver assigned successfully',
@@ -1328,11 +1329,19 @@ const DispatcherDashboard = () => {
 
                 <FormControl isRequired mt={4}>
                   <FormLabel>Pickup Location</FormLabel>
-                  <Input
+                  <PlacesAutocomplete
                     value={formData.pickupLocation.address}
-                    onChange={(e) => setFormData(prev => ({ 
+                    onChange={(address) => setFormData(prev => ({ 
                       ...prev, 
-                      pickupLocation: { ...prev.pickupLocation, address: e.target.value }
+                      pickupLocation: { ...prev.pickupLocation, address }
+                    }))}
+                    onPlaceSelected={(place) => setFormData(prev => ({ 
+                      ...prev, 
+                      pickupLocation: { 
+                        address: place.address,
+                        lat: place.location.lat,
+                        lng: place.location.lng
+                      }
                     }))}
                     placeholder="Enter pickup address"
                   />
@@ -1340,11 +1349,19 @@ const DispatcherDashboard = () => {
 
                 <FormControl isRequired mt={4}>
                   <FormLabel>Dropoff Location</FormLabel>
-                  <Input
+                  <PlacesAutocomplete
                     value={formData.dropoffLocation.address}
-                    onChange={(e) => setFormData(prev => ({ 
+                    onChange={(address) => setFormData(prev => ({ 
                       ...prev, 
-                      dropoffLocation: { ...prev.dropoffLocation, address: e.target.value }
+                      dropoffLocation: { ...prev.dropoffLocation, address }
+                    }))}
+                    onPlaceSelected={(place) => setFormData(prev => ({ 
+                      ...prev, 
+                      dropoffLocation: { 
+                        address: place.address,
+                        lat: place.location.lat,
+                        lng: place.location.lng
+                      }
                     }))}
                     placeholder="Enter dropoff address"
                   />

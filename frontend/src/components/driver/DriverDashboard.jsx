@@ -60,8 +60,8 @@ const DriverDashboard = () => {
 
   const fetchTrips = useCallback(async () => {
     try {
-      const response = await axios.get('/trips');
-      setTrips(response.data.trips);
+      const response = await axios.get('/api/trips');
+      setTrips(response.data.data?.trips || []);
     } catch (error) {
       console.error('Error fetching trips:', error);
       toast({
@@ -79,7 +79,7 @@ const DriverDashboard = () => {
   const updateAvailability = async (available) => {
     setUpdating(true);
     try {
-      await axios.patch(`/users/${user._id}/availability`, { 
+      await axios.patch(`/api/users/${user._id}/availability`, { 
         isAvailable: available 
       });
       setIsAvailable(available);
@@ -132,7 +132,7 @@ const DriverDashboard = () => {
 
   const updateDriverLocation = useCallback(async (location) => {
     try {
-      await axios.patch(`/users/${user._id}/location`, location);
+      await axios.patch(`/api/users/${user._id}/location`, location);
     } catch (err) {
       console.error('Error updating location:', err);
     }

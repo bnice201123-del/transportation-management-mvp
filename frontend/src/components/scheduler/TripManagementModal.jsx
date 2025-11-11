@@ -159,8 +159,8 @@ const TripManagementModal = ({ isOpen, onClose, onTripUpdate }) => {
       const response = await axios.get(`/api/trips?${params}`);
       
       if (response.data) {
-        setTrips(response.data.trips || []);
-        setTotalPages(response.data.totalPages || 1);
+        setTrips(response.data.data?.trips || []);
+        setTotalPages(response.data.data?.pagination?.pages || 1);
       }
     } catch (error) {
       console.error('Error fetching trips:', error);

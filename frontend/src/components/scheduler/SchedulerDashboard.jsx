@@ -121,12 +121,22 @@ const SchedulerDashboard = ({ view }) => {
   const cancelRef = React.useRef();
   const toast = useToast();
 
-
+  // Auto-open modal if URL parameter is present
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('openModal') === 'true') {
+      onOpen();
+      // Clean the URL by removing the openModal parameter
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.delete('openModal');
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [location.search, onOpen]);
 
   const fetchTrips = useCallback(async () => {
     try {
       const response = await axios.get('/api/trips');
-      setTrips(response.data.trips);
+      setTrips(response.data.data?.trips || []);
     } catch (error) {
       console.error('Error fetching trips:', error);
       toast({
@@ -370,7 +380,7 @@ const SchedulerDashboard = ({ view }) => {
       };
 
       if (selectedTrip) {
-        await axios.put(`/trips/${selectedTrip._id}`, tripData);
+        await axios.put(`/api/trips/${selectedTrip._id}`, tripData);
         toast({
           title: 'Success',
           description: 'Trip updated successfully',
@@ -379,7 +389,7 @@ const SchedulerDashboard = ({ view }) => {
           isClosable: true,
         });
       } else {
-        await axios.post('/trips', tripData);
+        await axios.post('/api/trips', tripData);
         toast({
           title: 'Success',
           description: 'Trip created successfully',
@@ -447,7 +457,7 @@ const SchedulerDashboard = ({ view }) => {
     
     setIsDeleting(true);
     try {
-      await axios.delete(`/trips/${tripToDelete._id}`);
+      await axios.delete(`/api/trips/${tripToDelete._id}`);
       toast({
         title: 'Success',
         description: 'Trip cancelled successfully',

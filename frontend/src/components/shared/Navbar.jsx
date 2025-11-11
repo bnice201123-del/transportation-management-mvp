@@ -59,7 +59,6 @@ const Navbar = ({ title }) => {
       {/* Responsive Sidebar */}
       <Sidebar 
         isMobileOpen={isMobileMenuOpen}
-        onMobileOpen={onMobileMenuOpen}
         onMobileClose={onMobileMenuClose}
       />
       

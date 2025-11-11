@@ -32,6 +32,7 @@ import {
   AlertTitle,
   AlertDescription,
   useColorModeValue,
+  Icon,
   IconButton,
   Menu,
   MenuButton,

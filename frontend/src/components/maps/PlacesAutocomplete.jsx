@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Input, Box, List, ListItem, Text, Spinner } from '@chakra-ui/react';
+import { loadGoogleMapsAPI } from '../../utils/googleMapsLoader';
 
 const PlacesAutocomplete = ({ 
   onPlaceSelected, 
@@ -19,10 +20,19 @@ const PlacesAutocomplete = ({
   const [showPredictions, setShowPredictions] = useState(false);
 
   useEffect(() => {
-    if (window.google && window.google.maps && window.google.maps.places) {
-      // Initialize autocomplete service
-      autocompleteRef.current = new window.google.maps.places.AutocompleteService();
-    }
+    const initializeAutocomplete = async () => {
+      try {
+        await loadGoogleMapsAPI();
+        if (window.google && window.google.maps && window.google.maps.places) {
+          // Initialize autocomplete service
+          autocompleteRef.current = new window.google.maps.places.AutocompleteService();
+        }
+      } catch (error) {
+        console.error('Failed to load Google Maps API:', error);
+      }
+    };
+
+    initializeAutocomplete();
   }, []);
 
   const handleInputChange = (e) => {

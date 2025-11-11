@@ -58,6 +58,7 @@ import {
   FaTimes
 } from 'react-icons/fa';
 import axios from '../../config/axios';
+import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 
 const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
   const toast = useToast();
@@ -403,20 +404,22 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
                 <VStack spacing={4}>
                   <FormControl isRequired isInvalid={!!errors.pickupAddress}>
                     <FormLabel fontSize="sm">Pickup Address</FormLabel>
-                    <Input
+                    <PlacesAutocomplete
                       placeholder="Enter pickup location address"
                       value={formData.pickupAddress}
-                      onChange={(e) => handleInputChange('pickupAddress', e.target.value)}
+                      onChange={(address) => handleInputChange('pickupAddress', address)}
+                      onPlaceSelected={(place) => handleInputChange('pickupAddress', place.address)}
                     />
                     <FormErrorMessage>{errors.pickupAddress}</FormErrorMessage>
                   </FormControl>
 
                   <FormControl isRequired isInvalid={!!errors.dropoffAddress}>
                     <FormLabel fontSize="sm">Dropoff Address</FormLabel>
-                    <Input
+                    <PlacesAutocomplete
                       placeholder="Enter dropoff location address"
                       value={formData.dropoffAddress}
-                      onChange={(e) => handleInputChange('dropoffAddress', e.target.value)}
+                      onChange={(address) => handleInputChange('dropoffAddress', address)}
+                      onPlaceSelected={(place) => handleInputChange('dropoffAddress', place.address)}
                     />
                     <FormErrorMessage>{errors.dropoffAddress}</FormErrorMessage>
                   </FormControl>

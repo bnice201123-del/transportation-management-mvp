@@ -93,10 +93,10 @@ const AdminAnalytics = () => {
       
       // Fetch multiple data sources for comprehensive analytics
       const [analyticsRes, tripsRes, usersRes, activitiesRes] = await Promise.all([
-        axios.get('/analytics/dashboard').catch(() => ({ data: null })),
-        axios.get('/trips').catch(() => ({ data: [] })),
-        axios.get('/users').catch(() => ({ data: [] })),
-        axios.get('/activities').catch(() => ({ data: [] }))
+        axios.get('/api/analytics/dashboard').catch(() => ({ data: null })),
+        axios.get('/api/trips').catch(() => ({ data: [] })),
+        axios.get('/api/users').catch(() => ({ data: [] })),
+        axios.get('/api/activities').catch(() => ({ data: [] }))
       ]);
 
       const trips = tripsRes.data || [];

@@ -96,6 +96,7 @@ import {
   FaEnvelope
 } from 'react-icons/fa';
 import axios from '../../config/axios';
+import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 
 const TripManagement = ({ onTripUpdate }) => {
   // State Management
@@ -364,7 +365,7 @@ const TripManagement = ({ onTripUpdate }) => {
 
       let response;
       if (isEdit) {
-        response = await axios.put(`/trips/${selectedTrip._id}`, tripData);
+        response = await axios.put(`/api/trips/${selectedTrip._id}`, tripData);
         toast({
           title: 'Success',
           description: 'Trip updated successfully',
@@ -373,7 +374,7 @@ const TripManagement = ({ onTripUpdate }) => {
           isClosable: true,
         });
       } else {
-        response = await axios.post('/trips', tripData);
+        response = await axios.post('/api/trips', tripData);
         toast({
           title: 'Success',
           description: 'Trip created successfully',
@@ -945,18 +946,20 @@ const TripManagement = ({ onTripUpdate }) => {
                 <VStack spacing={4}>
                   <FormControl isRequired>
                     <FormLabel>Pickup Location</FormLabel>
-                    <Input
+                    <PlacesAutocomplete
                       value={formData.pickupLocation}
-                      onChange={(e) => setFormData({ ...formData, pickupLocation: e.target.value })}
+                      onChange={(address) => setFormData({ ...formData, pickupLocation: address })}
+                      onPlaceSelected={(place) => setFormData({ ...formData, pickupLocation: place.address })}
                       placeholder="Enter pickup address"
                     />
                   </FormControl>
                   
                   <FormControl isRequired>
                     <FormLabel>Drop-off Location</FormLabel>
-                    <Input
+                    <PlacesAutocomplete
                       value={formData.dropoffLocation}
-                      onChange={(e) => setFormData({ ...formData, dropoffLocation: e.target.value })}
+                      onChange={(address) => setFormData({ ...formData, dropoffLocation: address })}
+                      onPlaceSelected={(place) => setFormData({ ...formData, dropoffLocation: place.address })}
                       placeholder="Enter destination address"
                     />
                   </FormControl>
@@ -1147,18 +1150,20 @@ const TripManagement = ({ onTripUpdate }) => {
                 <VStack spacing={4}>
                   <FormControl isRequired>
                     <FormLabel>Pickup Location</FormLabel>
-                    <Input
+                    <PlacesAutocomplete
                       value={formData.pickupLocation}
-                      onChange={(e) => setFormData({ ...formData, pickupLocation: e.target.value })}
+                      onChange={(address) => setFormData({ ...formData, pickupLocation: address })}
+                      onPlaceSelected={(place) => setFormData({ ...formData, pickupLocation: place.address })}
                       placeholder="Enter pickup address"
                     />
                   </FormControl>
                   
                   <FormControl isRequired>
                     <FormLabel>Drop-off Location</FormLabel>
-                    <Input
+                    <PlacesAutocomplete
                       value={formData.dropoffLocation}
-                      onChange={(e) => setFormData({ ...formData, dropoffLocation: e.target.value })}
+                      onChange={(address) => setFormData({ ...formData, dropoffLocation: address })}
+                      onPlaceSelected={(place) => setFormData({ ...formData, dropoffLocation: place.address })}
                       placeholder="Enter destination address"
                     />
                   </FormControl>

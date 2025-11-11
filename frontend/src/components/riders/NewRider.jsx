@@ -33,6 +33,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
+import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 
 const NewRider = () => {
   const [formData, setFormData] = useState({
@@ -213,11 +214,11 @@ const NewRider = () => {
                 {/* Address */}
                 <FormControl>
                   <FormLabel>Current Address</FormLabel>
-                  <Textarea
+                  <PlacesAutocomplete
                     value={formData.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    onChange={(address) => handleInputChange('address', address)}
+                    onPlaceSelected={(place) => handleInputChange('address', place.address)}
                     placeholder="Enter full address"
-                    rows={3}
                   />
                 </FormControl>
 

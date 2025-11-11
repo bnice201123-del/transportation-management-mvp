@@ -153,69 +153,31 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
         { label: 'Security', icon: UnlockIcon, action: () => navigate('/admin/security') }
       ]
     }] : []),
-    // Scheduler Control Center - for scheduler and admin users
-    ...(user?.role === 'scheduler' || user?.role === 'admin' ? [{
-      id: 'scheduler-center',
-      label: 'Scheduler Center',
-      icon: CalendarIcon,
-      color: 'green.600',
-      path: '/scheduler',
-      roles: ['scheduler', 'admin'],
-      subItems: [
-        { label: 'Control Dashboard', icon: ViewIcon, action: () => navigate('/scheduler') },
-        { label: 'Trip Management', icon: SettingsIcon, action: () => navigate('/scheduler/manage') },
-        { label: 'Calendar View', icon: CalendarIcon, action: () => navigate('/scheduler/calendar') },
-        { label: 'Recurring Trips', icon: RepeatIcon, action: () => navigate('/scheduler/recurring') },
-        { label: 'Trip History', icon: SearchIcon, action: () => navigate('/scheduler/history') }
-      ]
-    }] : []),
-    // Dispatch Control Center - for dispatcher and admin users
-    ...(user?.role === 'dispatcher' || user?.role === 'admin' ? [{
-      id: 'dispatch-center',
-      label: 'Dispatch Center',
-      icon: TimeIcon,
-      color: 'blue.600',
-      path: '/dispatcher',
-      roles: ['dispatcher', 'admin'],
-      subItems: [
-        { label: 'Control Dashboard', icon: ViewIcon, action: () => navigate('/dispatcher') },
-        { label: 'Active Trips', icon: TimeIcon, action: () => navigate('/dispatcher?tab=0') },
-        { label: 'Assign Drivers', icon: AddIcon, action: () => navigate('/dispatcher?action=assign') },
-        { label: 'Trip History', icon: SearchIcon, action: () => navigate('/dispatcher?tab=2') },
-        { label: 'Live Tracking', icon: FaRoute, action: () => navigate('/maps/tracking') }
-      ]
-    }] : []),
-    // Operations - for admin users only
-    ...(user?.role === 'admin' ? [{
+
+
+    // Operations - for scheduler, dispatcher, and admin users
+    ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [{
       id: 'operations',
       label: 'Operations',
       icon: FaRoute,
       color: 'orange.500',
       path: '/admin/operations',
-      roles: ['admin'],
-      subItems: [
-        { label: 'Dispatch Center', icon: TimeIcon, action: () => navigate('/dispatcher') },
-        { label: 'Scheduler Center', icon: CalendarIcon, action: () => navigate('/scheduler') },
-        { label: 'Drivers', icon: StarIcon, action: () => navigate('/driver') },
-        { label: 'Riders', icon: FaUser, action: () => navigate('/riders?openModal=true') },
-        { label: 'Vehicles', icon: FaCar, action: () => navigate('/vehicles') }
-      ]
-    }] : []),
-    // Trip Operations - for all operational users (maintained for backward compatibility)
-    {
-      id: 'trip-operations',
-      label: 'Trip Operations',
-      icon: CalendarIcon,
-      color: 'teal.500',
-      path: '/scheduler',
       roles: ['scheduler', 'dispatcher', 'admin'],
       subItems: [
-        { label: 'Create New Trip', icon: AddIcon, action: () => navigate('/scheduler/add-trip?openModal=true') },
-        { label: 'View All Trips', icon: ViewIcon, action: () => navigate('/scheduler/manage') },
-        { label: 'Completed Trips', icon: CheckIcon, action: () => navigate('/scheduler/completed') },
-        { label: 'Trip Analytics', icon: InfoIcon, action: () => navigate('/scheduler?view=analytics') }
+        ...(user?.role === 'dispatcher' || user?.role === 'admin' ? [
+          { label: 'Dispatch', icon: TimeIcon, action: () => navigate('/dispatcher') }
+        ] : []),
+        ...(user?.role === 'scheduler' || user?.role === 'admin' ? [
+          { label: 'Scheduler', icon: CalendarIcon, action: () => navigate('/scheduler') }
+        ] : []),
+        ...(user?.role === 'admin' ? [
+          { label: 'Drivers', icon: StarIcon, action: () => navigate('/driver') },
+          { label: 'Riders', icon: FaUser, action: () => navigate('/riders?openModal=true') },
+          { label: 'Vehicles', icon: FaCar, action: () => navigate('/vehicles') }
+        ] : [])
       ]
-    },
+    }] : []),
+
     {
       id: 'maps',
       label: 'Maps',

@@ -216,20 +216,23 @@ Spacing Between Touch Targets: minimum 8px
 
 ## 📋 Navigation Structure
 
-### Dispatch Center Menu (Sidebar)
+### Consolidated Dispatch Navigation (Operations Menu)
 ```
-🎯 Dispatch Center
-├── 📊 Control Dashboard (/dispatcher)
-├── ⏰ Active Trips (/dispatcher?tab=0)
-├── 👥 Assign Drivers (/dispatcher?action=assign)
-├── 📋 Trip History (/dispatcher?tab=2)
-└── 🗺️ Live Tracking (/maps/tracking)
+🔧 Operations
+└── 🎯 Dispatch (/dispatcher)
+    ├── � Today's Trips (Tab 0)
+    ├── ⏭️ Upcoming Trips (Tab 1)
+    ├── ✅ Completed Trips (Tab 2)
+    ├── � All Trips (Tab 3)
+    ├── ⏰ Active Trips (Tab 4)
+    ├── � Driver Assignment (Tab 5)
+    └── 🗺️ Live Tracking (Tab 6)
 ```
 
 ### Access Control
-- **Dispatcher Role**: Full access to dispatch operations
-- **Admin Role**: Complete access plus administrative functions
-- **Consistent Permissions**: Same access patterns across all components
+- **Dispatcher Role**: Full access via Operations → Dispatch menu
+- **Admin Role**: Complete access via Operations → Dispatch menu plus administrative functions
+- **Consolidated Navigation**: Single entry point through Operations menu for all users
 
 ### Route Structure
 ```jsx

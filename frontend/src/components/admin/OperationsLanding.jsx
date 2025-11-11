@@ -32,7 +32,7 @@ const OperationsLanding = () => {
   const operations = [
     {
       title: 'Dispatch',
-      description: 'Manage active trips, assign drivers, and monitor dispatch operations',
+      description: 'Comprehensive dispatch operations hub with active trip monitoring, driver assignment center, and live tracking capabilities',
       icon: FaRoute,
       path: '/dispatcher',
       color: 'blue.500'

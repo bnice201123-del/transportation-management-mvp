@@ -656,6 +656,44 @@ const DispatcherDashboard = () => {
                   >
                     All Trips
                   </Tab>
+                  
+                  {/* Additional Dispatch Features */}
+                  <Tab 
+                    flex={{ base: "1", sm: "initial" }}
+                    fontSize={{ base: "sm", md: "md" }}
+                    py={{ base: 3, md: 4 }}
+                    _selected={{ 
+                      color: "blue.600", 
+                      borderColor: "blue.500",
+                      bg: "white"
+                    }}
+                  >
+                    ⏰ Active Trips
+                  </Tab>
+                  <Tab 
+                    flex={{ base: "1", sm: "initial" }}
+                    fontSize={{ base: "sm", md: "md" }}
+                    py={{ base: 3, md: 4 }}
+                    _selected={{ 
+                      color: "blue.600", 
+                      borderColor: "blue.500",
+                      bg: "white"
+                    }}
+                  >
+                    👥 Driver Assignment
+                  </Tab>
+                  <Tab 
+                    flex={{ base: "1", sm: "initial" }}
+                    fontSize={{ base: "sm", md: "md" }}
+                    py={{ base: 3, md: 4 }}
+                    _selected={{ 
+                      color: "blue.600", 
+                      borderColor: "blue.500",
+                      bg: "white"
+                    }}
+                  >
+                    🗺️ Live Tracking
+                  </Tab>
                 </TabList>
 
           <TabPanels>
@@ -1251,6 +1289,272 @@ const DispatcherDashboard = () => {
                       </VStack>
                     </Center>
                   )}
+                </CardBody>
+              </Card>
+            </TabPanel>
+            
+            {/* Active Trips Tab */}
+            <TabPanel px={0}>
+              <Card mb={4}>
+                <CardHeader>
+                  <HStack justify="space-between">
+                    <Heading size="md">⏰ Active Trip Operations</Heading>
+                    <Badge colorScheme="blue" fontSize="md" px={3} py={1}>
+                      Real-time Monitoring
+                    </Badge>
+                  </HStack>
+                </CardHeader>
+                <CardBody>
+                  <VStack spacing={6} align="stretch">
+                    {/* Active Trips Statistics */}
+                    <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={4}>
+                      <Card bg="blue.50" p={4}>
+                        <VStack>
+                          <Text fontSize="2xl" fontWeight="bold" color="blue.600">
+                            {trips.filter(trip => trip.status === 'in_progress').length}
+                          </Text>
+                          <Text fontSize="sm" color="blue.700">In Progress</Text>
+                        </VStack>
+                      </Card>
+                      <Card bg="orange.50" p={4}>
+                        <VStack>
+                          <Text fontSize="2xl" fontWeight="bold" color="orange.600">
+                            {trips.filter(trip => trip.status === 'assigned').length}
+                          </Text>
+                          <Text fontSize="sm" color="orange.700">Assigned</Text>
+                        </VStack>
+                      </Card>
+                      <Card bg="green.50" p={4}>
+                        <VStack>
+                          <Text fontSize="2xl" fontWeight="bold" color="green.600">
+                            {trips.filter(trip => trip.status === 'pending').length}
+                          </Text>
+                          <Text fontSize="sm" color="green.700">Awaiting Assignment</Text>
+                        </VStack>
+                      </Card>
+                    </Grid>
+                    
+                    {/* Active Trips Management */}
+                    <Card>
+                      <CardBody>
+                        <Text fontSize="lg" fontWeight="semibold" mb={4}>Active Trip Monitoring</Text>
+                        <VStack spacing={4}>
+                          {trips.filter(trip => ['in_progress', 'assigned'].includes(trip.status)).length > 0 ? (
+                            trips.filter(trip => ['in_progress', 'assigned'].includes(trip.status)).map(trip => (
+                              <Card key={trip._id} w="full" bg="gray.50">
+                                <CardBody p={4}>
+                                  <HStack justify="space-between" align="start">
+                                    <VStack align="start" spacing={1}>
+                                      <Text fontWeight="bold">{trip.tripId} - {trip.riderName}</Text>
+                                      <Text fontSize="sm" color="gray.600">
+                                        {getLocationText(trip.pickupLocation)} → {getLocationText(trip.dropoffLocation)}
+                                      </Text>
+                                      <Badge colorScheme={getStatusColor(trip.status)}>
+                                        {trip.status.replace('_', ' ').toUpperCase()}
+                                      </Badge>
+                                    </VStack>
+                                    <Button size="sm" colorScheme="blue" onClick={() => handleView(trip)}>
+                                      Monitor
+                                    </Button>
+                                  </HStack>
+                                </CardBody>
+                              </Card>
+                            ))
+                          ) : (
+                            <Text color="gray.500">No active trips to monitor</Text>
+                          )}
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  </VStack>
+                </CardBody>
+              </Card>
+            </TabPanel>
+            
+            {/* Driver Assignment Tab */}
+            <TabPanel px={0}>
+              <Card mb={4}>
+                <CardHeader>
+                  <HStack justify="space-between">
+                    <Heading size="md">👥 Driver Assignment Center</Heading>
+                    <Badge colorScheme="green" fontSize="md" px={3} py={1}>
+                      {availableDrivers.length} Available
+                    </Badge>
+                  </HStack>
+                </CardHeader>
+                <CardBody>
+                  <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={6}>
+                    {/* Unassigned Trips */}
+                    <Card>
+                      <CardHeader>
+                        <Heading size="sm">Trips Needing Assignment</Heading>
+                      </CardHeader>
+                      <CardBody>
+                        <VStack spacing={3} align="stretch">
+                          {trips.filter(trip => !trip.assignedDriver && trip.status === 'pending').length > 0 ? (
+                            trips.filter(trip => !trip.assignedDriver && trip.status === 'pending').map(trip => (
+                              <Card key={trip._id} bg="red.50" border="1px solid" borderColor="red.200">
+                                <CardBody p={3}>
+                                  <VStack align="start" spacing={2}>
+                                    <HStack justify="space-between" w="full">
+                                      <Text fontWeight="bold" fontSize="sm">{trip.tripId}</Text>
+                                      <Text fontSize="xs" color="gray.600">
+                                        {formatDate(trip.scheduledDate)}
+                                      </Text>
+                                    </HStack>
+                                    <Text fontSize="sm">{trip.riderName}</Text>
+                                    <Text fontSize="xs" color="gray.600">
+                                      {getLocationText(trip.pickupLocation)}
+                                    </Text>
+                                    <Button 
+                                      size="xs" 
+                                      colorScheme="green" 
+                                      onClick={() => handleAssignClick(trip)}
+                                      w="full"
+                                    >
+                                      Assign Driver
+                                    </Button>
+                                  </VStack>
+                                </CardBody>
+                              </Card>
+                            ))
+                          ) : (
+                            <Text color="gray.500" textAlign="center" py={4}>
+                              All trips have been assigned
+                            </Text>
+                          )}
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                    
+                    {/* Available Drivers */}
+                    <Card>
+                      <CardHeader>
+                        <Heading size="sm">Available Drivers</Heading>
+                      </CardHeader>
+                      <CardBody>
+                        <VStack spacing={3} align="stretch">
+                          {availableDrivers.length > 0 ? (
+                            availableDrivers.map(driver => (
+                              <Card key={driver._id} bg="green.50" border="1px solid" borderColor="green.200">
+                                <CardBody p={3}>
+                                  <VStack align="start" spacing={1}>
+                                    <Text fontWeight="bold" fontSize="sm">
+                                      {driver.firstName} {driver.lastName}
+                                    </Text>
+                                    <Text fontSize="xs" color="gray.600">{driver.phone}</Text>
+                                    <Text fontSize="xs" color="green.600">
+                                      Vehicle: {driver.vehicleId || 'Not assigned'}
+                                    </Text>
+                                    <Badge colorScheme="green" size="sm">Available</Badge>
+                                  </VStack>
+                                </CardBody>
+                              </Card>
+                            ))
+                          ) : (
+                            <Text color="gray.500" textAlign="center" py={4}>
+                              No drivers currently available
+                            </Text>
+                          )}
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  </Grid>
+                </CardBody>
+              </Card>
+            </TabPanel>
+            
+            {/* Live Tracking Tab */}
+            <TabPanel px={0}>
+              <Card mb={4}>
+                <CardHeader>
+                  <HStack justify="space-between">
+                    <Heading size="md">🗺️ Live Trip Tracking</Heading>
+                    <Badge colorScheme="purple" fontSize="md" px={3} py={1}>
+                      Real-time GPS
+                    </Badge>
+                  </HStack>
+                </CardHeader>
+                <CardBody>
+                  <VStack spacing={6} align="stretch">
+                    {/* Tracking Overview */}
+                    <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={4}>
+                      <Card bg="purple.50" p={4}>
+                        <VStack>
+                          <Text fontSize="2xl" fontWeight="bold" color="purple.600">
+                            {trips.filter(trip => trip.status === 'in_progress').length}
+                          </Text>
+                          <Text fontSize="sm" color="purple.700">Trips Being Tracked</Text>
+                        </VStack>
+                      </Card>
+                      <Card bg="blue.50" p={4}>
+                        <VStack>
+                          <Text fontSize="2xl" fontWeight="bold" color="blue.600">
+                            {drivers.filter(driver => driver.status === 'active').length}
+                          </Text>
+                          <Text fontSize="sm" color="blue.700">Drivers Online</Text>
+                        </VStack>
+                      </Card>
+                    </Grid>
+                    
+                    {/* Live Tracking Interface */}
+                    <Card>
+                      <CardBody>
+                        <VStack spacing={4} align="center" py={8}>
+                          <Heading size="md" color="purple.600">🗺️ Live Tracking Interface</Heading>
+                          <Text color="gray.600" textAlign="center" maxW="md">
+                            Real-time GPS tracking for active trips, driver locations, and route monitoring.
+                            Advanced mapping features with live updates and traffic information.
+                          </Text>
+                          <VStack spacing={3}>
+                            <Button 
+                              colorScheme="purple" 
+                              size="lg"
+                              onClick={() => window.location.href = '/maps/tracking'}
+                            >
+                              Open Live Tracking Map
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              colorScheme="purple"
+                              onClick={() => window.open('/maps/tracking', '_blank')}
+                            >
+                              Open in New Window
+                            </Button>
+                          </VStack>
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                    
+                    {/* Currently Tracked Trips */}
+                    {trips.filter(trip => trip.status === 'in_progress').length > 0 && (
+                      <Card>
+                        <CardHeader>
+                          <Heading size="sm">Currently Tracked Trips</Heading>
+                        </CardHeader>
+                        <CardBody>
+                          <VStack spacing={2}>
+                            {trips.filter(trip => trip.status === 'in_progress').map(trip => (
+                              <Card key={trip._id} w="full" bg="purple.25" border="1px solid" borderColor="purple.200">
+                                <CardBody p={3}>
+                                  <HStack justify="space-between">
+                                    <VStack align="start" spacing={1}>
+                                      <Text fontWeight="bold" fontSize="sm">{trip.tripId}</Text>
+                                      <Text fontSize="xs">{trip.riderName}</Text>
+                                      <Badge colorScheme="purple" size="sm">Tracking Active</Badge>
+                                    </VStack>
+                                    <Button size="xs" colorScheme="purple" variant="outline">
+                                      View on Map
+                                    </Button>
+                                  </HStack>
+                                </CardBody>
+                              </Card>
+                            ))}
+                          </VStack>
+                        </CardBody>
+                      </Card>
+                    )}
+                  </VStack>
                 </CardBody>
               </Card>
             </TabPanel>

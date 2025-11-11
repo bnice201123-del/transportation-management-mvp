@@ -817,34 +817,12 @@ const SchedulerDashboard = ({ view }) => {
                   </VStack>
                 </Button>
 
-                {/* Recurring Trips */}
-                <Button 
-                  leftIcon={<RepeatIcon />} 
-                  colorScheme="green" 
-                  variant="outline"
-                  onClick={() => window.location.href = '/scheduler/recurring'}
-                  size={{ base: "lg", md: "lg" }}
-                  height={{ base: "50px", md: "56px" }}
-                  fontSize={{ base: "sm", md: "md" }}
-                  fontWeight="semibold"
-                  _hover={{ transform: "translateY(-1px)", shadow: "lg", bg: "green.50" }}
-                  transition="all 0.2s ease"
-                  borderWidth="2px"
-                >
-                  <VStack spacing={0}>
-                    <Text>🔄 Recurring</Text>
-                    <Text fontSize="xs" opacity={0.7} display={{ base: "none", md: "block" }}>
-                      Scheduled Routes
-                    </Text>
-                  </VStack>
-                </Button>
-
-                {/* Trip History */}
+                {/* Quick Access to Calendar View */}
                 <Button 
                   leftIcon={<CalendarIcon />} 
                   colorScheme="green" 
                   variant="outline"
-                  onClick={() => window.location.href = '/scheduler/history'}
+                  onClick={() => setActiveTab(4)} // Switch to Calendar tab
                   size={{ base: "lg", md: "lg" }}
                   height={{ base: "50px", md: "56px" }}
                   fontSize={{ base: "sm", md: "md" }}
@@ -854,9 +832,31 @@ const SchedulerDashboard = ({ view }) => {
                   borderWidth="2px"
                 >
                   <VStack spacing={0}>
-                    <Text>📊 History</Text>
+                    <Text>� Calendar</Text>
                     <Text fontSize="xs" opacity={0.7} display={{ base: "none", md: "block" }}>
-                      Past Trips
+                      Visual Schedule
+                    </Text>
+                  </VStack>
+                </Button>
+
+                {/* Quick Access to Analytics */}
+                <Button 
+                  leftIcon={<ViewIcon />} 
+                  colorScheme="green" 
+                  variant="outline"
+                  onClick={() => setActiveTab(6)} // Switch to Analytics tab
+                  size={{ base: "lg", md: "lg" }}
+                  height={{ base: "50px", md: "56px" }}
+                  fontSize={{ base: "sm", md: "md" }}
+                  fontWeight="semibold"
+                  _hover={{ transform: "translateY(-1px)", shadow: "lg", bg: "green.50" }}
+                  transition="all 0.2s ease"
+                  borderWidth="2px"
+                >
+                  <VStack spacing={0}>
+                    <Text>� Analytics</Text>
+                    <Text fontSize="xs" opacity={0.7} display={{ base: "none", md: "block" }}>
+                      Performance
                     </Text>
                   </VStack>
                 </Button>
@@ -1007,6 +1007,7 @@ const SchedulerDashboard = ({ view }) => {
                 p={2}
                 borderRadius="lg"
               >
+                {/* Trip Management Tabs */}
                 <Tab 
                   fontSize={{ base: "xs", md: "sm" }}
                   fontWeight="semibold"
@@ -1056,7 +1057,7 @@ const SchedulerDashboard = ({ view }) => {
                   _hover={{ bg: "green.100" }}
                   transition="all 0.2s ease"
                 >
-                  📊 Past ({(trips || []).filter(trip => {
+                  📊 History ({(trips || []).filter(trip => {
                     const tripDate = new Date(trip.scheduledDate);
                     const today = new Date();
                     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -1074,11 +1075,109 @@ const SchedulerDashboard = ({ view }) => {
                   _hover={{ bg: "green.100" }}
                   transition="all 0.2s ease"
                 >
-                  📋 All ({(trips || []).length})
+                  📋 All Trips ({(trips || []).length})
+                </Tab>
+                
+                {/* Additional Feature Tabs */}
+                <Tab 
+                  fontSize={{ base: "xs", md: "sm" }}
+                  fontWeight="semibold"
+                  _selected={{ 
+                    bg: "green.600", 
+                    color: "white",
+                    shadow: "md"
+                  }}
+                  _hover={{ bg: "green.100" }}
+                  transition="all 0.2s ease"
+                >
+                  📅 Calendar View
+                </Tab>
+                <Tab 
+                  fontSize={{ base: "xs", md: "sm" }}
+                  fontWeight="semibold"
+                  _selected={{ 
+                    bg: "green.600", 
+                    color: "white",
+                    shadow: "md"
+                  }}
+                  _hover={{ bg: "green.100" }}
+                  transition="all 0.2s ease"
+                >
+                  🔄 Recurring Trips
+                </Tab>
+                <Tab 
+                  fontSize={{ base: "xs", md: "sm" }}
+                  fontWeight="semibold"
+                  _selected={{ 
+                    bg: "green.600", 
+                    color: "white",
+                    shadow: "md"
+                  }}
+                  _hover={{ bg: "green.100" }}
+                  transition="all 0.2s ease"
+                >
+                  📈 Analytics
                 </Tab>
               </TabList>
 
               <TabPanels>
+                {/* Today's Trips */}
+                <TabPanel px={0}>
+                  <TripsTable 
+                    trips={filteredTrips.filter(trip => {
+                      const tripDate = new Date(trip.scheduledDate);
+                      const today = new Date();
+                      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                      const todayEnd = new Date(todayStart);
+                      todayEnd.setDate(todayEnd.getDate() + 1);
+                      return tripDate >= todayStart && tripDate < todayEnd;
+                    })} 
+                    showPattern={false}
+                    onView={openViewModal}
+                    onEdit={openEditModal}
+                    onDelete={openDeleteDialog}
+                    formatDate={formatDate}
+                    getStatusColor={getStatusColor}
+                  />
+                </TabPanel>
+                
+                {/* Upcoming Trips */}
+                <TabPanel px={0}>
+                  <TripsTable 
+                    trips={filteredTrips.filter(trip => {
+                      const tripDate = new Date(trip.scheduledDate);
+                      const tomorrow = new Date();
+                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      return tripDate >= tomorrow;
+                    })} 
+                    showPattern={false}
+                    onView={openViewModal}
+                    onEdit={openEditModal}
+                    onDelete={openDeleteDialog}
+                    formatDate={formatDate}
+                    getStatusColor={getStatusColor}
+                  />
+                </TabPanel>
+                
+                {/* Past Trips/History */}
+                <TabPanel px={0}>
+                  <TripsTable 
+                    trips={filteredTrips.filter(trip => {
+                      const tripDate = new Date(trip.scheduledDate);
+                      const today = new Date();
+                      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                      return tripDate < todayStart;
+                    })} 
+                    showPattern={false}
+                    onView={openViewModal}
+                    onEdit={openEditModal}
+                    onDelete={openDeleteDialog}
+                    formatDate={formatDate}
+                    getStatusColor={getStatusColor}
+                  />
+                </TabPanel>
+                
+                {/* All Trips */}
                 <TabPanel px={0}>
                   <TripsTable 
                     trips={filteredTrips} 
@@ -1090,38 +1189,86 @@ const SchedulerDashboard = ({ view }) => {
                     getStatusColor={getStatusColor}
                   />
                 </TabPanel>
+                
+                {/* Calendar View */}
                 <TabPanel px={0}>
-                  <TripsTable 
-                    trips={filteredTrips} 
-                    showPattern={false}
-                    onView={openViewModal}
-                    onEdit={openEditModal}
-                    onDelete={openDeleteDialog}
-                    formatDate={formatDate}
-                    getStatusColor={getStatusColor}
-                  />
+                  <Card bg="white" shadow="sm" p={4}>
+                    <VStack spacing={4} align="center">
+                      <Heading size="md" color="green.600">📅 Calendar View</Heading>
+                      <Text color="gray.600" textAlign="center">
+                        Advanced calendar interface for visual trip scheduling and management.
+                      </Text>
+                      <Button 
+                        colorScheme="green" 
+                        size="lg"
+                        onClick={() => window.location.href = '/scheduler/calendar'}
+                      >
+                        Open Full Calendar View
+                      </Button>
+                    </VStack>
+                  </Card>
                 </TabPanel>
+                
+                {/* Recurring Trips */}
                 <TabPanel px={0}>
-                  <TripsTable 
-                    trips={filteredTrips} 
-                    showPattern={false}
-                    onView={openViewModal}
-                    onEdit={openEditModal}
-                    onDelete={openDeleteDialog}
-                    formatDate={formatDate}
-                    getStatusColor={getStatusColor}
-                  />
+                  <Card bg="white" shadow="sm" p={4}>
+                    <VStack spacing={4} align="center">
+                      <Heading size="md" color="green.600">🔄 Recurring Trips</Heading>
+                      <Text color="gray.600" textAlign="center">
+                        Manage scheduled routes, weekly patterns, and recurring transportation schedules.
+                      </Text>
+                      <Button 
+                        colorScheme="green" 
+                        size="lg"
+                        onClick={() => window.location.href = '/scheduler/recurring'}
+                      >
+                        Manage Recurring Trips
+                      </Button>
+                    </VStack>
+                  </Card>
                 </TabPanel>
+                
+                {/* Analytics */}
                 <TabPanel px={0}>
-                  <TripsTable 
-                    trips={filteredTrips} 
-                    showPattern={false}
-                    onView={openViewModal}
-                    onEdit={openEditModal}
-                    onDelete={openDeleteDialog}
-                    formatDate={formatDate}
-                    getStatusColor={getStatusColor}
-                  />
+                  <VStack spacing={6}>
+                    <Card bg="white" shadow="sm" p={6} w="full">
+                      <VStack spacing={4}>
+                        <Heading size="md" color="green.600">📈 Scheduler Analytics</Heading>
+                        
+                        {/* Analytics Summary Cards */}
+                        <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={4} w="full">
+                          <Card bg="green.50" p={4}>
+                            <VStack>
+                              <Text fontSize="2xl" fontWeight="bold" color="green.600">
+                                {Math.round((completedTrips.length / (trips.length || 1)) * 100)}%
+                              </Text>
+                              <Text fontSize="sm" color="gray.600">Completion Rate</Text>
+                            </VStack>
+                          </Card>
+                          <Card bg="orange.50" p={4}>
+                            <VStack>
+                              <Text fontSize="2xl" fontWeight="bold" color="orange.500">
+                                {pendingTrips.length}
+                              </Text>
+                              <Text fontSize="sm" color="gray.600">Pending Assignments</Text>
+                            </VStack>
+                          </Card>
+                          <Card bg="blue.50" p={4}>
+                            <VStack>
+                              <Text fontSize="2xl" fontWeight="bold" color="blue.500">
+                                {Math.round(trips.length / 7)}
+                              </Text>
+                              <Text fontSize="sm" color="gray.600">Avg Daily Trips</Text>
+                            </VStack>
+                          </Card>
+                        </Grid>
+                        
+                        <Text color="gray.600" textAlign="center" mt={4}>
+                          Detailed analytics and reporting features for scheduling optimization and performance tracking.
+                        </Text>
+                      </VStack>
+                    </Card>
+                  </VStack>
                 </TabPanel>
               </TabPanels>
             </Tabs>

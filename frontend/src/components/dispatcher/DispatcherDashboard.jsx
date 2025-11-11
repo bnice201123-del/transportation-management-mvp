@@ -473,68 +473,190 @@ const DispatcherDashboard = () => {
 
   return (
     <Box minH="100vh" bg="gray.50">
-      <Navbar title="Dispatcher Dashboard" />
+      <Navbar title="Dispatch Control Center" />
       
       <Box ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} pt={{ base: 4, md: 0 }}>
         <Container maxW="container.xl" py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>
-        {/* Statistics Cards - Dispatch Landing Page */}
-        <Grid templateColumns="repeat(auto-fit, minmax(180px, 1fr))" gap={6} mb={8}>
-          <Card>
-            <CardBody>
-              <Text fontSize="2xl" fontWeight="bold" color="blue.500">
-                {trips.length}
-              </Text>
-              <Text color="gray.600" fontSize="sm">Total Trips</Text>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Text fontSize="2xl" fontWeight="bold" color="green.500">
-                {trips.filter(trip => trip.status === 'completed').length}
-              </Text>
-              <Text color="gray.600" fontSize="sm">Completed</Text>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Text fontSize="2xl" fontWeight="bold" color="orange.500">
-                {trips.filter(trip => trip.status === 'in_progress').length}
-              </Text>
-              <Text color="gray.600" fontSize="sm">In Progress</Text>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Text fontSize="2xl" fontWeight="bold" color="purple.500">
-                {availableDrivers.length}
-              </Text>
-              <Text color="gray.600" fontSize="sm">Available Drivers</Text>
-            </CardBody>
-          </Card>
-        </Grid>
-
-        {/* Dispatch Landing Page Header */}
-        <Card mb={6} bg="blue.50" borderLeft="4px solid" borderLeftColor="blue.500">
-          <CardBody>
+          
+          {/* Enhanced Header Section - Mobile-First Design */}
+          <Box mb={{ base: 6, md: 8 }}>
             <VStack align="start" spacing={3}>
-              <Heading size="lg" color="blue.700">
+              <Heading 
+                size={{ base: "lg", md: "xl" }} 
+                color="blue.700"
+                fontWeight="bold"
+              >
                 Dispatch Control Center
               </Heading>
-              <Text color="gray.600" fontSize="sm">
-                Manage today's rides, assign drivers, and track trip status
+              <Text 
+                color="gray.600" 
+                fontSize={{ base: "sm", md: "md" }}
+                maxW="2xl"
+              >
+                Manage active trips, assign drivers, monitor real-time status, and coordinate transportation operations
               </Text>
             </VStack>
-          </CardBody>
-        </Card>
+          </Box>
 
-        {/* Tabbed Interface */}
-        <Tabs index={activeTab} onChange={setActiveTab} mb={6}>
-          <TabList>
-            <Tab>Today</Tab>
-            <Tab>Upcoming</Tab>
-            <Tab>Past</Tab>
-            <Tab>All</Tab>
-          </TabList>
+          {/* Real-time Statistics - Enhanced Mobile-First Design */}
+          <Grid 
+            templateColumns={{ 
+              base: "repeat(2, 1fr)", 
+              sm: "repeat(2, 1fr)", 
+              md: "repeat(4, 1fr)" 
+            }} 
+            gap={{ base: 4, md: 6 }} 
+            mb={{ base: 6, md: 8 }}
+          >
+            <Card shadow="md" _hover={{ shadow: "lg" }} transition="all 0.2s">
+              <CardBody p={{ base: 4, md: 6 }} textAlign="center">
+                <VStack spacing={2}>
+                  <Text 
+                    fontSize={{ base: "2xl", md: "3xl" }} 
+                    fontWeight="bold" 
+                    color="blue.500"
+                  >
+                    {trips.length}
+                  </Text>
+                  <Text 
+                    color="gray.600" 
+                    fontSize={{ base: "xs", md: "sm" }}
+                    fontWeight="medium"
+                  >
+                    Total Trips
+                  </Text>
+                </VStack>
+              </CardBody>
+            </Card>
+            
+            <Card shadow="md" _hover={{ shadow: "lg" }} transition="all 0.2s">
+              <CardBody p={{ base: 4, md: 6 }} textAlign="center">
+                <VStack spacing={2}>
+                  <Text 
+                    fontSize={{ base: "2xl", md: "3xl" }} 
+                    fontWeight="bold" 
+                    color="green.500"
+                  >
+                    {trips.filter(trip => trip.status === 'completed').length}
+                  </Text>
+                  <Text 
+                    color="gray.600" 
+                    fontSize={{ base: "xs", md: "sm" }}
+                    fontWeight="medium"
+                  >
+                    Completed
+                  </Text>
+                </VStack>
+              </CardBody>
+            </Card>
+
+            <Card shadow="md" _hover={{ shadow: "lg" }} transition="all 0.2s">
+              <CardBody p={{ base: 4, md: 6 }} textAlign="center">
+                <VStack spacing={2}>
+                  <Text 
+                    fontSize={{ base: "2xl", md: "3xl" }} 
+                    fontWeight="bold" 
+                    color="orange.500"
+                  >
+                    {trips.filter(trip => trip.status === 'in_progress').length}
+                  </Text>
+                  <Text 
+                    color="gray.600" 
+                    fontSize={{ base: "xs", md: "sm" }}
+                    fontWeight="medium"
+                  >
+                    In Progress
+                  </Text>
+                </VStack>
+              </CardBody>
+            </Card>
+
+            <Card shadow="md" _hover={{ shadow: "lg" }} transition="all 0.2s">
+              <CardBody p={{ base: 4, md: 6 }} textAlign="center">
+                <VStack spacing={2}>
+                  <Text 
+                    fontSize={{ base: "2xl", md: "3xl" }} 
+                    fontWeight="bold" 
+                    color="purple.500"
+                  >
+                    {availableDrivers.length}
+                  </Text>
+                  <Text 
+                    color="gray.600" 
+                    fontSize={{ base: "xs", md: "sm" }}
+                    fontWeight="medium"
+                  >
+                    Available Drivers
+                  </Text>
+                </VStack>
+              </CardBody>
+            </Card>
+          </Grid>
+
+          {/* Enhanced Tabbed Interface - Mobile-First Design */}
+          <Card mb={{ base: 6, md: 8 }}>
+            <CardBody p={0}>
+              <Tabs 
+                index={activeTab} 
+                onChange={setActiveTab} 
+                variant="enclosed" 
+                colorScheme="blue"
+              >
+                <TabList 
+                  flexWrap="wrap"
+                  borderBottom="2px solid"
+                  borderColor="gray.200"
+                  bg="gray.50"
+                >
+                  <Tab 
+                    flex={{ base: "1", sm: "initial" }}
+                    fontSize={{ base: "sm", md: "md" }}
+                    py={{ base: 3, md: 4 }}
+                    _selected={{ 
+                      color: "blue.600", 
+                      borderColor: "blue.500",
+                      bg: "white"
+                    }}
+                  >
+                    Today
+                  </Tab>
+                  <Tab 
+                    flex={{ base: "1", sm: "initial" }}
+                    fontSize={{ base: "sm", md: "md" }}
+                    py={{ base: 3, md: 4 }}
+                    _selected={{ 
+                      color: "blue.600", 
+                      borderColor: "blue.500",
+                      bg: "white"
+                    }}
+                  >
+                    Upcoming
+                  </Tab>
+                  <Tab 
+                    flex={{ base: "1", sm: "initial" }}
+                    fontSize={{ base: "sm", md: "md" }}
+                    py={{ base: 3, md: 4 }}
+                    _selected={{ 
+                      color: "blue.600", 
+                      borderColor: "blue.500",
+                      bg: "white"
+                    }}
+                  >
+                    Completed
+                  </Tab>
+                  <Tab 
+                    flex={{ base: "1", sm: "initial" }}
+                    fontSize={{ base: "sm", md: "md" }}
+                    py={{ base: 3, md: 4 }}
+                    _selected={{ 
+                      color: "blue.600", 
+                      borderColor: "blue.500",
+                      bg: "white"
+                    }}
+                  >
+                    All Trips
+                  </Tab>
+                </TabList>
 
           <TabPanels>
             <TabPanel px={0}>
@@ -1132,65 +1254,113 @@ const DispatcherDashboard = () => {
                 </CardBody>
               </Card>
             </TabPanel>
-          </TabPanels>
-        </Tabs>
+              </TabPanels>
+            </Tabs>
+          </CardBody>
+        </Card>
 
-        {/* Action Buttons */}
-        <HStack mb={6} justify="space-between" wrap="wrap">
-          <HStack>
-            <Button leftIcon={<AddIcon />} colorScheme="blue" onClick={onOpen}>
-              Create New Trip
-            </Button>
-            <Button
-              leftIcon={<SearchIcon />}
-              colorScheme="green"
-              variant="outline"
-              onClick={onTripManagementOpen}
-            >
-              Manage Trips
-            </Button>
-            <Button
-              leftIcon={<RepeatIcon />}
-              onClick={handleRefresh}
-              isLoading={refreshing}
-              loadingText="Refreshing..."
-            >
-              Refresh
-            </Button>
-          </HStack>
-          
-          {/* Date Filter for Upcoming Tab */}
-          {activeTab === 1 && (
-            <HStack>
-              <FormControl size="sm">
-                <FormLabel fontSize="xs" mb={1}>From Date</FormLabel>
-                <Input
-                  type="date"
-                  size="sm"
-                  value={dateRange.start}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                />
-              </FormControl>
-              <FormControl size="sm">
-                <FormLabel fontSize="xs" mb={1}>To Date</FormLabel>
-                <Input
-                  type="date"
-                  size="sm"
-                  value={dateRange.end}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                />
-              </FormControl>
-              <Button
-                size="sm"
-                colorScheme="gray"
-                variant="outline"
-                onClick={() => setDateRange({ start: '', end: '' })}
+          {/* Enhanced Action Buttons - Mobile-First Design */}
+          <Card mb={{ base: 6, md: 8 }}>
+            <CardBody p={{ base: 4, md: 6 }}>
+              <Flex 
+                direction={{ base: "column", sm: "row" }}
+                justify="space-between" 
+                align={{ base: "stretch", sm: "center" }}
+                gap={{ base: 3, sm: 4 }}
               >
-                Clear
-              </Button>
-            </HStack>
+                <HStack 
+                  spacing={{ base: 2, md: 4 }}
+                  flexWrap="wrap"
+                  justify={{ base: "center", sm: "flex-start" }}
+                >
+                  <Button 
+                    leftIcon={<AddIcon />} 
+                    colorScheme="blue" 
+                    onClick={onOpen}
+                    size={{ base: "md", md: "md" }}
+                    flex={{ base: "1", sm: "initial" }}
+                    minW={{ base: "140px", sm: "auto" }}
+                  >
+                    Create Trip
+                  </Button>
+                  <Button
+                    leftIcon={<SearchIcon />}
+                    colorScheme="green"
+                    variant="outline"
+                    onClick={onTripManagementOpen}
+                    size={{ base: "md", md: "md" }}
+                    flex={{ base: "1", sm: "initial" }}
+                    minW={{ base: "140px", sm: "auto" }}
+                  >
+                    Manage Trips
+                  </Button>
+                  <Button
+                    leftIcon={<RepeatIcon />}
+                    onClick={handleRefresh}
+                    isLoading={refreshing}
+                    loadingText="Refreshing..."
+                    size={{ base: "md", md: "md" }}
+                    width={{ base: "full", sm: "auto" }}
+                    minW={{ base: "140px", sm: "auto" }}
+                  >
+                    Refresh Data
+                  </Button>
+                </HStack>
+              </Flex>
+            </CardBody>
+          </Card>
+          
+          {/* Enhanced Date Filter for Upcoming Tab - Mobile-First Design */}
+          {activeTab === 1 && (
+            <Card mb={{ base: 4, md: 6 }}>
+              <CardBody p={{ base: 4, md: 6 }}>
+                <VStack spacing={4} align="stretch">
+                  <Text fontSize="md" fontWeight="semibold" color="blue.700">
+                    Filter by Date Range
+                  </Text>
+                  <Flex 
+                    direction={{ base: "column", sm: "row" }}
+                    gap={{ base: 3, sm: 4 }}
+                    align={{ base: "stretch", sm: "end" }}
+                  >
+                    <FormControl flex="1" minW={{ base: "auto", sm: "140px" }}>
+                      <FormLabel fontSize="sm" mb={2} color="gray.700">From Date</FormLabel>
+                      <Input
+                        type="date"
+                        size="md"
+                        value={dateRange.start}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                        bg="white"
+                        borderColor="gray.300"
+                        _focus={{ borderColor: "blue.500", boxShadow: "0 0 0 1px blue.500" }}
+                      />
+                    </FormControl>
+                    <FormControl flex="1" minW={{ base: "auto", sm: "140px" }}>
+                      <FormLabel fontSize="sm" mb={2} color="gray.700">To Date</FormLabel>
+                      <Input
+                        type="date"
+                        size="md"
+                        value={dateRange.end}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                        bg="white"
+                        borderColor="gray.300"
+                        _focus={{ borderColor: "blue.500", boxShadow: "0 0 0 1px blue.500" }}
+                      />
+                    </FormControl>
+                    <Button
+                      size="md"
+                      colorScheme="gray"
+                      variant="outline"
+                      onClick={() => setDateRange({ start: '', end: '' })}
+                      minW={{ base: "full", sm: "100px" }}
+                    >
+                      Clear Filters
+                    </Button>
+                  </Flex>
+                </VStack>
+              </CardBody>
+            </Card>
           )}
-        </HStack>
 
         {/* Driver Status - Full Width Row */}
         <Card>

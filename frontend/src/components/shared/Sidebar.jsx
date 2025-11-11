@@ -153,6 +153,22 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
         { label: 'Security', icon: UnlockIcon, action: () => navigate('/admin/security') }
       ]
     }] : []),
+    // Dispatch Control Center - for dispatcher and admin users
+    ...(user?.role === 'dispatcher' || user?.role === 'admin' ? [{
+      id: 'dispatch-center',
+      label: 'Dispatch Center',
+      icon: TimeIcon,
+      color: 'blue.600',
+      path: '/dispatcher',
+      roles: ['dispatcher', 'admin'],
+      subItems: [
+        { label: 'Control Dashboard', icon: ViewIcon, action: () => navigate('/dispatcher') },
+        { label: 'Active Trips', icon: TimeIcon, action: () => navigate('/dispatcher?tab=0') },
+        { label: 'Assign Drivers', icon: AddIcon, action: () => navigate('/dispatcher?action=assign') },
+        { label: 'Trip History', icon: SearchIcon, action: () => navigate('/dispatcher?tab=2') },
+        { label: 'Live Tracking', icon: FaRoute, action: () => navigate('/maps/tracking') }
+      ]
+    }] : []),
     // Operations - for admin users only
     ...(user?.role === 'admin' ? [{
       id: 'operations',
@@ -162,7 +178,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       path: '/admin/operations',
       roles: ['admin'],
       subItems: [
-        { label: 'Dispatch', icon: TimeIcon, action: () => navigate('/dispatcher') },
+        { label: 'Dispatch Center', icon: TimeIcon, action: () => navigate('/dispatcher') },
         { label: 'Scheduler', icon: CalendarIcon, action: () => navigate('/scheduler') },
         { label: 'Drivers', icon: StarIcon, action: () => navigate('/driver') },
         { label: 'Riders', icon: FaUser, action: () => navigate('/riders?openModal=true') },

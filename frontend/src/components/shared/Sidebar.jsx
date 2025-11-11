@@ -153,6 +153,22 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
         { label: 'Security', icon: UnlockIcon, action: () => navigate('/admin/security') }
       ]
     }] : []),
+    // Scheduler Control Center - for scheduler and admin users
+    ...(user?.role === 'scheduler' || user?.role === 'admin' ? [{
+      id: 'scheduler-center',
+      label: 'Scheduler Center',
+      icon: CalendarIcon,
+      color: 'green.600',
+      path: '/scheduler',
+      roles: ['scheduler', 'admin'],
+      subItems: [
+        { label: 'Control Dashboard', icon: ViewIcon, action: () => navigate('/scheduler') },
+        { label: 'Trip Management', icon: SettingsIcon, action: () => navigate('/scheduler/manage') },
+        { label: 'Calendar View', icon: CalendarIcon, action: () => navigate('/scheduler/calendar') },
+        { label: 'Recurring Trips', icon: RepeatIcon, action: () => navigate('/scheduler/recurring') },
+        { label: 'Trip History', icon: SearchIcon, action: () => navigate('/scheduler/history') }
+      ]
+    }] : []),
     // Dispatch Control Center - for dispatcher and admin users
     ...(user?.role === 'dispatcher' || user?.role === 'admin' ? [{
       id: 'dispatch-center',
@@ -179,25 +195,25 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       roles: ['admin'],
       subItems: [
         { label: 'Dispatch Center', icon: TimeIcon, action: () => navigate('/dispatcher') },
-        { label: 'Scheduler', icon: CalendarIcon, action: () => navigate('/scheduler') },
+        { label: 'Scheduler Center', icon: CalendarIcon, action: () => navigate('/scheduler') },
         { label: 'Drivers', icon: StarIcon, action: () => navigate('/driver') },
         { label: 'Riders', icon: FaUser, action: () => navigate('/riders?openModal=true') },
         { label: 'Vehicles', icon: FaCar, action: () => navigate('/vehicles') }
       ]
     }] : []),
-    // Trip Management - for scheduler, dispatcher, and admin users
+    // Trip Operations - for all operational users (maintained for backward compatibility)
     {
-      id: 'trip-management',
-      label: 'Trip Management',
+      id: 'trip-operations',
+      label: 'Trip Operations',
       icon: CalendarIcon,
-      color: 'blue.500',
+      color: 'teal.500',
       path: '/scheduler',
       roles: ['scheduler', 'dispatcher', 'admin'],
       subItems: [
         { label: 'Create New Trip', icon: AddIcon, action: () => navigate('/scheduler/add-trip?openModal=true') },
-        { label: 'Manage Trips', icon: SettingsIcon, action: () => navigate('/scheduler/manage') },
+        { label: 'View All Trips', icon: ViewIcon, action: () => navigate('/scheduler/manage') },
         { label: 'Completed Trips', icon: CheckIcon, action: () => navigate('/scheduler/completed') },
-        { label: 'Recurring Trips', icon: RepeatIcon, action: () => navigate('/scheduler/recurring') }
+        { label: 'Trip Analytics', icon: InfoIcon, action: () => navigate('/scheduler?view=analytics') }
       ]
     },
     {

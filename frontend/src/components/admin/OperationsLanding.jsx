@@ -38,8 +38,8 @@ const OperationsLanding = () => {
       color: 'blue.500'
     },
     {
-      title: 'Scheduler',
-      description: 'Create and manage trip schedules, recurring trips, and calendar views',
+      title: 'Scheduler Center',
+      description: 'Comprehensive trip scheduling and management hub with advanced scheduling tools, recurring trips, and calendar analytics',
       icon: FaCalendarAlt,
       path: '/scheduler',
       color: 'green.500'

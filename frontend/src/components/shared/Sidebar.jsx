@@ -143,7 +143,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       path: '/admin/system',
       roles: ['admin'],
       subItems: [
-        { label: 'System Landing', icon: SettingsIcon, action: () => navigate('/admin/system') },
+        { label: 'System Landing', icon: ViewIcon, action: () => navigate('/admin/system') },
         { label: 'System Settings', icon: SettingsIcon, action: () => navigate('/admin/settings') },
         { label: 'Register New User', icon: UnlockIcon, action: () => navigate('/admin/register') },
         { label: 'Manage Users', icon: SettingsIcon, action: () => navigate('/admin/users') },

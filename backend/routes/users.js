@@ -5,8 +5,8 @@ import { logActivity } from '../utils/logger.js';
 
 const router = express.Router();
 
-// Get all users (for admin and dispatchers)
-router.get('/', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+// Get all users (for admin, schedulers, and dispatchers)
+router.get('/', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatcher'), async (req, res) => {
   try {
     const { role, isActive = true, page = 1, limit = 10, search } = req.query;
     

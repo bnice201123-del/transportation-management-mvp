@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
+  VStack,
+  HStack,
   Grid,
+  SimpleGrid,
   Card,
   CardBody,
   CardHeader,
@@ -13,36 +17,90 @@ import {
   StatNumber,
   StatHelpText,
   StatArrow,
-  VStack,
-  HStack,
-  Badge,
-  Progress,
-  SimpleGrid,
-  Icon,
-  Flex,
-  Spinner,
-  Center,
-  useToast,
-  Divider,
-  Avatar,
-  Button,
   Alert,
   AlertIcon,
   AlertTitle,
-  AlertDescription
+  AlertDescription,
+  Progress,
+  Button,
+  Spinner,
+  Center,
+  Icon,
+  Badge,
+  Flex,
+  useToast,
+  Avatar,
+  AvatarGroup,
+  Divider,
+  Stack,
+  Wrap,
+  WrapItem,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  useColorModeValue,
+  Skeleton,
+  SkeletonText,
+  CircularProgress,
+  CircularProgressLabel,
+  Tag,
+  TagLabel,
+  TagLeftIcon,
+  useBreakpointValue,
+  Tooltip,
+  Image,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableContainer
 } from '@chakra-ui/react';
-import {
-  CalendarIcon,
-  ViewIcon,
-  SettingsIcon,
-  StarIcon,
+import { 
+  ViewIcon, 
+  SearchIcon, 
+  SettingsIcon, 
   TimeIcon,
-  WarningIcon,
-  CheckCircleIcon,
-  InfoIcon,
-  SearchIcon
+  StarIcon,
+  ChevronDownIcon,
+  AddIcon,
+  RepeatIcon,
+  ExternalLinkIcon
 } from '@chakra-ui/icons';
-import { FaCar, FaUser, FaRoute, FaTachometerAlt, FaUsers, FaChartLine } from 'react-icons/fa';
+import { 
+  FaUsers, 
+  FaRoute, 
+  FaCar, 
+  FaUser,
+  FaTachometerAlt,
+  FaChartLine,
+  FaMapMarkedAlt,
+  FaClipboardList,
+  FaCog,
+  FaArrowUp,
+  FaArrowDown,
+  FaBell,
+  FaDownload,
+  FaEye,
+  FaSync,
+  FaCheckCircle,
+  FaExclamationTriangle,
+  FaClock,
+  FaUserPlus,
+  FaFileExport,
+  FaFilter,
+  FaCalendarAlt,
+  FaLocationArrow,
+  FaPhoneAlt,
+  FaEnvelope,
+  FaShieldAlt,
+  FaDollarSign,
+  FaTruck,
+  FaGasPump
+} from 'react-icons/fa';
 import axios from 'axios';
 import Navbar from '../shared/Navbar';
 
@@ -51,51 +109,71 @@ const AdminOverview = () => {
   const [systemHealth, setSystemHealth] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   const toast = useToast();
+  const navigate = useNavigate();
+
+  // Responsive values
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const statBg = useColorModeValue('gray.50', 'gray.700');
+  const textColor = useColorModeValue('gray.600', 'gray.300');
+  const headingColor = useColorModeValue('gray.800', 'white');
+  const hoverBg = useColorModeValue('gray.100', 'gray.600');
+  const progressBg = useColorModeValue('gray.100', 'gray.600');
+  const mainBg = useColorModeValue('gray.50', 'gray.900');
+  
+  const columnsCount = useBreakpointValue({ base: 1, sm: 2, md: 2, lg: 4 });
+  const cardSpacing = useBreakpointValue({ base: 4, md: 6 });
+  const containerPadding = useBreakpointValue({ base: 4, md: 6, lg: 8 });
 
   const fetchOverviewData = useCallback(async () => {
+    if (!loading) setRefreshing(true);
+    
     try {
-      setLoading(true);
-      setError(null);
-      
-      // Fetch multiple data sources for overview
-      const [analyticsRes, healthRes, usersRes, tripsRes] = await Promise.all([
-        axios.get('/api/analytics/dashboard').catch((err) => {
-          console.warn('Analytics API not available:', err.message);
-          return { data: null };
-        }),
-        axios.get('/api/health').catch((err) => {
-          console.warn('Health API not available:', err.message);
-          return { data: { status: 'Unknown', message: 'Health check failed' } };
-        }),
-        axios.get('/api/users').catch((err) => {
-          console.warn('Users API not available:', err.message);
-          return { data: [] };
-        }),
-        axios.get('/api/trips').catch((err) => {
-          console.warn('Trips API not available:', err.message);
-          return { data: [] };
-        })
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const config = {
+        headers: { Authorization: `Bearer ${token}` }
+      };
+
+      const [usersRes, tripsRes, analyticsRes, healthRes] = await Promise.all([
+        axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/users`, config),
+        axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/trips`, config),
+        axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/analytics`, config),
+        axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/system-health`, config)
       ]);
 
-      // Safely access data with null checks
-      const users = Array.isArray(usersRes?.data) ? usersRes.data : [];
-      const trips = Array.isArray(tripsRes?.data) ? tripsRes.data : [];
-      const analytics = analyticsRes?.data;
+      const users = Array.isArray(usersRes.data) ? usersRes.data : [];
+      const trips = Array.isArray(tripsRes.data) ? tripsRes.data : [];
+      const analytics = analyticsRes.data || {};
 
-      // Calculate overview metrics with safe operations
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
       const overviewMetrics = {
         totalUsers: users.length || 0,
-        activeUsers: users.filter(u => u && u.isActive !== false).length || 0,
+        activeUsers: users.filter(u => {
+          if (!u || !u.lastActive) return false;
+          try {
+            const lastActive = new Date(u.lastActive);
+            const daysSinceActive = (Date.now() - lastActive.getTime()) / (1000 * 60 * 60 * 24);
+            return daysSinceActive <= 7;
+          } catch {
+            return false;
+          }
+        }).length || 0,
         totalTrips: trips.length || 0,
         todayTrips: trips.filter(t => {
+          if (!t || !t.createdAt) return false;
           try {
-            if (!t || (!t.pickupDateTime && !t.createdAt)) return false;
-            const tripDate = new Date(t.pickupDateTime || t.createdAt);
-            const today = new Date();
-            return tripDate.toDateString() === today.toDateString();
-          } catch (dateError) {
-            console.warn('Date parsing error for trip:', t, dateError);
+            const tripDate = new Date(t.createdAt);
+            tripDate.setHours(0, 0, 0, 0);
+            return tripDate.getTime() === today.getTime();
+          } catch {
             return false;
           }
         }).length || 0,
@@ -103,19 +181,30 @@ const AdminOverview = () => {
         totalDrivers: users.filter(u => u && u.role === 'driver').length || 0,
         pendingTrips: trips.filter(t => t && t.status === 'pending').length || 0,
         completedTrips: trips.filter(t => t && t.status === 'completed').length || 0,
+        cancelledTrips: trips.filter(t => t && t.status === 'cancelled').length || 0,
+        inProgressTrips: trips.filter(t => t && t.status === 'in-progress').length || 0,
         recentActivity: (analytics?.recentActivity && Array.isArray(analytics.recentActivity)) 
-          ? analytics.recentActivity.slice(0, 5) 
+          ? analytics.recentActivity.slice(0, 8) 
           : [],
         usersByRole: {
           admin: users.filter(u => u && u.role === 'admin').length || 0,
           scheduler: users.filter(u => u && u.role === 'scheduler').length || 0,
           dispatcher: users.filter(u => u && u.role === 'dispatcher').length || 0,
-          driver: users.filter(u => u && u.role === 'driver').length || 0
+          driver: users.filter(u => u && u.role === 'driver').length || 0,
+          rider: users.filter(u => u && u.role === 'rider').length || 0
+        },
+        recentUsers: users.slice(-5).reverse(),
+        systemStats: {
+          avgTripDuration: analytics?.avgTripDuration || 0,
+          totalRevenue: analytics?.totalRevenue || 0,
+          fuelEfficiency: analytics?.fuelEfficiency || 0,
+          customerSatisfaction: analytics?.customerSatisfaction || 0
         }
       };
 
       setOverviewData(overviewMetrics);
       setSystemHealth(healthRes.data);
+      setError(null);
     } catch (error) {
       console.error('Error fetching overview data:', error);
       setError(error.message || 'Failed to load overview data');
@@ -130,18 +219,31 @@ const AdminOverview = () => {
         totalDrivers: 0,
         pendingTrips: 0,
         completedTrips: 0,
+        cancelledTrips: 0,
+        inProgressTrips: 0,
         recentActivity: [],
         usersByRole: {
           admin: 0,
           scheduler: 0,
           dispatcher: 0,
-          driver: 0
+          driver: 0,
+          rider: 0
+        },
+        recentUsers: [],
+        systemStats: {
+          avgTripDuration: 0,
+          totalRevenue: 0,
+          fuelEfficiency: 0,
+          customerSatisfaction: 0
         }
       });
       
       setSystemHealth({ 
         status: 'Error', 
-        message: 'System health check unavailable' 
+        message: 'System health check unavailable',
+        uptime: '0h 0m',
+        memory: 0,
+        cpu: 0
       });
 
       toast({
@@ -153,120 +255,223 @@ const AdminOverview = () => {
       });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [toast]);
+  }, [toast, loading]);
 
   useEffect(() => {
     fetchOverviewData();
   }, [fetchOverviewData]);
 
-  const StatCard = ({ title, value, change, changeType, icon, color, subtitle }) => (
-    <Card>
-      <CardBody>
-        <Flex align="center" justify="space-between">
-          <Box>
-            <Stat>
-              <StatLabel fontSize="sm" color="gray.500">{title}</StatLabel>
-              <StatNumber fontSize="2xl" fontWeight="bold">{value}</StatNumber>
-              {subtitle && (
-                <Text fontSize="xs" color="gray.400" mt={1}>{subtitle}</Text>
-              )}
-              {change && (
-                <StatHelpText>
-                  <StatArrow type={changeType} />
-                  {change}
-                </StatHelpText>
-              )}
-            </Stat>
-          </Box>
-          <Icon as={icon} boxSize={8} color={color} />
-        </Flex>
-      </CardBody>
-    </Card>
-  );
-
-  const SystemHealthCard = () => (
-    <Card>
-      <CardHeader>
-        <Heading size="sm" display="flex" alignItems="center" gap={2}>
-          <Icon as={FaTachometerAlt} />
-          System Health
-        </Heading>
-      </CardHeader>
-      <CardBody pt={0}>
-        <VStack align="stretch" spacing={3}>
-          <Alert 
-            status={systemHealth?.status === 'OK' ? 'success' : 'warning'} 
-            borderRadius="md"
-            size="sm"
+  // Enhanced Stat Card Component
+  const StatCard = ({ 
+    title, 
+    value, 
+    subtitle, 
+    icon, 
+    color, 
+    trend, 
+    trendValue, 
+    onClick,
+    isClickable = false,
+    loading: cardLoading = false
+  }) => (
+    <Card 
+      bg={cardBg}
+      border="1px solid"
+      borderColor={borderColor}
+      shadow="sm"
+      _hover={isClickable ? { shadow: 'md', transform: 'translateY(-2px)' } : {}}
+      transition="all 0.2s"
+      cursor={isClickable ? 'pointer' : 'default'}
+      onClick={onClick}
+    >
+      <CardBody p={6}>
+        <Flex align="center" justify="space-between" mb={4}>
+          <Box 
+            p={3} 
+            borderRadius="xl" 
+            bg={`${color}.50`}
+            color={`${color}.500`}
           >
-            <AlertIcon />
-            <Box>
-              <AlertTitle fontSize="sm">
-                Backend Status: {systemHealth?.status || 'Unknown'}
-              </AlertTitle>
-              <AlertDescription fontSize="xs">
-                {systemHealth?.message || 'Status unavailable'}
-              </AlertDescription>
-            </Box>
-          </Alert>
-          
-          <Box>
-            <Text fontSize="sm" mb={2}>Server Performance</Text>
-            <Progress 
-              value={systemHealth?.status === 'OK' ? 95 : 60} 
-              colorScheme={systemHealth?.status === 'OK' ? 'green' : 'orange'}
-              size="sm"
-              borderRadius="md"
-            />
+            <Icon as={icon} boxSize={6} />
           </Box>
+          {trend && (
+            <HStack spacing={1}>
+              <Icon 
+                as={trend === 'up' ? FaArrowUp : FaArrowDown} 
+                color={trend === 'up' ? 'green.500' : 'red.500'}
+                boxSize={3}
+              />
+              <Text 
+                fontSize="sm" 
+                color={trend === 'up' ? 'green.500' : 'red.500'}
+                fontWeight="semibold"
+              >
+                {trendValue}
+              </Text>
+            </HStack>
+          )}
+        </Flex>
+        
+        <VStack align="start" spacing={2}>
+          <Skeleton isLoaded={!cardLoading}>
+            <Text fontSize="3xl" fontWeight="bold" color={headingColor}>
+              {value}
+            </Text>
+          </Skeleton>
+          <Text fontSize="sm" color={textColor} fontWeight="medium">
+            {title}
+          </Text>
+          {subtitle && (
+            <Text fontSize="xs" color={textColor}>
+              {subtitle}
+            </Text>
+          )}
         </VStack>
       </CardBody>
     </Card>
   );
 
+  // Enhanced System Health Card
+  const SystemHealthCard = () => {
+    const healthStatus = systemHealth?.status || 'Unknown';
+    const isHealthy = healthStatus === 'OK';
+    
+    return (
+      <Card bg={cardBg} border="1px solid" borderColor={borderColor} shadow="sm">
+        <CardHeader pb={2}>
+          <HStack justify="space-between">
+            <Heading size="sm" display="flex" alignItems="center" gap={2}>
+              <Icon as={FaTachometerAlt} color="blue.500" />
+              System Health
+            </Heading>
+            <IconButton
+              size="sm"
+              variant="ghost"
+              icon={<RepeatIcon />}
+              onClick={() => fetchOverviewData()}
+              isLoading={refreshing}
+              aria-label="Refresh system health"
+            />
+          </HStack>
+        </CardHeader>
+        <CardBody pt={0}>
+          <VStack align="stretch" spacing={4}>
+            <Alert 
+              status={isHealthy ? 'success' : 'warning'} 
+              borderRadius="lg"
+              variant="left-accent"
+            >
+              <AlertIcon />
+              <Box>
+                <AlertTitle fontSize="sm" mb={1}>
+                  Backend Status: {healthStatus}
+                </AlertTitle>
+                <AlertDescription fontSize="xs">
+                  {systemHealth?.message || 'Status unavailable'}
+                </AlertDescription>
+              </Box>
+            </Alert>
+            
+            <VStack spacing={3}>
+              <Box width="full">
+                <HStack justify="space-between" mb={2}>
+                  <Text fontSize="sm" fontWeight="medium">CPU Usage</Text>
+                  <Text fontSize="sm" color={textColor}>
+                    {systemHealth?.cpu || 0}%
+                  </Text>
+                </HStack>
+                <Progress 
+                  value={systemHealth?.cpu || 0} 
+                  colorScheme={systemHealth?.cpu > 80 ? 'red' : systemHealth?.cpu > 60 ? 'orange' : 'green'}
+                  size="sm"
+                  borderRadius="md"
+                />
+              </Box>
+              
+              <Box width="full">
+                <HStack justify="space-between" mb={2}>
+                  <Text fontSize="sm" fontWeight="medium">Memory Usage</Text>
+                  <Text fontSize="sm" color={textColor}>
+                    {systemHealth?.memory || 0}%
+                  </Text>
+                </HStack>
+                <Progress 
+                  value={systemHealth?.memory || 0} 
+                  colorScheme={systemHealth?.memory > 80 ? 'red' : systemHealth?.memory > 60 ? 'orange' : 'green'}
+                  size="sm"
+                  borderRadius="md"
+                />
+              </Box>
+              
+              <Box width="full">
+                <HStack justify="space-between">
+                  <Text fontSize="sm" fontWeight="medium">Uptime</Text>
+                  <Text fontSize="sm" color={textColor}>
+                    {systemHealth?.uptime || '0h 0m'}
+                  </Text>
+                </HStack>
+              </Box>
+            </VStack>
+          </VStack>
+        </CardBody>
+      </Card>
+    );
+  };
+
+  // Enhanced Quick Actions Card
   const QuickActionsCard = () => (
-    <Card>
+    <Card bg={cardBg} border="1px solid" borderColor={borderColor} shadow="sm">
       <CardHeader>
         <Heading size="sm" display="flex" alignItems="center" gap={2}>
-          <Icon as={SettingsIcon} />
+          <Icon as={FaCog} color="purple.500" />
           Quick Actions
         </Heading>
       </CardHeader>
       <CardBody pt={0}>
-        <VStack spacing={2}>
+        <VStack spacing={3}>
           <Button 
-            size="sm" 
+            size="md" 
             width="full" 
-            leftIcon={<Icon as={FaUser} />}
+            leftIcon={<Icon as={FaUserPlus} />}
+            colorScheme="blue"
             variant="outline"
-            onClick={() => window.location.href = '/admin/register'}
+            onClick={() => navigate('/admin/register')}
+            _hover={{ bg: 'blue.50' }}
           >
-            Register New User
+            Add New User
           </Button>
           <Button 
-            size="sm" 
+            size="md" 
             width="full" 
-            leftIcon={<ViewIcon />}
+            leftIcon={<Icon as={FaChartLine} />}
+            colorScheme="green"
             variant="outline"
-            onClick={() => window.location.href = '/admin/analytics'}
+            onClick={() => navigate('/admin/analytics')}
+            _hover={{ bg: 'green.50' }}
           >
             View Analytics
           </Button>
           <Button 
-            size="sm" 
+            size="md" 
             width="full" 
-            leftIcon={<SearchIcon />}
+            leftIcon={<Icon as={FaFileExport} />}
+            colorScheme="orange"
             variant="outline"
-            onClick={() => window.location.href = '/admin/reports'}
+            onClick={() => navigate('/admin/reports')}
+            _hover={{ bg: 'orange.50' }}
           >
-            Generate Reports
+            Export Reports
           </Button>
           <Button 
-            size="sm" 
+            size="md" 
             width="full" 
-            leftIcon={<SettingsIcon />}
+            leftIcon={<Icon as={FaCog} />}
+            colorScheme="gray"
             variant="outline"
+            onClick={() => navigate('/admin/settings')}
+            _hover={{ bg: 'gray.50' }}
           >
             System Settings
           </Button>
@@ -275,97 +480,346 @@ const AdminOverview = () => {
     </Card>
   );
 
+  // Enhanced Recent Activity Card
   const RecentActivityCard = () => (
-    <Card>
+    <Card bg={cardBg} border="1px solid" borderColor={borderColor} shadow="sm">
       <CardHeader>
-        <Heading size="sm" display="flex" alignItems="center" gap={2}>
-          <TimeIcon />
-          Recent Activity
-        </Heading>
+        <HStack justify="space-between">
+          <Heading size="sm" display="flex" alignItems="center" gap={2}>
+            <Icon as={TimeIcon} color="orange.500" />
+            Recent Activity
+          </Heading>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            rightIcon={<ExternalLinkIcon />}
+            onClick={() => navigate('/admin/activity-log')}
+          >
+            View All
+          </Button>
+        </HStack>
       </CardHeader>
       <CardBody pt={0}>
-        <VStack align="stretch" spacing={3} maxH="300px" overflowY="auto">
+        <VStack align="stretch" spacing={3} maxH="400px" overflowY="auto">
           {overviewData?.recentActivity && Array.isArray(overviewData.recentActivity) && overviewData.recentActivity.length > 0 ? (
             overviewData.recentActivity.map((activity, index) => {
-              // Safety check for activity object
               if (!activity || typeof activity !== 'object') return null;
               
+              const getActivityColor = (action) => {
+                switch (action?.toLowerCase()) {
+                  case 'login': return 'green';
+                  case 'logout': return 'gray';
+                  case 'trip_created': return 'blue';
+                  case 'trip_completed': return 'green';
+                  case 'trip_cancelled': return 'red';
+                  case 'user_registered': return 'purple';
+                  default: return 'blue';
+                }
+              };
+              
               return (
-                <Box key={activity.id || index} p={3} bg="gray.50" rounded="md" borderLeft="3px solid" borderLeftColor="blue.400">
+                <Box 
+                  key={activity.id || index} 
+                  p={4} 
+                  bg={statBg} 
+                  rounded="lg" 
+                  borderLeft="4px solid" 
+                  borderLeftColor={`${getActivityColor(activity.action)}.400`}
+                  _hover={{ bg: hoverBg }}
+                  transition="background 0.2s"
+                >
                   <HStack justify="space-between" align="start">
-                    <VStack align="start" spacing={1} flex={1}>
-                      <Text fontSize="sm" fontWeight="medium">
-                        {activity.userId && activity.userId.firstName && activity.userId.lastName ? 
-                          `${activity.userId.firstName} ${activity.userId.lastName}` : 
-                          'System'}
-                      </Text>
-                      <Text fontSize="xs" color="gray.600">
+                    <VStack align="start" spacing={2} flex={1}>
+                      <HStack>
+                        <Avatar 
+                          size="xs" 
+                          name={
+                            activity.userId && activity.userId.firstName && activity.userId.lastName 
+                              ? `${activity.userId.firstName} ${activity.userId.lastName}` 
+                              : 'System'
+                          }
+                          bg={`${getActivityColor(activity.action)}.500`}
+                        />
+                        <Text fontSize="sm" fontWeight="semibold">
+                          {activity.userId && activity.userId.firstName && activity.userId.lastName ? 
+                            `${activity.userId.firstName} ${activity.userId.lastName}` : 
+                            'System'}
+                        </Text>
+                      </HStack>
+                      <Text fontSize="sm" color={textColor}>
                         {activity.description || 'No description available'}
                       </Text>
                     </VStack>
-                    <VStack align="end" spacing={1}>
-                      <Badge size="sm" colorScheme="blue" variant="subtle">
+                    <VStack align="end" spacing={2}>
+                      <Tag 
+                        size="sm" 
+                        colorScheme={getActivityColor(activity.action)}
+                        variant="solid"
+                      >
                         {activity.action ? activity.action.replace('_', ' ').toUpperCase() : 'ACTION'}
-                      </Badge>
-                      <Text fontSize="xs" color="gray.500">
+                      </Tag>
+                      <Text fontSize="xs" color={textColor}>
                         {activity.createdAt ? new Date(activity.createdAt).toLocaleString() : 'Unknown time'}
                       </Text>
                     </VStack>
                   </HStack>
                 </Box>
               );
-            }).filter(Boolean) // Remove null entries
+            }).filter(Boolean)
           ) : (
-            <Text fontSize="sm" color="gray.500" textAlign="center" py={4}>
-              No recent activity
-            </Text>
+            <Box textAlign="center" py={8}>
+              <Icon as={FaClipboardList} boxSize={12} color="gray.300" mb={3} />
+              <Text fontSize="sm" color={textColor}>
+                No recent activity
+              </Text>
+            </Box>
           )}
         </VStack>
       </CardBody>
     </Card>
   );
 
-  const UserRoleDistribution = () => (
-    <Card>
+  // Enhanced User Distribution Card
+  const UserDistributionCard = () => (
+    <Card bg={cardBg} border="1px solid" borderColor={borderColor} shadow="sm">
       <CardHeader>
         <Heading size="sm" display="flex" alignItems="center" gap={2}>
-          <Icon as={FaUsers} />
+          <Icon as={FaUsers} color="teal.500" />
           User Distribution
         </Heading>
       </CardHeader>
       <CardBody pt={0}>
-        <VStack spacing={3}>
+        <VStack spacing={4}>
           {overviewData?.usersByRole && typeof overviewData.usersByRole === 'object' ? 
             Object.entries(overviewData.usersByRole).map(([role, count]) => {
               const safeCount = typeof count === 'number' ? count : 0;
               const totalUsers = typeof overviewData.totalUsers === 'number' && overviewData.totalUsers > 0 
                 ? overviewData.totalUsers 
-                : 1; // Prevent division by zero
+                : 1;
+              
+              const getRoleColor = (role) => {
+                switch (role) {
+                  case 'admin': return 'red';
+                  case 'scheduler': return 'blue';
+                  case 'dispatcher': return 'green';
+                  case 'driver': return 'purple';
+                  case 'rider': return 'orange';
+                  default: return 'gray';
+                }
+              };
+              
+              const percentage = safeCount > 0 ? Math.min((safeCount / totalUsers) * 100, 100) : 0;
               
               return (
                 <Box key={role} width="full">
-                  <HStack justify="space-between" mb={1}>
-                    <Text fontSize="sm" textTransform="capitalize">{role}s</Text>
-                    <Text fontSize="sm" fontWeight="bold">{safeCount}</Text>
+                  <HStack justify="space-between" mb={2}>
+                    <HStack>
+                      <Box 
+                        w={3} 
+                        h={3} 
+                        borderRadius="full" 
+                        bg={`${getRoleColor(role)}.500`} 
+                      />
+                      <Text fontSize="sm" fontWeight="medium" textTransform="capitalize">
+                        {role}s
+                      </Text>
+                    </HStack>
+                    <HStack spacing={2}>
+                      <Text fontSize="sm" color={textColor}>
+                        {percentage.toFixed(1)}%
+                      </Text>
+                      <Text fontSize="sm" fontWeight="bold">
+                        {safeCount}
+                      </Text>
+                    </HStack>
                   </HStack>
                   <Progress 
-                    value={safeCount > 0 ? Math.min((safeCount / totalUsers) * 100, 100) : 0}
-                    colorScheme={
-                      role === 'admin' ? 'red' :
-                      role === 'scheduler' ? 'blue' :
-                      role === 'dispatcher' ? 'green' : 'purple'
-                    }
-                    size="sm"
-                    borderRadius="md"
+                    value={percentage}
+                    colorScheme={getRoleColor(role)}
+                    size="md"
+                    borderRadius="full"
+                    bg={progressBg}
                   />
                 </Box>
               );
             }) : (
-              <Text fontSize="sm" color="gray.500" textAlign="center" py={4}>
-                No user data available
-              </Text>
+              <Box textAlign="center" py={8}>
+                <Icon as={FaUsers} boxSize={12} color="gray.300" mb={3} />
+                <Text fontSize="sm" color={textColor}>
+                  No user data available
+                </Text>
+              </Box>
             )
           }
+        </VStack>
+      </CardBody>
+    </Card>
+  );
+
+  // Trip Status Overview Card
+  const TripStatusCard = () => {
+    const tripData = [
+      { 
+        label: 'Pending', 
+        value: overviewData?.pendingTrips || 0, 
+        color: 'orange',
+        icon: FaClock
+      },
+      { 
+        label: 'In Progress', 
+        value: overviewData?.inProgressTrips || 0, 
+        color: 'blue',
+        icon: FaRoute
+      },
+      { 
+        label: 'Completed', 
+        value: overviewData?.completedTrips || 0, 
+        color: 'green',
+        icon: FaCheckCircle
+      },
+      { 
+        label: 'Cancelled', 
+        value: overviewData?.cancelledTrips || 0, 
+        color: 'red',
+        icon: FaExclamationTriangle
+      }
+    ];
+
+    const totalTrips = tripData.reduce((sum, item) => sum + item.value, 0);
+
+    return (
+      <Card bg={cardBg} border="1px solid" borderColor={borderColor} shadow="sm">
+        <CardHeader>
+          <Heading size="sm" display="flex" alignItems="center" gap={2}>
+            <Icon as={FaRoute} color="blue.500" />
+            Trip Status Overview
+          </Heading>
+        </CardHeader>
+        <CardBody pt={0}>
+          <VStack spacing={4}>
+            <Box textAlign="center">
+              <CircularProgress 
+                value={totalTrips > 0 ? ((overviewData?.completedTrips || 0) / totalTrips) * 100 : 0} 
+                color="green.400"
+                size="120px"
+                thickness="8px"
+              >
+                <CircularProgressLabel>
+                  <VStack spacing={0}>
+                    <Text fontSize="xl" fontWeight="bold">
+                      {totalTrips > 0 ? Math.round(((overviewData?.completedTrips || 0) / totalTrips) * 100) : 0}%
+                    </Text>
+                    <Text fontSize="xs" color={textColor}>
+                      Success Rate
+                    </Text>
+                  </VStack>
+                </CircularProgressLabel>
+              </CircularProgress>
+            </Box>
+            
+            <SimpleGrid columns={2} spacing={3} width="full">
+              {tripData.map((item) => (
+                <Box 
+                  key={item.label}
+                  p={3}
+                  bg={statBg}
+                  borderRadius="lg"
+                  textAlign="center"
+                >
+                  <Icon as={item.icon} color={`${item.color}.500`} mb={2} />
+                  <Text fontSize="lg" fontWeight="bold">
+                    {item.value}
+                  </Text>
+                  <Text fontSize="xs" color={textColor}>
+                    {item.label}
+                  </Text>
+                </Box>
+              ))}
+            </SimpleGrid>
+          </VStack>
+        </CardBody>
+      </Card>
+    );
+  };
+
+  // Recent Users Card
+  const RecentUsersCard = () => (
+    <Card bg={cardBg} border="1px solid" borderColor={borderColor} shadow="sm">
+      <CardHeader>
+        <HStack justify="space-between">
+          <Heading size="sm" display="flex" alignItems="center" gap={2}>
+            <Icon as={FaUserPlus} color="purple.500" />
+            Recent Users
+          </Heading>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            rightIcon={<ExternalLinkIcon />}
+            onClick={() => navigate('/admin/users')}
+          >
+            View All
+          </Button>
+        </HStack>
+      </CardHeader>
+      <CardBody pt={0}>
+        <VStack spacing={3}>
+          {overviewData?.recentUsers && overviewData.recentUsers.length > 0 ? (
+            overviewData.recentUsers.map((user) => {
+              if (!user) return null;
+              
+              const getRoleColor = (role) => {
+                switch (role) {
+                  case 'admin': return 'red';
+                  case 'scheduler': return 'blue';
+                  case 'dispatcher': return 'green';
+                  case 'driver': return 'purple';
+                  case 'rider': return 'orange';
+                  default: return 'gray';
+                }
+              };
+              
+              return (
+                <HStack 
+                  key={user._id || user.id} 
+                  width="full" 
+                  p={3} 
+                  bg={statBg} 
+                  borderRadius="lg"
+                  justify="space-between"
+                >
+                  <HStack spacing={3}>
+                    <Avatar 
+                      size="sm" 
+                      name={`${user.firstName || ''} ${user.lastName || ''}`}
+                      bg={`${getRoleColor(user.role)}.500`}
+                    />
+                    <VStack align="start" spacing={0}>
+                      <Text fontSize="sm" fontWeight="semibold">
+                        {`${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown User'}
+                      </Text>
+                      <Text fontSize="xs" color={textColor}>
+                        {user.email || 'No email'}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                  <Tag 
+                    size="sm" 
+                    colorScheme={getRoleColor(user.role)}
+                    textTransform="capitalize"
+                  >
+                    {user.role || 'Unknown'}
+                  </Tag>
+                </HStack>
+              );
+            }).filter(Boolean)
+          ) : (
+            <Box textAlign="center" py={8}>
+              <Icon as={FaUser} boxSize={12} color="gray.300" mb={3} />
+              <Text fontSize="sm" color={textColor}>
+                No recent users
+              </Text>
+            </Box>
+          )}
         </VStack>
       </CardBody>
     </Card>
@@ -375,12 +829,34 @@ const AdminOverview = () => {
     return (
       <Box display="flex" flexDirection="column" minHeight="100vh">
         <Navbar />
-        <Center flex="1">
-          <VStack spacing={4}>
-            <Spinner size="xl" />
-            <Text>Loading overview...</Text>
-          </VStack>
-        </Center>
+        <Box flex="1" p={containerPadding}>
+          <Container maxW="7xl">
+            <VStack spacing={6}>
+              <Box width="full">
+                <SkeletonText noOfLines={2} spacing={4} skeletonHeight={6} />
+              </Box>
+              <SimpleGrid columns={columnsCount} spacing={cardSpacing} width="full">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} height="120px" borderRadius="lg" />
+                ))}
+              </SimpleGrid>
+              <Grid 
+                templateColumns={{ base: "1fr", lg: "2fr 1fr" }} 
+                gap={cardSpacing} 
+                width="full"
+              >
+                <VStack spacing={cardSpacing}>
+                  <Skeleton height="400px" width="full" borderRadius="lg" />
+                  <Skeleton height="300px" width="full" borderRadius="lg" />
+                </VStack>
+                <VStack spacing={cardSpacing}>
+                  <Skeleton height="250px" width="full" borderRadius="lg" />
+                  <Skeleton height="200px" width="full" borderRadius="lg" />
+                </VStack>
+              </Grid>
+            </VStack>
+          </Container>
+        </Box>
       </Box>
     );
   }
@@ -389,18 +865,23 @@ const AdminOverview = () => {
     return (
       <Box display="flex" flexDirection="column" minHeight="100vh">
         <Navbar />
-        <Box flex="1" p={{ base: 4, md: 6, lg: 8 }}>
+        <Box flex="1" p={containerPadding}>
           <Container maxW="7xl">
-            <Alert status="error" borderRadius="md">
-              <AlertIcon />
-              <Box>
-                <AlertTitle>Failed to Load Overview!</AlertTitle>
-                <AlertDescription mt={2}>
-                  {error}
-                </AlertDescription>
+            <Center minH="400px">
+              <VStack spacing={6} textAlign="center">
+                <Icon as={FaExclamationTriangle} boxSize={16} color="red.400" />
+                <Alert status="error" borderRadius="lg" maxW="md">
+                  <AlertIcon />
+                  <Box>
+                    <AlertTitle mb={2}>Failed to Load Overview!</AlertTitle>
+                    <AlertDescription>
+                      {error}
+                    </AlertDescription>
+                  </Box>
+                </Alert>
                 <Button 
-                  mt={4} 
-                  size="sm" 
+                  colorScheme="blue"
+                  leftIcon={<RepeatIcon />}
                   onClick={() => {
                     setError(null);
                     setLoading(true);
@@ -409,8 +890,8 @@ const AdminOverview = () => {
                 >
                   Try Again
                 </Button>
-              </Box>
-            </Alert>
+              </VStack>
+            </Center>
           </Container>
         </Box>
       </Box>
@@ -418,65 +899,157 @@ const AdminOverview = () => {
   }
 
   return (
-    <Box display="flex" flexDirection="column" minHeight="100vh">
+    <Box display="flex" flexDirection="column" minHeight="100vh" bg={mainBg}>
       <Navbar />
-      <Box flex="1" p={{ base: 4, md: 6, lg: 8 }}>
+      <Box flex="1" p={containerPadding}>
         <Container maxW="7xl">
-          <VStack align="stretch" spacing={6}>
-            {/* Header */}
+          <VStack align="stretch" spacing={8}>
+            {/* Header Section */}
             <Box>
-              <Heading size="lg" mb={2}>Admin Overview</Heading>
-              <Text color="gray.600">
-                System overview and key metrics at a glance
-              </Text>
+              <HStack justify="space-between" mb={4} flexWrap="wrap" gap={4}>
+                <VStack align="start" spacing={1}>
+                  <Heading size="xl" color={headingColor}>
+                    Admin Dashboard
+                  </Heading>
+                  <Text color={textColor} fontSize="lg">
+                    System overview and management center
+                  </Text>
+                </VStack>
+                <HStack spacing={3}>
+                  <Tooltip label="Refresh Data">
+                    <IconButton
+                      icon={<RepeatIcon />}
+                      onClick={() => fetchOverviewData()}
+                      isLoading={refreshing}
+                      colorScheme="blue"
+                      variant="outline"
+                      aria-label="Refresh dashboard data"
+                    />
+                  </Tooltip>
+                  <Menu>
+                    <MenuButton as={Button} rightIcon={<ChevronDownIcon />} variant="outline">
+                      Actions
+                    </MenuButton>
+                    <MenuList>
+                      <MenuItem icon={<FaDownload />}>Export Data</MenuItem>
+                      <MenuItem icon={<FaFilter />}>Filter View</MenuItem>
+                      <MenuItem icon={<FaCog />}>Settings</MenuItem>
+                    </MenuList>
+                  </Menu>
+                </HStack>
+              </HStack>
+              <Divider />
             </Box>
 
-            {/* Key Metrics */}
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
+            {/* Key Metrics Grid */}
+            <SimpleGrid columns={columnsCount} spacing={cardSpacing}>
               <StatCard
                 title="Total Users"
                 value={overviewData?.totalUsers || 0}
-                subtitle={`${overviewData?.activeUsers || 0} active`}
+                subtitle={`${overviewData?.activeUsers || 0} active this week`}
                 icon={FaUsers}
-                color="blue.500"
+                color="blue"
+                trend="up"
+                trendValue="12%"
+                isClickable
+                onClick={() => navigate('/admin/users')}
+                loading={loading}
               />
               <StatCard
                 title="Today's Trips"
                 value={overviewData?.todayTrips || 0}
                 subtitle={`${overviewData?.totalTrips || 0} total trips`}
                 icon={FaRoute}
-                color="green.500"
+                color="green"
+                trend="up"
+                trendValue="8%"
+                isClickable
+                onClick={() => navigate('/admin/trips')}
+                loading={loading}
               />
               <StatCard
                 title="Active Drivers"
                 value={`${overviewData?.activeDrivers || 0}/${overviewData?.totalDrivers || 0}`}
                 subtitle="Available for assignments"
                 icon={FaCar}
-                color="purple.500"
+                color="purple"
+                trend="down"
+                trendValue="3%"
+                isClickable
+                onClick={() => navigate('/admin/drivers')}
+                loading={loading}
               />
               <StatCard
-                title="Pending Trips"
-                value={overviewData?.pendingTrips || 0}
-                subtitle={`${overviewData?.completedTrips || 0} completed`}
-                icon={TimeIcon}
-                color="orange.500"
+                title="System Health"
+                value={systemHealth?.status === 'OK' ? '100%' : '75%'}
+                subtitle={`${overviewData?.pendingTrips || 0} pending trips`}
+                icon={FaTachometerAlt}
+                color="orange"
+                trend="up"
+                trendValue="5%"
+                isClickable
+                onClick={() => navigate('/admin/system')}
+                loading={loading}
               />
             </SimpleGrid>
 
-            {/* Dashboard Grid */}
-            <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={6}>
-              {/* Left Column */}
-              <VStack spacing={6}>
-                <RecentActivityCard />
-                <UserRoleDistribution />
+            {/* Dashboard Grid Layout */}
+            <Grid 
+              templateColumns={{ 
+                base: "1fr", 
+                md: "1fr 1fr", 
+                lg: "2fr 1fr 1fr" 
+              }} 
+              gap={cardSpacing}
+            >
+              {/* Left Column - Recent Activity */}
+              <RecentActivityCard />
+              
+              {/* Middle Column - User Distribution & Trip Status */}
+              <VStack spacing={cardSpacing}>
+                <UserDistributionCard />
+                <TripStatusCard />
               </VStack>
-
-              {/* Right Column */}
-              <VStack spacing={6}>
+              
+              {/* Right Column - System Health & Quick Actions */}
+              <VStack spacing={cardSpacing}>
                 <SystemHealthCard />
                 <QuickActionsCard />
+                <RecentUsersCard />
               </VStack>
             </Grid>
+
+            {/* Bottom Statistics Row */}
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={cardSpacing}>
+              <StatCard
+                title="Avg Trip Duration"
+                value={`${overviewData?.systemStats?.avgTripDuration || 0} min`}
+                icon={FaClock}
+                color="teal"
+                loading={loading}
+              />
+              <StatCard
+                title="Total Revenue"
+                value={`$${overviewData?.systemStats?.totalRevenue || 0}`}
+                icon={FaDollarSign}
+                color="green"
+                loading={loading}
+              />
+              <StatCard
+                title="Fuel Efficiency"
+                value={`${overviewData?.systemStats?.fuelEfficiency || 0} MPG`}
+                icon={FaGasPump}
+                color="blue"
+                loading={loading}
+              />
+              <StatCard
+                title="Customer Rating"
+                value={`${overviewData?.systemStats?.customerSatisfaction || 0}/5`}
+                icon={StarIcon}
+                color="yellow"
+                loading={loading}
+              />
+            </SimpleGrid>
           </VStack>
         </Container>
       </Box>

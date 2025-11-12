@@ -667,7 +667,12 @@ const Security = () => {
                     <SimpleGrid columns={2} spacing={4}>
                       <Box>
                         <Text fontWeight="bold" fontSize="sm" color="gray.600">User</Text>
-                        <Text>{selectedEvent.user}</Text>
+                        <Text>
+                          {typeof selectedEvent.user === 'object' 
+                            ? (selectedEvent.user.name || selectedEvent.user.email || `${selectedEvent.user.firstName || ''} ${selectedEvent.user.lastName || ''}`.trim() || 'Unknown User')
+                            : selectedEvent.user
+                          }
+                        </Text>
                       </Box>
                       <Box>
                         <Text fontWeight="bold" fontSize="sm" color="gray.600">IP Address</Text>

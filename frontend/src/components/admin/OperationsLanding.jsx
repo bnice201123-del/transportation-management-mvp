@@ -45,25 +45,25 @@ const OperationsLanding = () => {
       color: 'green.500'
     },
     {
-      title: 'Drivers',
-      description: 'View driver profiles, manage assignments, and track driver performance',
+      title: 'Driver Hub',
+      description: 'Comprehensive driver management center with trip tracking, performance reports, vehicle assignment, location services, and availability controls',
       icon: FaUser,
       path: '/driver',
       color: 'teal.500'
     },
     {
       title: 'Riders',
-      description: 'Manage rider information, view ride history, and handle rider requests',
+      description: 'Comprehensive rider management: profiles, trip history, analytics, and new rider creation',
       icon: FaUsers,
       path: '/riders',
       color: 'pink.500'
     },
     {
       title: 'Vehicles',
-      description: 'Monitor fleet status, manage vehicle assignments, and track maintenance',
+      description: 'Comprehensive fleet management: vehicle profiles, maintenance tracking, analytics, and fleet performance',
       icon: FaCar,
       path: '/vehicles',
-      color: 'cyan.500'
+      color: 'orange.500'
     }
   ];
 

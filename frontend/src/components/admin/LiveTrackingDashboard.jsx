@@ -317,7 +317,10 @@ const LiveTrackingDashboard = () => {
                                   <HStack>
                                     <FaCar />
                                     <Text color="orange.600">
-                                      {trip.assignedDriver.name || trip.assignedDriver}
+                                      {typeof trip.assignedDriver === 'object' 
+                                        ? (trip.assignedDriver.name || `${trip.assignedDriver.firstName || ''} ${trip.assignedDriver.lastName || ''}`.trim() || trip.assignedDriver.email || 'Unnamed Driver')
+                                        : trip.assignedDriver
+                                      }
                                     </Text>
                                   </HStack>
                                 )}

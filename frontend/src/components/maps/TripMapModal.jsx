@@ -282,7 +282,12 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
                       {trip.assignedDriver && (
                         <HStack>
                           <FaCar color="blue" size={12} />
-                          <Text fontSize="sm">Driver: {trip.assignedDriver}</Text>
+                          <Text fontSize="sm">
+                            Driver: {typeof trip.assignedDriver === 'object' 
+                              ? (trip.assignedDriver.name || `${trip.assignedDriver.firstName || ''} ${trip.assignedDriver.lastName || ''}`.trim() || trip.assignedDriver.email || 'Unnamed Driver')
+                              : trip.assignedDriver
+                            }
+                          </Text>
                         </HStack>
                       )}
                     </VStack>

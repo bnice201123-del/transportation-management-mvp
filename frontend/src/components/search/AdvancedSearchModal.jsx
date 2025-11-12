@@ -95,9 +95,9 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
         axios.get('/api/users?role=driver')
       ]);
 
-      setRiders(ridersRes.data || []);
-      setVehicles(vehiclesRes.data || []);
-      setDrivers(driversRes.data || []);
+      setRiders(ridersRes.data?.users || ridersRes.data || []);
+      setVehicles(vehiclesRes.data?.vehicles || vehiclesRes.data?.data?.vehicles || vehiclesRes.data || []);
+      setDrivers(driversRes.data?.users || driversRes.data || []);
     } catch (error) {
       console.error('Error fetching dropdown data:', error);
       toast({
@@ -336,7 +336,7 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                               driverName: e.target.value
                             })}
                           >
-                            {drivers.map(driver => (
+                            {Array.isArray(drivers) && drivers.map(driver => (
                               <option key={driver._id} value={driver.name}>
                                 {driver.name} (ID: {driver._id.slice(-6)})
                               </option>
@@ -391,7 +391,7 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                               vehicleId: e.target.value
                             })}
                           >
-                            {vehicles.map(vehicle => (
+                            {Array.isArray(vehicles) && vehicles.map(vehicle => (
                               <option key={vehicle._id} value={vehicle._id}>
                                 {vehicle.licensePlate} - {vehicle.make} {vehicle.model}
                               </option>
@@ -521,7 +521,7 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                           </Tr>
                         </Thead>
                         <Tbody>
-                          {searchResults.map((trip) => (
+                          {Array.isArray(searchResults) && searchResults.map((trip) => (
                             <Tr key={trip._id}>
                               <Td>
                                 <Text fontFamily="mono" fontSize="xs">
@@ -670,9 +670,14 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                                   <Divider />
                                   <Box>
                                     <Text fontWeight="bold">Assigned Driver</Text>
-                                    <Text>{selectedTrip.assignedDriver.name}</Text>
+                                    <Text>
+                                      {typeof selectedTrip.assignedDriver === 'object' 
+                                        ? (selectedTrip.assignedDriver.name || `${selectedTrip.assignedDriver.firstName || ''} ${selectedTrip.assignedDriver.lastName || ''}`.trim() || selectedTrip.assignedDriver.email || 'Unnamed Driver')
+                                        : selectedTrip.assignedDriver
+                                      }
+                                    </Text>
                                     <Text fontSize="xs" color="gray.600">
-                                      Driver ID: {selectedTrip.assignedDriver._id}
+                                      Driver ID: {typeof selectedTrip.assignedDriver === 'object' ? selectedTrip.assignedDriver._id : 'N/A'}
                                     </Text>
                                   </Box>
                                 </>

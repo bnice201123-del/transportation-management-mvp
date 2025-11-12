@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }) => {
       
       const { token: newToken, user: userData } = response.data;
       
-      console.log('AuthContext - Setting token and user:', { token: newToken?.substring(0, 20) + '...', user: userData });
+      // console.log('AuthContext - Setting token and user:', { token: newToken?.substring(0, 20) + '...', user: userData });
       
       // Set all state synchronously
       setToken(newToken);

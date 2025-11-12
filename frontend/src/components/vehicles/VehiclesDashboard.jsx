@@ -418,8 +418,16 @@ const VehiclesDashboard = () => {
                       <Td>
                         {vehicle.assignedDriver ? (
                           <HStack>
-                            <Avatar size="xs" name={vehicle.assignedDriver} />
-                            <Text fontSize="sm">{vehicle.assignedDriver}</Text>
+                            <Avatar size="xs" name={typeof vehicle.assignedDriver === 'object' 
+                              ? (vehicle.assignedDriver.name || `${vehicle.assignedDriver.firstName || ''} ${vehicle.assignedDriver.lastName || ''}`.trim() || vehicle.assignedDriver.email || 'Unnamed Driver')
+                              : vehicle.assignedDriver
+                            } />
+                            <Text fontSize="sm">
+                              {typeof vehicle.assignedDriver === 'object' 
+                                ? (vehicle.assignedDriver.name || `${vehicle.assignedDriver.firstName || ''} ${vehicle.assignedDriver.lastName || ''}`.trim() || vehicle.assignedDriver.email || 'Unnamed Driver')
+                                : vehicle.assignedDriver
+                              }
+                            </Text>
                           </HStack>
                         ) : (
                           <Text fontSize="sm" color="gray.500">Unassigned</Text>

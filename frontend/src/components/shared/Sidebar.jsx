@@ -52,7 +52,8 @@ import {
   FaCalendarTimes, 
   FaClipboardList, 
   FaPrint,
-  FaShare
+  FaShare,
+  FaMapMarkedAlt
 } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -130,9 +131,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       roles: ['scheduler', 'dispatcher', 'admin'],
       isModal: true, // Special flag to indicate this opens a modal
       subItems: [
-        { label: 'Rider History', icon: ViewIcon, action: () => navigate('/riders/history?openFilter=true') },
-        { label: 'Driver Reports', icon: InfoIcon, action: () => navigate('/driver/report?openFilter=true') },
-        { label: 'Vehicle Logs', icon: SettingsIcon, action: () => navigate('/vehicles/log?openFilter=true') }
+        // Vehicle Logs moved to Vehicles section under Operations
       ]
     },
     // System Administration - for admin users only
@@ -155,14 +154,14 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
     }] : []),
 
 
-    // Operations - for scheduler, dispatcher, and admin users
-    ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [{
+    // Operations - for scheduler, dispatcher, driver, and admin users
+    ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'driver' || user?.role === 'admin' ? [{
       id: 'operations',
       label: 'Operations',
       icon: FaRoute,
       color: 'orange.500',
       path: '/admin/operations',
-      roles: ['scheduler', 'dispatcher', 'admin'],
+      roles: ['scheduler', 'dispatcher', 'driver', 'admin'],
       subItems: [
         ...(user?.role === 'dispatcher' || user?.role === 'admin' ? [
           { label: 'Dispatch', icon: TimeIcon, action: () => navigate('/dispatcher') }
@@ -170,9 +169,13 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
         ...(user?.role === 'scheduler' || user?.role === 'admin' ? [
           { label: 'Scheduler', icon: CalendarIcon, action: () => navigate('/scheduler') }
         ] : []),
-        ...(user?.role === 'admin' ? [
-          { label: 'Drivers', icon: StarIcon, action: () => navigate('/driver') },
-          { label: 'Riders', icon: FaUser, action: () => navigate('/riders?openModal=true') },
+        ...(user?.role === 'driver' || user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [
+          { label: 'Driver', icon: FaUser, action: () => navigate('/driver') }
+        ] : []),
+        ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [
+          { label: 'Riders', icon: FaUser, action: () => navigate('/riders') }
+        ] : []),
+        ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [
           { label: 'Vehicles', icon: FaCar, action: () => navigate('/vehicles') }
         ] : [])
       ]
@@ -188,7 +191,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       subItems: [
         { label: 'Trip Maps', icon: FaRoute, action: () => navigate('/maps/trips') },
         { label: 'Live Tracking', icon: TimeIcon, action: () => navigate('/maps/tracking') },
-        { label: 'Route Planning', icon: SearchIcon, action: () => navigate('/maps/routes') }
+        { label: 'Route Planning', icon: FaMapMarkedAlt, action: () => navigate('/maps/routes') }
       ]
     }
   ];

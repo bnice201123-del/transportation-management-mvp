@@ -15,6 +15,7 @@ import RiderHistory from './components/riders/RiderHistory';
 import DispatcherDashboard from './components/dispatcher/DispatcherDashboard';
 import DriverLanding from './components/driver/DriverLanding';
 import DriverReport from './components/driver/DriverReport';
+import ComprehensiveDriverDashboard from './components/driver/ComprehensiveDriverDashboard';
 import VehicleLog from './components/vehicles/VehicleLog';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminOverview from './components/admin/AdminOverview';
@@ -32,12 +33,16 @@ import Security from './components/admin/SecuritySimple';
 import BackupRestore from './components/admin/BackupRestore';
 import AdminPlaceholder from './components/admin/AdminPlaceholder';
 import ErrorBoundary from './components/shared/ErrorBoundary';
+import ReactObjectErrorBoundary from './components/shared/ReactObjectErrorBoundary';
 import Layout from './components/shared/Layout';
 import ScrollTestPage from './components/test/ScrollTestPage';
+import ComprehensiveRiderDashboard from './components/riders/ComprehensiveRiderDashboard';
 import RidersDashboard from './components/riders/RidersDashboard';
 import RidersLanding from './components/riders/RidersLanding';
 import RiderProfile from './components/riders/RiderProfile';
 import NewRider from './components/riders/NewRider';
+import ComprehensiveVehicleDashboard from './components/vehicles/ComprehensiveVehicleDashboard';
+import DebugVehicleDashboard from './components/vehicles/DebugVehicleDashboard';
 import VehiclesDashboard from './components/vehicles/VehiclesDashboard';
 import VehiclesLanding from './components/vehicles/VehiclesLanding';
 import VehicleProfile from './components/vehicles/VehicleProfile';
@@ -45,12 +50,13 @@ import NewVehicle from './components/vehicles/NewVehicle';
 import MapsDashboard from './components/maps/MapsDashboard';
 import TripMaps from './components/maps/TripMaps';
 import LiveTracking from './components/maps/LiveTracking';
+import RoutePlanning from './components/maps/RoutePlanning';
 import DriverLocationTracking from './components/driver/DriverLocationTracking';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { isAuthenticated, user, loading } = useAuth();
 
-  console.log('ProtectedRoute - isAuthenticated:', isAuthenticated, 'user:', user, 'loading:', loading, 'allowedRoles:', allowedRoles);
+  // console.log('ProtectedRoute - isAuthenticated:', isAuthenticated, 'user:', user, 'loading:', loading, 'allowedRoles:', allowedRoles);
 
   if (loading) {
     return (
@@ -321,15 +327,15 @@ const AppRoutes = () => {
       <Route 
         path="/driver" 
         element={
-          <ProtectedRoute allowedRoles={['driver', 'admin']}>
-            <DriverLanding />
+          <ProtectedRoute allowedRoles={['driver', 'scheduler', 'dispatcher', 'admin']}>
+            <ComprehensiveDriverDashboard />
           </ProtectedRoute>
         } 
       />
       <Route 
         path="/driver/tracking" 
         element={
-          <ProtectedRoute allowedRoles={['driver']}>
+          <ProtectedRoute allowedRoles={['driver', 'scheduler', 'dispatcher', 'admin']}>
             <DriverLocationTracking />
           </ProtectedRoute>
         } 
@@ -348,9 +354,11 @@ const AppRoutes = () => {
         path="/admin/overview" 
         element={
           <ProtectedRoute allowedRoles={['admin']}>
-            <ErrorBoundary fallbackMessage="Failed to load Admin Overview. Please try refreshing the page.">
-              <AdminOverview />
-            </ErrorBoundary>
+            <ReactObjectErrorBoundary>
+              <ErrorBoundary fallbackMessage="Failed to load Admin Overview. Please try refreshing the page.">
+                <AdminOverview />
+              </ErrorBoundary>
+            </ReactObjectErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -488,7 +496,7 @@ const AppRoutes = () => {
         path="/riders"
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
-            <RidersLanding />
+            <ComprehensiveRiderDashboard />
           </ProtectedRoute>
         }
       />
@@ -527,7 +535,7 @@ const AppRoutes = () => {
       <Route 
         path="/driver/report" 
         element={
-          <ProtectedRoute allowedRoles={['driver', 'admin']}>
+          <ProtectedRoute allowedRoles={['driver', 'scheduler', 'dispatcher', 'admin']}>
             <DriverReport />
           </ProtectedRoute>
         } 
@@ -536,7 +544,9 @@ const AppRoutes = () => {
         path="/vehicles"
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
-            <VehiclesLanding />
+            <ErrorBoundary fallbackMessage="Failed to load Vehicle Dashboard. Please check console for details.">
+              <ComprehensiveVehicleDashboard />
+            </ErrorBoundary>
           </ProtectedRoute>
         }
       />
@@ -609,6 +619,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
             <LiveTracking />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/maps/routes" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <RoutePlanning />
           </ProtectedRoute>
         } 
       />

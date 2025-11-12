@@ -408,7 +408,12 @@ const RiderHistoryFilterModal = ({
                         <Badge colorScheme="cyan">Type: {filters.tripType}</Badge>
                       )}
                       {filters.assignedDriver && (
-                        <Badge colorScheme="teal">Driver: {filters.assignedDriver}</Badge>
+                        <Badge colorScheme="teal">
+                          Driver: {typeof filters.assignedDriver === 'object' 
+                            ? (filters.assignedDriver.name || `${filters.assignedDriver.firstName || ''} ${filters.assignedDriver.lastName || ''}`.trim() || filters.assignedDriver.email || 'Unnamed Driver')
+                            : filters.assignedDriver
+                          }
+                        </Badge>
                       )}
                       {filters.pickupLocation && (
                         <Badge colorScheme="orange">Pickup: {filters.pickupLocation}</Badge>

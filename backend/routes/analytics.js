@@ -156,7 +156,7 @@ router.get('/trips', authenticateToken, authorizeRoles('admin', 'dispatcher', 's
 });
 
 // Get driver performance metrics
-router.get('/drivers', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+router.get('/drivers', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatcher'), async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     

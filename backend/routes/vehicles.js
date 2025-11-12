@@ -4,7 +4,7 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 const router = express.Router();
 
 // Get all vehicles (mock data for now)
-router.get('/', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatcher'), async (req, res) => {
+router.get('/', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatcher', 'driver'), async (req, res) => {
   try {
     const { status = 'active', page = 1, limit = 50 } = req.query;
 

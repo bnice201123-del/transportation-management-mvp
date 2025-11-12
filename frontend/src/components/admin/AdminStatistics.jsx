@@ -47,7 +47,38 @@ import {
   Tr,
   Th,
   Td,
-  TableContainer
+  TableContainer,
+  Avatar,
+  AvatarGroup,
+  Stack,
+  Wrap,
+  WrapItem,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Tag,
+  TagLabel,
+  TagLeftIcon,
+  Image,
+
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  FormControl,
+  FormLabel,
+  Input,
+  Switch,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper
 } from '@chakra-ui/react';
 import { 
   CalendarIcon, 
@@ -77,37 +108,22 @@ const AdminStatistics = () => {
   const scrollRef = useRef(null);
   const toast = useToast();
 
-  // Check authorization
-  if (!user || !['admin', 'dispatcher'].includes(user.role)) {
-    return (
-      <Box>
-        <Navbar />
-        <Container maxW="7xl" py={6}>
-          <Alert status="error">
-            <AlertIcon />
-            <AlertTitle>Access Denied!</AlertTitle>
-            <AlertDescription>
-              You don't have permission to view analytics data.
-            </AlertDescription>
-          </Alert>
-        </Container>
-      </Box>
-    );
-  }
-
-  // Color mode values
+  // Color mode values - must be before early returns
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
   const textColor = useColorModeValue('gray.700', 'gray.100');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
-  
-  // Responsive values
-  const cardColumns = useBreakpointValue({ base: 1, md: 2, lg: 3, xl: 4 });
+  // Responsive values - must be before early returns
   const metricColumns = useBreakpointValue({ base: 1, sm: 2, md: 3, lg: 5 });
   const chartColumns = useBreakpointValue({ base: 1, lg: 2 });
+  const containerPadding = useBreakpointValue({ base: 4, md: 6, lg: 8 });
+  const cardSpacing = useBreakpointValue({ base: 4, md: 6 });
+
+  // Additional UI values
+  const statBg = useColorModeValue('gray.50', 'gray.700');
 
   // Enhanced mock data with more comprehensive statistics
-  const mockStatistics = {
+  const mockStatistics = React.useMemo(() => ({
     overview: {
       totalTrips: 1247,
       totalUsers: 89,
@@ -160,26 +176,9 @@ const AdminStatistics = () => {
         { type: 'critical', message: 'Vehicle V-001 requires maintenance', time: '1 hour ago' }
       ]
     }
-  };
+  }), []);
 
-  useEffect(() => {
-    fetchStatistics();
-  }, [timeRange]);
-
-  // Auto-refresh every 30 seconds when view is active
-  useEffect(() => {
-    let interval;
-    if (viewMode === 'realtime') {
-      interval = setInterval(() => {
-        fetchStatistics(true);
-      }, 30000); // 30 seconds
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [viewMode, timeRange]);
-
-  const fetchStatistics = async (showRefresh = false) => {
+  const fetchStatistics = React.useCallback(async (showRefresh = false) => {
     if (showRefresh) {
       setRefreshing(true);
     } else {
@@ -205,20 +204,62 @@ const AdminStatistics = () => {
       
       // Fallback to mock data if API fails
       setStatistics(mockStatistics);
-      setLastUpdated(new Date());
       
-      toast({
-        title: 'Using offline data',
-        description: 'Connected to local data while server is unavailable',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true
-      });
+      if (showRefresh) {
+        toast({
+          title: 'Using sample data',
+          description: 'Could not connect to server. Displaying sample statistics.',
+          status: 'warning',
+          duration: 3000,
+          isClosable: true
+        });
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [timeRange, toast, mockStatistics]);
+
+  useEffect(() => {
+    fetchStatistics();
+  }, [fetchStatistics]);
+
+  // Auto-refresh every 30 seconds when view is active
+  useEffect(() => {
+    let interval;
+    if (viewMode === 'realtime') {
+      interval = setInterval(() => {
+        fetchStatistics(true);
+      }, 30000); // 30 seconds
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [viewMode, fetchStatistics]);
+
+  // Check authorization after hooks
+  const isAuthorized = user && ['admin', 'dispatcher'].includes(user.role);
+
+  if (!isAuthorized) {
+    return (
+      <Box display="flex" flexDirection="column" minHeight="100vh" bg={bgColor}>
+        <Navbar />
+        <Container maxW="7xl" py={6}>
+          <Alert status="error" borderRadius="lg">
+            <AlertIcon />
+            <AlertTitle>Access Denied!</AlertTitle>
+            <AlertDescription>
+              You don't have permission to view analytics data.
+            </AlertDescription>
+          </Alert>
+        </Container>
+      </Box>
+    );
+  }
+
+
+
+
 
   const handleRefresh = () => {
     fetchStatistics(true);
@@ -276,57 +317,127 @@ const AdminStatistics = () => {
     scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const StatCard = ({ title, value, subtitle, icon, color, trend, isLoading }) => (
+  const StatCard = ({ 
+    title, 
+    value, 
+    subtitle, 
+    icon, 
+    color, 
+    trend, 
+    isLoading,
+    bgGradient,
+    borderColor: customBorderColor,
+    description
+  }) => (
     <ScaleFade initialScale={0.9} in={!isLoading}>
       <Card 
-        bg={cardBg} 
-        borderColor={borderColor}
+        bg={bgGradient ? undefined : cardBg}
+        bgGradient={bgGradient}
+        borderColor={customBorderColor || borderColor}
+        borderWidth="1px"
         shadow="md"
-        _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }}
-        transition="all 0.2s"
+        _hover={{ 
+          shadow: 'xl', 
+          transform: 'translateY(-4px)',
+          borderColor: color || 'blue.300'
+        }}
+        transition="all 0.3s"
+        position="relative"
+        overflow="hidden"
       >
-        <CardBody p={5}>
+        {/* Subtle Background Pattern */}
+        {bgGradient && (
+          <Box
+            position="absolute"
+            top={0}
+            right={0}
+            width="60px"
+            height="60px"
+            opacity={0.1}
+            transform="translate(20px, -20px)"
+          >
+            <Icon as={icon} boxSize={12} color={color} />
+          </Box>
+        )}
+        
+        <CardBody p={{ base: 4, md: 5 }} position="relative" zIndex={1}>
           <Stat>
-            <HStack justify="space-between" align="start">
-              <VStack align="start" spacing={1} flex={1}>
-                <StatLabel fontSize="sm" color="gray.500" fontWeight="medium">
+            <HStack justify="space-between" align="start" spacing={3}>
+              <VStack align="start" spacing={1} flex={1} minW={0}>
+                <StatLabel 
+                  fontSize={{ base: "xs", md: "sm" }} 
+                  color="gray.500" 
+                  fontWeight="medium"
+                  noOfLines={1}
+                >
                   {title}
                 </StatLabel>
                 {isLoading ? (
-                  <Skeleton height="32px" width="80px" />
+                  <VStack align="start" spacing={2} width="full">
+                    <Skeleton height="32px" width="80px" />
+                    <Skeleton height="16px" width="120px" />
+                  </VStack>
                 ) : (
-                  <StatNumber fontSize="2xl" fontWeight="bold" color={textColor}>
-                    {value}
-                  </StatNumber>
-                )}
-                {subtitle && !isLoading && (
-                  <StatHelpText mb={0} fontSize="sm">
-                    <HStack spacing={1}>
-                      {trend && (
-                        <Icon 
-                          as={trend > 0 ? TriangleUpIcon : TriangleDownIcon} 
-                          color={trend > 0 ? 'green.500' : 'red.500'}
-                          boxSize={3}
-                        />
-                      )}
-                      <Text color={trend > 0 ? 'green.500' : 'red.500'}>
-                        {subtitle}
+                  <>
+                    <StatNumber 
+                      fontSize={{ base: "xl", md: "2xl" }} 
+                      fontWeight="bold" 
+                      color={bgGradient ? "white" : textColor}
+                      noOfLines={1}
+                    >
+                      {value || '0'}
+                    </StatNumber>
+                    {description && (
+                      <Text 
+                        fontSize="xs" 
+                        color={bgGradient ? "whiteAlpha.800" : "gray.600"} 
+                        noOfLines={1}
+                      >
+                        {description}
                       </Text>
-                    </HStack>
-                  </StatHelpText>
+                    )}
+                    {subtitle && (
+                      <StatHelpText mb={0} fontSize="xs">
+                        <HStack spacing={1}>
+                          {trend && (
+                            <Icon 
+                              as={trend > 0 ? TriangleUpIcon : TriangleDownIcon} 
+                              color={trend > 0 ? 'green.400' : 'red.400'}
+                              boxSize={3}
+                            />
+                          )}
+                          <Text 
+                            color={
+                              bgGradient 
+                                ? "whiteAlpha.900"
+                                : trend > 0 ? 'green.500' : 'red.500'
+                            }
+                            fontWeight="medium"
+                          >
+                            {subtitle}
+                          </Text>
+                        </HStack>
+                      </StatHelpText>
+                    )}
+                  </>
                 )}
               </VStack>
-              <Box>
+              <Box flexShrink={0}>
                 {isLoading ? (
                   <Skeleton boxSize={8} borderRadius="md" />
                 ) : (
-                  <Tooltip label={title} placement="top">
+                  <Tooltip label={`${title}${description ? ` - ${description}` : ''}`} placement="top">
                     <Box
-                      p={2}
+                      p={{ base: 2, md: 3 }}
                       borderRadius="lg"
-                      bg={`${color.split('.')[0]}.50`}
+                      bg={bgGradient ? "whiteAlpha.200" : `${color?.split('.')[0] || 'blue'}.50`}
+                      backdropFilter={bgGradient ? "blur(10px)" : undefined}
                     >
-                      <Icon as={icon} boxSize={6} color={color} />
+                      <Icon 
+                        as={icon} 
+                        boxSize={{ base: 5, md: 6 }} 
+                        color={bgGradient ? "white" : color || "blue.500"} 
+                      />
                     </Box>
                   </Tooltip>
                 )}
@@ -441,13 +552,13 @@ const AdminStatistics = () => {
   );
 
   return (
-    <Box bg={bgColor}>
+    <Box display="flex" flexDirection="column" minHeight="100vh" bg={bgColor}>
       <Navbar />
       
-      {/* Scrollable Container */}
+      {/* Enhanced Scrollable Container */}
       <Box 
         ref={scrollRef}
-        maxH="calc(100vh - 80px)" 
+        flex="1"
         overflowY="auto"
         css={{
           '&::-webkit-scrollbar': {
@@ -462,285 +573,661 @@ const AdminStatistics = () => {
           },
         }}
       >
-        <Container maxW="7xl" py={6}>
-        <VStack spacing={6} align="stretch">
-          {/* Header */}
-          <Flex justify="space-between" align="center">
-            <Heading size="lg" color="gray.700">
-              System Statistics
-            </Heading>
-            <Select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              width="200px"
+        <Container maxW="7xl" p={containerPadding}>
+        <VStack spacing={cardSpacing} align="stretch">
+          {/* Enhanced Header with Mobile Responsive Design */}
+          <Box>
+            <Flex 
+              justify="space-between" 
+              align={{ base: "start", md: "center" }}
+              direction={{ base: "column", md: "row" }}
+              gap={4}
+              mb={4}
             >
-              <option value="24hours">Last 24 Hours</option>
-              <option value="7days">Last 7 Days</option>
-              <option value="30days">Last 30 Days</option>
-              <option value="90days">Last 90 Days</option>
-              <option value="1year">Last Year</option>
-            </Select>
-          </Flex>
+              <VStack align="start" spacing={2}>
+                <Heading size={{ base: "lg", md: "xl" }} color={textColor} fontWeight="bold">
+                  📊 System Statistics
+                </Heading>
+                <HStack spacing={2} align="center" flexWrap="wrap">
+                  <Text fontSize="sm" color="gray.500">
+                    Last updated: {lastUpdated.toLocaleTimeString()}
+                  </Text>
+                  {refreshing && (
+                    <HStack spacing={1}>
+                      <Spinner size="sm" color="blue.500" />
+                      <Text fontSize="xs" color="blue.500">Refreshing...</Text>
+                    </HStack>
+                  )}
+                  <Badge 
+                    colorScheme={viewMode === 'realtime' ? 'green' : 'blue'} 
+                    variant="subtle"
+                    fontSize="xs"
+                  >
+                    {timeRange.replace('hours', 'h').replace('days', 'd').replace('30d', '30 days')}
+                  </Badge>
+                </HStack>
+              </VStack>
+              
+              <Stack 
+                direction={{ base: "column", sm: "row" }} 
+                spacing={3} 
+                align="stretch"
+                width={{ base: "full", md: "auto" }}
+              >
+                <Select
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value)}
+                  size="md"
+                  minW={{ base: "full", sm: "200px" }}
+                  bg={cardBg}
+                  borderColor={borderColor}
+                  _hover={{ borderColor: 'blue.300' }}
+                  _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px #3182ce' }}
+                >
+                  <option value="24hours">📅 Last 24 Hours</option>
+                  <option value="7days">📅 Last 7 Days</option>
+                  <option value="30days">📅 Last 30 Days</option>
+                  <option value="90days">📅 Last 90 Days</option>
+                  <option value="1year">📅 Last Year</option>
+                </Select>
+                <ButtonGroup size="md" isAttached variant="outline">
+                  <Button 
+                    variant={viewMode === 'overview' ? 'solid' : 'outline'}
+                    colorScheme={viewMode === 'overview' ? 'blue' : 'gray'}
+                    onClick={() => setViewMode('overview')}
+                    size={{ base: "sm", md: "md" }}
+                  >
+                    📋 Overview
+                  </Button>
+                  <Button 
+                    variant={viewMode === 'detailed' ? 'solid' : 'outline'}
+                    colorScheme={viewMode === 'detailed' ? 'blue' : 'gray'}
+                    onClick={() => setViewMode('detailed')}
+                    size={{ base: "sm", md: "md" }}
+                  >
+                    📊 Detailed
+                  </Button>
+                  <Button 
+                    variant={viewMode === 'realtime' ? 'solid' : 'outline'}
+                    colorScheme={viewMode === 'realtime' ? 'green' : 'gray'}
+                    onClick={() => setViewMode('realtime')}
+                    size={{ base: "sm", md: "md" }}
+                  >
+                    🔴 Live
+                  </Button>
+                </ButtonGroup>
+              </Stack>
+            </Flex>
+            <Divider />
+          </Box>
 
-          {/* Key Metrics Overview */}
-          <Card>
-            <CardHeader>
-              <Heading size="md">Key Metrics</Heading>
+          {/* Enhanced Key Metrics Overview with Animation and Better UX */}
+          <Card bg={cardBg} borderColor={borderColor} shadow="lg" borderRadius="xl">
+            <CardHeader pb={2}>
+              <HStack justify="space-between" align="center">
+                <VStack align="start" spacing={1}>
+                  <Heading size={{ base: "md", md: "lg" }} color={textColor}>
+                    📊 Key Performance Metrics
+                  </Heading>
+                  <Text fontSize="sm" color="gray.500">
+                    Real-time insights • Updated {lastUpdated.toLocaleTimeString()}
+                  </Text>
+                </VStack>
+                <HStack spacing={2}>
+                  {refreshing && (
+                    <HStack spacing={1}>
+                      <Spinner size="sm" color="blue.500" />
+                      <Text fontSize="xs" color="blue.500">Live</Text>
+                    </HStack>
+                  )}
+                  <Badge 
+                    colorScheme="green" 
+                    variant="subtle" 
+                    fontSize="xs"
+                    px={2} 
+                    py={1}
+                    borderRadius="md"
+                  >
+                    ✅ Active
+                  </Badge>
+                </HStack>
+              </HStack>
             </CardHeader>
-            <CardBody>
-              <SimpleGrid columns={{ base: 2, md: 5 }} spacing={6}>
+            <CardBody pt={2}>
+              <SimpleGrid 
+                columns={{ base: 1, sm: 2, md: 3, lg: 5 }} 
+                spacing={{ base: 4, md: 6 }}
+                mb={4}
+              >
                 <StatCard
                   title="Total Trips"
-                  value={statistics.overview?.totalTrips?.toLocaleString()}
-                  subtitle="+12% from last period"
+                  value={statistics.overview?.totalTrips?.toLocaleString() || '0'}
+                  subtitle={`+${statistics.tripGrowth || 12}% from last period`}
                   icon={FaRoute}
                   color="blue.500"
-                  trend={12}
+                  trend={statistics.tripGrowth || 12}
+                  bgGradient="linear(to-r, blue.50, blue.100)"
+                  borderColor="blue.200"
+                  isLoading={loading}
                 />
                 <StatCard
                   title="Active Users"
-                  value={statistics.overview?.totalUsers}
-                  subtitle="+8% from last period"
+                  value={statistics.overview?.totalUsers?.toLocaleString() || statistics.totalUsers?.toString() || '0'}
+                  subtitle={`+${statistics.userGrowth || 8}% from last period`}
                   icon={FaUser}
                   color="green.500"
-                  trend={8}
+                  trend={statistics.userGrowth || 8}
+                  bgGradient="linear(to-r, green.50, green.100)"
+                  borderColor="green.200"
+                  isLoading={loading}
                 />
                 <StatCard
                   title="Revenue"
-                  value={`$${statistics.overview?.revenue?.toLocaleString()}`}
-                  subtitle="+15% from last period"
+                  value={`₦${(statistics.overview?.revenue || statistics.revenue || 0).toLocaleString()}`}
+                  subtitle={`+${statistics.revenueGrowth || 15}% from last period`}
                   icon={FaDollarSign}
                   color="purple.500"
-                  trend={15}
+                  trend={statistics.revenueGrowth || 15}
+                  bgGradient="linear(to-r, purple.50, purple.100)"
+                  borderColor="purple.200"
+                  isLoading={loading}
                 />
                 <StatCard
-                  title="Active Drivers"
-                  value={statistics.overview?.totalDrivers}
-                  subtitle="+3% from last period"
+                  title="Active Vehicles"
+                  value={statistics.overview?.totalDrivers?.toString() || statistics.activeVehicles?.toString() || '0'}
+                  subtitle={`+${statistics.vehicleGrowth || 3}% from last period`}
                   icon={FaCar}
                   color="orange.500"
-                  trend={3}
+                  trend={statistics.vehicleGrowth || 3}
+                  bgGradient="linear(to-r, orange.50, orange.100)"
+                  borderColor="orange.200"
+                  isLoading={loading}
                 />
                 <StatCard
-                  title="Efficiency"
-                  value={`${statistics.overview?.efficiency}%`}
-                  subtitle="+2.1% from last period"
+                  title="System Efficiency"
+                  value={`${statistics.overview?.efficiency || statistics.successRate || '98.5'}%`}
+                  subtitle={`+${statistics.efficiencyGrowth || 2.1}% from last period`}
                   icon={FaChartLine}
                   color="teal.500"
-                  trend={2.1}
+                  trend={statistics.efficiencyGrowth || 2.1}
+                  bgGradient="linear(to-r, teal.50, teal.100)"
+                  borderColor="teal.200"
+                  isLoading={loading}
                 />
               </SimpleGrid>
+
+              {/* Quick Action Metrics - Mobile Responsive */}
+              <Divider my={6} />
+              <VStack align="start" spacing={3} mb={4}>
+                <Heading size="sm" color={textColor}>⚡ Quick Insights</Heading>
+                <SimpleGrid 
+                  columns={{ base: 2, sm: 4 }} 
+                  spacing={{ base: 3, md: 4 }}
+                  width="full"
+                >
+                  <Box 
+                    p={{ base: 3, md: 4 }}
+                    bg={cardBg}
+                    borderRadius="lg" 
+                    border="1px solid" 
+                    borderColor={borderColor}
+                    textAlign="center"
+                    transition="all 0.2s"
+                    _hover={{ 
+                      transform: "translateY(-2px)", 
+                      shadow: "md",
+                      borderColor: "blue.300"
+                    }}
+                  >
+                    <Text fontSize={{ base: "xl", md: "2xl" }} mb={1}>⚡</Text>
+                    <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color={textColor}>
+                      {statistics.avgResponseTime || '2.3s'}
+                    </Text>
+                    <Text fontSize="xs" color="gray.500">Response Time</Text>
+                  </Box>
+                  
+                  <Box 
+                    p={{ base: 3, md: 4 }}
+                    bg={cardBg}
+                    borderRadius="lg" 
+                    border="1px solid" 
+                    borderColor={borderColor}
+                    textAlign="center"
+                    transition="all 0.2s"
+                    _hover={{ 
+                      transform: "translateY(-2px)", 
+                      shadow: "md",
+                      borderColor: "green.300"
+                    }}
+                  >
+                    <Text fontSize={{ base: "xl", md: "2xl" }} mb={1}>🎯</Text>
+                    <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color={textColor}>
+                      {statistics.successRate || '98.5%'}
+                    </Text>
+                    <Text fontSize="xs" color="gray.500">Success Rate</Text>
+                  </Box>
+                  
+                  <Box 
+                    p={{ base: 3, md: 4 }}
+                    bg={cardBg}
+                    borderRadius="lg" 
+                    border="1px solid" 
+                    borderColor={borderColor}
+                    textAlign="center"
+                    transition="all 0.2s"
+                    _hover={{ 
+                      transform: "translateY(-2px)", 
+                      shadow: "md",
+                      borderColor: "purple.300"
+                    }}
+                  >
+                    <Text fontSize={{ base: "xl", md: "2xl" }} mb={1}>⭐</Text>
+                    <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color={textColor}>
+                      {statistics.avgRating || '4.8'}
+                    </Text>
+                    <Text fontSize="xs" color="gray.500">Avg Rating</Text>
+                  </Box>
+                  
+                  <Box 
+                    p={{ base: 3, md: 4 }}
+                    bg={cardBg}
+                    borderRadius="lg" 
+                    border="1px solid" 
+                    borderColor={borderColor}
+                    textAlign="center"
+                    transition="all 0.2s"
+                    _hover={{ 
+                      transform: "translateY(-2px)", 
+                      shadow: "md",
+                      borderColor: "orange.300"
+                    }}
+                  >
+                    <Text fontSize={{ base: "xl", md: "2xl" }} mb={1}>🔄</Text>
+                    <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color={textColor}>
+                      {statistics.activeTrips || statistics.ongoingTrips || '12'}
+                    </Text>
+                    <Text fontSize="xs" color="gray.500">Active Now</Text>
+                  </Box>
+                </SimpleGrid>
+              </VStack>
             </CardBody>
           </Card>
 
-          {/* Performance Metrics - Optimized Layout */}
-          <Card bg={cardBg} shadow="md" borderRadius="lg">
-            <CardHeader pb={2}>
-              <Flex justify="space-between" align="center">
-                <VStack align="start" spacing={0}>
-                  <Heading size="md" color={textColor}>Performance Dashboard</Heading>
-                  <Text fontSize="xs" color="gray.500">Real-time operational metrics</Text>
+          {/* Enhanced Performance Metrics - Mobile Responsive */}
+          <Card bg={cardBg} shadow="lg" borderRadius="xl" borderColor={borderColor}>
+            <CardHeader pb={3}>
+              <Flex 
+                justify="space-between" 
+                align={{ base: "start", md: "center" }}
+                direction={{ base: "column", md: "row" }}
+                gap={4}
+              >
+                <VStack align="start" spacing={1}>
+                  <HStack spacing={2}>
+                    <Text fontSize="2xl">📈</Text>
+                    <Heading size={{ base: "md", md: "lg" }} color={textColor}>
+                      Performance Dashboard
+                    </Heading>
+                  </HStack>
+                  <Text fontSize="sm" color="gray.500">
+                    Real-time operational metrics • Last updated {lastUpdated.toLocaleTimeString()}
+                  </Text>
                 </VStack>
-                <HStack spacing={2}>
-                  <Button 
-                    size="xs" 
-                    variant="outline" 
-                    leftIcon={<RepeatIcon />}
-                    onClick={handleRefresh}
-                    isLoading={refreshing}
-                    loadingText="Refreshing"
+                <HStack 
+                  spacing={2} 
+                  flexWrap="wrap" 
+                  justify={{ base: "start", md: "end" }}
+                >
+                  <ButtonGroup size={{ base: "sm", md: "md" }} isAttached variant="outline">
+                    <Button 
+                      leftIcon={<RepeatIcon />}
+                      onClick={handleRefresh}
+                      isLoading={refreshing}
+                      loadingText="Refreshing"
+                      colorScheme="blue"
+                      variant={refreshing ? "solid" : "outline"}
+                    >
+                      {refreshing ? "Refreshing..." : "Refresh"}
+                    </Button>
+                    <Button 
+                      leftIcon={<DownloadIcon />}
+                      onClick={handleExport}
+                      colorScheme="green"
+                    >
+                      Export
+                    </Button>
+                  </ButtonGroup>
+                  <Badge 
+                    colorScheme={viewMode === 'realtime' ? 'green' : 'blue'} 
+                    variant="subtle"
+                    fontSize="xs"
+                    px={2} 
+                    py={1}
                   >
-                    Refresh
-                  </Button>
-                  <Button 
-                    size="xs" 
-                    variant="outline" 
-                    leftIcon={<DownloadIcon />}
-                    onClick={handleExport}
-                  >
-                    Export
-                  </Button>
+                    {viewMode === 'realtime' ? '🔴 Live Data' : '📊 Historical'}
+                  </Badge>
                 </HStack>
               </Flex>
             </CardHeader>
 
-            <CardBody pt={2}>
-              {/* Compact Metrics Grid */}
-              <SimpleGrid columns={{ base: 1, sm: 2, md: 4 }} spacing={3} mb={4}>
-                <Box p={3} bg="blue.50" borderRadius="md" border="1px" borderColor="blue.200">
-                  <HStack justify="space-between" align="center">
-                    <VStack align="start" spacing={0} flex={1}>
-                      <Text fontSize="xs" fontWeight="medium" color="blue.600">Trip Duration</Text>
+            <CardBody pt={3}>
+              {/* Enhanced Performance Metrics Grid - Mobile Responsive & Compact */}
+              <SimpleGrid 
+                columns={{ base: 2, md: 4 }} 
+                spacing={{ base: 3, md: 4 }} 
+                mb={6}
+              >
+                {/* Trip Duration Metric */}
+                <Box 
+                  p={{ base: 3, md: 4 }}
+                  bg="linear-gradient(135deg, blue.50 0%, blue.100 100%)"
+                  borderRadius="lg" 
+                  border="1px solid" 
+                  borderColor="blue.200"
+                  position="relative"
+                  overflow="hidden"
+                  transition="all 0.2s"
+                  _hover={{ 
+                    transform: "translateY(-2px)", 
+                    shadow: "lg",
+                    borderColor: "blue.300"
+                  }}
+                  minH={{ base: "120px", md: "140px" }}
+                >
+                  <VStack align="center" spacing={2} h="full" justify="space-between">
+                    <VStack spacing={1} align="center">
                       <HStack spacing={1}>
-                        <Text fontSize="lg" fontWeight="bold" color="blue.700">
+                        <Text fontSize={{ base: "sm", md: "md" }}>🕒</Text>
+                        <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="semibold" color="blue.600" textAlign="center">
+                          Trip Duration
+                        </Text>
+                      </HStack>
+                      <HStack spacing={1} align="baseline">
+                        <Text 
+                          fontSize={{ base: "lg", md: "xl" }} 
+                          fontWeight="bold" 
+                          color="blue.800"
+                        >
                           {loading ? '-' : (statistics.performance?.avgTripDuration || '25')}
                         </Text>
-                        <Text fontSize="xs" color="blue.500">min</Text>
+                        <Text fontSize="xs" color="blue.600">min</Text>
                       </HStack>
                     </VStack>
                     {loading ? (
-                      <Spinner size="sm" color="blue.400" />
-                    ) : (
-                      <CircularProgress value={75} color="blue.400" size="32px" thickness="6px">
-                        <CircularProgressLabel fontSize="2xs" fontWeight="medium" color="blue.600">
-                          75%
-                        </CircularProgressLabel>
-                      </CircularProgress>
-                    )}
-                  </HStack>
-                </Box>
-
-                <Box p={3} bg="orange.50" borderRadius="md" border="1px" borderColor="orange.200">
-                  <HStack justify="space-between" align="center">
-                    <VStack align="start" spacing={0} flex={1}>
-                      <Text fontSize="xs" fontWeight="medium" color="orange.600">Wait Time</Text>
-                      <HStack spacing={1}>
-                        <Text fontSize="lg" fontWeight="bold" color="orange.700">
-                          {loading ? '-' : (statistics.performance?.avgWaitTime || '8')}
-                        </Text>
-                        <Text fontSize="xs" color="orange.500">min</Text>
-                      </HStack>
-                    </VStack>
-                    {loading ? (
-                      <Spinner size="sm" color="orange.400" />
-                    ) : (
-                      <CircularProgress value={65} color="orange.400" size="32px" thickness="6px">
-                        <CircularProgressLabel fontSize="2xs" fontWeight="medium" color="orange.600">
-                          65%
-                        </CircularProgressLabel>
-                      </CircularProgress>
-                    )}
-                  </HStack>
-                </Box>
-
-                <Box p={3} bg="green.50" borderRadius="md" border="1px" borderColor="green.200">
-                  <HStack justify="space-between" align="center">
-                    <VStack align="start" spacing={0} flex={1}>
-                      <Text fontSize="xs" fontWeight="medium" color="green.600">Rating</Text>
-                      <HStack spacing={1}>
-                        <Text fontSize="lg" fontWeight="bold" color="green.700">
-                          {loading ? '-' : (statistics.performance?.customerSatisfaction || '4.8')}
-                        </Text>
-                        <Text fontSize="xs" color="green.500">/5</Text>
-                      </HStack>
-                    </VStack>
-                    {loading ? (
-                      <Spinner size="sm" color="green.400" />
-                    ) : (
-                      <CircularProgress value={92} color="green.400" size="32px" thickness="6px">
-                        <CircularProgressLabel fontSize="2xs" fontWeight="medium" color="green.600">
-                          92%
-                        </CircularProgressLabel>
-                      </CircularProgress>
-                    )}
-                  </HStack>
-                </Box>
-
-                <Box p={3} bg="purple.50" borderRadius="md" border="1px" borderColor="purple.200">
-                  <HStack justify="space-between" align="center">
-                    <VStack align="start" spacing={0} flex={1}>
-                      <Text fontSize="xs" fontWeight="medium" color="purple.600">On-Time</Text>
-                      <HStack spacing={1}>
-                        <Text fontSize="lg" fontWeight="bold" color="purple.700">
-                          {loading ? '-' : (statistics.performance?.onTimePercentage || '88')}
-                        </Text>
-                        <Text fontSize="xs" color="purple.500">%</Text>
-                      </HStack>
-                    </VStack>
-                    {loading ? (
-                      <Spinner size="sm" color="purple.400" />
+                      <Spinner size="sm" color="blue.500" thickness="3px" />
                     ) : (
                       <CircularProgress 
-                        value={statistics.performance?.onTimePercentage || 88} 
-                        color="purple.400" 
+                        value={((statistics.performance?.avgTripDuration || 25) / 30) * 100} 
+                        color="blue.500" 
                         size="32px" 
                         thickness="6px"
+                        trackColor="blue.100"
                       >
-                        <CircularProgressLabel fontSize="2xs" fontWeight="medium" color="purple.600">
+                        <CircularProgressLabel fontSize="2xs" fontWeight="bold" color="blue.700">
+                          {((statistics.performance?.avgTripDuration || 25) / 30 * 100).toFixed(0)}%
+                        </CircularProgressLabel>
+                      </CircularProgress>
+                    )}
+                    <Text fontSize="2xs" color="blue.500" textAlign="center" noOfLines={1}>
+                      Target: 30min
+                    </Text>
+                  </VStack>
+                </Box>
+
+                {/* Wait Time Metric */}
+                <Box 
+                  p={{ base: 3, md: 4 }}
+                  bg="linear-gradient(135deg, orange.50 0%, orange.100 100%)"
+                  borderRadius="lg" 
+                  border="1px solid" 
+                  borderColor="orange.200"
+                  position="relative"
+                  overflow="hidden"
+                  transition="all 0.2s"
+                  _hover={{ 
+                    transform: "translateY(-2px)", 
+                    shadow: "lg",
+                    borderColor: "orange.300"
+                  }}
+                  minH={{ base: "120px", md: "140px" }}
+                >
+                  <VStack align="center" spacing={2} h="full" justify="space-between">
+                    <VStack spacing={1} align="center">
+                      <HStack spacing={1}>
+                        <Text fontSize={{ base: "sm", md: "md" }}>⏱️</Text>
+                        <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="semibold" color="orange.600" textAlign="center">
+                          Wait Time
+                        </Text>
+                      </HStack>
+                      <HStack spacing={1} align="baseline">
+                        <Text 
+                          fontSize={{ base: "lg", md: "xl" }} 
+                          fontWeight="bold" 
+                          color="orange.800"
+                        >
+                          {loading ? '-' : (statistics.performance?.avgWaitTime || '8')}
+                        </Text>
+                        <Text fontSize="xs" color="orange.600">min</Text>
+                      </HStack>
+                    </VStack>
+                    {loading ? (
+                      <Spinner size="sm" color="orange.500" thickness="3px" />
+                    ) : (
+                      <CircularProgress 
+                        value={100 - ((statistics.performance?.avgWaitTime || 8) / 10) * 100} 
+                        color="orange.500" 
+                        size="32px" 
+                        thickness="6px"
+                        trackColor="orange.100"
+                      >
+                        <CircularProgressLabel fontSize="2xs" fontWeight="bold" color="orange.700">
+                          {(100 - (statistics.performance?.avgWaitTime || 8) / 10 * 100).toFixed(0)}%
+                        </CircularProgressLabel>
+                      </CircularProgress>
+                    )}
+                    <Text fontSize="2xs" color="orange.500" textAlign="center" noOfLines={1}>
+                      Target: &lt;10min
+                    </Text>
+                  </VStack>
+                </Box>
+
+                {/* Customer Rating Metric */}
+                <Box 
+                  p={{ base: 3, md: 4 }}
+                  bg="linear-gradient(135deg, green.50 0%, green.100 100%)"
+                  borderRadius="lg" 
+                  border="1px solid" 
+                  borderColor="green.200"
+                  position="relative"
+                  overflow="hidden"
+                  transition="all 0.2s"
+                  _hover={{ 
+                    transform: "translateY(-2px)", 
+                    shadow: "lg",
+                    borderColor: "green.300"
+                  }}
+                  minH={{ base: "120px", md: "140px" }}
+                >
+                  <VStack align="center" spacing={2} h="full" justify="space-between">
+                    <VStack spacing={1} align="center">
+                      <HStack spacing={1}>
+                        <Text fontSize={{ base: "sm", md: "md" }}>⭐</Text>
+                        <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="semibold" color="green.600" textAlign="center">
+                          Rating
+                        </Text>
+                      </HStack>
+                      <HStack spacing={1} align="baseline">
+                        <Text 
+                          fontSize={{ base: "lg", md: "xl" }} 
+                          fontWeight="bold" 
+                          color="green.800"
+                        >
+                          {loading ? '-' : (statistics.performance?.customerSatisfaction || '4.8')}
+                        </Text>
+                        <Text fontSize="xs" color="green.600">/5</Text>
+                      </HStack>
+                    </VStack>
+                    {loading ? (
+                      <Spinner size="sm" color="green.500" thickness="3px" />
+                    ) : (
+                      <CircularProgress 
+                        value={(statistics.performance?.customerSatisfaction || 4.8) / 5 * 100} 
+                        color="green.500" 
+                        size="32px" 
+                        thickness="6px"
+                        trackColor="green.100"
+                      >
+                        <CircularProgressLabel fontSize="2xs" fontWeight="bold" color="green.700">
+                          {((statistics.performance?.customerSatisfaction || 4.8) / 5 * 100).toFixed(0)}%
+                        </CircularProgressLabel>
+                      </CircularProgress>
+                    )}
+                    <Text fontSize="2xs" color="green.500" textAlign="center" noOfLines={1}>
+                      Excellent
+                    </Text>
+                  </VStack>
+                </Box>
+
+                {/* On-Time Performance Metric */}
+                <Box 
+                  p={{ base: 3, md: 4 }}
+                  bg="linear-gradient(135deg, purple.50 0%, purple.100 100%)"
+                  borderRadius="lg" 
+                  border="1px solid" 
+                  borderColor="purple.200"
+                  position="relative"
+                  overflow="hidden"
+                  transition="all 0.2s"
+                  _hover={{ 
+                    transform: "translateY(-2px)", 
+                    shadow: "lg",
+                    borderColor: "purple.300"
+                  }}
+                  minH={{ base: "120px", md: "140px" }}
+                >
+                  <VStack align="center" spacing={2} h="full" justify="space-between">
+                    <VStack spacing={1} align="center">
+                      <HStack spacing={1}>
+                        <Text fontSize={{ base: "sm", md: "md" }}>🎯</Text>
+                        <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="semibold" color="purple.600" textAlign="center">
+                          On-Time
+                        </Text>
+                      </HStack>
+                      <HStack spacing={1} align="baseline">
+                        <Text 
+                          fontSize={{ base: "lg", md: "xl" }} 
+                          fontWeight="bold" 
+                          color="purple.800"
+                        >
+                          {loading ? '-' : (statistics.performance?.onTimePercentage || '88')}
+                        </Text>
+                        <Text fontSize="xs" color="purple.600">%</Text>
+                      </HStack>
+                    </VStack>
+                    {loading ? (
+                      <Spinner size="sm" color="purple.500" thickness="3px" />
+                    ) : (
+                      <CircularProgress 
+                        value={statistics.performance?.onTimePercentage || 88}
+                        color="purple.500" 
+                        size="32px" 
+                        thickness="6px"
+                        trackColor="purple.100"
+                      >
+                        <CircularProgressLabel fontSize="2xs" fontWeight="bold" color="purple.700">
                           {statistics.performance?.onTimePercentage || 88}%
                         </CircularProgressLabel>
                       </CircularProgress>
                     )}
-                  </HStack>
+                    <Text fontSize="2xs" color="purple.500" textAlign="center" noOfLines={1}>
+                      Target: 90%
+                    </Text>
+                  </VStack>
                 </Box>
               </SimpleGrid>
 
-              {/* Quick Stats Row */}
-              <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={3}>
-                <Box p={3} bg={useColorModeValue('gray.50', 'gray.700')} borderRadius="md">
-                  <Text fontSize="xs" fontWeight="semibold" color={textColor} mb={2}>Today's Activity</Text>
-                  <SimpleGrid columns={2} spacing={2}>
-                    <HStack spacing={1}>
-                      <Icon as={FaCar} color="blue.500" boxSize={3} />
-                      <VStack align="start" spacing={0} flex={1}>
-                        <Text fontSize="xs" color={textColor}>Active</Text>
-                        <Text fontSize="sm" fontWeight="bold" color="blue.600">
-                          {loading ? '-' : (statistics.overview?.activeTrips || '12')}
-                        </Text>
-                      </VStack>
-                    </HStack>
+              {/* Compact Quick Stats Row */}
+              <SimpleGrid 
+                columns={{ base: 1, md: 2 }} 
+                spacing={{ base: 3, md: 4 }} 
+                mb={4}
+              >
+                <Box p={{ base: 3, md: 4 }} bg={statBg} borderRadius="lg" border="1px solid" borderColor="gray.200">
+                  <HStack justify="space-between" align="center" mb={3}>
+                    <Text fontSize={{ base: "sm", md: "md" }} fontWeight="bold" color={textColor}>
+                      📊 Today's Activity
+                    </Text>
+                    <Badge colorScheme="blue" variant="subtle" fontSize="2xs">Live</Badge>
+                  </HStack>
+                  <SimpleGrid columns={2} spacing={{ base: 2, md: 3 }}>
+                    <VStack align="center" spacing={1} p={2} bg="blue.50" borderRadius="md">
+                      <Icon as={FaCar} color="blue.500" boxSize={4} />
+                      <Text fontSize="xs" color="gray.600" textAlign="center">Active Trips</Text>
+                      <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color="blue.600">
+                        {loading ? '-' : (statistics.overview?.activeTrips || '12')}
+                      </Text>
+                    </VStack>
                     
-                    <HStack spacing={1}>
-                      <Icon as={FaUser} color="green.500" boxSize={3} />
-                      <VStack align="start" spacing={0} flex={1}>
-                        <Text fontSize="xs" color={textColor}>Drivers</Text>
-                        <Text fontSize="sm" fontWeight="bold" color="green.600">
-                          {loading ? '-' : (statistics.overview?.activeDrivers || '18')}
-                        </Text>
-                      </VStack>
-                    </HStack>
+                    <VStack align="center" spacing={1} p={2} bg="green.50" borderRadius="md">
+                      <Icon as={FaUser} color="green.500" boxSize={4} />
+                      <Text fontSize="xs" color="gray.600" textAlign="center">Drivers</Text>
+                      <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color="green.600">
+                        {loading ? '-' : (statistics.overview?.activeDrivers || '18')}
+                      </Text>
+                    </VStack>
                     
-                    <HStack spacing={1}>
-                      <Icon as={FaRoute} color="orange.500" boxSize={3} />
-                      <VStack align="start" spacing={0} flex={1}>
-                        <Text fontSize="xs" color={textColor}>Avg Dist</Text>
-                        <Text fontSize="sm" fontWeight="bold" color="orange.600">
-                          {loading ? '-' : `${(statistics.performance?.avgDistance || 12.5)}mi`}
-                        </Text>
-                      </VStack>
-                    </HStack>
+                    <VStack align="center" spacing={1} p={2} bg="orange.50" borderRadius="md">
+                      <Icon as={FaRoute} color="orange.500" boxSize={4} />
+                      <Text fontSize="xs" color="gray.600" textAlign="center">Avg Distance</Text>
+                      <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color="orange.600">
+                        {loading ? '-' : `${(statistics.performance?.avgDistance || 12.5)}mi`}
+                      </Text>
+                    </VStack>
                     
-                    <HStack spacing={1}>
-                      <Icon as={FaDollarSign} color="purple.500" boxSize={3} />
-                      <VStack align="start" spacing={0} flex={1}>
-                        <Text fontSize="xs" color={textColor}>Revenue</Text>
-                        <Text fontSize="sm" fontWeight="bold" color="purple.600">
-                          {loading ? '-' : `$${(statistics.financial?.totalRevenue || 1247).toLocaleString()}`}
-                        </Text>
-                      </VStack>
-                    </HStack>
+                    <VStack align="center" spacing={1} p={2} bg="purple.50" borderRadius="md">
+                      <Icon as={FaDollarSign} color="purple.500" boxSize={4} />
+                      <Text fontSize="xs" color="gray.600" textAlign="center">Revenue</Text>
+                      <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color="purple.600">
+                        {loading ? '-' : `$${(statistics.financial?.totalRevenue || 1247).toLocaleString()}`}
+                      </Text>
+                    </VStack>
                   </SimpleGrid>
                 </Box>
 
-                <Box p={3} bg={useColorModeValue('gray.50', 'gray.700')} borderRadius="md">
-                  <Text fontSize="xs" fontWeight="semibold" color={textColor} mb={2}>Performance Trends</Text>
-                  <VStack spacing={1} align="stretch">
-                    <HStack justify="space-between">
-                      <Text fontSize="xs" color={textColor}>vs Yesterday</Text>
+                <Box p={{ base: 3, md: 4 }} bg={statBg} borderRadius="lg" border="1px solid" borderColor="gray.200">
+                  <HStack justify="space-between" align="center" mb={3}>
+                    <Text fontSize={{ base: "sm", md: "md" }} fontWeight="bold" color={textColor}>
+                      📈 Performance Trends
+                    </Text>
+                    <Badge colorScheme="green" variant="subtle" fontSize="2xs">Updated</Badge>
+                  </HStack>
+                  <VStack spacing={3} align="stretch">
+                    <HStack justify="space-between" p={2} bg="gray.50" borderRadius="md">
+                      <Text fontSize="xs" color={textColor} fontWeight="medium">vs Yesterday</Text>
                       <HStack spacing={1}>
-                        <TriangleUpIcon color="green.500" boxSize={2} />
-                        <Text fontSize="xs" fontWeight="bold" color="green.600">+12%</Text>
+                        <TriangleUpIcon color="green.500" boxSize={3} />
+                        <Text fontSize="sm" fontWeight="bold" color="green.600">+12%</Text>
                       </HStack>
                     </HStack>
                     
-                    <HStack justify="space-between">
-                      <Text fontSize="xs" color={textColor}>vs Last Week</Text>
+                    <HStack justify="space-between" p={2} bg="gray.50" borderRadius="md">
+                      <Text fontSize="xs" color={textColor} fontWeight="medium">vs Last Week</Text>
                       <HStack spacing={1}>
-                        <TriangleUpIcon color="green.500" boxSize={2} />
-                        <Text fontSize="xs" fontWeight="bold" color="green.600">+8%</Text>
+                        <TriangleUpIcon color="green.500" boxSize={3} />
+                        <Text fontSize="sm" fontWeight="bold" color="green.600">+8%</Text>
                       </HStack>
                     </HStack>
                     
-                    <HStack justify="space-between">
-                      <Text fontSize="xs" color={textColor}>vs Last Month</Text>
+                    <HStack justify="space-between" p={2} bg="gray.50" borderRadius="md">
+                      <Text fontSize="xs" color={textColor} fontWeight="medium">vs Last Month</Text>
                       <HStack spacing={1}>
-                        <TriangleDownIcon color="red.500" boxSize={2} />
-                        <Text fontSize="xs" fontWeight="bold" color="red.600">-3%</Text>
+                        <TriangleDownIcon color="red.500" boxSize={3} />
+                        <Text fontSize="sm" fontWeight="bold" color="red.600">-3%</Text>
                       </HStack>
                     </HStack>
                   </VStack>
                 </Box>
-              </Grid>
+              </SimpleGrid>
             </CardBody>
           </Card>
 

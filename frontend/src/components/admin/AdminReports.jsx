@@ -57,7 +57,32 @@ import {
   WrapItem,
   IconButton,
   Tooltip,
-  Switch
+  Switch,
+  useBreakpointValue,
+  useColorModeValue,
+  StatGroup,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  StatArrow,
+  Drawer,
+  DrawerBody,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon
 } from '@chakra-ui/react';
 import {
   DownloadIcon,
@@ -93,7 +118,6 @@ import {
   FaExclamationTriangle,
   FaSync
 } from 'react-icons/fa';
-import axios from 'axios';
 import Navbar from '../shared/Navbar';
 
 const AdminReports = () => {
@@ -101,8 +125,25 @@ const AdminReports = () => {
   const [scheduledReports, setScheduledReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [selectedReports, setSelectedReports] = useState([]);
   const toast = useToast();
+
+  // Responsive values
+  const isMobile = useBreakpointValue({ base: true, lg: false });
+  const cardPadding = useBreakpointValue({ base: 3, md: 4, lg: 6 });
+  const headerDirection = useBreakpointValue({ base: 'column', md: 'row' });
+  const buttonSize = useBreakpointValue({ base: 'sm', md: 'md' });
+  const spacing = useBreakpointValue({ base: 3, md: 4, lg: 6 });
+  const headingSize = useBreakpointValue({ base: 'md', md: 'lg' });
+  const fontSize = useBreakpointValue({ base: 'sm', md: 'md' });
+  const iconSize = useBreakpointValue({ base: 6, md: 8 });
+  const cardFontSize = useBreakpointValue({ base: 'sm', md: 'md' });
+  const cardDescSize = useBreakpointValue({ base: 'xs', md: 'sm' });
+  const statNumberSize = useBreakpointValue({ base: 'lg', md: 'xl' });
+  
+  // Color mode values
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
   
   // Modal states
   const { isOpen: isGenerateOpen, onOpen: onGenerateOpen, onClose: onGenerateClose } = useDisclosure();
@@ -132,11 +173,6 @@ const AdminReports = () => {
     format: 'pdf',
     active: true
   });
-
-  useEffect(() => {
-    fetchReports();
-    fetchScheduledReports();
-  }, []);
 
   const fetchReports = useCallback(async () => {
     try {
@@ -237,6 +273,11 @@ const AdminReports = () => {
     }
   }, []);
 
+  useEffect(() => {
+    fetchReports();
+    fetchScheduledReports();
+  }, [fetchReports, fetchScheduledReports]);
+
   const handleGenerateReport = async () => {
     try {
       setGenerating(true);
@@ -265,7 +306,7 @@ const AdminReports = () => {
         duration: 5000,
         isClosable: true,
       });
-    } catch (error) {
+    } catch {
       toast({
         title: 'Generation Failed',
         description: 'Failed to generate report. Please try again.',
@@ -297,7 +338,7 @@ const AdminReports = () => {
         duration: 5000,
         isClosable: true,
       });
-    } catch (error) {
+    } catch {
       toast({
         title: 'Scheduling Failed',
         description: 'Failed to schedule report. Please try again.',
@@ -392,20 +433,43 @@ const AdminReports = () => {
   };
 
   const QuickReportCard = ({ title, description, icon, type, color }) => (
-    <Card cursor="pointer" _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }} transition="all 0.2s">
-      <CardBody>
-        <VStack spacing={3}>
-          <Icon as={icon} boxSize={8} color={color} />
-          <Text fontWeight="bold" textAlign="center">{title}</Text>
-          <Text fontSize="sm" color="gray.600" textAlign="center">{description}</Text>
+    <Card 
+      cursor="pointer" 
+      _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }} 
+      transition="all 0.2s"
+      bg={cardBg}
+      borderColor={borderColor}
+      h="full"
+    >
+      <CardBody p={cardPadding}>
+        <VStack spacing={spacing} h="full">
+          <Icon as={icon} boxSize={iconSize} color={color} />
+          <Text 
+            fontWeight="bold" 
+            textAlign="center" 
+            fontSize={cardFontSize}
+            noOfLines={1}
+          >
+            {title}
+          </Text>
+          <Text 
+            fontSize={cardDescSize} 
+            color="gray.600" 
+            textAlign="center"
+            noOfLines={2}
+            flex="1"
+          >
+            {description}
+          </Text>
           <Button 
-            size="sm" 
+            size={buttonSize} 
             colorScheme="blue" 
-            leftIcon={<DownloadIcon />}
+            leftIcon={isMobile ? undefined : <DownloadIcon />}
             onClick={() => {
               setReportConfig(prev => ({ ...prev, type }));
               onGenerateOpen();
             }}
+            w={isMobile ? "full" : "auto"}
           >
             Generate
           </Button>
@@ -429,100 +493,285 @@ const AdminReports = () => {
   }
 
   return (
-    <Box display="flex" flexDirection="column" minHeight="100vh">
+    <Box display="flex" flexDirection="column" minHeight="100vh" bg={bgColor}>
       <Navbar />
-      <Box flex="1" p={{ base: 4, md: 6, lg: 8 }}>
+      <Box flex="1" p={cardPadding}>
         <Container maxW="7xl">
-          <VStack align="stretch" spacing={6}>
+          <VStack align="stretch" spacing={spacing}>
             {/* Header */}
-            <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
+            <Flex 
+              justify="space-between" 
+              align={isMobile ? "start" : "center"} 
+              direction={headerDirection}
+              gap={4}
+              bg={cardBg}
+              p={cardPadding}
+              borderRadius="lg"
+              shadow="sm"
+              borderWidth="1px"
+              borderColor={borderColor}
+            >
               <Box>
-                <Heading size="lg" mb={2}>Reports Center</Heading>
-                <Text color="gray.600">
+                <Heading size={headingSize} mb={2}>
+                  Reports Center
+                </Heading>
+                <Text color="gray.600" fontSize={fontSize}>
                   Generate, schedule, and manage system reports
                 </Text>
               </Box>
-              <HStack spacing={3}>
-                <Button 
-                  leftIcon={<AddIcon />}
-                  colorScheme="blue"
-                  onClick={onGenerateOpen}
-                >
-                  Generate Report
-                </Button>
-                <Button 
-                  leftIcon={<CalendarIcon />}
-                  variant="outline"
-                  onClick={onScheduleOpen}
-                >
-                  Schedule Report
-                </Button>
-                <Button 
-                  leftIcon={<SettingsIcon />}
-                  variant="outline"
-                  onClick={onCustomOpen}
-                >
-                  Custom Report
-                </Button>
-              </HStack>
+              
+              {/* Mobile Menu Button */}
+              {isMobile ? (
+                <Menu>
+                  <MenuButton
+                    as={Button}
+                    rightIcon={<SettingsIcon />}
+                    colorScheme="blue"
+                    size={buttonSize}
+                    w="full"
+                  >
+                    Report Actions
+                  </MenuButton>
+                  <MenuList>
+                    <MenuItem icon={<AddIcon />} onClick={onGenerateOpen}>
+                      Generate Report
+                    </MenuItem>
+                    <MenuItem icon={<CalendarIcon />} onClick={onScheduleOpen}>
+                      Schedule Report
+                    </MenuItem>
+                    <MenuDivider />
+                    <MenuItem icon={<SettingsIcon />} onClick={onCustomOpen}>
+                      Custom Report
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
+              ) : (
+                <HStack spacing={3}>
+                  <Button 
+                    leftIcon={<AddIcon />}
+                    colorScheme="blue"
+                    size={buttonSize}
+                    onClick={onGenerateOpen}
+                  >
+                    Generate Report
+                  </Button>
+                  <Button 
+                    leftIcon={<CalendarIcon />}
+                    variant="outline"
+                    size={buttonSize}
+                    onClick={onScheduleOpen}
+                  >
+                    Schedule Report
+                  </Button>
+                  <Button 
+                    leftIcon={<SettingsIcon />}
+                    variant="outline"
+                    size={buttonSize}
+                    onClick={onCustomOpen}
+                  >
+                    Custom Report
+                  </Button>
+                </HStack>
+              )}
             </Flex>
 
+            {/* Stats Overview */}
+            <Card bg={cardBg} borderColor={borderColor}>
+              <CardBody>
+                <StatGroup>
+                  <Stat>
+                    <StatLabel>Total Reports</StatLabel>
+                    <StatNumber fontSize={statNumberSize}>
+                      {reports.length}
+                    </StatNumber>
+                    <StatHelpText>
+                      <StatArrow type="increase" />
+                      12% this month
+                    </StatHelpText>
+                  </Stat>
+                  <Stat>
+                    <StatLabel>Scheduled Reports</StatLabel>
+                    <StatNumber fontSize={statNumberSize}>
+                      {scheduledReports.filter(r => r.active).length}
+                    </StatNumber>
+                    <StatHelpText>
+                      <StatArrow type="increase" />
+                      Active automations
+                    </StatHelpText>
+                  </Stat>
+                  <Stat>
+                    <StatLabel>This Week</StatLabel>
+                    <StatNumber fontSize={statNumberSize}>
+                      {reports.filter(r => 
+                        new Date(r.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                      ).length}
+                    </StatNumber>
+                    <StatHelpText>
+                      Reports generated
+                    </StatHelpText>
+                  </Stat>
+                </StatGroup>
+              </CardBody>
+            </Card>
+
             {/* Quick Reports */}
-            <Box>
-              <Heading size="md" mb={4}>Quick Reports</Heading>
-              <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
-                <QuickReportCard
-                  title="Trip Analytics"
-                  description="Comprehensive trip performance and statistics"
-                  icon={FaChartLine}
-                  type="trip_analytics"
-                  color="blue.500"
-                />
-                <QuickReportCard
-                  title="User Activity"
-                  description="User engagement and behavior analysis"
-                  icon={FaUsers}
-                  type="user_activity"
-                  color="green.500"
-                />
-                <QuickReportCard
-                  title="Financial Summary"
-                  description="Revenue, costs, and financial performance"
-                  icon={FaMoneyBillWave}
-                  type="financial"
-                  color="purple.500"
-                />
-                <QuickReportCard
-                  title="Driver Performance"
-                  description="Driver ratings, efficiency, and metrics"
-                  icon={FaCar}
-                  type="driver_performance"
-                  color="orange.500"
-                />
-              </SimpleGrid>
-            </Box>
+            <Card bg={cardBg} borderColor={borderColor}>
+              <CardHeader pb={2}>
+                <Heading size="md">Quick Reports</Heading>
+                <Text fontSize="sm" color="gray.600" mt={1}>
+                  Generate common reports with one click
+                </Text>
+              </CardHeader>
+              <CardBody pt={2}>
+                <SimpleGrid 
+                  columns={{ base: 1, sm: 2, lg: 4 }} 
+                  spacing={spacing}
+                  minChildWidth={isMobile ? "none" : "200px"}
+                >
+                  <QuickReportCard
+                    title="Trip Analytics"
+                    description="Comprehensive trip performance and statistics"
+                    icon={FaChartLine}
+                    type="trip_analytics"
+                    color="blue.500"
+                  />
+                  <QuickReportCard
+                    title="User Activity"
+                    description="User engagement and behavior analysis"
+                    icon={FaUsers}
+                    type="user_activity"
+                    color="green.500"
+                  />
+                  <QuickReportCard
+                    title="Financial Summary"
+                    description="Revenue, costs, and financial performance"
+                    icon={FaMoneyBillWave}
+                    type="financial"
+                    color="purple.500"
+                  />
+                  <QuickReportCard
+                    title="Driver Performance"
+                    description="Driver ratings, efficiency, and metrics"
+                    icon={FaCar}
+                    type="driver_performance"
+                    color="orange.500"
+                  />
+                </SimpleGrid>
+              </CardBody>
+            </Card>
 
             {/* Main Content Tabs */}
-            <Tabs variant="enclosed" colorScheme="blue">
-              <TabList>
-                <Tab>Recent Reports</Tab>
-                <Tab>Scheduled Reports</Tab>
-                <Tab>Report Templates</Tab>
-              </TabList>
+            <Card bg={cardBg} borderColor={borderColor}>
+              <Tabs 
+                variant="enclosed" 
+                colorScheme="blue" 
+                orientation={isMobile ? "horizontal" : "horizontal"}
+                isFitted={isMobile}
+              >
+                <TabList flexDirection={isMobile ? "column" : "row"} mb={4}>
+                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4}>
+                    Recent Reports
+                  </Tab>
+                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4}>
+                    Scheduled Reports
+                  </Tab>
+                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4}>
+                    Report Templates
+                  </Tab>
+                </TabList>
 
               <TabPanels>
                 {/* Recent Reports */}
-                <TabPanel p={0} pt={6}>
-                  <Card>
-                    <CardHeader>
-                      <Flex justify="space-between" align="center">
-                        <Heading size="md">Report History</Heading>
-                        <Button size="sm" leftIcon={<RepeatIcon />} onClick={fetchReports}>
-                          Refresh
-                        </Button>
-                      </Flex>
-                    </CardHeader>
-                    <CardBody pt={0}>
+                <TabPanel p={cardPadding} pt={6}>
+                  <Box>
+                    <Flex justify="space-between" align="center" mb={4}>
+                      <Heading size="md">Report History</Heading>
+                      <Button size={buttonSize} leftIcon={<RepeatIcon />} onClick={fetchReports}>
+                        Refresh
+                      </Button>
+                    </Flex>
+                    
+                    {isMobile ? (
+                      // Mobile Card Layout
+                      <VStack spacing={3} align="stretch">
+                        {reports.map((report) => (
+                          <Card key={report.id} variant="outline" size="sm">
+                            <CardBody>
+                              <VStack spacing={3} align="stretch">
+                                <Flex justify="space-between" align="start">
+                                  <HStack spacing={2} flex="1">
+                                    <Icon 
+                                      as={getFormatIcon(report.format)} 
+                                      color="blue.500" 
+                                      boxSize={5} 
+                                    />
+                                    <VStack align="start" spacing={1} flex="1">
+                                      <Text 
+                                        fontWeight="bold" 
+                                        fontSize="sm"
+                                        noOfLines={1}
+                                      >
+                                        {report.name}
+                                      </Text>
+                                      <HStack spacing={2}>
+                                        <Badge 
+                                          variant="outline" 
+                                          size="sm"
+                                          fontSize="xs"
+                                        >
+                                          {report.type.replace('_', ' ').toUpperCase()}
+                                        </Badge>
+                                        <Text fontSize="xs" color="gray.500">
+                                          {report.format.toUpperCase()}
+                                        </Text>
+                                      </HStack>
+                                    </VStack>
+                                  </HStack>
+                                  <Badge 
+                                    colorScheme={getStatusColor(report.status)}
+                                    size="sm"
+                                  >
+                                    {report.status}
+                                  </Badge>
+                                </Flex>
+                                
+                                <Flex justify="space-between" align="center">
+                                  <VStack align="start" spacing={1}>
+                                    <Text fontSize="xs" color="gray.500">
+                                      {new Date(report.createdAt).toLocaleDateString()}
+                                    </Text>
+                                    <Text fontSize="xs" color="gray.500">
+                                      {report.size}
+                                    </Text>
+                                  </VStack>
+                                  
+                                  <HStack spacing={1}>
+                                    {report.status === 'completed' && (
+                                      <IconButton
+                                        size="sm"
+                                        icon={<DownloadIcon />}
+                                        onClick={() => handleDownloadReport(report)}
+                                        colorScheme="blue"
+                                        variant="ghost"
+                                        aria-label="Download Report"
+                                      />
+                                    )}
+                                    <IconButton
+                                      size="sm"
+                                      icon={<ViewIcon />}
+                                      colorScheme="gray"
+                                      variant="ghost"
+                                      aria-label="View Details"
+                                    />
+                                  </HStack>
+                                </Flex>
+                              </VStack>
+                            </CardBody>
+                          </Card>
+                        ))}
+                      </VStack>
+                    ) : (
+                      // Desktop Table Layout
                       <TableContainer>
                         <Table variant="simple">
                           <Thead>
@@ -586,31 +835,108 @@ const AdminReports = () => {
                           </Tbody>
                         </Table>
                       </TableContainer>
-                    </CardBody>
-                  </Card>
+                    )}
+                  </Box>
                 </TabPanel>
 
                 {/* Scheduled Reports */}
-                <TabPanel p={0} pt={6}>
-                  <Card>
-                    <CardHeader>
-                      <Flex justify="space-between" align="center">
-                        <Heading size="md">Scheduled Reports</Heading>
-                        <Button 
-                          size="sm" 
-                          leftIcon={<AddIcon />} 
-                          colorScheme="blue"
-                          onClick={onScheduleOpen}
-                        >
-                          Add Schedule
-                        </Button>
-                      </Flex>
-                    </CardHeader>
-                    <CardBody pt={0}>
-                      <VStack spacing={4} align="stretch">
-                        {scheduledReports.map((schedule) => (
-                          <Card key={schedule.id} variant="outline">
-                            <CardBody>
+                <TabPanel p={cardPadding} pt={6}>
+                  <Box>
+                    <Flex justify="space-between" align="center" mb={4}>
+                      <Heading size="md">Scheduled Reports</Heading>
+                      <Button 
+                        size={buttonSize} 
+                        leftIcon={isMobile ? undefined : <AddIcon />} 
+                        colorScheme="blue"
+                        onClick={onScheduleOpen}
+                      >
+                        {isMobile ? "Add" : "Add Schedule"}
+                      </Button>
+                    </Flex>
+                    
+                    <VStack spacing={spacing} align="stretch">
+                      {scheduledReports.map((schedule) => (
+                        <Card key={schedule.id} variant="outline">
+                          <CardBody p={cardPadding}>
+                            {isMobile ? (
+                              // Mobile Layout
+                              <VStack spacing={3} align="stretch">
+                                <Flex justify="space-between" align="center">
+                                  <VStack align="start" spacing={1} flex="1">
+                                    <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
+                                      {schedule.name}
+                                    </Text>
+                                    <Badge 
+                                      colorScheme={schedule.active ? 'green' : 'gray'}
+                                      size="sm"
+                                    >
+                                      {schedule.active ? 'Active' : 'Inactive'}
+                                    </Badge>
+                                  </VStack>
+                                  <Switch 
+                                    size="sm"
+                                    isChecked={schedule.active}
+                                    onChange={() => toggleReportStatus(schedule.id)}
+                                  />
+                                </Flex>
+                                
+                                <Text fontSize="xs" color="gray.600" noOfLines={2}>
+                                  {schedule.description}
+                                </Text>
+                                
+                                <VStack spacing={2} align="start">
+                                  <HStack spacing={3}>
+                                    <Text fontSize="xs">
+                                      <Text as="span" fontWeight="bold">Frequency:</Text> {schedule.frequency}
+                                    </Text>
+                                    <Text fontSize="xs">
+                                      <Text as="span" fontWeight="bold">Format:</Text> {schedule.format.toUpperCase()}
+                                    </Text>
+                                  </HStack>
+                                  
+                                  <Text fontSize="xs" noOfLines={1}>
+                                    <Text as="span" fontWeight="bold">Recipients:</Text> {schedule.recipients}
+                                  </Text>
+                                  
+                                  <HStack spacing={3} fontSize="xs" color="gray.500">
+                                    {schedule.lastRun && (
+                                      <Text>
+                                        Last: {new Date(schedule.lastRun).toLocaleDateString()}
+                                      </Text>
+                                    )}
+                                    <Text>
+                                      Next: {new Date(schedule.nextRun).toLocaleDateString()}
+                                    </Text>
+                                  </HStack>
+                                </VStack>
+                                
+                                <HStack justify="end" spacing={1}>
+                                  <IconButton
+                                    size="sm"
+                                    icon={<EditIcon />}
+                                    colorScheme="blue"
+                                    variant="ghost"
+                                    aria-label="Edit Schedule"
+                                  />
+                                  <IconButton
+                                    size="sm"
+                                    icon={<FaSync />}
+                                    colorScheme="green"
+                                    variant="ghost"
+                                    aria-label="Run Now"
+                                  />
+                                  <IconButton
+                                    size="sm"
+                                    icon={<DeleteIcon />}
+                                    colorScheme="red"
+                                    variant="ghost"
+                                    onClick={() => handleDeleteScheduledReport(schedule.id)}
+                                    aria-label="Delete Schedule"
+                                  />
+                                </HStack>
+                              </VStack>
+                            ) : (
+                              // Desktop Layout
                               <Flex justify="space-between" align="start">
                                 <VStack align="start" spacing={2} flex="1">
                                   <HStack>
@@ -678,76 +1004,224 @@ const AdminReports = () => {
                                   </HStack>
                                 </VStack>
                               </Flex>
-                            </CardBody>
-                          </Card>
-                        ))}
-                      </VStack>
-                    </CardBody>
-                  </Card>
+                            )}
+                          </CardBody>
+                        </Card>
+                      ))}
+                    </VStack>
+                  </Box>
                 </TabPanel>
 
                 {/* Report Templates */}
-                <TabPanel p={0} pt={6}>
-                  <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
-                    <Card>
-                      <CardBody>
-                        <VStack spacing={3}>
-                          <Icon as={FaChartBar} boxSize={8} color="blue.500" />
-                          <Text fontWeight="bold">Executive Dashboard</Text>
-                          <Text fontSize="sm" color="gray.600" textAlign="center">
-                            High-level KPIs and metrics for executive team
-                          </Text>
-                          <Button size="sm" colorScheme="blue">Use Template</Button>
-                        </VStack>
-                      </CardBody>
-                    </Card>
+                <TabPanel p={cardPadding} pt={6}>
+                  <Box>
+                    <Heading size="md" mb={4}>Report Templates</Heading>
+                    <Text fontSize="sm" color="gray.600" mb={6}>
+                      Pre-configured report templates for common use cases
+                    </Text>
+                    
+                    <SimpleGrid 
+                      columns={{ base: 1, md: 2, lg: 3 }} 
+                      spacing={spacing}
+                      minChildWidth={isMobile ? "none" : "250px"}
+                    >
+                      <Card bg={cardBg} borderColor={borderColor} h="full">
+                        <CardBody p={cardPadding}>
+                          <VStack spacing={spacing} h="full">
+                            <Icon as={FaChartBar} boxSize={iconSize} color="blue.500" />
+                            <Text fontWeight="bold" fontSize={cardFontSize} textAlign="center">
+                              Executive Dashboard
+                            </Text>
+                            <Text 
+                              fontSize={cardDescSize} 
+                              color="gray.600" 
+                              textAlign="center"
+                              flex="1"
+                              noOfLines={2}
+                            >
+                              High-level KPIs and metrics for executive team
+                            </Text>
+                            <Button 
+                              size={buttonSize} 
+                              colorScheme="blue"
+                              w={isMobile ? "full" : "auto"}
+                            >
+                              Use Template
+                            </Button>
+                          </VStack>
+                        </CardBody>
+                      </Card>
 
-                    <Card>
-                      <CardBody>
-                        <VStack spacing={3}>
-                          <Icon as={FaRoute} boxSize={8} color="green.500" />
-                          <Text fontWeight="bold">Operations Report</Text>
-                          <Text fontSize="sm" color="gray.600" textAlign="center">
-                            Operational efficiency and performance metrics
-                          </Text>
-                          <Button size="sm" colorScheme="green">Use Template</Button>
-                        </VStack>
-                      </CardBody>
-                    </Card>
+                      <Card bg={cardBg} borderColor={borderColor} h="full">
+                        <CardBody p={cardPadding}>
+                          <VStack spacing={spacing} h="full">
+                            <Icon as={FaRoute} boxSize={iconSize} color="green.500" />
+                            <Text fontWeight="bold" fontSize={cardFontSize} textAlign="center">
+                              Operations Report
+                            </Text>
+                            <Text 
+                              fontSize={cardDescSize} 
+                              color="gray.600" 
+                              textAlign="center"
+                              flex="1"
+                              noOfLines={2}
+                            >
+                              Operational efficiency and performance metrics
+                            </Text>
+                            <Button 
+                              size={buttonSize} 
+                              colorScheme="green"
+                              w={isMobile ? "full" : "auto"}
+                            >
+                              Use Template
+                            </Button>
+                          </VStack>
+                        </CardBody>
+                      </Card>
 
-                    <Card>
-                      <CardBody>
-                        <VStack spacing={3}>
-                          <Icon as={FaMoneyBillWave} boxSize={8} color="purple.500" />
-                          <Text fontWeight="bold">Financial Analysis</Text>
-                          <Text fontSize="sm" color="gray.600" textAlign="center">
-                            Revenue, costs, and profitability analysis
-                          </Text>
-                          <Button size="sm" colorScheme="purple">Use Template</Button>
-                        </VStack>
-                      </CardBody>
-                    </Card>
-                  </SimpleGrid>
+                      <Card bg={cardBg} borderColor={borderColor} h="full">
+                        <CardBody p={cardPadding}>
+                          <VStack spacing={spacing} h="full">
+                            <Icon as={FaMoneyBillWave} boxSize={iconSize} color="purple.500" />
+                            <Text fontWeight="bold" fontSize={cardFontSize} textAlign="center">
+                              Financial Analysis
+                            </Text>
+                            <Text 
+                              fontSize={cardDescSize} 
+                              color="gray.600" 
+                              textAlign="center"
+                              flex="1"
+                              noOfLines={2}
+                            >
+                              Revenue, costs, and profitability analysis
+                            </Text>
+                            <Button 
+                              size={buttonSize} 
+                              colorScheme="purple"
+                              w={isMobile ? "full" : "auto"}
+                            >
+                              Use Template
+                            </Button>
+                          </VStack>
+                        </CardBody>
+                      </Card>
+
+                      <Card bg={cardBg} borderColor={borderColor} h="full">
+                        <CardBody p={cardPadding}>
+                          <VStack spacing={spacing} h="full">
+                            <Icon as={FaCar} boxSize={iconSize} color="orange.500" />
+                            <Text fontWeight="bold" fontSize={cardFontSize} textAlign="center">
+                              Vehicle Analytics
+                            </Text>
+                            <Text 
+                              fontSize={cardDescSize} 
+                              color="gray.600" 
+                              textAlign="center"
+                              flex="1"
+                              noOfLines={2}
+                            >
+                              Vehicle utilization and maintenance reports
+                            </Text>
+                            <Button 
+                              size={buttonSize} 
+                              colorScheme="orange"
+                              w={isMobile ? "full" : "auto"}
+                            >
+                              Use Template
+                            </Button>
+                          </VStack>
+                        </CardBody>
+                      </Card>
+
+                      <Card bg={cardBg} borderColor={borderColor} h="full">
+                        <CardBody p={cardPadding}>
+                          <VStack spacing={spacing} h="full">
+                            <Icon as={FaUsers} boxSize={iconSize} color="teal.500" />
+                            <Text fontWeight="bold" fontSize={cardFontSize} textAlign="center">
+                              User Insights
+                            </Text>
+                            <Text 
+                              fontSize={cardDescSize} 
+                              color="gray.600" 
+                              textAlign="center"
+                              flex="1"
+                              noOfLines={2}
+                            >
+                              User behavior and engagement analytics
+                            </Text>
+                            <Button 
+                              size={buttonSize} 
+                              colorScheme="teal"
+                              w={isMobile ? "full" : "auto"}
+                            >
+                              Use Template
+                            </Button>
+                          </VStack>
+                        </CardBody>
+                      </Card>
+
+                      <Card bg={cardBg} borderColor={borderColor} h="full">
+                        <CardBody p={cardPadding}>
+                          <VStack spacing={spacing} h="full">
+                            <Icon as={FaChartPie} boxSize={iconSize} color="pink.500" />
+                            <Text fontWeight="bold" fontSize={cardFontSize} textAlign="center">
+                              Custom Builder
+                            </Text>
+                            <Text 
+                              fontSize={cardDescSize} 
+                              color="gray.600" 
+                              textAlign="center"
+                              flex="1"
+                              noOfLines={2}
+                            >
+                              Build your own custom report template
+                            </Text>
+                            <Button 
+                              size={buttonSize} 
+                              colorScheme="pink"
+                              w={isMobile ? "full" : "auto"}
+                              onClick={onCustomOpen}
+                            >
+                              Create Custom
+                            </Button>
+                          </VStack>
+                        </CardBody>
+                      </Card>
+                    </SimpleGrid>
+                  </Box>
                 </TabPanel>
               </TabPanels>
             </Tabs>
+            </Card>
           </VStack>
         </Container>
       </Box>
 
       {/* Generate Report Modal */}
-      <Modal isOpen={isGenerateOpen} onClose={onGenerateClose} size="lg">
+      <Modal 
+        isOpen={isGenerateOpen} 
+        onClose={onGenerateClose} 
+        size={isMobile ? "full" : "lg"}
+        motionPreset={isMobile ? "slideInBottom" : "scale"}
+      >
         <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Generate New Report</ModalHeader>
+        <ModalContent 
+          mx={isMobile ? 0 : undefined}
+          my={isMobile ? 0 : undefined}
+          maxH={isMobile ? "100vh" : undefined}
+        >
+          <ModalHeader fontSize={isMobile ? "lg" : "xl"}>
+            Generate New Report
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <VStack spacing={4} align="stretch">
+            <VStack spacing={spacing} align="stretch">
               <FormControl>
-                <FormLabel>Report Type</FormLabel>
+                <FormLabel fontSize={fontSize}>Report Type</FormLabel>
                 <Select 
                   value={reportConfig.type}
                   onChange={(e) => setReportConfig(prev => ({ ...prev, type: e.target.value }))}
+                  size={buttonSize}
                 >
                   <option value="trip_analytics">Trip Analytics</option>
                   <option value="user_activity">User Activity</option>
@@ -760,24 +1234,25 @@ const AdminReports = () => {
               </FormControl>
 
               <FormControl>
-                <FormLabel>Format</FormLabel>
+                <FormLabel fontSize={fontSize}>Format</FormLabel>
                 <RadioGroup 
                   value={reportConfig.format}
                   onChange={(value) => setReportConfig(prev => ({ ...prev, format: value }))}
                 >
-                  <Stack direction="row">
-                    <Radio value="pdf">PDF</Radio>
-                    <Radio value="excel">Excel</Radio>
-                    <Radio value="csv">CSV</Radio>
+                  <Stack direction={isMobile ? "column" : "row"} spacing={isMobile ? 2 : 4}>
+                    <Radio value="pdf" size={buttonSize}>PDF</Radio>
+                    <Radio value="excel" size={buttonSize}>Excel</Radio>
+                    <Radio value="csv" size={buttonSize}>CSV</Radio>
                   </Stack>
                 </RadioGroup>
               </FormControl>
 
               <FormControl>
-                <FormLabel>Date Range</FormLabel>
+                <FormLabel fontSize={fontSize}>Date Range</FormLabel>
                 <Select 
                   value={reportConfig.dateRange}
                   onChange={(e) => setReportConfig(prev => ({ ...prev, dateRange: e.target.value }))}
+                  size={buttonSize}
                 >
                   <option value="7d">Last 7 Days</option>
                   <option value="30d">Last 30 Days</option>
@@ -788,44 +1263,58 @@ const AdminReports = () => {
               </FormControl>
 
               {reportConfig.dateRange === 'custom' && (
-                <HStack>
+                <Stack direction={isMobile ? "column" : "row"} spacing={spacing}>
                   <FormControl>
-                    <FormLabel>Start Date</FormLabel>
+                    <FormLabel fontSize={fontSize}>Start Date</FormLabel>
                     <Input 
                       type="date"
                       value={reportConfig.customStartDate}
                       onChange={(e) => setReportConfig(prev => ({ ...prev, customStartDate: e.target.value }))}
+                      size={buttonSize}
                     />
                   </FormControl>
                   <FormControl>
-                    <FormLabel>End Date</FormLabel>
+                    <FormLabel fontSize={fontSize}>End Date</FormLabel>
                     <Input 
                       type="date"
                       value={reportConfig.customEndDate}
                       onChange={(e) => setReportConfig(prev => ({ ...prev, customEndDate: e.target.value }))}
+                      size={buttonSize}
                     />
                   </FormControl>
-                </HStack>
+                </Stack>
               )}
 
               <VStack align="start" spacing={2}>
+                <Text fontWeight="medium" fontSize={fontSize} mb={2}>
+                  Report Options
+                </Text>
                 <Checkbox 
                   isChecked={reportConfig.includeCharts}
                   onChange={(e) => setReportConfig(prev => ({ ...prev, includeCharts: e.target.checked }))}
+                  size={buttonSize}
                 >
                   Include Charts & Visualizations
                 </Checkbox>
                 <Checkbox 
                   isChecked={reportConfig.includeSummary}
                   onChange={(e) => setReportConfig(prev => ({ ...prev, includeSummary: e.target.checked }))}
+                  size={buttonSize}
                 >
                   Include Executive Summary
                 </Checkbox>
               </VStack>
             </VStack>
           </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onGenerateClose}>
+          <ModalFooter flexDirection={isMobile ? "column" : "row"}>
+            <Button 
+              variant="ghost" 
+              mr={isMobile ? 0 : 3} 
+              mb={isMobile ? 2 : 0}
+              onClick={onGenerateClose}
+              size={buttonSize}
+              w={isMobile ? "full" : "auto"}
+            >
               Cancel
             </Button>
             <Button 
@@ -833,6 +1322,8 @@ const AdminReports = () => {
               onClick={handleGenerateReport}
               isLoading={generating}
               loadingText="Generating..."
+              size={buttonSize}
+              w={isMobile ? "full" : "auto"}
             >
               Generate Report
             </Button>
@@ -841,36 +1332,53 @@ const AdminReports = () => {
       </Modal>
 
       {/* Schedule Report Modal */}
-      <Modal isOpen={isScheduleOpen} onClose={onScheduleClose} size="lg">
+      <Modal 
+        isOpen={isScheduleOpen} 
+        onClose={onScheduleClose} 
+        size={isMobile ? "full" : "lg"}
+        motionPreset={isMobile ? "slideInBottom" : "scale"}
+        scrollBehavior={isMobile ? "inside" : "outside"}
+      >
         <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Schedule New Report</ModalHeader>
+        <ModalContent 
+          mx={isMobile ? 0 : undefined}
+          my={isMobile ? 0 : undefined}
+          maxH={isMobile ? "100vh" : undefined}
+        >
+          <ModalHeader fontSize={isMobile ? "lg" : "xl"}>
+            Schedule New Report
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <VStack spacing={4} align="stretch">
+            <VStack spacing={spacing} align="stretch">
               <FormControl isRequired>
-                <FormLabel>Report Name</FormLabel>
+                <FormLabel fontSize={fontSize}>Report Name</FormLabel>
                 <Input 
                   value={scheduleConfig.name}
                   onChange={(e) => setScheduleConfig(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Enter report name"
+                  size={buttonSize}
                 />
               </FormControl>
 
               <FormControl>
-                <FormLabel>Description</FormLabel>
+                <FormLabel fontSize={fontSize}>Description</FormLabel>
                 <Textarea 
                   value={scheduleConfig.description}
                   onChange={(e) => setScheduleConfig(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Enter report description"
+                  size={buttonSize}
+                  resize="vertical"
+                  minH={isMobile ? "60px" : "80px"}
                 />
               </FormControl>
 
               <FormControl>
-                <FormLabel>Report Type</FormLabel>
+                <FormLabel fontSize={fontSize}>Report Type</FormLabel>
                 <Select 
                   value={scheduleConfig.reportType}
                   onChange={(e) => setScheduleConfig(prev => ({ ...prev, reportType: e.target.value }))}
+                  size={buttonSize}
                 >
                   <option value="trip_analytics">Trip Analytics</option>
                   <option value="user_activity">User Activity</option>
@@ -879,12 +1387,13 @@ const AdminReports = () => {
                 </Select>
               </FormControl>
 
-              <HStack>
+              <Stack direction={isMobile ? "column" : "row"} spacing={spacing}>
                 <FormControl>
-                  <FormLabel>Frequency</FormLabel>
+                  <FormLabel fontSize={fontSize}>Frequency</FormLabel>
                   <Select 
                     value={scheduleConfig.frequency}
                     onChange={(e) => setScheduleConfig(prev => ({ ...prev, frequency: e.target.value }))}
+                    size={buttonSize}
                   >
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>
@@ -893,44 +1402,62 @@ const AdminReports = () => {
                 </FormControl>
 
                 <FormControl>
-                  <FormLabel>Time</FormLabel>
+                  <FormLabel fontSize={fontSize}>Time</FormLabel>
                   <Input 
                     type="time"
                     value={scheduleConfig.time}
                     onChange={(e) => setScheduleConfig(prev => ({ ...prev, time: e.target.value }))}
+                    size={buttonSize}
                   />
                 </FormControl>
-              </HStack>
+              </Stack>
 
               <FormControl isRequired>
-                <FormLabel>Recipients (comma-separated emails)</FormLabel>
+                <FormLabel fontSize={fontSize}>
+                  Recipients (comma-separated emails)
+                </FormLabel>
                 <Textarea 
                   value={scheduleConfig.recipients}
                   onChange={(e) => setScheduleConfig(prev => ({ ...prev, recipients: e.target.value }))}
                   placeholder="user1@company.com, user2@company.com"
+                  size={buttonSize}
+                  resize="vertical"
+                  minH={isMobile ? "60px" : "80px"}
                 />
               </FormControl>
 
               <FormControl>
-                <FormLabel>Format</FormLabel>
+                <FormLabel fontSize={fontSize}>Format</FormLabel>
                 <RadioGroup 
                   value={scheduleConfig.format}
                   onChange={(value) => setScheduleConfig(prev => ({ ...prev, format: value }))}
                 >
-                  <Stack direction="row">
-                    <Radio value="pdf">PDF</Radio>
-                    <Radio value="excel">Excel</Radio>
-                    <Radio value="csv">CSV</Radio>
+                  <Stack direction={isMobile ? "column" : "row"} spacing={isMobile ? 2 : 4}>
+                    <Radio value="pdf" size={buttonSize}>PDF</Radio>
+                    <Radio value="excel" size={buttonSize}>Excel</Radio>
+                    <Radio value="csv" size={buttonSize}>CSV</Radio>
                   </Stack>
                 </RadioGroup>
               </FormControl>
             </VStack>
           </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onScheduleClose}>
+          <ModalFooter flexDirection={isMobile ? "column" : "row"}>
+            <Button 
+              variant="ghost" 
+              mr={isMobile ? 0 : 3} 
+              mb={isMobile ? 2 : 0}
+              onClick={onScheduleClose}
+              size={buttonSize}
+              w={isMobile ? "full" : "auto"}
+            >
               Cancel
             </Button>
-            <Button colorScheme="blue" onClick={handleScheduleReport}>
+            <Button 
+              colorScheme="blue" 
+              onClick={handleScheduleReport}
+              size={buttonSize}
+              w={isMobile ? "full" : "auto"}
+            >
               Schedule Report
             </Button>
           </ModalFooter>
@@ -938,26 +1465,90 @@ const AdminReports = () => {
       </Modal>
 
       {/* Custom Report Builder Modal */}
-      <Modal isOpen={isCustomOpen} onClose={onCustomClose} size="xl">
+      <Modal 
+        isOpen={isCustomOpen} 
+        onClose={onCustomClose} 
+        size={isMobile ? "full" : "xl"}
+        motionPreset={isMobile ? "slideInBottom" : "scale"}
+      >
         <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Custom Report Builder</ModalHeader>
+        <ModalContent 
+          mx={isMobile ? 0 : undefined}
+          my={isMobile ? 0 : undefined}
+          maxH={isMobile ? "100vh" : undefined}
+        >
+          <ModalHeader fontSize={isMobile ? "lg" : "xl"}>
+            Custom Report Builder
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Alert status="info" mb={4}>
-              <AlertIcon />
-              <AlertTitle>Coming Soon!</AlertTitle>
-              <AlertDescription>
-                Custom report builder with drag-and-drop interface will be available in the next update.
-              </AlertDescription>
-            </Alert>
-            <Text color="gray.600">
-              The custom report builder will allow you to create personalized reports by selecting specific data fields, 
-              applying custom filters, and designing your own layout and visualizations.
-            </Text>
+            <VStack spacing={spacing} align="stretch">
+              <Alert status="info" borderRadius="md">
+                <AlertIcon />
+                <Box flex="1">
+                  <AlertTitle fontSize={isMobile ? "sm" : "md"}>
+                    Coming Soon!
+                  </AlertTitle>
+                  <AlertDescription fontSize={isMobile ? "xs" : "sm"}>
+                    Custom report builder with drag-and-drop interface will be available in the next update.
+                  </AlertDescription>
+                </Box>
+              </Alert>
+              
+              <Card variant="outline">
+                <CardBody>
+                  <VStack spacing={3} align="stretch" textAlign="center">
+                    <Icon as={FaChartPie} boxSize={12} color="blue.500" mx="auto" />
+                    <Heading size="sm">Advanced Report Customization</Heading>
+                    <Text color="gray.600" fontSize={isMobile ? "sm" : "md"}>
+                      The custom report builder will allow you to create personalized reports by selecting specific data fields, 
+                      applying custom filters, and designing your own layout and visualizations.
+                    </Text>
+                  </VStack>
+                </CardBody>
+              </Card>
+
+              <SimpleGrid columns={isMobile ? 1 : 2} spacing={3}>
+                <Card variant="outline" size="sm">
+                  <CardBody textAlign="center" p={3}>
+                    <Icon as={FaFilter} boxSize={6} color="green.500" mb={2} />
+                    <Text fontWeight="medium" fontSize="sm">Dynamic Filtering</Text>
+                    <Text fontSize="xs" color="gray.600">Custom data filters</Text>
+                  </CardBody>
+                </Card>
+                
+                <Card variant="outline" size="sm">
+                  <CardBody textAlign="center" p={3}>
+                    <Icon as={FaChartBar} boxSize={6} color="purple.500" mb={2} />
+                    <Text fontWeight="medium" fontSize="sm">Visual Designer</Text>
+                    <Text fontSize="xs" color="gray.600">Drag & drop charts</Text>
+                  </CardBody>
+                </Card>
+                
+                <Card variant="outline" size="sm">
+                  <CardBody textAlign="center" p={3}>
+                    <Icon as={FaClock} boxSize={6} color="orange.500" mb={2} />
+                    <Text fontWeight="medium" fontSize="sm">Real-time Data</Text>
+                    <Text fontSize="xs" color="gray.600">Live data updates</Text>
+                  </CardBody>
+                </Card>
+                
+                <Card variant="outline" size="sm">
+                  <CardBody textAlign="center" p={3}>
+                    <Icon as={EmailIcon} boxSize={6} color="blue.500" mb={2} />
+                    <Text fontWeight="medium" fontSize="sm">Export Options</Text>
+                    <Text fontSize="xs" color="gray.600">Multiple formats</Text>
+                  </CardBody>
+                </Card>
+              </SimpleGrid>
+            </VStack>
           </ModalBody>
           <ModalFooter>
-            <Button onClick={onCustomClose}>
+            <Button 
+              onClick={onCustomClose}
+              size={buttonSize}
+              w={isMobile ? "full" : "auto"}
+            >
               Close
             </Button>
           </ModalFooter>

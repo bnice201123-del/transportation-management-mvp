@@ -45,7 +45,30 @@ import {
   Wrap,
   WrapItem,
   CircularProgress,
-  CircularProgressLabel
+  CircularProgressLabel,
+  useBreakpointValue,
+  useColorModeValue,
+  Skeleton,
+  SkeletonText,
+  StatGroup,
+  Tooltip,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  FormControl,
+  FormLabel,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
+  Collapse
 } from '@chakra-ui/react';
 import {
   CalendarIcon,
@@ -81,11 +104,26 @@ const AdminAnalytics = () => {
   const [timeRange, setTimeRange] = useState('7d');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
   const toast = useToast();
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [timeRange]);
+  // Responsive values
+  const isMobile = useBreakpointValue({ base: true, lg: false });
+  const cardPadding = useBreakpointValue({ base: 3, md: 4, lg: 6 });
+  const headerDirection = useBreakpointValue({ base: 'column', md: 'row' });
+  const buttonSize = useBreakpointValue({ base: 'sm', md: 'md' });
+  const spacing = useBreakpointValue({ base: 3, md: 4, lg: 6 });
+  const headingSize = useBreakpointValue({ base: 'md', md: 'lg' });
+  const fontSize = useBreakpointValue({ base: 'sm', md: 'md' });
+  const iconSize = useBreakpointValue({ base: 5, md: 6 });
+  const statSize = useBreakpointValue({ base: 'lg', md: 'xl', lg: '2xl' });
+  
+  // Color mode values
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const textColor = useColorModeValue('gray.600', 'gray.300');
+  const headerBg = useColorModeValue('white', 'gray.800');
 
   const fetchAnalytics = useCallback(async () => {
     try {
@@ -205,6 +243,10 @@ const AdminAnalytics = () => {
     }
   }, [timeRange, toast]);
 
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
+
   const getTimeRangeMs = (range) => {
     const ranges = {
       '1d': 1000 * 60 * 60 * 24,
@@ -244,35 +286,42 @@ const AdminAnalytics = () => {
   };
 
   const StatCard = ({ title, value, change, changeType, icon, color, subtitle, isPercentage = false }) => (
-    <Card>
-      <CardBody>
-        <Flex align="center" justify="space-between">
-          <Box flex="1">
+    <Card bg={cardBg} borderColor={borderColor} h="full">
+      <CardBody p={cardPadding}>
+        <Flex 
+          align="center" 
+          justify="space-between"
+          direction={isMobile ? "column" : "row"}
+          textAlign={isMobile ? "center" : "left"}
+        >
+          <Box flex="1" mb={isMobile ? 3 : 0}>
             <Stat>
-              <StatLabel fontSize="sm" color="gray.500">{title}</StatLabel>
-              <StatNumber fontSize="2xl" fontWeight="bold">
+              <StatLabel fontSize={fontSize} color={textColor}>{title}</StatLabel>
+              <StatNumber fontSize={statSize} fontWeight="bold">
                 {isPercentage ? `${value}%` : value}
               </StatNumber>
               {subtitle && (
-                <Text fontSize="xs" color="gray.400" mt={1}>{subtitle}</Text>
+                <Text fontSize="xs" color={textColor} mt={1} noOfLines={1}>
+                  {subtitle}
+                </Text>
               )}
               {change && (
-                <StatHelpText>
+                <StatHelpText fontSize="xs" mt={1}>
                   <StatArrow type={changeType} />
-                  {change}
+                  {isMobile ? change.split(' ')[0] : change}
                 </StatHelpText>
               )}
             </Stat>
           </Box>
-          <Box ml={4}>
+          <Box ml={isMobile ? 0 : 4}>
             <CircularProgress 
               value={isPercentage ? parseFloat(value) : 75} 
               color={color}
-              size="60px"
+              size={isMobile ? "50px" : "60px"}
               thickness="8px"
             >
               <CircularProgressLabel>
-                <Icon as={icon} boxSize={6} color={color} />
+                <Icon as={icon} boxSize={iconSize} color={color} />
               </CircularProgressLabel>
             </CircularProgress>
           </Box>
@@ -282,50 +331,56 @@ const AdminAnalytics = () => {
   );
 
   const PerformanceCard = () => (
-    <Card>
-      <CardHeader>
+    <Card bg={cardBg} borderColor={borderColor} h="full">
+      <CardHeader pb={2}>
         <Heading size="sm" display="flex" alignItems="center" gap={2}>
-          <Icon as={FaTachometerAlt} />
+          <Icon as={FaTachometerAlt} boxSize={iconSize} />
           System Performance
         </Heading>
       </CardHeader>
-      <CardBody pt={0}>
-        <VStack spacing={4}>
+      <CardBody pt={2} p={cardPadding}>
+        <VStack spacing={spacing}>
           <Box width="full">
             <HStack justify="space-between" mb={2}>
-              <Text fontSize="sm">System Uptime</Text>
-              <Text fontSize="sm" fontWeight="bold">{analytics?.performance.systemUptime}%</Text>
+              <Text fontSize={fontSize}>System Uptime</Text>
+              <Text fontSize={fontSize} fontWeight="bold">
+                {analytics?.performance.systemUptime || 0}%
+              </Text>
             </HStack>
             <Progress 
-              value={analytics?.performance.systemUptime} 
+              value={analytics?.performance.systemUptime || 0} 
               colorScheme="green"
-              size="sm"
+              size={isMobile ? "sm" : "md"}
               borderRadius="md"
             />
           </Box>
           
           <Box width="full">
             <HStack justify="space-between" mb={2}>
-              <Text fontSize="sm">Server Load</Text>
-              <Text fontSize="sm" fontWeight="bold">{analytics?.performance.serverLoad}%</Text>
+              <Text fontSize={fontSize}>Server Load</Text>
+              <Text fontSize={fontSize} fontWeight="bold">
+                {analytics?.performance.serverLoad || 0}%
+              </Text>
             </HStack>
             <Progress 
-              value={analytics?.performance.serverLoad} 
+              value={analytics?.performance.serverLoad || 0} 
               colorScheme={analytics?.performance.serverLoad > 80 ? 'red' : 'blue'}
-              size="sm"
+              size={isMobile ? "sm" : "md"}
               borderRadius="md"
             />
           </Box>
 
           <Box width="full">
             <HStack justify="space-between" mb={2}>
-              <Text fontSize="sm">Error Rate</Text>
-              <Text fontSize="sm" fontWeight="bold">{analytics?.performance.errorRate}%</Text>
+              <Text fontSize={fontSize}>Error Rate</Text>
+              <Text fontSize={fontSize} fontWeight="bold">
+                {analytics?.performance.errorRate || 0}%
+              </Text>
             </HStack>
             <Progress 
-              value={analytics?.performance.errorRate * 10} 
+              value={(analytics?.performance.errorRate || 0) * 10} 
               colorScheme="red"
-              size="sm"
+              size={isMobile ? "sm" : "md"}
               borderRadius="md"
             />
           </Box>
@@ -333,11 +388,19 @@ const AdminAnalytics = () => {
           <Divider />
 
           <VStack spacing={2} width="full">
-            <Text fontSize="sm" fontWeight="medium">Peak Hours</Text>
-            <Wrap justify="center">
+            <Text fontSize={fontSize} fontWeight="medium">Peak Hours</Text>
+            <Wrap justify="center" spacing={1}>
               {analytics?.performance.peakHours?.map((hour, index) => (
                 <WrapItem key={index}>
-                  <Badge colorScheme="orange" variant="outline">{hour}</Badge>
+                  <Badge 
+                    colorScheme="orange" 
+                    variant="outline"
+                    fontSize="xs"
+                    px={2}
+                    py={1}
+                  >
+                    {hour}
+                  </Badge>
                 </WrapItem>
               ))}
             </Wrap>
@@ -398,48 +461,58 @@ const AdminAnalytics = () => {
   );
 
   const UserAnalyticsCard = () => (
-    <Card>
-      <CardHeader>
+    <Card bg={cardBg} borderColor={borderColor} h="full">
+      <CardHeader pb={2}>
         <Heading size="sm" display="flex" alignItems="center" gap={2}>
-          <Icon as={FaUsers} />
+          <Icon as={FaUsers} boxSize={iconSize} />
           User Analytics
         </Heading>
       </CardHeader>
-      <CardBody pt={0}>
-        <VStack spacing={4}>
-          <SimpleGrid columns={2} spacing={4} width="full">
-            <VStack>
-              <Text fontSize="2xl" fontWeight="bold" color="green.500">
-                {analytics?.userAnalytics.newUsersThisPeriod}
+      <CardBody pt={2} p={cardPadding}>
+        <VStack spacing={spacing}>
+          <SimpleGrid columns={2} spacing={spacing} width="full">
+            <VStack spacing={1}>
+              <Text fontSize={statSize} fontWeight="bold" color="green.500">
+                {analytics?.userAnalytics.newUsersThisPeriod || 0}
               </Text>
-              <Text fontSize="xs" color="gray.500" textAlign="center">New Users</Text>
+              <Text fontSize="xs" color={textColor} textAlign="center">
+                New Users
+              </Text>
             </VStack>
-            <VStack>
-              <Text fontSize="2xl" fontWeight="bold" color="blue.500">
-                {analytics?.userAnalytics.userGrowthRate}%
+            <VStack spacing={1}>
+              <Text fontSize={statSize} fontWeight="bold" color="blue.500">
+                {analytics?.userAnalytics.userGrowthRate || 0}%
               </Text>
-              <Text fontSize="xs" color="gray.500" textAlign="center">Growth Rate</Text>
+              <Text fontSize="xs" color={textColor} textAlign="center">
+                Growth Rate
+              </Text>
             </VStack>
           </SimpleGrid>
 
           <Divider />
 
           <Box width="full">
-            <Text fontSize="sm" fontWeight="medium" mb={3}>Role Distribution</Text>
+            <Text fontSize={fontSize} fontWeight="medium" mb={3}>
+              Role Distribution
+            </Text>
             {Object.entries(analytics?.userAnalytics.usersByRole || {}).map(([role, count]) => (
-              <Box key={role} mb={3}>
+              <Box key={role} mb={3} _last={{ mb: 0 }}>
                 <HStack justify="space-between" mb={1}>
-                  <Text fontSize="sm" textTransform="capitalize">{role}s</Text>
-                  <Text fontSize="sm" fontWeight="bold">{count}</Text>
+                  <Text fontSize={fontSize} textTransform="capitalize" noOfLines={1}>
+                    {role}s
+                  </Text>
+                  <Text fontSize={fontSize} fontWeight="bold">
+                    {count}
+                  </Text>
                 </HStack>
                 <Progress 
-                  value={count > 0 ? (count / analytics.kpis.totalUsers) * 100 : 0}
+                  value={count > 0 ? (count / (analytics?.kpis.totalUsers || 1)) * 100 : 0}
                   colorScheme={
                     role === 'admin' ? 'red' :
                     role === 'scheduler' ? 'blue' :
                     role === 'dispatcher' ? 'green' : 'purple'
                   }
-                  size="sm"
+                  size={isMobile ? "sm" : "md"}
                   borderRadius="md"
                 />
               </Box>
@@ -452,146 +525,283 @@ const AdminAnalytics = () => {
 
   if (loading) {
     return (
-      <Box display="flex" flexDirection="column" minHeight="100vh">
+      <Box display="flex" flexDirection="column" minHeight="100vh" bg={bgColor}>
         <Navbar />
-        <Center flex="1">
-          <VStack spacing={4}>
-            <Spinner size="xl" color="blue.500" />
-            <Text>Loading analytics...</Text>
-          </VStack>
-        </Center>
+        <Box flex="1" p={cardPadding}>
+          <Container maxW="7xl">
+            <VStack align="stretch" spacing={spacing}>
+              {/* Header Skeleton */}
+              <Card bg={headerBg} borderColor={borderColor} shadow="sm">
+                <CardBody p={cardPadding}>
+                  <VStack spacing={3}>
+                    <Skeleton height="32px" width="300px" />
+                    <SkeletonText noOfLines={2} spacing="2" width="400px" />
+                  </VStack>
+                </CardBody>
+              </Card>
+
+              {/* KPI Skeletons */}
+              <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={spacing}>
+                {[...Array(4)].map((_, i) => (
+                  <Card key={i} bg={cardBg} borderColor={borderColor}>
+                    <CardBody p={cardPadding}>
+                      <VStack spacing={2}>
+                        <Skeleton height="20px" width="120px" />
+                        <Skeleton height="36px" width="80px" />
+                        <SkeletonText noOfLines={1} width="100px" />
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                ))}
+              </SimpleGrid>
+
+              {/* Content Skeleton */}
+              <Card bg={cardBg} borderColor={borderColor}>
+                <CardBody p={cardPadding}>
+                  <Center py={20}>
+                    <VStack spacing={4}>
+                      <Spinner size="xl" color="blue.500" thickness="4px" />
+                      <Text color={textColor} fontSize={fontSize}>
+                        Loading analytics data...
+                      </Text>
+                      <Text fontSize="xs" color={textColor}>
+                        This may take a moment
+                      </Text>
+                    </VStack>
+                  </Center>
+                </CardBody>
+              </Card>
+            </VStack>
+          </Container>
+        </Box>
       </Box>
     );
   }
 
   return (
-    <Box display="flex" flexDirection="column" minHeight="100vh">
+    <Box display="flex" flexDirection="column" minHeight="100vh" bg={bgColor}>
       <Navbar />
-      <Box flex="1" p={{ base: 4, md: 6, lg: 8 }}>
+      <Box flex="1" p={cardPadding}>
         <Container maxW="7xl">
-          <VStack align="stretch" spacing={6}>
+          <VStack align="stretch" spacing={spacing}>
             {/* Header */}
-            <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
-              <Box>
-                <Heading size="lg" mb={2}>Analytics Dashboard</Heading>
-                <Text color="gray.600">
-                  Comprehensive system analytics and performance metrics
-                </Text>
-              </Box>
-              <HStack spacing={3}>
-                <Select 
-                  value={timeRange} 
-                  onChange={(e) => setTimeRange(e.target.value)}
-                  size="sm"
-                  width="auto"
+            <Card bg={headerBg} borderColor={borderColor} shadow="sm">
+              <CardBody p={cardPadding}>
+                <Flex 
+                  justify="space-between" 
+                  align={isMobile ? "start" : "center"} 
+                  direction={headerDirection}
+                  gap={4}
                 >
-                  <option value="1d">Last 24 Hours</option>
-                  <option value="7d">Last 7 Days</option>
-                  <option value="30d">Last 30 Days</option>
-                  <option value="90d">Last 90 Days</option>
-                </Select>
-                <Button 
-                  leftIcon={<RepeatIcon />}
-                  size="sm"
-                  isLoading={refreshing}
-                  onClick={handleRefresh}
-                >
-                  Refresh
-                </Button>
-                <Button 
-                  leftIcon={<DownloadIcon />}
-                  size="sm"
-                  colorScheme="blue"
-                  onClick={handleExport}
-                >
-                  Export
-                </Button>
-              </HStack>
-            </Flex>
+                  <Box flex="1">
+                    <Heading size={headingSize} mb={2}>
+                      Analytics Dashboard
+                    </Heading>
+                    <Text color={textColor} fontSize={fontSize}>
+                      Comprehensive system analytics and performance metrics
+                    </Text>
+                  </Box>
+                  
+                  {/* Controls */}
+                  {isMobile ? (
+                    <VStack spacing={2} w="full">
+                      <Flex w="full" gap={2}>
+                        <Select 
+                          value={timeRange} 
+                          onChange={(e) => setTimeRange(e.target.value)}
+                          size={buttonSize}
+                          flex="1"
+                        >
+                          <option value="1d">Last 24H</option>
+                          <option value="7d">Last 7D</option>
+                          <option value="30d">Last 30D</option>
+                          <option value="90d">Last 90D</option>
+                        </Select>
+                        <IconButton
+                          icon={<RepeatIcon />}
+                          size={buttonSize}
+                          isLoading={refreshing}
+                          onClick={handleRefresh}
+                          aria-label="Refresh"
+                        />
+                      </Flex>
+                      <Button 
+                        leftIcon={<DownloadIcon />}
+                        size={buttonSize}
+                        colorScheme="blue"
+                        onClick={handleExport}
+                        w="full"
+                      >
+                        Export Report
+                      </Button>
+                    </VStack>
+                  ) : (
+                    <HStack spacing={3}>
+                      <Select 
+                        value={timeRange} 
+                        onChange={(e) => setTimeRange(e.target.value)}
+                        size={buttonSize}
+                        width="auto"
+                      >
+                        <option value="1d">Last 24 Hours</option>
+                        <option value="7d">Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                        <option value="90d">Last 90 Days</option>
+                      </Select>
+                      <Button 
+                        leftIcon={<RepeatIcon />}
+                        size={buttonSize}
+                        isLoading={refreshing}
+                        onClick={handleRefresh}
+                      >
+                        Refresh
+                      </Button>
+                      <Button 
+                        leftIcon={<DownloadIcon />}
+                        size={buttonSize}
+                        colorScheme="blue"
+                        onClick={handleExport}
+                      >
+                        Export
+                      </Button>
+                    </HStack>
+                  )}
+                </Flex>
+              </CardBody>
+            </Card>
 
             {/* KPI Cards */}
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
-              <StatCard
-                title="Trip Completion Rate"
-                value={analytics?.tripStats.completionRate}
-                isPercentage={true}
-                change="+5.2% from last period"
-                changeType="increase"
-                icon={FaCheckCircle}
-                color="green.500"
-              />
-              <StatCard
-                title="Active Users"
-                value={analytics?.kpis.activeUsers}
-                subtitle={`${analytics?.kpis.totalUsers} total users`}
-                change="+12 new users"
-                changeType="increase"
-                icon={FaUsers}
-                color="blue.500"
-              />
-              <StatCard
-                title="Driver Utilization"
-                value={Math.round((analytics?.kpis.activeDrivers / Math.max(1, analytics?.kpis.totalDrivers)) * 100)}
-                isPercentage={true}
-                subtitle={`${analytics?.kpis.activeDrivers}/${analytics?.kpis.totalDrivers} drivers`}
-                icon={FaCar}
-                color="purple.500"
-              />
-              <StatCard
-                title="Average Rating"
-                value={analytics?.tripStats.averageRating}
-                subtitle="System-wide rating"
-                change="+0.3 improvement"
-                changeType="increase"
-                icon={StarIcon}
-                color="orange.500"
-              />
-            </SimpleGrid>
+            <Box>
+              <Heading size="md" mb={4} color={textColor}>
+                Key Performance Indicators
+              </Heading>
+              <SimpleGrid 
+                columns={{ base: 1, sm: 2, lg: 4 }} 
+                spacing={spacing}
+                minChildWidth={isMobile ? "none" : "200px"}
+              >
+                <StatCard
+                  title="Trip Completion Rate"
+                  value={analytics?.tripStats.completionRate || 0}
+                  isPercentage={true}
+                  change="+5.2% from last period"
+                  changeType="increase"
+                  icon={FaCheckCircle}
+                  color="green.500"
+                />
+                <StatCard
+                  title="Active Users"
+                  value={analytics?.kpis.activeUsers || 0}
+                  subtitle={`${analytics?.kpis.totalUsers || 0} total users`}
+                  change="+12 new users"
+                  changeType="increase"
+                  icon={FaUsers}
+                  color="blue.500"
+                />
+                <StatCard
+                  title="Driver Utilization"
+                  value={Math.round((analytics?.kpis.activeDrivers / Math.max(1, analytics?.kpis.totalDrivers)) * 100) || 0}
+                  isPercentage={true}
+                  subtitle={`${analytics?.kpis.activeDrivers || 0}/${analytics?.kpis.totalDrivers || 0} drivers`}
+                  icon={FaCar}
+                  color="purple.500"
+                />
+                <StatCard
+                  title="Average Rating"
+                  value={analytics?.tripStats.averageRating || 0}
+                  subtitle="System-wide rating"
+                  change="+0.3 improvement"
+                  changeType="increase"
+                  icon={StarIcon}
+                  color="orange.500"
+                />
+              </SimpleGrid>
+            </Box>
 
             {/* Main Analytics Tabs */}
-            <Tabs variant="enclosed" colorScheme="blue">
-              <TabList>
-                <Tab>Trip Analytics</Tab>
-                <Tab>User Insights</Tab>
-                <Tab>Performance</Tab>
-                <Tab>Geographic</Tab>
-                <Tab>Reports</Tab>
-              </TabList>
+            <Card bg={cardBg} borderColor={borderColor}>
+              <Tabs 
+                variant="enclosed" 
+                colorScheme="blue"
+                orientation={isMobile ? "horizontal" : "horizontal"}
+                isFitted={isMobile}
+                index={activeTab}
+                onChange={setActiveTab}
+              >
+                <TabList 
+                  flexDirection={isMobile ? "row" : "row"}
+                  overflowX={isMobile ? "auto" : "visible"}
+                  overflowY="hidden"
+                >
+                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4} minW={isMobile ? "auto" : "100px"}>
+                    {isMobile ? "Trips" : "Trip Analytics"}
+                  </Tab>
+                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4} minW={isMobile ? "auto" : "100px"}>
+                    {isMobile ? "Users" : "User Insights"}
+                  </Tab>
+                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4} minW={isMobile ? "auto" : "100px"}>
+                    Performance
+                  </Tab>
+                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4} minW={isMobile ? "auto" : "100px"}>
+                    {isMobile ? "Geo" : "Geographic"}
+                  </Tab>
+                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4} minW={isMobile ? "auto" : "100px"}>
+                    Reports
+                  </Tab>
+                </TabList>
 
               <TabPanels>
                 {/* Trip Analytics */}
-                <TabPanel p={0} pt={6}>
-                  <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={6}>
-                    <VStack spacing={6}>
-                      <Card width="full">
-                        <CardHeader>
+                <TabPanel p={cardPadding} pt={6}>
+                  <Grid 
+                    templateColumns={{ base: "1fr", lg: "2fr 1fr" }} 
+                    gap={spacing}
+                  >
+                    <VStack spacing={spacing}>
+                      <Card width="full" bg={cardBg} borderColor={borderColor}>
+                        <CardHeader pb={2}>
                           <Heading size="md">Trip Overview</Heading>
+                          <Text fontSize="sm" color={textColor} mt={1}>
+                            Current period trip statistics
+                          </Text>
                         </CardHeader>
-                        <CardBody>
-                          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
-                            <VStack>
-                              <Text fontSize="2xl" fontWeight="bold" color="green.500">
-                                {analytics?.kpis.completedTrips}
+                        <CardBody pt={2}>
+                          <SimpleGrid 
+                            columns={{ base: 2, md: 4 }} 
+                            spacing={spacing}
+                            minChildWidth={isMobile ? "80px" : "100px"}
+                          >
+                            <VStack spacing={1}>
+                              <Text fontSize={statSize} fontWeight="bold" color="green.500">
+                                {analytics?.kpis.completedTrips || 0}
                               </Text>
-                              <Text fontSize="xs" color="gray.500">Completed</Text>
+                              <Text fontSize="xs" color={textColor} textAlign="center">
+                                Completed
+                              </Text>
                             </VStack>
-                            <VStack>
-                              <Text fontSize="2xl" fontWeight="bold" color="blue.500">
-                                {analytics?.kpis.inProgressTrips}
+                            <VStack spacing={1}>
+                              <Text fontSize={statSize} fontWeight="bold" color="blue.500">
+                                {analytics?.kpis.inProgressTrips || 0}
                               </Text>
-                              <Text fontSize="xs" color="gray.500">In Progress</Text>
+                              <Text fontSize="xs" color={textColor} textAlign="center">
+                                In Progress
+                              </Text>
                             </VStack>
-                            <VStack>
-                              <Text fontSize="2xl" fontWeight="bold" color="orange.500">
-                                {analytics?.kpis.pendingTrips}
+                            <VStack spacing={1}>
+                              <Text fontSize={statSize} fontWeight="bold" color="orange.500">
+                                {analytics?.kpis.pendingTrips || 0}
                               </Text>
-                              <Text fontSize="xs" color="gray.500">Pending</Text>
+                              <Text fontSize="xs" color={textColor} textAlign="center">
+                                Pending
+                              </Text>
                             </VStack>
-                            <VStack>
-                              <Text fontSize="2xl" fontWeight="bold" color="red.500">
-                                {analytics?.kpis.cancelledTrips}
+                            <VStack spacing={1}>
+                              <Text fontSize={statSize} fontWeight="bold" color="red.500">
+                                {analytics?.kpis.cancelledTrips || 0}
                               </Text>
-                              <Text fontSize="xs" color="gray.500">Cancelled</Text>
+                              <Text fontSize="xs" color={textColor} textAlign="center">
+                                Cancelled
+                              </Text>
                             </VStack>
                           </SimpleGrid>
                         </CardBody>
@@ -706,6 +916,7 @@ const AdminAnalytics = () => {
                 </TabPanel>
               </TabPanels>
             </Tabs>
+            </Card>
           </VStack>
         </Container>
       </Box>

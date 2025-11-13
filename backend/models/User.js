@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['scheduler', 'dispatcher', 'driver', 'admin'],
+    enum: ['scheduler', 'dispatcher', 'driver', 'admin', 'rider'],
     required: true
   },
   phone: {
@@ -82,7 +82,76 @@ const userSchema = new mongoose.Schema({
   },
   fcmToken: {
     type: String // For push notifications
-  }
+  },
+  // Rider-specific fields
+  riderId: {
+    type: String,
+    trim: true
+  },
+  dateOfBirth: {
+    type: Date
+  },
+  preferredVehicleType: {
+    type: String,
+    trim: true
+  },
+  serviceBalance: {
+    type: {
+      type: String,
+      enum: ['trips', 'dollars'],
+      default: 'trips'
+    },
+    tripCount: {
+      type: Number,
+      default: 0
+    },
+    dollarAmount: {
+      type: Number,
+      default: 0
+    },
+    originalTripCount: {
+      type: Number,
+      default: 0
+    },
+    originalDollarAmount: {
+      type: Number,
+      default: 0
+    }
+  },
+  contractDetails: {
+    isActive: Boolean,
+    startDate: Date,
+    endDate: Date,
+    createdAt: Date
+  },
+  pricingDetails: {
+    pricePerRide: {
+      type: Number,
+      default: 15.00
+    },
+    pricePerMile: {
+      type: Number,
+      default: 0.50
+    }
+  },
+  mileageBalance: {
+    currentBalance: {
+      type: Number,
+      default: 0
+    },
+    originalBalance: {
+      type: Number,
+      default: 0
+    },
+    totalUsed: {
+      type: Number,
+      default: 0
+    }
+  },
+  trips: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Trip'
+  }]
 }, {
   timestamps: true
 });

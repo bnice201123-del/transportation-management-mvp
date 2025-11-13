@@ -9,7 +9,11 @@ const router = express.Router();
 // Register new user (admin only)
 router.post('/register', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   try {
-    const { email, password, firstName, lastName, role, phone, licenseNumber, vehicleInfo } = req.body;
+    const { email, password, firstName, lastName, role, phone, licenseNumber, vehicleInfo, riderId, dateOfBirth, preferredVehicleType, serviceBalance, contractDetails, pricingDetails, mileageBalance, trips } = req.body;
+
+    console.log('Registration request body:', req.body);
+    console.log('Destructured values:', { email, password, firstName, lastName, role, phone });
+    console.log('req.body.password:', req.body.password);
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -17,20 +21,38 @@ router.post('/register', authenticateToken, authorizeRoles('admin'), async (req,
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
+    // Validate required fields
+    if (!req.body.password || req.body.password.trim() === '') {
+      console.log('Password validation failed - req.body.password:', req.body.password);
+      return res.status(400).json({ message: 'Password is required' });
+    }
+
     // Create new user
     const userData = {
-      email,
-      password,
-      firstName,
-      lastName,
-      role,
-      phone
+      email: req.body.email,
+      password: req.body.password,
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      role: req.body.role,
+      phone: req.body.phone
     };
 
     // Add driver-specific fields if role is driver
     if (role === 'driver') {
       userData.licenseNumber = licenseNumber;
       userData.vehicleInfo = vehicleInfo;
+    }
+
+    // Add rider-specific fields if role is rider
+    if (req.body.role === 'rider') {
+      userData.riderId = req.body.riderId;
+      userData.dateOfBirth = req.body.dateOfBirth;
+      userData.preferredVehicleType = req.body.preferredVehicleType;
+      userData.serviceBalance = req.body.serviceBalance;
+      userData.contractDetails = req.body.contractDetails;
+      userData.pricingDetails = req.body.pricingDetails;
+      userData.mileageBalance = req.body.mileageBalance;
+      userData.trips = req.body.trips;
     }
 
     const user = new User(userData);

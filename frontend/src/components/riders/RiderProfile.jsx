@@ -78,7 +78,7 @@ const RiderProfile = () => {
   const fetchRider = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/riders/${riderId}`, {
+      const response = await axios.get(`/api/users/${riderId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setRider(response.data);
@@ -112,7 +112,7 @@ const RiderProfile = () => {
   const handleEdit = async () => {
     try {
       setUpdating(true);
-      await axios.put(`/api/riders/${riderId}`, editForm, {
+      await axios.put(`/api/users/${riderId}`, editForm, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
 

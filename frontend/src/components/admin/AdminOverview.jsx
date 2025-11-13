@@ -137,14 +137,14 @@ const AdminOverview = () => {
       }
 
       const [usersRes, tripsRes, analyticsRes, healthRes] = await Promise.all([
-        axios.get('/api/admin/users'),
-        axios.get('/api/admin/trips'),
-        axios.get('/api/admin/analytics'),
-        axios.get('/api/admin/system-health')
+        axios.get('/api/users'),
+        axios.get('/api/trips'),
+        axios.get('/api/analytics/dashboard'),
+        axios.get('/api/health')
       ]);
 
-      const users = Array.isArray(usersRes.data) ? usersRes.data : [];
-      const trips = Array.isArray(tripsRes.data) ? tripsRes.data : [];
+      const users = Array.isArray(usersRes.data.users) ? usersRes.data.users : [];
+      const trips = Array.isArray(tripsRes.data.trips) ? tripsRes.data.trips : [];
       const analytics = analyticsRes.data || {};
 
       const today = new Date();

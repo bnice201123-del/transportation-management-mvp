@@ -105,6 +105,7 @@ import {
 import axios from 'axios';
 import { useAuth } from "../../contexts/AuthContext";
 import Navbar from '../shared/Navbar';
+import GoogleMap from '../maps/GoogleMap';
 
 const ComprehensiveDriverDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -120,6 +121,7 @@ const ComprehensiveDriverDashboard = () => {
   const { user } = useAuth();
   const toast = useToast();
   const { isOpen: isReportOpen, onOpen: onReportOpen, onClose: onReportClose } = useDisclosure();
+  const [navigationModal, setNavigationModal] = useState({ isOpen: false, address: '', coordinates: null });
 
   // Color scheme
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -233,10 +235,11 @@ const ComprehensiveDriverDashboard = () => {
   // Navigation function to open destination in maps app
   const navigateToDestination = (trip) => {
     const dropoffLocation = trip.dropoffLocation;
-    const pickupLocation = trip.pickupLocation;
     
     // Extract destination address or coordinates
     let destination = '';
+    let coordinates = null;
+    
     if (dropoffLocation?.address) {
       destination = dropoffLocation.address;
     } else if (dropoffLocation?.lat && dropoffLocation?.lng) {
@@ -245,30 +248,22 @@ const ComprehensiveDriverDashboard = () => {
       destination = dropoffLocation;
     }
     
-    // Extract pickup address or coordinates
-    let pickup = '';
-    if (pickupLocation?.address) {
-      pickup = pickupLocation.address;
-    } else if (pickupLocation?.lat && pickupLocation?.lng) {
-      pickup = `${pickupLocation.lat},${pickupLocation.lng}`;
-    } else if (typeof pickupLocation === 'string') {
-      pickup = pickupLocation;
+    // Extract coordinates if available
+    if (dropoffLocation?.coordinates && Array.isArray(dropoffLocation.coordinates)) {
+      coordinates = {
+        lat: dropoffLocation.coordinates[1],
+        lng: dropoffLocation.coordinates[0]
+      };
+    } else if (dropoffLocation?.lat && dropoffLocation?.lng) {
+      coordinates = {
+        lat: dropoffLocation.lat,
+        lng: dropoffLocation.lng
+      };
     }
     
     if (destination) {
-      // Create Google Maps URL with both pickup and destination for optimal routing
-      let mapsUrl = '';
-      
-      if (pickup && destination) {
-        // If we have both pickup and destination, create a route
-        mapsUrl = `https://www.google.com/maps/dir/${encodeURIComponent(pickup)}/${encodeURIComponent(destination)}`;
-      } else {
-        // If we only have destination, navigate directly there
-        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`;
-      }
-      
-      // Open in new tab/window
-      window.open(mapsUrl, '_blank');
+      // Open navigation modal instead of external Google Maps
+      setNavigationModal({ isOpen: true, address: destination, coordinates });
       
       toast({
         title: 'Opening Navigation',
@@ -1302,6 +1297,51 @@ const ComprehensiveDriverDashboard = () => {
             </Button>
             <Button variant="ghost" onClick={onReportClose}>
               Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Navigation Modal - In-App Navigation */}
+      <Modal 
+        isOpen={navigationModal.isOpen} 
+        onClose={() => setNavigationModal({ isOpen: false, address: '', coordinates: null })} 
+        size="6xl"
+        isCentered
+      >
+        <ModalOverlay />
+        <ModalContent maxW="90vw" maxH="90vh">
+          <ModalHeader>Navigate to {navigationModal.address}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody p={0}>
+            <GoogleMap
+              center={navigationModal.coordinates || { lat: 40.7589, lng: -73.9851 }}
+              zoom={15}
+              markers={navigationModal.coordinates ? [{
+                position: navigationModal.coordinates,
+                title: navigationModal.address
+              }] : []}
+              height="70vh"
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button 
+              colorScheme="blue" 
+              mr={3} 
+              onClick={() => {
+                // Open in external Google Maps as fallback
+                const encodedAddress = encodeURIComponent(navigationModal.address);
+                const url = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+                window.open(url, '_blank');
+              }}
+            >
+              Open in Google Maps
+            </Button>
+            <Button 
+              variant="ghost" 
+              onClick={() => setNavigationModal({ isOpen: false, address: '', coordinates: null })}
+            >
+              Close
             </Button>
           </ModalFooter>
         </ModalContent>

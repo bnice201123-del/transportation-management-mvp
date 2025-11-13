@@ -59,7 +59,17 @@ import {
   FormLabel,
   Textarea,
   Divider,
-  useColorModeValue
+  useColorModeValue,
+  Checkbox,
+  Radio,
+  RadioGroup,
+  Stack,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  InputRightAddon
 } from '@chakra-ui/react';
 import {
   SearchIcon,
@@ -88,6 +98,13 @@ import {
   FaMapMarkerAlt,
   FaCar
 } from 'react-icons/fa';
+import {
+  CurrencyDollarIcon,
+  TicketIcon,
+  DocumentTextIcon,
+  CalendarDaysIcon,
+  CalculatorIcon
+} from '@heroicons/react/24/outline';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 // Removed unused import - useAuth was not being used in this component
@@ -109,9 +126,25 @@ const ComprehensiveRiderDashboard = () => {
     firstName: '',
     lastName: '',
     email: '',
+    password: '',
     phone: '',
     address: '',
-    notes: ''
+    notes: '',
+    
+    // Service Balance
+    serviceBalanceType: 'trips', // 'trips' or 'dollars'
+    tripBalance: 20,
+    dollarBalance: 500.00,
+    
+    // Contract Management
+    isContractBased: false,
+    contractStartDate: '',
+    contractEndDate: '',
+    
+    // Pricing & Mileage
+    pricePerRide: 15.00,
+    mileageBalance: 500,
+    pricePerMile: 0.50
   });
 
   const navigate = useNavigate();
@@ -132,9 +165,9 @@ const ComprehensiveRiderDashboard = () => {
     try {
       setLoading(true);
       
-      // Fetch riders
-      const ridersResponse = await axios.get('/api/riders');
-      setRiders(ridersResponse.data.data?.riders || []);
+      // Fetch riders (users with role 'rider')
+      const ridersResponse = await axios.get('/api/users?role=rider');
+      setRiders(ridersResponse.data.users || []);
 
       // Fetch trips for rider history
       const tripsResponse = await axios.get('/api/trips');
@@ -225,12 +258,87 @@ const ComprehensiveRiderDashboard = () => {
 
   // Handle new rider creation
   const handleCreateRider = async () => {
+    // Validation
+    if (!newRider.firstName || !newRider.lastName || !newRider.email || !newRider.password) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fill in all required fields (First Name, Last Name, Email, Password)',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Contract validation
+    if (newRider.isContractBased) {
+      if (!newRider.contractStartDate || !newRider.contractEndDate) {
+        toast({
+          title: 'Validation Error',
+          description: 'Please provide both contract start and end dates for contract-based service',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      if (new Date(newRider.contractEndDate) <= new Date(newRider.contractStartDate)) {
+        toast({
+          title: 'Validation Error',
+          description: 'Contract end date must be after the start date',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+    }
+
     try {
-      const response = await axios.post('/api/riders', newRider);
+      const riderData = {
+        ...newRider,
+        role: 'rider',
+        isActive: true,
+        trips: [],
+        
+        // Service Balance
+        serviceBalance: {
+          type: newRider.serviceBalanceType,
+          tripCount: newRider.serviceBalanceType === 'trips' ? newRider.tripBalance : 0,
+          dollarAmount: newRider.serviceBalanceType === 'dollars' ? newRider.dollarBalance : 0,
+          originalTripCount: newRider.serviceBalanceType === 'trips' ? newRider.tripBalance : 0,
+          originalDollarAmount: newRider.serviceBalanceType === 'dollars' ? newRider.dollarBalance : 0
+        },
+        
+        // Contract details
+        contractDetails: newRider.isContractBased ? {
+          isActive: true,
+          startDate: newRider.contractStartDate,
+          endDate: newRider.contractEndDate,
+          createdAt: new Date().toISOString()
+        } : null,
+        
+        // Pricing & Mileage
+        pricingDetails: {
+          pricePerRide: newRider.pricePerRide,
+          pricePerMile: newRider.pricePerMile
+        },
+        
+        mileageBalance: {
+          currentBalance: newRider.mileageBalance,
+          originalBalance: newRider.mileageBalance,
+          totalUsed: 0
+        }
+      };
+
+      console.log('Sending rider data from dashboard:', riderData);
+
+      const response = await axios.post('/api/auth/register', riderData);
       if (response.data.success) {
         toast({
           title: 'Success',
-          description: 'Rider created successfully',
+          description: `Rider ${newRider.firstName} ${newRider.lastName} created successfully`,
           status: 'success',
           duration: 3000,
           isClosable: true,
@@ -241,7 +349,22 @@ const ComprehensiveRiderDashboard = () => {
           email: '',
           phone: '',
           address: '',
-          notes: ''
+          notes: '',
+          
+          // Service Balance
+          serviceBalanceType: 'trips',
+          tripBalance: 20,
+          dollarBalance: 500.00,
+          
+          // Contract Management
+          isContractBased: false,
+          contractStartDate: '',
+          contractEndDate: '',
+          
+          // Pricing & Mileage
+          pricePerRide: 15.00,
+          mileageBalance: 500,
+          pricePerMile: 0.50
         });
         onNewRiderClose();
         fetchData();
@@ -250,7 +373,7 @@ const ComprehensiveRiderDashboard = () => {
       console.error('Error creating rider:', err);
       toast({
         title: 'Error',
-        description: 'Failed to create rider',
+        description: err.response?.data?.message || 'Failed to create rider',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -277,7 +400,7 @@ const ComprehensiveRiderDashboard = () => {
 
   const handleUpdateRider = async () => {
     try {
-      const response = await axios.put(`/api/riders/${selectedRider._id}`, newRider);
+      const response = await axios.put(`/api/users/${selectedRider._id}`, newRider);
       if (response.data.success) {
         toast({
           title: 'Success',
@@ -302,12 +425,12 @@ const ComprehensiveRiderDashboard = () => {
   };
 
   const handleDeleteRider = async (riderId) => {
-    if (window.confirm('Are you sure you want to delete this rider?')) {
+    if (window.confirm('Are you sure you want to deactivate this rider?')) {
       try {
-        await axios.delete(`/api/riders/${riderId}`);
+        await axios.patch(`/api/users/${riderId}/deactivate`);
         toast({
           title: 'Success',
-          description: 'Rider deleted successfully',
+          description: 'Rider deactivated successfully',
           status: 'success',
           duration: 3000,
           isClosable: true,
@@ -516,18 +639,6 @@ const ComprehensiveRiderDashboard = () => {
                         bg: "white"
                       }}
                     >
-                      ➕ New Rider
-                    </Tab>
-                    <Tab 
-                      flex={{ base: "1", sm: "initial" }}
-                      fontSize={{ base: "sm", md: "md" }}
-                      py={{ base: 3, md: 4 }}
-                      _selected={{ 
-                        color: "pink.600", 
-                        borderColor: "pink.500",
-                        bg: "white"
-                      }}
-                    >
                       📈 Analytics
                     </Tab>
                     <Tab 
@@ -552,14 +663,6 @@ const ComprehensiveRiderDashboard = () => {
                           <Heading size="md" color="pink.600">
                             Rider Overview
                           </Heading>
-                          <Button
-                            leftIcon={<FaUserPlus />}
-                            colorScheme="pink"
-                            onClick={() => setActiveTab(3)}
-                            size={{ base: "sm", md: "md" }}
-                          >
-                            Add New Rider
-                          </Button>
                         </HStack>
 
                         {/* Recent Activity */}
@@ -615,7 +718,7 @@ const ComprehensiveRiderDashboard = () => {
                                         {trip.riderName}
                                       </Text>
                                       <Text fontSize="xs" color="gray.500">
-                                        {trip.pickupLocation?.substring(0, 30)}...
+                                        {typeof trip.pickupLocation === 'string' ? trip.pickupLocation.substring(0, 30) : 'Location not set'}...
                                       </Text>
                                     </VStack>
                                     <Badge colorScheme={getStatusColor(trip.status)}>
@@ -659,7 +762,7 @@ const ComprehensiveRiderDashboard = () => {
                                 leftIcon={<FaChartLine />}
                                 colorScheme="purple"
                                 variant="outline"
-                                onClick={() => setActiveTab(4)}
+                                onClick={() => setActiveTab(3)}
                                 size={{ base: "md", md: "lg" }}
                                 py={{ base: 6, md: 8 }}
                               >
@@ -959,10 +1062,10 @@ const ComprehensiveRiderDashboard = () => {
                                       <Td display={{ base: "none", md: "table-cell" }}>
                                         <VStack align="start" spacing={0}>
                                           <Text fontSize="xs">
-                                            📍 {trip.pickupLocation?.substring(0, 20)}...
+                                            📍 {String(trip.pickupLocation || '').substring(0, 20)}...
                                           </Text>
                                           <Text fontSize="xs">
-                                            🏁 {trip.dropoffLocation?.substring(0, 20)}...
+                                            🏁 {String(trip.dropoffLocation || '').substring(0, 20)}...
                                           </Text>
                                         </VStack>
                                       </Td>
@@ -1011,103 +1114,7 @@ const ComprehensiveRiderDashboard = () => {
                       </VStack>
                     </TabPanel>
 
-                    {/* New Rider Tab */}
-                    <TabPanel px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
-                      <VStack spacing={{ base: 4, md: 6 }} align="stretch">
-                        <Heading size="md" color="pink.600">
-                          Add New Rider
-                        </Heading>
 
-                        <Card>
-                          <CardBody>
-                            <VStack spacing={6} align="stretch">
-                              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                                <FormControl isRequired>
-                                  <FormLabel>First Name</FormLabel>
-                                  <Input
-                                    placeholder="Enter first name"
-                                    value={newRider.firstName}
-                                    onChange={(e) => setNewRider({...newRider, firstName: e.target.value})}
-                                  />
-                                </FormControl>
-
-                                <FormControl isRequired>
-                                  <FormLabel>Last Name</FormLabel>
-                                  <Input
-                                    placeholder="Enter last name"
-                                    value={newRider.lastName}
-                                    onChange={(e) => setNewRider({...newRider, lastName: e.target.value})}
-                                  />
-                                </FormControl>
-
-                                <FormControl isRequired>
-                                  <FormLabel>Email</FormLabel>
-                                  <Input
-                                    type="email"
-                                    placeholder="Enter email address"
-                                    value={newRider.email}
-                                    onChange={(e) => setNewRider({...newRider, email: e.target.value})}
-                                  />
-                                </FormControl>
-
-                                <FormControl isRequired>
-                                  <FormLabel>Phone Number</FormLabel>
-                                  <Input
-                                    placeholder="Enter phone number"
-                                    value={newRider.phone}
-                                    onChange={(e) => setNewRider({...newRider, phone: e.target.value})}
-                                  />
-                                </FormControl>
-                              </SimpleGrid>
-
-                              <FormControl>
-                                <FormLabel>Address</FormLabel>
-                                <Input
-                                  placeholder="Enter home address (optional)"
-                                  value={newRider.address}
-                                  onChange={(e) => setNewRider({...newRider, address: e.target.value})}
-                                />
-                              </FormControl>
-
-                              <FormControl>
-                                <FormLabel>Notes</FormLabel>
-                                <Textarea
-                                  placeholder="Additional notes about the rider (optional)"
-                                  value={newRider.notes}
-                                  onChange={(e) => setNewRider({...newRider, notes: e.target.value})}
-                                  rows={4}
-                                />
-                              </FormControl>
-
-                              <HStack justify="end" spacing={4}>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => {
-                                    setNewRider({
-                                      firstName: '',
-                                      lastName: '',
-                                      email: '',
-                                      phone: '',
-                                      address: '',
-                                      notes: ''
-                                    });
-                                  }}
-                                >
-                                  Clear Form
-                                </Button>
-                                <Button
-                                  colorScheme="pink"
-                                  onClick={handleCreateRider}
-                                  isDisabled={!newRider.firstName || !newRider.lastName || !newRider.email || !newRider.phone}
-                                >
-                                  Create Rider
-                                </Button>
-                              </HStack>
-                            </VStack>
-                          </CardBody>
-                        </Card>
-                      </VStack>
-                    </TabPanel>
 
                     {/* Analytics Tab */}
                     <TabPanel px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
@@ -1369,69 +1376,315 @@ const ComprehensiveRiderDashboard = () => {
           email: '',
           phone: '',
           address: '',
-          notes: ''
+          notes: '',
+          
+          // Service Balance
+          serviceBalanceType: 'trips',
+          tripBalance: 20,
+          dollarBalance: 500.00,
+          
+          // Contract Management
+          isContractBased: false,
+          contractStartDate: '',
+          contractEndDate: '',
+          
+          // Pricing & Mileage
+          pricePerRide: 15.00,
+          mileageBalance: 500,
+          pricePerMile: 0.50
         });
-      }} size="lg">
+      }} size="2xl">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>{isEditRiderOpen ? 'Edit Rider' : 'Add New Rider'}</ModalHeader>
           <ModalCloseButton />
-          <ModalBody>
+          <ModalBody maxH="70vh" overflowY="auto">
             <VStack spacing={4} align="stretch">
-              <SimpleGrid columns={2} spacing={4}>
-                <FormControl isRequired>
-                  <FormLabel>First Name</FormLabel>
-                  <Input
-                    placeholder="First name"
-                    value={newRider.firstName}
-                    onChange={(e) => setNewRider({...newRider, firstName: e.target.value})}
-                  />
-                </FormControl>
-                
-                <FormControl isRequired>
-                  <FormLabel>Last Name</FormLabel>
-                  <Input
-                    placeholder="Last name"
-                    value={newRider.lastName}
-                    onChange={(e) => setNewRider({...newRider, lastName: e.target.value})}
-                  />
-                </FormControl>
-              </SimpleGrid>
+              {/* Basic Information */}
+              <Box>
+                <Heading size="sm" mb={3} color="gray.700">Basic Information</Heading>
+                <VStack spacing={3}>
+                  <SimpleGrid columns={2} spacing={4} w="full">
+                    <FormControl isRequired>
+                      <FormLabel fontSize="sm">First Name</FormLabel>
+                      <Input
+                        placeholder="First name"
+                        value={newRider.firstName}
+                        onChange={(e) => setNewRider({...newRider, firstName: e.target.value})}
+                      />
+                    </FormControl>
+                    
+                    <FormControl isRequired>
+                      <FormLabel fontSize="sm">Last Name</FormLabel>
+                      <Input
+                        placeholder="Last name"
+                        value={newRider.lastName}
+                        onChange={(e) => setNewRider({...newRider, lastName: e.target.value})}
+                      />
+                    </FormControl>
+                  </SimpleGrid>
 
-              <FormControl isRequired>
-                <FormLabel>Email</FormLabel>
-                <Input
-                  type="email"
-                  placeholder="Email address"
-                  value={newRider.email}
-                  onChange={(e) => setNewRider({...newRider, email: e.target.value})}
-                />
-              </FormControl>
+                  <SimpleGrid columns={2} spacing={4} w="full">
+                    <FormControl isRequired>
+                      <FormLabel fontSize="sm">Email</FormLabel>
+                      <Input
+                        type="email"
+                        placeholder="Email address"
+                        value={newRider.email}
+                        onChange={(e) => setNewRider({...newRider, email: e.target.value})}
+                      />
+                    </FormControl>
 
-              <FormControl isRequired>
-                <FormLabel>Phone</FormLabel>
-                <Input
-                  placeholder="Phone number"
-                  value={newRider.phone}
-                  onChange={(e) => setNewRider({...newRider, phone: e.target.value})}
-                />
-              </FormControl>
+                    <FormControl isRequired>
+                      <FormLabel fontSize="sm">Phone</FormLabel>
+                      <Input
+                        placeholder="Phone number"
+                        value={newRider.phone}
+                        onChange={(e) => setNewRider({...newRider, phone: e.target.value})}
+                      />
+                    </FormControl>
+                  </SimpleGrid>
 
+                  <FormControl isRequired>
+                    <FormLabel fontSize="sm">Password</FormLabel>
+                    <Input
+                      type="password"
+                      placeholder="Password"
+                      value={newRider.password}
+                      onChange={(e) => setNewRider({...newRider, password: e.target.value})}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel fontSize="sm">Address</FormLabel>
+                    <Input
+                      placeholder="Home address (optional)"
+                      value={newRider.address}
+                      onChange={(e) => setNewRider({...newRider, address: e.target.value})}
+                    />
+                  </FormControl>
+                </VStack>
+              </Box>
+
+              <Divider />
+
+              {/* Service Balance Section */}
+              <Card bg="blue.50" borderColor="blue.200" size="sm">
+                <CardHeader pb={2}>
+                  <HStack>
+                    <Box as={TicketIcon} w={4} h={4} color="blue.600" />
+                    <Heading size="sm" color="blue.700">Service Balance</Heading>
+                  </HStack>
+                </CardHeader>
+                <CardBody pt={0}>
+                  <VStack spacing={3} align="start">
+                    <FormControl>
+                      <FormLabel fontSize="sm" mb={2}>Balance Type</FormLabel>
+                      <RadioGroup
+                        value={newRider.serviceBalanceType}
+                        onChange={(value) => setNewRider({...newRider, serviceBalanceType: value})}
+                      >
+                        <Stack direction="row" spacing={4}>
+                          <Radio value="trips" size="sm">Trip Count</Radio>
+                          <Radio value="dollars" size="sm">Dollar Amount</Radio>
+                        </Stack>
+                      </RadioGroup>
+                    </FormControl>
+
+                    {newRider.serviceBalanceType === 'trips' ? (
+                      <FormControl>
+                        <FormLabel fontSize="sm">Number of Trips</FormLabel>
+                        <NumberInput
+                          value={newRider.tripBalance}
+                          onChange={(valueString, valueNumber) => 
+                            setNewRider({...newRider, tripBalance: valueNumber || 0})
+                          }
+                          min={0}
+                          max={999}
+                          size="sm"
+                        >
+                          <NumberInputField placeholder="Enter number of trips" />
+                          <NumberInputStepper>
+                            <NumberIncrementStepper />
+                            <NumberDecrementStepper />
+                          </NumberInputStepper>
+                        </NumberInput>
+                      </FormControl>
+                    ) : (
+                      <FormControl>
+                        <FormLabel fontSize="sm">Dollar Amount</FormLabel>
+                        <InputGroup size="sm">
+                          <InputLeftElement
+                            pointerEvents="none"
+                            color="gray.500"
+                            children="$"
+                          />
+                          <NumberInput
+                            value={newRider.dollarBalance}
+                            onChange={(valueString, valueNumber) => 
+                              setNewRider({...newRider, dollarBalance: valueNumber || 0})
+                            }
+                            min={0}
+                            precision={2}
+                            step={0.01}
+                            w="full"
+                          >
+                            <NumberInputField pl={8} placeholder="Enter dollar amount" />
+                            <NumberInputStepper>
+                              <NumberIncrementStepper />
+                              <NumberDecrementStepper />
+                            </NumberInputStepper>
+                          </NumberInput>
+                        </InputGroup>
+                      </FormControl>
+                    )}
+                  </VStack>
+                </CardBody>
+              </Card>
+
+              {/* Contract Management Section */}
+              <Card bg="purple.50" borderColor="purple.200" size="sm">
+                <CardHeader pb={2}>
+                  <HStack>
+                    <Box as={DocumentTextIcon} w={4} h={4} color="purple.600" />
+                    <Heading size="sm" color="purple.700">Contract Management</Heading>
+                  </HStack>
+                </CardHeader>
+                <CardBody pt={0}>
+                  <VStack spacing={3} align="start">
+                    <Checkbox
+                      isChecked={newRider.isContractBased}
+                      onChange={(e) => setNewRider({...newRider, isContractBased: e.target.checked})}
+                      colorScheme="purple"
+                      size="sm"
+                    >
+                      This service is contract-based
+                    </Checkbox>
+
+                    {newRider.isContractBased && (
+                      <SimpleGrid columns={2} spacing={3} w="full" pl={4}>
+                        <FormControl isRequired>
+                          <FormLabel fontSize="sm">Start Date</FormLabel>
+                          <Input
+                            type="date"
+                            size="sm"
+                            value={newRider.contractStartDate}
+                            onChange={(e) => setNewRider({...newRider, contractStartDate: e.target.value})}
+                          />
+                        </FormControl>
+                        <FormControl isRequired>
+                          <FormLabel fontSize="sm">End Date</FormLabel>
+                          <Input
+                            type="date"
+                            size="sm"
+                            value={newRider.contractEndDate}
+                            onChange={(e) => setNewRider({...newRider, contractEndDate: e.target.value})}
+                            min={newRider.contractStartDate}
+                          />
+                        </FormControl>
+                      </SimpleGrid>
+                    )}
+                  </VStack>
+                </CardBody>
+              </Card>
+
+              {/* Pricing & Mileage Section */}
+              <Card bg="green.50" borderColor="green.200" size="sm">
+                <CardHeader pb={2}>
+                  <HStack>
+                    <Box as={CalculatorIcon} w={4} h={4} color="green.600" />
+                    <Heading size="sm" color="green.700">Pricing & Mileage</Heading>
+                  </HStack>
+                </CardHeader>
+                <CardBody pt={0}>
+                  <SimpleGrid columns={3} spacing={3}>
+                    <FormControl>
+                      <FormLabel fontSize="sm">Price Per Ride</FormLabel>
+                      <InputGroup size="sm">
+                        <InputLeftElement
+                          pointerEvents="none"
+                          color="gray.500"
+                          children="$"
+                        />
+                        <NumberInput
+                          value={newRider.pricePerRide}
+                          onChange={(valueString, valueNumber) => 
+                            setNewRider({...newRider, pricePerRide: valueNumber || 0})
+                          }
+                          min={0}
+                          precision={2}
+                          step={0.01}
+                          w="full"
+                        >
+                          <NumberInputField pl={8} placeholder="0.00" />
+                          <NumberInputStepper>
+                            <NumberIncrementStepper />
+                            <NumberDecrementStepper />
+                          </NumberInputStepper>
+                        </NumberInput>
+                      </InputGroup>
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel fontSize="sm">Mileage Balance</FormLabel>
+                      <InputGroup size="sm">
+                        <NumberInput
+                          value={newRider.mileageBalance}
+                          onChange={(valueString, valueNumber) => 
+                            setNewRider({...newRider, mileageBalance: valueNumber || 0})
+                          }
+                          min={0}
+                          w="full"
+                        >
+                          <NumberInputField placeholder="Enter miles" />
+                          <NumberInputStepper>
+                            <NumberIncrementStepper />
+                            <NumberDecrementStepper />
+                          </NumberInputStepper>
+                        </NumberInput>
+                        <InputRightAddon children="mi" fontSize="xs" />
+                      </InputGroup>
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel fontSize="sm">Price Per Mile</FormLabel>
+                      <InputGroup size="sm">
+                        <InputLeftElement
+                          pointerEvents="none"
+                          color="gray.500"
+                          children="$"
+                        />
+                        <NumberInput
+                          value={newRider.pricePerMile}
+                          onChange={(valueString, valueNumber) => 
+                            setNewRider({...newRider, pricePerMile: valueNumber || 0})
+                          }
+                          min={0}
+                          precision={2}
+                          step={0.01}
+                          w="full"
+                        >
+                          <NumberInputField pl={8} placeholder="0.00" />
+                          <NumberInputStepper>
+                            <NumberIncrementStepper />
+                            <NumberDecrementStepper />
+                          </NumberInputStepper>
+                        </NumberInput>
+                      </InputGroup>
+                    </FormControl>
+                  </SimpleGrid>
+                </CardBody>
+              </Card>
+
+              {/* Notes Section */}
               <FormControl>
-                <FormLabel>Address</FormLabel>
-                <Input
-                  placeholder="Home address (optional)"
-                  value={newRider.address}
-                  onChange={(e) => setNewRider({...newRider, address: e.target.value})}
-                />
-              </FormControl>
-
-              <FormControl>
-                <FormLabel>Notes</FormLabel>
+                <FormLabel fontSize="sm">Notes</FormLabel>
                 <Textarea
                   placeholder="Additional notes (optional)"
                   value={newRider.notes}
                   onChange={(e) => setNewRider({...newRider, notes: e.target.value})}
+                  size="sm"
+                  rows={3}
                 />
               </FormControl>
             </VStack>

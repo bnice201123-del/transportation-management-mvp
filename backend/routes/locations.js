@@ -129,7 +129,7 @@ router.get('/:id/location/history', authenticateToken, authorizeRoles('admin', '
 });
 
 // Get all active driver locations (for live tracking dashboard)
-router.get('/locations/active', authenticateToken, authorizeRoles('admin', 'dispatcher', 'scheduler'), async (req, res) => {
+router.get('/active', authenticateToken, authorizeRoles('admin', 'dispatcher', 'scheduler'), async (req, res) => {
   try {
     const drivers = await User.find({
       role: 'driver',

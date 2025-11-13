@@ -34,7 +34,7 @@ const MapComponent = ({
 }) => {
   const ref = useRef();
   const [map, setMap] = useState();
-  const [markersArray, setMarkersArray] = useState([]);
+  const markersRef = useRef([]);
 
   // Initialize map
   useEffect(() => {
@@ -80,7 +80,7 @@ const MapComponent = ({
   useEffect(() => {
     if (map && markers) {
       // Clear existing markers
-      markersArray.forEach(marker => marker.setMap(null));
+      markersRef.current.forEach(marker => marker.setMap(null));
       
       // Add new markers
       const newMarkers = markers.map((markerData, index) => {
@@ -119,9 +119,9 @@ const MapComponent = ({
         return marker;
       });
 
-      setMarkersArray(newMarkers);
+      markersRef.current = newMarkers;
     }
-  }, [map, markers, onMarkerClick, markersArray]);
+  }, [map, markers, onMarkerClick]);
 
   // Handle directions
   useEffect(() => {

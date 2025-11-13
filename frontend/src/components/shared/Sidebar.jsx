@@ -122,18 +122,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
         { label: 'Reports', icon: SearchIcon, action: () => navigate('/admin/reports') }
       ]
     }] : []),
-    {
-      id: 'search',
-      label: 'Search & History',
-      icon: SearchIcon,
-      color: 'purple.500',
-      path: '/search',
-      roles: ['scheduler', 'dispatcher', 'admin'],
-      isModal: true, // Special flag to indicate this opens a modal
-      subItems: [
-        // Vehicle Logs moved to Vehicles section under Operations
-      ]
-    },
+
     // System Administration - for admin users only
     ...(user?.role === 'admin' ? [{
       id: 'system-admin',
@@ -177,6 +166,9 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
         ] : []),
         ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [
           { label: 'Vehicles', icon: FaCar, action: () => navigate('/vehicles') }
+        ] : []),
+        ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [
+          { label: 'Search', icon: SearchIcon, action: () => onSearchOpen() }
         ] : [])
       ]
     }] : []),
@@ -201,13 +193,9 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   );
 
   const handleItemClick = (item) => {
-    if (item.id === 'search' || item.isModal) {
-      onSearchOpen();
-    } else {
-      navigate(item.path || item);
-      if (onMobileClose) {
-        onMobileClose(); // Close mobile menu on navigation
-      }
+    navigate(item.path || item);
+    if (onMobileClose) {
+      onMobileClose(); // Close mobile menu on navigation
     }
   };
 

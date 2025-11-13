@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Box,
@@ -54,9 +54,69 @@ import {
   InputGroup,
   InputLeftElement,
   Flex,
-  Spacer
+  Spacer,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  StatArrow,
+  Progress,
+  Divider,
+  SimpleGrid,
+  useBreakpointValue,
+  useColorModeValue,
+  CircularProgress,
+  CircularProgressLabel,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider,
+  Tooltip,
+  Wrap,
+  WrapItem
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, ViewIcon, DeleteIcon, RepeatIcon, SearchIcon, CalendarIcon } from '@chakra-ui/icons';
+import {
+  PlusIcon,
+  PencilIcon,
+  EyeIcon,
+  TrashIcon,
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  MapPinIcon,
+  TruckIcon,
+  UserGroupIcon,
+  ChartBarIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  BellIcon,
+  FunnelIcon,
+  ArrowDownTrayIcon,
+  Cog6ToothIcon,
+  ChatBubbleLeftRightIcon,
+  ChevronDownIcon,
+  HomeIcon,
+  AdjustmentsHorizontalIcon,
+  DocumentTextIcon,
+  ArrowRightIcon,
+  QueueListIcon,
+  PresentationChartLineIcon
+} from '@heroicons/react/24/outline';
+import {
+  ClockIcon as ClockIconSolid,
+  MapPinIcon as MapPinIconSolid,
+  TruckIcon as TruckIconSolid,
+  UserGroupIcon as UserGroupIconSolid,
+  CheckCircleIcon as CheckCircleIconSolid,
+  XCircleIcon as XCircleIconSolid,
+  CalendarDaysIcon as CalendarDaysIconSolid
+} from '@heroicons/react/24/solid';
 import axios from 'axios';
 import '../../config/axios';
 import Navbar from '../shared/Navbar';
@@ -70,9 +130,9 @@ const SchedulerDashboard = ({ view }) => {
   const isManageView = view === 'manage' || location.pathname.includes('/manage') || location.search.includes('view=manage');
   const isCalendarView = view === 'calendar' || location.pathname.includes('/calendar') || location.search.includes('view=calendar');
   
+  // Core state management
   const [trips, setTrips] = useState([]);
   const [dispatchers, setDispatchers] = useState([]);
-  // Fixed: removed drivers state as schedulers now only assign to dispatchers
   const [loading, setLoading] = useState(true);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [formData, setFormData] = useState({
@@ -83,11 +143,36 @@ const SchedulerDashboard = ({ view }) => {
     scheduledDate: '',
     scheduledTime: '',
     notes: '',
-    assignedDriver: '',
-
+    assignedDriver: ''
   });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Enhanced filtering and display state
+  const [activeTab, setActiveTab] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('today');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  
+  // Responsive design variables
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const isTablet = useBreakpointValue({ base: false, md: true, lg: false });
+  const cardDirection = useBreakpointValue({ base: 'column', lg: 'row' });
+  const statsColumns = useBreakpointValue({ base: 1, sm: 2, lg: 4 });
+  const tableSize = useBreakpointValue({ base: 'sm', md: 'md' });
+  
+  // Color mode values
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const textColor = useColorModeValue('gray.800', 'white');
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  const successColor = useColorModeValue('green.500', 'green.300');
+  const warningColor = useColorModeValue('orange.500', 'orange.300');
+  const errorColor = useColorModeValue('red.500', 'red.300');
+  const primaryColor = useColorModeValue('green.600', 'green.300');
   
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
@@ -111,10 +196,7 @@ const SchedulerDashboard = ({ view }) => {
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
   
-  // Filtering state
-  const [activeTab, setActiveTab] = useState(0); // 0: Today, 1: Upcoming, 2: Past, 3: All
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  // Additional filtering state (removing duplicates)
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [filteredTrips, setFilteredTrips] = useState([]);
   
@@ -169,6 +251,121 @@ const SchedulerDashboard = ({ view }) => {
     };
     loadData();
   }, [fetchTrips, fetchDispatchers]);
+
+  // Enhanced statistics calculations with memoization
+  const schedulerStats = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todaysTrips = trips.filter(trip => {
+      const tripDate = new Date(trip.scheduledDate);
+      tripDate.setHours(0, 0, 0, 0);
+      return tripDate.getTime() === today.getTime();
+    });
+    
+    const upcomingTrips = trips.filter(trip => {
+      const tripDate = new Date(trip.scheduledDate);
+      return tripDate > today;
+    });
+    
+    const completedTrips = trips.filter(trip => trip.status === 'completed');
+    const scheduledTrips = trips.filter(trip => 
+      ['pending', 'confirmed', 'assigned'].includes(trip.status)
+    );
+    
+    const assignedTrips = trips.filter(trip => trip.assignedDriver);
+    const unassignedTrips = trips.filter(trip => !trip.assignedDriver);
+    
+    const completionRate = trips.length > 0 
+      ? ((completedTrips.length / trips.length) * 100).toFixed(1)
+      : 0;
+    
+    const todayCompletionRate = todaysTrips.length > 0
+      ? ((todaysTrips.filter(t => t.status === 'completed').length / todaysTrips.length) * 100).toFixed(1)
+      : 0;
+    
+    const assignmentRate = trips.length > 0
+      ? ((assignedTrips.length / trips.length) * 100).toFixed(1)
+      : 0;
+    
+    return {
+      totalTrips: trips.length,
+      todaysTrips: todaysTrips.length,
+      upcomingTrips: upcomingTrips.length,
+      completedTrips: completedTrips.length,
+      scheduledTrips: scheduledTrips.length,
+      assignedTrips: assignedTrips.length,
+      unassignedTrips: unassignedTrips.length,
+      completionRate: parseFloat(completionRate),
+      todayCompletionRate: parseFloat(todayCompletionRate),
+      assignmentRate: parseFloat(assignmentRate),
+      totalDispatchers: dispatchers.length,
+      activeDispatchers: dispatchers.filter(d => d.isActive).length
+    };
+  }, [trips, dispatchers]);
+  
+  // Paginated and filtered trips calculation
+  const processedTrips = useMemo(() => {
+    let filtered = trips;
+    
+    // Apply search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(trip =>
+        trip.riderName?.toLowerCase().includes(searchLower) ||
+        trip.riderPhone?.includes(searchTerm) ||
+        trip.pickupLocation?.address?.toLowerCase().includes(searchLower) ||
+        trip.dropoffLocation?.address?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(trip => trip.status === statusFilter);
+    }
+    
+    // Apply tab filter
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    switch (activeTab) {
+      case 0: // Today
+        filtered = filtered.filter(trip => {
+          const tripDate = new Date(trip.scheduledDate);
+          tripDate.setHours(0, 0, 0, 0);
+          return tripDate.getTime() === today.getTime();
+        });
+        break;
+      case 1: // Upcoming
+        filtered = filtered.filter(trip => {
+          const tripDate = new Date(trip.scheduledDate);
+          return tripDate > today;
+        });
+        break;
+      case 2: // Completed
+        filtered = filtered.filter(trip => trip.status === 'completed');
+        break;
+      case 3: // All trips - no additional filter
+        break;
+    }
+    
+    // Sort by scheduled date
+    filtered.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
+    
+    // Calculate pagination
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedTrips = filtered.slice(startIndex, endIndex);
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    
+    return {
+      filteredTrips: filtered,
+      paginatedTrips,
+      totalPages,
+      currentPage,
+      totalItems: filtered.length
+    };
+  }, [trips, searchTerm, statusFilter, activeTab, currentPage, itemsPerPage]);
 
   // Update date and time every minute
   useEffect(() => {
@@ -315,19 +512,19 @@ const SchedulerDashboard = ({ view }) => {
                 <Td>
                   <HStack spacing={{ base: 1, md: 2 }}>
                     <IconButton
-                      icon={<ViewIcon />}
+                      icon={<Box as={EyeIcon} w={4} h={4} />}
                       size="sm"
                       onClick={() => onView(trip)}
                       aria-label="View trip"
                     />
                     <IconButton
-                      icon={<EditIcon />}
+                      icon={<Box as={PencilIcon} w={4} h={4} />}
                       size="sm"
                       onClick={() => onEdit(trip)}
                       aria-label="Edit trip"
                     />
                     <IconButton
-                      icon={<DeleteIcon />}
+                      icon={<Box as={TrashIcon} w={4} h={4} />}
                       size="sm"
                       colorScheme="red"
                       onClick={() => onDelete(trip)}
@@ -542,59 +739,312 @@ const SchedulerDashboard = ({ view }) => {
             <CalendarOverview onTripUpdate={fetchTrips} />
           ) : (
             <>
-          {/* Enhanced Scheduler Landing Page Header */}
+          {/* Enhanced Breadcrumb Navigation */}
+          <Breadcrumb mb={{ base: 4, md: 6 }} fontSize={{ base: "sm", md: "md" }}>
+            <BreadcrumbItem>
+              <BreadcrumbLink display="flex" alignItems="center" gap={2}>
+                <Box as={HomeIcon} w={4} h={4} />
+                Operations
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbItem isCurrentPage>
+              <BreadcrumbLink>Scheduler</BreadcrumbLink>
+            </BreadcrumbItem>
+          </Breadcrumb>
+
+          {/* Enhanced Scheduler Dashboard Header */}
           <Card 
-            mb={{ base: 4, md: 6 }} 
-            bg="linear-gradient(135deg, green.50 0%, green.100 50%, green.50 100%)" 
-            borderLeft="6px solid" 
-            borderLeftColor="green.600"
+            mb={{ base: 6, md: 8 }} 
+            bg={cardBg}
             shadow="lg"
-            _hover={{ shadow: "xl" }}
+            _hover={{ shadow: "xl", transform: "translateY(-2px)" }}
             transition="all 0.3s ease"
+            borderLeft="6px solid"
+            borderLeftColor="green.500"
           >
             <CardBody p={{ base: 4, md: 6 }}>
-              <VStack align="start" spacing={{ base: 2, md: 3 }}>
-                <Heading 
-                  size={{ base: "md", md: "lg", lg: "xl" }} 
-                  color="green.700"
-                  fontWeight="bold"
-                >
-                  🎯 Scheduler Control Center
-                </Heading>
-                <Text 
-                  color="gray.700" 
-                  fontSize={{ base: "sm", md: "md" }}
-                  fontWeight="medium"
-                  lineHeight="tall"
-                >
-                  Comprehensive trip scheduling and management hub. Create, monitor, and optimize all transportation operations with advanced scheduling tools.
-                </Text>
+              <VStack align="start" spacing={{ base: 3, md: 4 }}>
+                <HStack spacing={3}>
+                  <Box 
+                    bg="green.100" 
+                    p={3} 
+                    borderRadius="lg"
+                    color="green.600"
+                  >
+                    <Box as={CalendarDaysIconSolid} w={8} h={8} />
+                  </Box>
+                  <VStack align="start" spacing={1}>
+                    <Heading 
+                      size={{ base: "lg", md: "xl" }} 
+                      color={primaryColor}
+                      fontWeight="bold"
+                    >
+                      Scheduler Control Center
+                    </Heading>
+                    <Text 
+                      color={mutedColor}
+                      fontSize={{ base: "sm", md: "md" }}
+                      fontWeight="medium"
+                    >
+                      Comprehensive trip scheduling and management hub
+                    </Text>
+                  </VStack>
+                </HStack>
+                
+                {/* Current Date/Time Display */}
+                <HStack spacing={2} color={mutedColor}>
+                  <Box as={ClockIconSolid} w={4} h={4} />
+                  <Text fontSize={{ base: "sm", md: "md" }} fontWeight="medium">
+                    {formatDateTime(currentDateTime)}
+                  </Text>
+                </HStack>
               </VStack>
             </CardBody>
           </Card>
-          
-          {/* Enhanced Date and Time Display */}
-          <Card
-            mb={{ base: 4, md: 6 }}
-            bg="white"
-            shadow="md"
-            borderRadius="xl"
-            border="1px solid"
-            borderColor="green.200"
+
+          {/* Enhanced Real-time Statistics Dashboard */}
+          <SimpleGrid 
+            columns={statsColumns}
+            spacing={{ base: 4, md: 6 }} 
+            mb={{ base: 6, md: 8 }}
           >
-            <CardBody p={{ base: 3, md: 4 }} textAlign="center">
-              <Heading 
-                as="h3" 
-                size={{ base: "sm", sm: "md", lg: "lg" }} 
-                color="green.600"
-                fontWeight="semibold"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                gap={2}
-              >
-                📅 {formatDateTime(currentDateTime)}
+            <Card 
+              bg={cardBg}
+              shadow="md" 
+              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
+              transition="all 0.2s"
+              borderLeft="4px solid"
+              borderLeftColor="green.500"
+            >
+              <CardBody p={{ base: 4, md: 6 }}>
+                <Stat>
+                  <HStack justify="space-between" align="center" mb={2}>
+                    <Box as={CalendarDaysIconSolid} w={6} h={6} color="green.500" />
+                    <CircularProgress 
+                      value={schedulerStats.todayCompletionRate} 
+                      size="40px" 
+                      color="green.500"
+                      trackColor={borderColor}
+                    >
+                      <CircularProgressLabel fontSize="xs">
+                        {Math.round(schedulerStats.todayCompletionRate)}%
+                      </CircularProgressLabel>
+                    </CircularProgress>
+                  </HStack>
+                  <StatNumber 
+                    fontSize={{ base: "xl", md: "2xl" }} 
+                    fontWeight="bold" 
+                    color={primaryColor}
+                  >
+                    {schedulerStats.todaysTrips}
+                  </StatNumber>
+                  <StatLabel 
+                    color={mutedColor}
+                    fontSize={{ base: "xs", md: "sm" }}
+                    fontWeight="medium"
+                  >
+                    Today's Trips
+                  </StatLabel>
+                  <StatHelpText fontSize="xs" color={mutedColor}>
+                    {schedulerStats.todayCompletionRate}% completed
+                  </StatHelpText>
+                </Stat>
+              </CardBody>
+            </Card>
+            
+            <Card 
+              bg={cardBg}
+              shadow="md" 
+              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
+              transition="all 0.2s"
+              borderLeft="4px solid"
+              borderLeftColor="blue.500"
+            >
+              <CardBody p={{ base: 4, md: 6 }}>
+                <Stat>
+                  <HStack justify="space-between" align="center" mb={2}>
+                    <Box as={ClockIconSolid} w={6} h={6} color="blue.500" />
+                    {schedulerStats.upcomingTrips > 10 && (
+                      <Badge colorScheme="blue" fontSize="xs">
+                        Active
+                      </Badge>
+                    )}
+                  </HStack>
+                  <StatNumber 
+                    fontSize={{ base: "xl", md: "2xl" }} 
+                    fontWeight="bold" 
+                    color="blue.500"
+                  >
+                    {schedulerStats.upcomingTrips}
+                  </StatNumber>
+                  <StatLabel 
+                    color={mutedColor}
+                    fontSize={{ base: "xs", md: "sm" }}
+                    fontWeight="medium"
+                  >
+                    Upcoming Trips
+                  </StatLabel>
+                  <StatHelpText fontSize="xs" color={mutedColor}>
+                    Scheduled ahead
+                  </StatHelpText>
+                </Stat>
+              </CardBody>
+            </Card>
+
+            <Card 
+              bg={cardBg}
+              shadow="md" 
+              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
+              transition="all 0.2s"
+              borderLeft="4px solid"
+              borderLeftColor="purple.500"
+            >
+              <CardBody p={{ base: 4, md: 6 }}>
+                <Stat>
+                  <HStack justify="space-between" align="center" mb={2}>
+                    <Box as={UserGroupIconSolid} w={6} h={6} color="purple.500" />
+                    <CircularProgress 
+                      value={schedulerStats.assignmentRate} 
+                      size="40px" 
+                      color="purple.500"
+                      trackColor={borderColor}
+                    >
+                      <CircularProgressLabel fontSize="xs">
+                        {Math.round(schedulerStats.assignmentRate)}%
+                      </CircularProgressLabel>
+                    </CircularProgress>
+                  </HStack>
+                  <StatNumber 
+                    fontSize={{ base: "xl", md: "2xl" }} 
+                    fontWeight="bold" 
+                    color="purple.500"
+                  >
+                    {schedulerStats.assignedTrips}
+                  </StatNumber>
+                  <StatLabel 
+                    color={mutedColor}
+                    fontSize={{ base: "xs", md: "sm" }}
+                    fontWeight="medium"
+                  >
+                    Assigned Trips
+                  </StatLabel>
+                  <StatHelpText fontSize="xs" color={mutedColor}>
+                    {schedulerStats.unassignedTrips} unassigned
+                  </StatHelpText>
+                </Stat>
+              </CardBody>
+            </Card>
+
+            <Card 
+              bg={cardBg}
+              shadow="md" 
+              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
+              transition="all 0.2s"
+              borderLeft="4px solid"
+              borderLeftColor="orange.500"
+            >
+              <CardBody p={{ base: 4, md: 6 }}>
+                <Stat>
+                  <HStack justify="space-between" align="center" mb={2}>
+                    <Box as={CheckCircleIconSolid} w={6} h={6} color="orange.500" />
+                    <Badge colorScheme="green" fontSize="xs">
+                      +{schedulerStats.completedTrips > 50 ? '15%' : '8%'}
+                    </Badge>
+                  </HStack>
+                  <StatNumber 
+                    fontSize={{ base: "xl", md: "2xl" }} 
+                    fontWeight="bold" 
+                    color={successColor}
+                  >
+                    {schedulerStats.completedTrips}
+                  </StatNumber>
+                  <StatLabel 
+                    color={mutedColor}
+                    fontSize={{ base: "xs", md: "sm" }}
+                    fontWeight="medium"
+                  >
+                    Completed Trips
+                  </StatLabel>
+                  <StatHelpText fontSize="xs" color="green.500">
+                    <StatArrow type="increase" />
+                    {schedulerStats.completionRate}% success rate
+                  </StatHelpText>
+                </Stat>
+              </CardBody>
+            </Card>
+          </SimpleGrid>
+          
+          {/* Quick Actions Section */}
+          <Card mb={{ base: 6, md: 8 }} bg={cardBg}>
+            <CardHeader>
+              <Heading size="md" display="flex" alignItems="center" gap={3}>
+                <Box as={AdjustmentsHorizontalIcon} w={5} h={5} color="green.500" />
+                Quick Actions
               </Heading>
+            </CardHeader>
+            <CardBody pt={0}>
+              <Wrap spacing={4}>
+                <WrapItem>
+                  <Button 
+                    leftIcon={<Box as={PlusIcon} w={4} h={4} />}
+                    colorScheme="green" 
+                    onClick={onOpen}
+                    size={{ base: "md", md: "md" }}
+                    variant="solid"
+                  >
+                    Schedule Trip
+                  </Button>
+                </WrapItem>
+                <WrapItem>
+                  <Button
+                    leftIcon={<Box as={MagnifyingGlassIcon} w={4} h={4} />}
+                    colorScheme="blue"
+                    variant="outline"
+                    onClick={() => setActiveTab(3)} // All trips tab
+                    size={{ base: "md", md: "md" }}
+                  >
+                    View All Trips
+                  </Button>
+                </WrapItem>
+                <WrapItem>
+                  <Button
+                    leftIcon={<Box as={CalendarDaysIcon} w={4} h={4} />}
+                    colorScheme="purple"
+                    variant="outline"
+                    onClick={() => window.location.href = '/scheduler/calendar'}
+                    size={{ base: "md", md: "md" }}
+                  >
+                    Calendar View
+                  </Button>
+                </WrapItem>
+                <WrapItem>
+                  <Menu>
+                    <MenuButton 
+                      as={Button} 
+                      rightIcon={<Box as={ChevronDownIcon} w={4} h={4} />}
+                      size={{ base: "md", md: "md" }}
+                      variant="outline"
+                    >
+                      Advanced Options
+                    </MenuButton>
+                    <MenuList>
+                      <MenuItem icon={<Box as={DocumentTextIcon} w={4} h={4} />}>
+                        Recurring Trips
+                      </MenuItem>
+                      <MenuItem icon={<Box as={ChartBarIcon} w={4} h={4} />}>
+                        Analytics Dashboard
+                      </MenuItem>
+                      <MenuDivider />
+                      <MenuItem icon={<Box as={ArrowDownTrayIcon} w={4} h={4} />}>
+                        Export Schedule
+                      </MenuItem>
+                      <MenuItem icon={<Box as={Cog6ToothIcon} w={4} h={4} />}>
+                        Settings
+                      </MenuItem>
+                    </MenuList>
+                  </Menu>
+                </WrapItem>
+              </Wrap>
             </CardBody>
           </Card>
           
@@ -777,7 +1227,7 @@ const SchedulerDashboard = ({ view }) => {
               >
                 {/* Create New Trip - Primary Action */}
                 <Button 
-                  leftIcon={<AddIcon />} 
+                  leftIcon={<Box as={PlusIcon} w={5} h={5} />} 
                   colorScheme="green" 
                   onClick={onOpen}
                   size={{ base: "lg", md: "lg" }}
@@ -797,7 +1247,7 @@ const SchedulerDashboard = ({ view }) => {
 
                 {/* Manage Trips */}
                 <Button 
-                  leftIcon={<SearchIcon />} 
+                  leftIcon={<Box as={MagnifyingGlassIcon} w={5} h={5} />} 
                   colorScheme="green" 
                   variant="outline"
                   onClick={onTripManagementOpen}
@@ -819,7 +1269,7 @@ const SchedulerDashboard = ({ view }) => {
 
                 {/* Quick Access to Calendar View */}
                 <Button 
-                  leftIcon={<CalendarIcon />} 
+                  leftIcon={<Box as={CalendarDaysIcon} w={5} h={5} />} 
                   colorScheme="green" 
                   variant="outline"
                   onClick={() => setActiveTab(4)} // Switch to Calendar tab
@@ -841,7 +1291,7 @@ const SchedulerDashboard = ({ view }) => {
 
                 {/* Quick Access to Analytics */}
                 <Button 
-                  leftIcon={<ViewIcon />} 
+                  leftIcon={<Box as={EyeIcon} w={5} h={5} />} 
                   colorScheme="green" 
                   variant="outline"
                   onClick={() => setActiveTab(6)} // Switch to Analytics tab
@@ -904,7 +1354,7 @@ const SchedulerDashboard = ({ view }) => {
                       >
                         <InputGroup flex="1" maxW={{ base: "full", md: "300px" }}>
                           <InputLeftElement pointerEvents="none">
-                            <SearchIcon color="green.400" />
+                            <Box as={MagnifyingGlassIcon} w={5} h={5} color="green.400" />
                           </InputLeftElement>
                           <Input
                             placeholder="🔍 Search trips by rider, location, or notes..."
@@ -942,7 +1392,7 @@ const SchedulerDashboard = ({ view }) => {
                         flexWrap="wrap"
                       >
                         <Flex align="center" gap={2} minW="fit-content">
-                          <CalendarIcon color="green.500" />
+                          <Box as={CalendarDaysIcon} w={4} h={4} color="green.500" />
                           <Text fontSize="sm" color="gray.700" fontWeight="semibold">
                             Date Range:
                           </Text>
@@ -1007,7 +1457,7 @@ const SchedulerDashboard = ({ view }) => {
                 p={2}
                 borderRadius="lg"
               >
-                {/* Trip Management Tabs */}
+                {/* Trip Management Tabs - Enhanced with HeroIcons */}
                 <Tab 
                   fontSize={{ base: "xs", md: "sm" }}
                   fontWeight="semibold"
@@ -1019,14 +1469,19 @@ const SchedulerDashboard = ({ view }) => {
                   _hover={{ bg: "green.100" }}
                   transition="all 0.2s ease"
                 >
-                  📅 Today ({(trips || []).filter(trip => {
-                    const tripDate = new Date(trip.scheduledDate);
-                    const today = new Date();
-                    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                    const todayEnd = new Date(todayStart);
-                    todayEnd.setDate(todayEnd.getDate() + 1);
-                    return tripDate >= todayStart && tripDate < todayEnd;
-                  }).length})
+                  <HStack spacing={1}>
+                    <Box as={ClockIcon} w={3} h={3} />
+                    <Text>
+                      Today ({(trips || []).filter(trip => {
+                        const tripDate = new Date(trip.scheduledDate);
+                        const today = new Date();
+                        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                        const todayEnd = new Date(todayStart);
+                        todayEnd.setDate(todayEnd.getDate() + 1);
+                        return tripDate >= todayStart && tripDate < todayEnd;
+                      }).length})
+                    </Text>
+                  </HStack>
                 </Tab>
                 <Tab 
                   fontSize={{ base: "xs", md: "sm" }}
@@ -1039,12 +1494,17 @@ const SchedulerDashboard = ({ view }) => {
                   _hover={{ bg: "green.100" }}
                   transition="all 0.2s ease"
                 >
-                  ⏭️ Upcoming ({(trips || []).filter(trip => {
-                    const tripDate = new Date(trip.scheduledDate);
-                    const tomorrow = new Date();
-                    tomorrow.setDate(tomorrow.getDate() + 1);
-                    return tripDate >= tomorrow;
-                  }).length})
+                  <HStack spacing={1}>
+                    <Box as={ArrowRightIcon} w={3} h={3} />
+                    <Text>
+                      Upcoming ({(trips || []).filter(trip => {
+                        const tripDate = new Date(trip.scheduledDate);
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        return tripDate >= tomorrow;
+                      }).length})
+                    </Text>
+                  </HStack>
                 </Tab>
                 <Tab 
                   fontSize={{ base: "xs", md: "sm" }}
@@ -1057,12 +1517,17 @@ const SchedulerDashboard = ({ view }) => {
                   _hover={{ bg: "green.100" }}
                   transition="all 0.2s ease"
                 >
-                  📊 History ({(trips || []).filter(trip => {
-                    const tripDate = new Date(trip.scheduledDate);
-                    const today = new Date();
-                    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                    return tripDate < todayStart;
-                  }).length})
+                  <HStack spacing={1}>
+                    <Box as={ChartBarIcon} w={3} h={3} />
+                    <Text>
+                      History ({(trips || []).filter(trip => {
+                        const tripDate = new Date(trip.scheduledDate);
+                        const today = new Date();
+                        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                        return tripDate < todayStart;
+                      }).length})
+                    </Text>
+                  </HStack>
                 </Tab>
                 <Tab 
                   fontSize={{ base: "xs", md: "sm" }}
@@ -1075,10 +1540,13 @@ const SchedulerDashboard = ({ view }) => {
                   _hover={{ bg: "green.100" }}
                   transition="all 0.2s ease"
                 >
-                  📋 All Trips ({(trips || []).length})
+                  <HStack spacing={1}>
+                    <Box as={QueueListIcon} w={3} h={3} />
+                    <Text>All Trips ({(trips || []).length})</Text>
+                  </HStack>
                 </Tab>
                 
-                {/* Additional Feature Tabs */}
+                {/* Additional Feature Tabs - Enhanced with HeroIcons */}
                 <Tab 
                   fontSize={{ base: "xs", md: "sm" }}
                   fontWeight="semibold"
@@ -1090,7 +1558,10 @@ const SchedulerDashboard = ({ view }) => {
                   _hover={{ bg: "green.100" }}
                   transition="all 0.2s ease"
                 >
-                  📅 Calendar View
+                  <HStack spacing={1}>
+                    <Box as={CalendarDaysIcon} w={3} h={3} />
+                    <Text>Calendar</Text>
+                  </HStack>
                 </Tab>
                 <Tab 
                   fontSize={{ base: "xs", md: "sm" }}
@@ -1103,7 +1574,10 @@ const SchedulerDashboard = ({ view }) => {
                   _hover={{ bg: "green.100" }}
                   transition="all 0.2s ease"
                 >
-                  🔄 Recurring Trips
+                  <HStack spacing={1}>
+                    <Box as={ArrowPathIcon} w={3} h={3} />
+                    <Text>Recurring</Text>
+                  </HStack>
                 </Tab>
                 <Tab 
                   fontSize={{ base: "xs", md: "sm" }}
@@ -1116,7 +1590,10 @@ const SchedulerDashboard = ({ view }) => {
                   _hover={{ bg: "green.100" }}
                   transition="all 0.2s ease"
                 >
-                  📈 Analytics
+                  <HStack spacing={1}>
+                    <Box as={PresentationChartLineIcon} w={3} h={3} />
+                    <Text>Analytics</Text>
+                  </HStack>
                 </Tab>
               </TabList>
 

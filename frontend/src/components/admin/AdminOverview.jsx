@@ -101,7 +101,7 @@ import {
   FaTruck,
   FaGasPump
 } from 'react-icons/fa';
-import axios from 'axios';
+import axios from '../../config/axios';
 import Navbar from '../shared/Navbar';
 
 const AdminOverview = () => {
@@ -136,15 +136,11 @@ const AdminOverview = () => {
         throw new Error('No authentication token found');
       }
 
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
-
       const [usersRes, tripsRes, analyticsRes, healthRes] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/users`, config),
-        axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/trips`, config),
-        axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/analytics`, config),
-        axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin/system-health`, config)
+        axios.get('/api/admin/users'),
+        axios.get('/api/admin/trips'),
+        axios.get('/api/admin/analytics'),
+        axios.get('/api/admin/system-health')
       ]);
 
       const users = Array.isArray(usersRes.data) ? usersRes.data : [];

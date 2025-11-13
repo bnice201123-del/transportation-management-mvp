@@ -61,40 +61,41 @@ import {
   SimpleGrid,
   Divider,
   useBreakpointValue,
+  useColorModeValue,
   Checkbox
 } from '@chakra-ui/react';
 import {
-  AddIcon,
-  EditIcon,
-  ViewIcon,
-  DeleteIcon,
-  RepeatIcon,
-  SearchIcon,
-  CalendarIcon,
+  PlusIcon,
+  PencilIcon,
+  EyeIcon,
+  TrashIcon,
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  CalendarDaysIcon,
   ChevronDownIcon,
-  DownloadIcon,
-  SettingsIcon,
-  InfoIcon,
-  TimeIcon,
+  ArrowDownTrayIcon,
+  Cog6ToothIcon,
+  InformationCircleIcon,
+  ClockIcon,
   PhoneIcon,
-  EmailIcon
-} from '@chakra-ui/icons';
+  EnvelopeIcon,
+  TruckIcon,
+  UserIcon,
+  MapPinIcon,
+  FunnelIcon,
+  Bars3Icon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ExclamationTriangleIcon
+} from '@heroicons/react/24/outline';
 import {
-  FaCar,
-  FaUser,
-  FaMapMarkerAlt,
-  FaClock,
-  FaRoute,
-  FaFilter,
-  FaSort,
-  FaCalendarPlus,
-  FaCalendarCheck,
-  FaCalendarTimes,
-  FaSync,
-  FaFileExport,
-  FaPhone,
-  FaEnvelope
-} from 'react-icons/fa';
+  TruckIcon as TruckIconSolid,
+  UserIcon as UserIconSolid,
+  MapPinIcon as MapPinIconSolid,
+  ClockIcon as ClockIconSolid,
+  CheckCircleIcon as CheckCircleIconSolid,
+  XCircleIcon as XCircleIconSolid
+} from '@heroicons/react/24/solid';
 import axios from '../../config/axios';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 
@@ -143,6 +144,14 @@ const TripManagement = ({ onTripUpdate }) => {
 
   const toast = useToast();
   const isMobile = useBreakpointValue({ base: true, md: false });
+
+  // Responsive design variables
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  const headerBg = useColorModeValue('green.50', 'green.900');
+  const cardSpacing = { base: 4, md: 6 };
+  const buttonSize = { base: "md", md: "md" };
 
   // Data Fetching
   const fetchTrips = useCallback(async () => {
@@ -533,61 +542,112 @@ const TripManagement = ({ onTripUpdate }) => {
 
   return (
     <Box>
-      {/* Header Section with Actions */}
-      <Card mb={6} shadow="sm">
-        <CardHeader>
-          <Flex direction={{ base: 'column', md: 'row' }} gap={4} align="center">
-            <VStack align="start" spacing={1} flex={1}>
-              <Heading size="lg" color="blue.600">
-                🚗 Trip Management Center
-              </Heading>
-              <Text color="gray.600" fontSize="sm">
-                Create, view, edit, and delete trips - All-in-one management hub
-              </Text>
-            </VStack>
-            
-            <HStack spacing={3} wrap="wrap">
-              <Button
-                leftIcon={<AddIcon />}
-                colorScheme="blue"
-                onClick={handleAddTrip}
-                size="sm"
-              >
-                New Trip
-              </Button>
+      {/* Enhanced Header Section with Breadcrumbs and Statistics */}
+      <Card 
+        mb={cardSpacing} 
+        shadow="md"
+        bg={cardBg}
+        borderRadius="xl"
+        border="1px solid"
+        borderColor={borderColor}
+      >
+        <CardHeader bg={headerBg} borderTopRadius="xl">
+          <VStack spacing={4} align="stretch">
+            {/* Header with Icon and Actions */}
+            <Flex direction={{ base: 'column', lg: 'row' }} gap={4} align={{ base: 'start', lg: 'center' }}>
+              <VStack align="start" spacing={2} flex={1}>
+                <HStack spacing={3}>
+                  <Box as={TruckIconSolid} w={8} h={8} color="green.600" />
+                  <VStack align="start" spacing={0}>
+                    <Heading size={{ base: "md", md: "lg" }} color="green.700">
+                      Trip Management Center
+                    </Heading>
+                    <Text color={mutedColor} fontSize={{ base: "sm", md: "md" }}>
+                      Create, view, edit, and manage all transportation trips
+                    </Text>
+                  </VStack>
+                </HStack>
+                
+                {/* Quick Statistics */}
+                <HStack spacing={6} fontSize="sm" color={mutedColor} flexWrap="wrap">
+                  <HStack>
+                    <Box as={CheckCircleIconSolid} w={4} h={4} color="green.500" />
+                    <Text fontWeight="medium">{trips.filter(t => t.status === 'completed').length} Completed</Text>
+                  </HStack>
+                  <HStack>
+                    <Box as={ClockIconSolid} w={4} h={4} color="orange.500" />
+                    <Text fontWeight="medium">{trips.filter(t => t.status === 'pending').length} Pending</Text>
+                  </HStack>
+                  <HStack>
+                    <Box as={UserIconSolid} w={4} h={4} color="blue.500" />
+                    <Text fontWeight="medium">{trips.length} Total Trips</Text>
+                  </HStack>
+                </HStack>
+              </VStack>
               
-              <Button
-                leftIcon={<FaFileExport />}
-                variant="outline"
-                colorScheme="green"
-                onClick={exportTrips}
-                size="sm"
-              >
-                Export
-              </Button>
-              
-              <Button
-                leftIcon={<FaSync />}
-                variant="outline"
-                onClick={fetchTrips}
-                size="sm"
-                isLoading={loading}
-              >
-                Refresh
-              </Button>
-            </HStack>
-          </Flex>
+              {/* Action Buttons */}
+              <VStack spacing={3} align={{ base: 'stretch', lg: 'end' }}>
+                <HStack spacing={2} flexWrap="wrap" justify={{ base: 'stretch', lg: 'end' }}>
+                  <Button
+                    leftIcon={<Box as={PlusIcon} w={4} h={4} />}
+                    colorScheme="green"
+                    onClick={handleAddTrip}
+                    size={buttonSize}
+                    _hover={{ transform: "translateY(-1px)", shadow: "lg" }}
+                    transition="all 0.2s ease"
+                  >
+                    New Trip
+                  </Button>
+                  
+                  <Button
+                    leftIcon={<Box as={ArrowDownTrayIcon} w={4} h={4} />}
+                    variant="outline"
+                    colorScheme="green"
+                    onClick={exportTrips}
+                    size={buttonSize}
+                    _hover={{ bg: "green.50" }}
+                  >
+                    Export
+                  </Button>
+                  
+                  <Button
+                    leftIcon={<Box as={ArrowPathIcon} w={4} h={4} />}
+                    variant="outline"
+                    onClick={fetchTrips}
+                    size={buttonSize}
+                    isLoading={loading}
+                    _hover={{ bg: "gray.50" }}
+                  >
+                    Refresh
+                  </Button>
+                </HStack>
+              </VStack>
+            </Flex>
+          </VStack>
         </CardHeader>
       </Card>
 
-      {/* Filters and Search */}
-      <Card mb={6} shadow="sm">
-        <CardBody>
+      {/* Enhanced Filters and Search */}
+      <Card 
+        mb={cardSpacing} 
+        shadow="md"
+        bg={cardBg}
+        borderRadius="lg"
+        border="1px solid"
+        borderColor={borderColor}
+      >
+        <CardHeader bg={headerBg} borderTopRadius="lg">
+          <HStack spacing={3}>
+            <Box as={FunnelIcon} w={5} h={5} color="green.600" />
+            <Heading size="md" color="green.700">Search & Filters</Heading>
+          </HStack>
+        </CardHeader>
+        <CardBody p={cardSpacing}>
           <VStack spacing={4}>
-            {/* Search Bar */}
+            {/* Enhanced Search Bar */}
             <InputGroup>
               <InputLeftElement>
-                <SearchIcon color="gray.400" />
+                <Box as={MagnifyingGlassIcon} w={4} h={4} color="gray.400" />
               </InputLeftElement>
               <Input
                 placeholder="Search by rider name, phone, or location..."
@@ -663,7 +723,7 @@ const TripManagement = ({ onTripUpdate }) => {
                   </Select>
                   <IconButton
                     size="sm"
-                    icon={<FaSort />}
+                    icon={<Box as={Bars3Icon} w={4} h={4} />}
                     onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                     variant="outline"
                     title={`Sort ${sortOrder === 'asc' ? 'Descending' : 'Ascending'}`}
@@ -760,21 +820,24 @@ const TripManagement = ({ onTripUpdate }) => {
                       <Td>
                         <VStack align="start" spacing={1}>
                           <HStack>
-                            <CalendarIcon boxSize={3} color="blue.400" />
+                            <Box as={CalendarDaysIcon} w={3} h={3} color="blue.400" />
                             <Text fontSize="sm" fontWeight="medium">
                               {new Date(trip.scheduledDate).toLocaleDateString()}
                             </Text>
                           </HStack>
                           <HStack>
-                            <TimeIcon boxSize={3} color="orange.400" />
+                            <Box as={ClockIcon} w={3} h={3} color="orange.400" />
                             <Text fontSize="sm">
                               {trip.scheduledTime}
                             </Text>
                           </HStack>
                           {trip.estimatedDuration && (
-                            <Text fontSize="xs" color="gray.500">
-                              ⏱️ {trip.estimatedDuration}
-                            </Text>
+                            <HStack>
+                              <Box as={ClockIcon} w={3} h={3} color="gray.400" />
+                              <Text fontSize="xs" color="gray.500">
+                                {trip.estimatedDuration}
+                              </Text>
+                            </HStack>
                           )}
                         </VStack>
                       </Td>
@@ -816,9 +879,12 @@ const TripManagement = ({ onTripUpdate }) => {
                             </Text>
                           )}
                           {trip.notes && (
-                            <Text fontSize="xs" color="gray.600" noOfLines={1}>
-                              💬 {trip.notes}
-                            </Text>
+                            <HStack>
+                              <Box as={InformationCircleIcon} w={3} h={3} color="gray.400" />
+                              <Text fontSize="xs" color="gray.600" noOfLines={1}>
+                                {trip.notes}
+                              </Text>
+                            </HStack>
                           )}
                         </VStack>
                       </Td>
@@ -827,27 +893,30 @@ const TripManagement = ({ onTripUpdate }) => {
                         <HStack spacing={1}>
                           <IconButton
                             size="sm"
-                            icon={<ViewIcon />}
+                            icon={<Box as={EyeIcon} w={4} h={4} />}
                             variant="ghost"
                             colorScheme="blue"
                             title="View Details"
                             onClick={() => handleViewTrip(trip)}
+                            _hover={{ bg: "blue.50" }}
                           />
                           <IconButton
                             size="sm"
-                            icon={<EditIcon />}
+                            icon={<Box as={PencilIcon} w={4} h={4} />}
                             variant="ghost"
                             colorScheme="orange"
                             title="Edit Trip"
                             onClick={() => handleEditTrip(trip)}
+                            _hover={{ bg: "orange.50" }}
                           />
                           <IconButton
                             size="sm"
-                            icon={<DeleteIcon />}
+                            icon={<Box as={TrashIcon} w={4} h={4} />}
                             variant="ghost"
                             colorScheme="red"
                             title="Delete Trip"
                             onClick={() => handleDeleteTrip(trip)}
+                            _hover={{ bg: "red.50" }}
                           />
                         </HStack>
                       </Td>
@@ -858,7 +927,7 @@ const TripManagement = ({ onTripUpdate }) => {
                     <Td colSpan={7}>
                       <Center py={8}>
                         <VStack>
-                          <FaRoute size={40} color="gray.300" />
+                          <Box as={TruckIconSolid} w={10} h={10} color="gray.300" />
                           <Text color="gray.500">
                             {searchTerm || statusFilter !== 'all' || driverFilter !== 'all' || dateFilter !== 'all'
                               ? 'No trips match your current filters'

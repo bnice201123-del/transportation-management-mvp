@@ -103,7 +103,7 @@ import {
   HiLocationMarker,
   HiCalendar,
   HiClock,
-  HiStar,
+  HiShield,
   HiRefresh
 } from 'react-icons/hi';
 import { useNavigate } from 'react-router-dom';
@@ -116,6 +116,7 @@ const ManageUsers = () => {
   // Enhanced modal management
   const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
+  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
 
   // Enhanced state management
   const [users, setUsers] = useState([]);
@@ -129,6 +130,7 @@ const ManageUsers = () => {
   const [selectedUsers, setSelectedUsers] = useState(new Set());
   const [viewMode, setViewMode] = useState('table');
   const [selectedUser, setSelectedUser] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   
   // Enhanced form data
@@ -157,12 +159,9 @@ const ManageUsers = () => {
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const accentColor = useColorModeValue('blue.500', 'blue.300');
   const hoverBg = useColorModeValue('gray.100', 'gray.700');
-  const statIconBg = useColorModeValue('gray.50', 'gray.700');
-  const inputBg = useColorModeValue('white', 'gray.700');
-  const tableHeaderBg = useColorModeValue('gray.50', 'gray.700');
 
   // Enhanced mock data
-  const mockUsers = useMemo(() => [
+  const mockUsers = [
     {
       id: 1,
       firstName: 'John',
@@ -227,7 +226,7 @@ const ManageUsers = () => {
       createdAt: '2024-04-05T07:45:00Z',
       avatar: null
     }
-  ], []);
+  ];
 
   // Enhanced data fetching
   const fetchUsers = useCallback(async () => {
@@ -254,7 +253,7 @@ const ManageUsers = () => {
     } finally {
       setLoading(false);
     }
-  }, [mockUsers, toast]);
+  }, [toast]);
 
   // Enhanced filtering
   const filterUsers = useCallback(() => {
@@ -412,6 +411,7 @@ const ManageUsers = () => {
 
   const handleViewUser = (user) => {
     setSelectedUser(user);
+    setIsEditMode(false);
     onViewOpen();
   };
 
@@ -428,6 +428,7 @@ const ManageUsers = () => {
       employeeId: user.employeeId
     });
     setFormErrors({});
+    setIsEditMode(true);
     onEditOpen();
   };
 
@@ -458,6 +459,7 @@ const ManageUsers = () => {
       });
 
       onEditClose();
+      setIsEditMode(false);
       setFormErrors({});
     } catch (error) {
       console.error(error);
@@ -508,7 +510,7 @@ const ManageUsers = () => {
     {
       label: 'Admins',
       value: users.filter(u => u.role === 'admin').length,
-      icon: HiStar,
+      icon: HiShield,
       color: 'purple.500'
     }
   ], [users]);
@@ -625,7 +627,7 @@ const ManageUsers = () => {
                           <Box
                             p={3}
                             borderRadius="lg"
-                            bg={statIconBg}
+                            bg={useColorModeValue('gray.50', 'gray.700')}
                           >
                             <Icon
                               as={stat.icon}
@@ -669,7 +671,7 @@ const ManageUsers = () => {
                         placeholder="Search users by name, email, or employee ID..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        bg={inputBg}
+                        bg={useColorModeValue('white', 'gray.700')}
                         border="2px solid"
                         borderColor={borderColor}
                         _focus={{ borderColor: accentColor, shadow: 'md' }}
@@ -802,7 +804,7 @@ const ManageUsers = () => {
             <CardBody p={0}>
               <Box overflowX="auto">
                 <Table variant="simple" size={tableSize}>
-                  <Thead bg={tableHeaderBg}>
+                  <Thead bg={useColorModeValue('gray.50', 'gray.700')}>
                     <Tr>
                       <Th>
                         <Checkbox

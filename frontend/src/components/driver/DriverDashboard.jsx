@@ -39,10 +39,35 @@ import {
   StatNumber,
   StatHelpText,
   Flex,
-  Spacer
+  Spacer,
+  useColorModeValue
 } from '@chakra-ui/react';
-import { SearchIcon, ExternalLinkIcon, PhoneIcon, CheckCircleIcon } from '@chakra-ui/icons';
-import { FaRoute, FaMapMarkerAlt, FaNavigation, FaClock, FaMap } from 'react-icons/fa';
+import {
+  MagnifyingGlassIcon,
+  ArrowTopRightOnSquareIcon,
+  PhoneIcon,
+  CheckCircleIcon,
+  TruckIcon,
+  MapPinIcon,
+  ArrowPathIcon,
+  ClockIcon,
+  MapIcon,
+  PlayIcon,
+  StopIcon,
+  UserIcon,
+  BellIcon,
+  HomeIcon,
+  Cog6ToothIcon,
+  ExclamationTriangleIcon
+} from '@heroicons/react/24/outline';
+import {
+  CheckCircleIcon as CheckCircleIconSolid,
+  TruckIcon as TruckIconSolid,
+  MapPinIcon as MapPinIconSolid,
+  ClockIcon as ClockIconSolid,
+  UserIcon as UserIconSolid,
+  BellIcon as BellIconSolid
+} from '@heroicons/react/24/solid';
 import axios from 'axios';
 import { useAuth } from "../../contexts/AuthContext";
 import Navbar from '../shared/Navbar';
@@ -57,6 +82,14 @@ const DriverDashboard = () => {
   const [currentLocation, setCurrentLocation] = useState(null);
   const { user } = useAuth();
   const toast = useToast();
+
+  // Responsive design variables
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  const headerBg = useColorModeValue('blue.50', 'blue.900');
+  const cardSpacing = { base: 4, md: 6 };
+  const buttonSize = { base: "md", md: "lg" };
 
   const fetchTrips = useCallback(async () => {
     try {
@@ -230,13 +263,66 @@ const DriverDashboard = () => {
   const completedTrips = myTrips.filter(trip => trip.status === 'completed');
 
   return (
-    <Box>
+    <Box minH="100vh" bg="gray.50">
       <Navbar title="Driver Dashboard" />
       
-      <Container maxW="full" py={6}>
-        {/* Driver Status Card */}
-        <Card mb={6}>
-          <CardBody>
+      {/* Enhanced Driver Dashboard Layout */}
+      <Box ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} pt={{ base: 4, md: 0 }}>
+        <Container maxW="full" py={cardSpacing} px={cardSpacing}>
+          {/* Enhanced Header with Breadcrumbs */}
+          <Card 
+            mb={cardSpacing} 
+            shadow="lg"
+            bg={cardBg}
+            borderRadius="xl"
+            border="1px solid"
+            borderColor={borderColor}
+          >
+            <CardHeader bg={headerBg} borderTopRadius="xl">
+              <VStack spacing={4} align="stretch">
+                {/* Header with User Greeting and Status */}
+                <Flex direction={{ base: 'column', lg: 'row' }} gap={4} align={{ base: 'start', lg: 'center' }}>
+                  <VStack align="start" spacing={2} flex={1}>
+                    <HStack spacing={3}>
+                      <Box as={UserIconSolid} w={8} h={8} color="blue.600" />
+                      <VStack align="start" spacing={0}>
+                        <Heading size={{ base: "md", md: "lg" }} color="blue.700">
+                          Welcome back, {user?.firstName || 'Driver'}!
+                        </Heading>
+                        <Text color={mutedColor} fontSize={{ base: "sm", md: "md" }}>
+                          Your personalized driver dashboard and trip management
+                        </Text>
+                      </VStack>
+                    </HStack>
+                    
+                    {/* Enhanced Status Display */}
+                    <HStack spacing={6} fontSize="sm" flexWrap="wrap">
+                      <HStack>
+                        <Box 
+                          as={isAvailable ? CheckCircleIconSolid : ExclamationTriangleIcon} 
+                          w={4} h={4} 
+                          color={isAvailable ? 'green.500' : 'red.500'} 
+                        />
+                        <Text fontWeight="medium" color={isAvailable ? 'green.600' : 'red.600'}>
+                          {isAvailable ? 'AVAILABLE' : 'UNAVAILABLE'}
+                        </Text>
+                      </HStack>
+                      <HStack>
+                        <Box as={ClockIconSolid} w={4} h={4} color="blue.500" />
+                        <Text fontWeight="medium">{activeTrips.length} Active Trips</Text>
+                      </HStack>
+                      <HStack>
+                        <Box as={CheckCircleIconSolid} w={4} h={4} color="green.500" />
+                        <Text fontWeight="medium">{completedTrips.length} Completed</Text>
+                      </HStack>
+                    </HStack>
+                  </VStack>
+                </Flex>
+              </VStack>
+            </CardHeader>
+
+            {/* Enhanced Statistics Dashboard */}
+            <CardBody>
             <SimpleGrid columns={{ base: 2, md: 5 }} spacing={6}>
               <Stat>
                 <StatLabel>Status</StatLabel>
@@ -279,7 +365,7 @@ const DriverDashboard = () => {
                 </StatNumber>
                 <StatHelpText>
                   <Button
-                    leftIcon={<FaNavigation />}
+                    leftIcon={<Box as={MapIcon} w={3} h={3} />}
                     size="xs"
                     colorScheme="blue"
                     onClick={getCurrentLocation}
@@ -303,13 +389,13 @@ const DriverDashboard = () => {
           <TabList>
             <Tab>
               <HStack spacing={2}>
-                <FaRoute />
+                <Box as={TruckIconSolid} w={4} h={4} />
                 <Text>Active Trips ({activeTrips.length})</Text>
               </HStack>
             </Tab>
             <Tab>
               <HStack spacing={2}>
-                <FaMap />
+                <Box as={MapIcon} w={4} h={4} />
                 <Text>Route Map</Text>
               </HStack>
             </Tab>
@@ -473,7 +559,7 @@ const DriverDashboard = () => {
                                     colorScheme="blue"
                                     size="lg"
                                     onClick={() => updateTripStatus(trip._id, 'in_progress')}
-                                    leftIcon={<FaClock />}
+                                    leftIcon={<Box as={PlayIcon} w={5} h={5} />}
                                   >
                                     Start Trip
                                   </Button>
@@ -587,9 +673,8 @@ const DriverDashboard = () => {
             </TabPanel>
           </TabPanels>
         </Tabs>
-
-
-      </Container>
+        </Container>
+      </Box>
     </Box>
   );
 };

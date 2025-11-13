@@ -42,25 +42,29 @@ import {
   Divider
 } from '@chakra-ui/react';
 import {
-  CalendarIcon,
+  CalendarDaysIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  ViewIcon,
-  EditIcon,
-  AddIcon
-} from '@chakra-ui/icons';
+  EyeIcon,
+  PencilIcon,
+  PlusIcon,
+  ClockIcon,
+  MapPinIcon,
+  UserIcon,
+  TruckIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  Squares2X2Icon,
+  TableCellsIcon,
+  ArrowPathIcon
+} from '@heroicons/react/24/outline';
 import {
-  FaCalendarDay,
-  FaCalendarWeek,
-  FaCalendarAlt,
-  FaCalendar,
-  FaClock,
-  FaMapMarkerAlt,
-  FaUser,
-  FaCar,
-  FaPhone,
-  FaEnvelope
-} from 'react-icons/fa';
+  CalendarDaysIcon as CalendarDaysIconSolid,
+  ClockIcon as ClockIconSolid,
+  MapPinIcon as MapPinIconSolid,
+  UserIcon as UserIconSolid,
+  TruckIcon as TruckIconSolid
+} from '@heroicons/react/24/solid';
 import axios from '../../config/axios';
 
 const CalendarOverview = ({ onTripUpdate }) => {
@@ -76,7 +80,8 @@ const CalendarOverview = ({ onTripUpdate }) => {
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const hoverBg = useColorModeValue('gray.50', 'gray.700');
   const textColor = useColorModeValue('gray.600', 'gray.300');
-  const headerBg = useColorModeValue('blue.50', 'blue.900');
+  const headerBg = useColorModeValue('green.50', 'green.900');
+  const mutedBgColor = useColorModeValue('gray.50', 'gray.900');
 
   // Fetch trips data
   const fetchTrips = async () => {
@@ -328,7 +333,7 @@ const CalendarOverview = ({ onTripUpdate }) => {
                     size="sm"
                     variant={viewMode === 'day' ? 'solid' : 'outline'}
                     colorScheme="blue"
-                    leftIcon={<FaCalendarDay />}
+                    leftIcon={<Box as={CalendarDaysIcon} w={4} h={4} />}
                     onClick={() => setViewMode('day')}
                   >
                     Day
@@ -339,7 +344,7 @@ const CalendarOverview = ({ onTripUpdate }) => {
                     size="sm"
                     variant={viewMode === 'week' ? 'solid' : 'outline'}
                     colorScheme="blue"
-                    leftIcon={<FaCalendarWeek />}
+                    leftIcon={<Box as={TableCellsIcon} w={4} h={4} />}
                     onClick={() => setViewMode('week')}
                   >
                     Week
@@ -350,7 +355,7 @@ const CalendarOverview = ({ onTripUpdate }) => {
                     size="sm"
                     variant={viewMode === 'month' ? 'solid' : 'outline'}
                     colorScheme="blue"
-                    leftIcon={<FaCalendarAlt />}
+                    leftIcon={<Box as={CalendarDaysIconSolid} w={4} h={4} />}
                     onClick={() => setViewMode('month')}
                   >
                     Month
@@ -361,7 +366,7 @@ const CalendarOverview = ({ onTripUpdate }) => {
                     size="sm"
                     variant={viewMode === 'year' ? 'solid' : 'outline'}
                     colorScheme="blue"
-                    leftIcon={<FaCalendar />}
+                    leftIcon={<Box as={Squares2X2Icon} w={4} h={4} />}
                     onClick={() => setViewMode('year')}
                   >
                     Year
@@ -438,7 +443,7 @@ const CalendarOverview = ({ onTripUpdate }) => {
                   borderRight="1px"
                   borderBottom="1px"
                   borderColor={borderColor}
-                  bg={day.isCurrentMonth ? bgColor : useColorModeValue('gray.50', 'gray.900')}
+                  bg={day.isCurrentMonth ? bgColor : mutedBgColor}
                   opacity={day.isCurrentMonth ? 1 : 0.6}
                   _hover={{ bg: hoverBg }}
                   cursor="pointer"
@@ -495,7 +500,7 @@ const CalendarOverview = ({ onTripUpdate }) => {
                 <VStack spacing={4}>
                   <CalendarIcon boxSize={12} color="gray.400" />
                   <Text color={textColor}>No trips scheduled for this period</Text>
-                  <Button leftIcon={<AddIcon />} colorScheme="blue" size="sm">
+                  <Button leftIcon={<Box as={PlusIcon} w={4} h={4} />} colorScheme="blue" size="sm">
                     Schedule New Trip
                   </Button>
                 </VStack>
@@ -521,7 +526,7 @@ const CalendarOverview = ({ onTripUpdate }) => {
                               {trip.riderName}
                             </Text>
                             <HStack spacing={1}>
-                              <FaClock size={12} />
+                              <Box as={ClockIconSolid} w={3} h={3} />
                               <Text fontSize="sm" color={textColor}>
                                 {new Date(trip.scheduledDate).toLocaleDateString()} at {trip.scheduledTime}
                               </Text>

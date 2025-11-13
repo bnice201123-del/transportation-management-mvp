@@ -68,45 +68,41 @@ import {
   FormHelperText
 } from '@chakra-ui/react';
 import {
-  AddIcon,
-  EditIcon,
-  ViewIcon,
-  DeleteIcon,
-  RepeatIcon,
-  SearchIcon,
-  CalendarIcon,
+  PlusIcon,
+  PencilIcon,
+  EyeIcon,
+  TrashIcon,
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  CalendarDaysIcon,
   ChevronDownIcon,
-  DownloadIcon,
-  SettingsIcon,
-  InfoIcon,
-  TimeIcon,
+  ArrowDownTrayIcon,
+  Cog6ToothIcon,
+  InformationCircleIcon,
+  ClockIcon,
   CheckIcon,
-  WarningIcon
-} from '@chakra-ui/icons';
+  ExclamationTriangleIcon,
+  TruckIcon,
+  UserIcon,
+  MapPinIcon,
+  FunnelIcon,
+  Bars3Icon,
+  PhoneIcon,
+  EnvelopeIcon,
+  PlayIcon,
+  PauseIcon,
+  StopIcon,
+  TableCellsIcon
+} from '@heroicons/react/24/outline';
 import {
-  FaCar,
-  FaUser,
-  FaMapMarkerAlt,
-  FaClock,
-  FaRoute,
-  FaFilter,
-  FaSort,
-  FaCalendarPlus,
-  FaCalendarCheck,
-  FaCalendarTimes,
-  FaSync,
-  FaFileExport,
-  FaPhone,
-  FaEnvelope,
-  FaPlay,
-  FaPause,
-  FaStop,
-  FaCalendarWeek,
-  FaInfinity,
-  FaTh,
-  FaTable,
-  FaEye
-} from 'react-icons/fa';
+  TruckIcon as TruckIconSolid,
+  UserIcon as UserIconSolid,
+  MapPinIcon as MapPinIconSolid,
+  ClockIcon as ClockIconSolid,
+  CheckIcon as CheckIconSolid,
+  ExclamationTriangleIcon as ExclamationTriangleIconSolid,
+  CalendarDaysIcon as CalendarDaysIconSolid
+} from '@heroicons/react/24/solid';
 import axios from '../../config/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
@@ -236,7 +232,10 @@ const RecurringTripCard = ({ trip, onEdit, onToggle, onDelete, onViewDetails }) 
               size="xs"
               variant="outline"
               colorScheme={trip.isActive ? 'orange' : 'green'}
-              icon={trip.isActive ? <FaPause /> : <FaPlay />}
+              icon={trip.isActive ? 
+                <Box as={PauseIcon} w={3} h={3} /> : 
+                <Box as={PlayIcon} w={3} h={3} />
+              }
               onClick={() => onToggle(trip)}
               aria-label={trip.isActive ? 'Pause' : 'Activate'}
             />
@@ -250,6 +249,13 @@ const RecurringTripCard = ({ trip, onEdit, onToggle, onDelete, onViewDetails }) 
 const RecurringTrips = () => {
   const { user } = useAuth();
   const toast = useToast();
+
+  // Responsive design variables  
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  const headerBg = useColorModeValue('green.50', 'green.900');
+  const inputBg = useColorModeValue('gray.50', 'gray.700');
+  const cardSpacing = { base: 4, md: 6 };
+  const buttonSize = { base: "md", md: "md" };
   
   // Color mode values
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -695,7 +701,7 @@ const RecurringTrips = () => {
                     borderRadius="lg"
                     color="purple.600"
                   >
-                    <FaCalendarPlus size="24px" />
+                    <Box as={CalendarDaysIcon} w={6} h={6} />
                   </Box>
                   <VStack align="start" spacing={0}>
                     <Heading size="lg" color={textColor}>
@@ -726,7 +732,7 @@ const RecurringTrips = () => {
               {/* Action Buttons */}
               <VStack spacing={3} align="stretch" minW="200px">
                 <Button
-                  leftIcon={<AddIcon />}
+                  leftIcon={<Box as={PlusIcon} w={4} h={4} />}
                   colorScheme="purple"
                   onClick={handleAdd}
                   size="md"
@@ -770,13 +776,13 @@ const RecurringTrips = () => {
               {/* Search Bar */}
               <InputGroup>
                 <InputLeftElement>
-                  <SearchIcon color="gray.400" />
+                  <Box as={MagnifyingGlassIcon} w={4} h={4} color="gray.400" />
                 </InputLeftElement>
                 <Input
                   placeholder="Search by rider name or location..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  bg={useColorModeValue('gray.50', 'gray.700')}
+                  bg={inputBg}
                   border="1px"
                   borderColor={borderColor}
                   borderRadius="lg"
@@ -1014,7 +1020,7 @@ const RecurringTrips = () => {
                           </Text>
                           {!searchTerm && statusFilter === 'all' && frequencyFilter === 'all' && (
                             <Button
-                              leftIcon={<AddIcon />}
+                              leftIcon={<Box as={PlusIcon} w={4} h={4} />}
                               colorScheme="purple"
                               variant="outline"
                               onClick={handleAdd}
@@ -1055,7 +1061,7 @@ const RecurringTrips = () => {
                 </Text>
                 {!searchTerm && statusFilter === 'all' && frequencyFilter === 'all' && (
                   <Button
-                    leftIcon={<AddIcon />}
+                    leftIcon={<Box as={PlusIcon} w={4} h={4} />}
                     colorScheme="purple"
                     onClick={handleAdd}
                     size="md"

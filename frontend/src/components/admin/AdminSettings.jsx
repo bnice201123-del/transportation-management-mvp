@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -42,12 +42,16 @@ import {
   Icon,
   Flex,
   useColorModeValue,
+  useBreakpointValue,
   Progress,
   Stat,
   StatLabel,
   StatNumber,
+  StatHelpText,
+  StatArrow,
   InputGroup,
   InputLeftElement,
+  InputRightElement,
   Tooltip,
   Alert,
   AlertIcon,
@@ -57,7 +61,42 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   ButtonGroup,
-  Fade
+  Fade,
+  Slide,
+  ScaleFade,
+  Collapse,
+  IconButton,
+  Grid,
+  GridItem,
+  Skeleton,
+  SkeletonText,
+  CircularProgress,
+  CircularProgressLabel,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableContainer,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider,
+  FormErrorMessage,
+  FormHelperText,
+  Textarea,
+  Code,
+  List,
+  ListItem,
+  ListIcon,
+  useClipboard,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon
 } from '@chakra-ui/react';
 import {
   SettingsIcon,
@@ -67,7 +106,18 @@ import {
   DownloadIcon,
   RepeatIcon,
   ArrowUpIcon,
-  AttachmentIcon
+  AttachmentIcon,
+  InfoIcon,
+  EditIcon,
+  ViewIcon,
+  CopyIcon,
+  CloseIcon,
+  ChevronRightIcon,
+  ChevronDownIcon,
+  TimeIcon,
+  CalendarIcon,
+  LockIcon,
+  UnlockIcon
 } from '@chakra-ui/icons';
 import { 
   FaServer, 
@@ -78,12 +128,31 @@ import {
   FaPlug, 
   FaRocket, 
   FaDatabase,
-  FaHistory
+  FaHistory,
+  FaUsers,
+  FaCog,
+  FaChartLine,
+  FaGlobe,
+  FaCloud,
+  FaSave,
+  FaSync,
+  FaCheck,
+  FaTimes,
+  FaExclamationTriangle,
+  FaTools,
+  FaNetworkWired,
+  FaMobile,
+  FaDesktop,
+  FaTablet,
+  FaPalette,
+  FaLanguage,
+  FaClock
 } from 'react-icons/fa';
 import axios from '../../config/axios';
 import Navbar from '../shared/Navbar';
 
 const AdminSettings = () => {
+  // State management
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({});
@@ -91,41 +160,189 @@ const AdminSettings = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [exportLoading, setExportLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
-  const [validationErrors, setValidationErrors] = useState({});
   const [activeTab, setActiveTab] = useState(0);
   const [lastSaved, setLastSaved] = useState(null);
   const [changeHistory, setChangeHistory] = useState([]);
   const [backupStatus, setBackupStatus] = useState('idle');
+  const [expandedSections, setExpandedSections] = useState([0]); // First section expanded by default
+  const [systemHealth, setSystemHealth] = useState({ status: 'healthy', score: 95 });
+  const [autoSave, setAutoSave] = useState(false);
+  
+  // Refs
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
+  const autoSaveTimeoutRef = useRef(null);
+  
+  // Hooks
   const toast = useToast();
   const { isOpen: isExportOpen, onOpen: onExportOpen, onClose: onExportClose } = useDisclosure();
   const { isOpen: isImportOpen, onOpen: onImportOpen, onClose: onImportClose } = useDisclosure();
   const { isOpen: isBackupOpen, onOpen: onBackupOpen, onClose: onBackupClose } = useDisclosure();
+  const { isOpen: isHistoryOpen, onOpen: onHistoryOpen, onClose: onHistoryClose } = useDisclosure();
 
+  // Responsive design hooks
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const sidebarWidth = useBreakpointValue({ base: '100%', md: '300px', lg: '350px' });
+  const containerMaxW = useBreakpointValue({ base: 'full', md: '7xl' });
+  const tabOrientation = useBreakpointValue({ base: 'horizontal', lg: 'vertical' });
+  const gridCols = useBreakpointValue({ base: 1, md: 2, lg: 3, xl: 4 });
+  
   // Color mode values
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
   const textColor = useColorModeValue('gray.700', 'gray.100');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const accentColor = useColorModeValue('blue.500', 'blue.300');
+  const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
+  const hoverBg = useColorModeValue('gray.100', 'gray.700');
+  const inputBg = useColorModeValue('white', 'gray.700');
+  const successColor = useColorModeValue('green.500', 'green.300');
+  const warningColor = useColorModeValue('orange.500', 'orange.300');
+  const errorColor = useColorModeValue('red.500', 'red.300');
 
-  // Enhanced mock settings data
+  // Enhanced settings configuration with validation and integration hooks
+  const settingsConfig = {
+    system: {
+      title: 'System Configuration',
+      icon: FaServer,
+      color: 'blue.500',
+      description: 'Core system settings and application configuration'
+    },
+    security: {
+      title: 'Security & Authentication',
+      icon: FaShieldAlt,
+      color: 'red.500',
+      description: 'Security policies and authentication settings'
+    },
+    notifications: {
+      title: 'Notifications & Alerts',
+      icon: FaBell,
+      color: 'orange.500',
+      description: 'Communication preferences and alert settings'
+    },
+    maps: {
+      title: 'Maps & Geolocation',
+      icon: FaMap,
+      color: 'green.500',
+      description: 'Mapping services and location-based features'
+    },
+    business: {
+      title: 'Business Operations',
+      icon: FaBuilding,
+      color: 'purple.500',
+      description: 'Business rules and operational parameters'
+    },
+    integration: {
+      title: 'Third-party Integrations',
+      icon: FaPlug,
+      color: 'teal.500',
+      description: 'External services and API integrations'
+    },
+    performance: {
+      title: 'Performance & Monitoring',
+      icon: FaChartLine,
+      color: 'cyan.500',
+      description: 'System performance and monitoring configuration'
+    },
+    ui: {
+      title: 'User Interface',
+      icon: FaPalette,
+      color: 'pink.500',
+      description: 'User interface customization and themes'
+    }
+  };
+
+  // Enhanced mock settings data with validation rules and integration points
   const mockSettings = {
     system: {
-      siteName: 'Transportation Management System',
-      siteDescription: 'Comprehensive transportation management platform',
-      companyName: 'TransportCorp Inc.',
-      contactEmail: 'admin@transportcorp.com',
-      supportPhone: '+1-800-TRANS',
-      maintenanceMode: false,
-      debugMode: false,
-      logLevel: 'info',
-      maxUsers: 500,
-      sessionTimeout: 30,
-      autoBackup: true,
-      backupInterval: 24,
-      version: '2.1.4',
-      environment: 'production'
+      siteName: { 
+        value: 'Transportation Management System',
+        type: 'text',
+        required: true,
+        maxLength: 100,
+        description: 'Display name for the application'
+      },
+      siteDescription: { 
+        value: 'Comprehensive transportation management platform',
+        type: 'textarea',
+        maxLength: 500,
+        description: 'Brief description of the application purpose'
+      },
+      companyName: { 
+        value: 'TransportCorp Inc.',
+        type: 'text',
+        required: true,
+        maxLength: 200,
+        description: 'Legal company name for documentation and reports'
+      },
+      contactEmail: { 
+        value: 'admin@transportcorp.com',
+        type: 'email',
+        required: true,
+        description: 'Primary contact email for system notifications'
+      },
+      supportPhone: { 
+        value: '+1-800-TRANS',
+        type: 'tel',
+        description: 'Support phone number for user assistance'
+      },
+      maintenanceMode: { 
+        value: false,
+        type: 'boolean',
+        description: 'Enable maintenance mode to restrict user access'
+      },
+      debugMode: { 
+        value: false,
+        type: 'boolean',
+        description: 'Enable detailed logging and debugging features'
+      },
+      logLevel: { 
+        value: 'info',
+        type: 'select',
+        options: ['error', 'warn', 'info', 'debug'],
+        description: 'Minimum log level for system logging'
+      },
+      maxUsers: { 
+        value: 500,
+        type: 'number',
+        min: 1,
+        max: 10000,
+        description: 'Maximum number of concurrent users allowed'
+      },
+      sessionTimeout: { 
+        value: 30,
+        type: 'number',
+        min: 5,
+        max: 480,
+        unit: 'minutes',
+        description: 'User session timeout duration'
+      },
+      autoBackup: { 
+        value: true,
+        type: 'boolean',
+        description: 'Automatically create system backups'
+      },
+      backupInterval: { 
+        value: 24,
+        type: 'number',
+        min: 1,
+        max: 168,
+        unit: 'hours',
+        description: 'Interval between automatic backups'
+      },
+      version: { 
+        value: '2.1.4',
+        type: 'text',
+        readonly: true,
+        description: 'Current system version'
+      },
+      environment: { 
+        value: 'production',
+        type: 'select',
+        options: ['development', 'staging', 'production'],
+        readonly: true,
+        description: 'Current deployment environment'
+      }
     },
     security: {
       passwordMinLength: 8,
@@ -176,6 +393,82 @@ const AdminSettings = () => {
       emailProvider: { provider: 'sendgrid', status: 'active' }
     }
   };
+
+  // Utility functions for settings integration
+  const getSettingValue = (category, field) => {
+    return settings[category]?.[field]?.value;
+  };
+
+  const updateSettingValue = (category, field, value) => {
+    handleSettingChange(category, field, value);
+  };
+
+  const validateSetting = (category, field, value) => {
+    const setting = mockSettings[category]?.[field];
+    if (!setting) return true;
+
+    if (setting.required && (!value || value.toString().trim() === '')) {
+      return 'This field is required';
+    }
+
+    if (setting.type === 'email' && value && !value.includes('@')) {
+      return 'Please enter a valid email address';
+    }
+
+    if (setting.type === 'number') {
+      const num = Number(value);
+      if (isNaN(num)) return 'Please enter a valid number';
+      if (setting.min && num < setting.min) return `Value must be at least ${setting.min}`;
+      if (setting.max && num > setting.max) return `Value must be at most ${setting.max}`;
+    }
+
+    if (setting.maxLength && value && value.length > setting.maxLength) {
+      return `Value must be ${setting.maxLength} characters or less`;
+    }
+
+    return null;
+  };
+
+  const exportSettings = () => {
+    const exportData = {
+      settings,
+      timestamp: new Date().toISOString(),
+      version: getSettingValue('system', 'version'),
+      environment: getSettingValue('system', 'environment')
+    };
+    return exportData;
+  };
+
+  const importSettings = (importData) => {
+    if (importData && importData.settings) {
+      setSettings(importData.settings);
+      setHasChanges(true);
+      toast({
+        title: 'Settings imported',
+        description: 'Settings have been imported successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true
+      });
+    }
+  };
+
+  // Auto-save functionality
+  useEffect(() => {
+    if (hasChanges && autoSave) {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        handleSave();
+      }, 5000); // Auto-save after 5 seconds of inactivity
+    }
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [hasChanges, autoSave]);
 
   useEffect(() => {
     fetchSettings();
@@ -425,10 +718,10 @@ const AdminSettings = () => {
   }
 
   return (
-    <Box bg={bgColor}>
+    <Box bg={bgColor} minH="100vh">
       <Navbar />
       
-      {/* Scrollable Container */}
+      {/* Main Content Container */}
       <Box 
         ref={scrollRef}
         maxH="calc(100vh - 80px)" 
@@ -446,40 +739,84 @@ const AdminSettings = () => {
           },
         }}
       >
-        <Container maxW="7xl" py={6}>
-          <VStack spacing={6} align="stretch">
-            {/* Enhanced Header */}
-            <Fade in={true}>
-              <Card bg={cardBg} borderColor={borderColor} shadow="sm">
-                <CardBody>
-                  <VStack spacing={4} align="stretch">
-                    {/* Breadcrumbs */}
-                    <Breadcrumb fontSize="sm" color="gray.500">
+        <Container maxW={containerMaxW} py={{ base: 4, md: 6 }} px={{ base: 4, md: 6 }}>
+          <VStack spacing={{ base: 4, md: 6 }} align="stretch">
+            {/* Enhanced Responsive Header */}
+            <ScaleFade in={true} initialScale={0.9}>
+              <Card bg={cardBg} borderColor={borderColor} shadow="lg" borderRadius="xl">
+                <CardBody p={{ base: 4, md: 6 }}>
+                  <VStack spacing={{ base: 3, md: 4 }} align="stretch">
+                    {/* Mobile-friendly Breadcrumbs */}
+                    <Breadcrumb fontSize="sm" color={mutedTextColor} display={{ base: 'none', sm: 'block' }}>
                       <BreadcrumbItem>
-                        <BreadcrumbLink href="/admin">Admin</BreadcrumbLink>
+                        <BreadcrumbLink href="/admin">Admin Dashboard</BreadcrumbLink>
                       </BreadcrumbItem>
                       <BreadcrumbItem isCurrentPage>
-                        <BreadcrumbLink>Settings</BreadcrumbLink>
+                        <BreadcrumbLink>System Settings</BreadcrumbLink>
                       </BreadcrumbItem>
                     </Breadcrumb>
 
-                    {/* Header Content */}
-                    <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
-                      <VStack align="start" spacing={1}>
-                        <HStack>
-                          <Icon as={SettingsIcon} boxSize={6} color="blue.500" />
-                          <Heading size="lg" color={textColor}>
-                            System Settings & Configuration
-                          </Heading>
+                    {/* Responsive Header Content */}
+                    <Flex 
+                      direction={{ base: 'column', lg: 'row' }}
+                      justify="space-between" 
+                      align={{ base: 'start', lg: 'center' }} 
+                      gap={{ base: 4, lg: 6 }}
+                    >
+                      <VStack align="start" spacing={2} flex="1">
+                        <HStack spacing={3}>
+                          <Box
+                            p={2}
+                            bg={accentColor}
+                            borderRadius="lg"
+                            color="white"
+                          >
+                            <Icon as={FaCog} boxSize={{ base: 5, md: 6 }} />
+                          </Box>
+                          <VStack align="start" spacing={0}>
+                            <Heading 
+                              size={{ base: 'md', md: 'lg' }} 
+                              color={textColor}
+                              lineHeight="shorter"
+                            >
+                              System Settings
+                            </Heading>
+                            <Text fontSize={{ base: 'sm', md: 'md' }} color={mutedTextColor}>
+                              Configure system-wide settings and integrations
+                            </Text>
+                          </VStack>
                         </HStack>
-                        <Text color="gray.500">
-                          Configure system-wide settings, integrations, and preferences
-                        </Text>
-                        {lastSaved && (
-                          <Text fontSize="sm" color="gray.400">
-                            Last saved: {lastSaved.toLocaleString()}
-                          </Text>
-                        )}
+                        
+                        {/* Status Indicators */}
+                        <HStack spacing={3} wrap="wrap">
+                          {lastSaved && (
+                            <HStack spacing={1}>
+                              <Icon as={TimeIcon} boxSize={3} color="green.500" />
+                              <Text fontSize="xs" color={mutedTextColor}>
+                                Last saved: {lastSaved.toLocaleString()}
+                              </Text>
+                            </HStack>
+                          )}
+                          {hasChanges && (
+                            <Badge colorScheme="orange" fontSize="xs" px={2} py={1} borderRadius="full">
+                              <HStack spacing={1}>
+                                <Icon as={FaExclamationTriangle} boxSize={2} />
+                                <Text>Unsaved Changes</Text>
+                              </HStack>
+                            </Badge>
+                          )}
+                          <HStack spacing={1}>
+                            <CircularProgress 
+                              value={systemHealth.score} 
+                              size="20px" 
+                              color={systemHealth.score > 80 ? 'green.500' : 'orange.500'}
+                              thickness="8px"
+                            />
+                            <Text fontSize="xs" color={mutedTextColor}>
+                              System Health: {systemHealth.score}%
+                            </Text>
+                          </HStack>
+                        </HStack>
                       </VStack>
 
                       {/* Action Buttons */}
@@ -592,7 +929,7 @@ const AdminSettings = () => {
                   </VStack>
                 </CardBody>
               </Card>
-            </Fade>
+            </ScaleFade>
 
             {/* System Status Alert */}
             {settings.system?.maintenanceMode && (

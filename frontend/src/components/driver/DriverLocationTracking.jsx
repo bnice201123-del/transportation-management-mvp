@@ -27,10 +27,29 @@ import {
   Card,
   CardBody,
   CardHeader,
-  Divider
+  Divider,
+  useColorModeValue
 } from '@chakra-ui/react';
-import { PhoneIcon, TimeIcon, WarningIcon } from '@chakra-ui/icons';
-import { FaMapMarkerAlt, FaMobile, FaSignal } from 'react-icons/fa';
+import {
+  PhoneIcon,
+  ClockIcon,
+  ExclamationTriangleIcon,
+  MapPinIcon,
+  SignalIcon,
+  DevicePhoneMobileIcon,
+  BellIcon,
+  Cog6ToothIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ArrowPathIcon,
+  EyeIcon
+} from '@heroicons/react/24/outline';
+import {
+  MapPinIcon as MapPinIconSolid,
+  ClockIcon as ClockIconSolid,
+  CheckCircleIcon as CheckCircleIconSolid,
+  ExclamationTriangleIcon as ExclamationTriangleIconSolid
+} from '@heroicons/react/24/solid';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -46,6 +65,13 @@ const DriverLocationTracking = () => {
   const { user } = useAuth();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  // Responsive design variables
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  const headerBg = useColorModeValue('blue.50', 'blue.900');
+  const cardSpacing = { base: 4, md: 6 };
 
   // Check if user is a driver
   const isDriver = user?.role === 'driver';
@@ -298,7 +324,12 @@ const DriverLocationTracking = () => {
             <VStack spacing={3} align="stretch">
               <HStack justify="space-between" flexWrap={{ base: "wrap", sm: "nowrap" }}>
                 <HStack minW="0">
-                  <FaMapMarkerAlt color={locationPermission === 'granted' ? 'green' : 'red'} />
+                  <Box 
+                    as={locationPermission === 'granted' ? MapPinIconSolid : MapPinIcon} 
+                    w={4} 
+                    h={4} 
+                    color={locationPermission === 'granted' ? 'green.500' : 'red.500'} 
+                  />
                   <Text fontSize={{ base: "sm", md: "md" }}>Location Access:</Text>
                 </HStack>
                 <Badge 
@@ -392,7 +423,7 @@ const DriverLocationTracking = () => {
               <VStack spacing={3} align="stretch">
                 <HStack justify="space-between" flexWrap={{ base: "wrap", sm: "nowrap" }}>
                   <HStack minW="0">
-                    <FaSignal color="green" />
+                    <Box as={SignalIcon} w={4} h={4} color="green.500" />
                     <Text fontSize={{ base: "sm", md: "md" }}>Tracking Status:</Text>
                   </HStack>
                   <Badge colorScheme="green" mt={{ base: 1, sm: 0 }}>ACTIVE</Badge>
@@ -427,7 +458,7 @@ const DriverLocationTracking = () => {
                 {lastUpdate && (
                   <HStack justify="space-between" flexWrap={{ base: "wrap", sm: "nowrap" }}>
                     <HStack minW="0">
-                      <TimeIcon />
+                      <Box as={ClockIconSolid} w={4} h={4} />
                       <Text fontSize={{ base: "sm", md: "md" }}>Last Update:</Text>
                     </HStack>
                     <Text fontSize={{ base: "xs", md: "sm" }} mt={{ base: 1, sm: 0 }}>
@@ -448,19 +479,19 @@ const DriverLocationTracking = () => {
           <CardBody>
             <VStack spacing={3} align="start">
               <HStack align="flex-start" spacing={{ base: 2, md: 3 }}>
-                <FaMobile size={16} style={{ marginTop: '4px', flexShrink: 0 }} />
+                <Box as={DevicePhoneMobileIcon} w={4} h={4} mt={1} flexShrink={0} />
                 <Text fontSize={{ base: "sm", md: "md" }}>
                   <strong>Phone-based Tracking:</strong> Your location is tracked using your mobile device's GPS
                 </Text>
               </HStack>
               <HStack align="flex-start" spacing={{ base: 2, md: 3 }}>
-                <TimeIcon boxSize={4} mt={1} flexShrink={0} />
+                <Box as={ClockIconSolid} w={4} h={4} mt={1} flexShrink={0} />
                 <Text fontSize={{ base: "sm", md: "md" }}>
                   <strong>Session-based:</strong> Tracking only occurs while you're logged into the app
                 </Text>
               </HStack>
               <HStack align="flex-start" spacing={{ base: 2, md: 3 }}>
-                <WarningIcon boxSize={4} mt={1} flexShrink={0} />
+                <Box as={ExclamationTriangleIconSolid} w={4} h={4} mt={1} flexShrink={0} />
                 <Text fontSize={{ base: "sm", md: "md" }}>
                   <strong>Privacy:</strong> Location sharing stops when you log out or close the app
                 </Text>

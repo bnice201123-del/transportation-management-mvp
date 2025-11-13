@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Container,
@@ -53,15 +53,71 @@ import {
   InputGroup,
   InputLeftElement,
   Flex,
-  Spacer
+  Spacer,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  StatArrow,
+  Progress,
+  Divider,
+  SimpleGrid,
+  useBreakpointValue,
+  useColorModeValue,
+  CircularProgress,
+  CircularProgressLabel,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider,
+  Tooltip,
+  Wrap,
+  WrapItem
 } from '@chakra-ui/react';
-import { RepeatIcon, PhoneIcon, SearchIcon, AddIcon, EditIcon, ViewIcon, DeleteIcon } from '@chakra-ui/icons';
+import {
+  ArrowPathIcon,
+  PhoneIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  PencilIcon,
+  EyeIcon,
+  TrashIcon,
+  ClockIcon,
+  MapPinIcon,
+  TruckIcon,
+  UserGroupIcon,
+  ChartBarIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  BellIcon,
+  CalendarDaysIcon,
+  FunnelIcon,
+  ArrowDownTrayIcon,
+  Cog6ToothIcon,
+  ChatBubbleLeftRightIcon,
+  ChevronDownIcon,
+  HomeIcon
+} from '@heroicons/react/24/outline';
+import {
+  ClockIcon as ClockIconSolid,
+  MapPinIcon as MapPinIconSolid,
+  TruckIcon as TruckIconSolid,
+  UserGroupIcon as UserGroupIconSolid,
+  CheckCircleIcon as CheckCircleIconSolid,
+  XCircleIcon as XCircleIconSolid
+} from '@heroicons/react/24/solid';
 import axios from 'axios';
 import Navbar from '../shared/Navbar';
 import TripManagementModal from '../scheduler/TripManagementModal';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 
 const DispatcherDashboard = () => {
+  // Core state management
   const [trips, setTrips] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -82,14 +138,32 @@ const DispatcherDashboard = () => {
   const [tripToDelete, setTripToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // Filtering state - New dispatch landing page requirements
+  // Enhanced filtering and display state
   const [displayedTrips, setDisplayedTrips] = useState([]);
   const [activeTab, setActiveTab] = useState(0); // 0: Today, 1: Upcoming, 2: Past, 3: All
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [driverFilter, setDriverFilter] = useState('all');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
-  const [filteredTrips, setFilteredTrips] = useState([]);
+  
+  // Enhanced pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  
+  // Responsive design variables
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const isTablet = useBreakpointValue({ base: false, md: true, lg: false });
+  const cardDirection = useBreakpointValue({ base: 'column', lg: 'row' });
+  const statsColumns = useBreakpointValue({ base: 1, sm: 2, lg: 4 });
+  const tableSize = useBreakpointValue({ base: 'sm', md: 'md' });
+  
+  // Color mode values
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const textColor = useColorModeValue('gray.800', 'white');
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  const successColor = useColorModeValue('green.500', 'green.300');
+  const warningColor = useColorModeValue('orange.500', 'orange.300');
+  const errorColor = useColorModeValue('red.500', 'red.300');
+  const primaryColor = useColorModeValue('blue.600', 'blue.300');
   
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
@@ -118,6 +192,79 @@ const DispatcherDashboard = () => {
   const [isAssigning, setIsAssigning] = useState(false);
   const cancelRef = React.useRef();
   const toast = useToast();
+
+  // Enhanced statistics calculations with memoization
+  const dashboardStats = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todaysTrips = trips.filter(trip => {
+      const tripDate = new Date(trip.scheduledDate);
+      tripDate.setHours(0, 0, 0, 0);
+      return tripDate.getTime() === today.getTime();
+    });
+    
+    const activeTrips = trips.filter(trip =>
+      ['pending', 'assigned', 'in_progress'].includes(trip.status)
+    );
+    
+    const completedTrips = trips.filter(trip => trip.status === 'completed');
+    
+    const availableDrivers = drivers.filter(driver => 
+      driver.isActive && !activeTrips.some(trip => trip.assignedDriver === driver._id)
+    );
+    
+    const busyDrivers = drivers.filter(driver =>
+      activeTrips.some(trip => trip.assignedDriver === driver._id)
+    );
+    
+    const unassignedTrips = trips.filter(trip => 
+      !trip.assignedDriver && ['pending', 'confirmed'].includes(trip.status)
+    );
+    
+    const completionRate = trips.length > 0 
+      ? ((completedTrips.length / trips.length) * 100).toFixed(1)
+      : 0;
+    
+    const todayCompletionRate = todaysTrips.length > 0
+      ? ((todaysTrips.filter(t => t.status === 'completed').length / todaysTrips.length) * 100).toFixed(1)
+      : 0;
+    
+    return {
+      totalTrips: trips.length,
+      todaysTrips: todaysTrips.length,
+      activeTrips: activeTrips.length,
+      completedTrips: completedTrips.length,
+      unassignedTrips: unassignedTrips.length,
+      totalDrivers: drivers.length,
+      availableDrivers: availableDrivers.length,
+      busyDrivers: busyDrivers.length,
+      completionRate: parseFloat(completionRate),
+      todayCompletionRate: parseFloat(todayCompletionRate),
+      driverUtilization: drivers.length > 0 
+        ? ((busyDrivers.length / drivers.length) * 100).toFixed(1)
+        : 0,
+      availableDriversData: availableDrivers,
+      busyDriversData: busyDrivers,
+      activeTripsData: activeTrips
+    };
+  }, [trips, drivers]);
+  
+  // Paginated trips calculation
+  const paginatedTrips = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return displayedTrips.slice(startIndex, endIndex);
+  }, [displayedTrips, currentPage, itemsPerPage]);
+  
+  const totalPages = Math.ceil(displayedTrips.length / itemsPerPage);
+
+  // Destructure computed stats for easier access
+  const { 
+    availableDriversData: availableDrivers, 
+    busyDriversData: busyDrivers,
+    activeTripsData: activeTrips
+  } = dashboardStats;
 
   const fetchTrips = useCallback(async () => {
     try {
@@ -456,20 +603,7 @@ const DispatcherDashboard = () => {
     );
   }
 
-  // Filter trips by status for statistics
-  const activeTrips = (trips || []).filter(trip => 
-    ['pending', 'assigned', 'in_progress'].includes(trip.status)
-  );
-  const completedTrips = (trips || []).filter(trip => trip.status === 'completed');
-  const availableDrivers = (drivers || []).filter(driver => driver.isAvailable);
-  const busyDrivers = (drivers || []).filter(driver => !driver.isAvailable);
-  
-  // Statistics for displayed trips only
-  const displayedActiveTrips = (displayedTrips || []).filter(trip => 
-    ['pending', 'assigned', 'in_progress'].includes(trip.status)
-  );
-  const displayedAssignedTrips = (displayedTrips || []).filter(trip => trip.assignedDriver);
-  const displayedUnassignedTrips = (displayedTrips || []).filter(trip => !trip.assignedDriver);
+
 
   return (
     <Box minH="100vh" bg="gray.50">
@@ -498,103 +632,264 @@ const DispatcherDashboard = () => {
             </VStack>
           </Box>
 
-          {/* Real-time Statistics - Enhanced Mobile-First Design */}
-          <Grid 
-            templateColumns={{ 
-              base: "repeat(2, 1fr)", 
-              sm: "repeat(2, 1fr)", 
-              md: "repeat(4, 1fr)" 
-            }} 
-            gap={{ base: 4, md: 6 }} 
+          {/* Enhanced Breadcrumb Navigation */}
+          <Breadcrumb mb={{ base: 4, md: 6 }} fontSize={{ base: "sm", md: "md" }}>
+            <BreadcrumbItem>
+              <BreadcrumbLink display="flex" alignItems="center" gap={2}>
+                <Box as={HomeIcon} w={4} h={4} />
+                Operations
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbItem isCurrentPage>
+              <BreadcrumbLink>Dispatcher</BreadcrumbLink>
+            </BreadcrumbItem>
+          </Breadcrumb>
+
+          {/* Enhanced Real-time Statistics Dashboard */}
+          <SimpleGrid 
+            columns={statsColumns}
+            spacing={{ base: 4, md: 6 }} 
             mb={{ base: 6, md: 8 }}
           >
-            <Card shadow="md" _hover={{ shadow: "lg" }} transition="all 0.2s">
-              <CardBody p={{ base: 4, md: 6 }} textAlign="center">
-                <VStack spacing={2}>
-                  <Text 
-                    fontSize={{ base: "2xl", md: "3xl" }} 
+            <Card 
+              bg={cardBg}
+              shadow="md" 
+              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
+              transition="all 0.2s"
+              borderLeft="4px solid"
+              borderLeftColor="blue.500"
+            >
+              <CardBody p={{ base: 4, md: 6 }}>
+                <Stat>
+                  <HStack justify="space-between" align="center" mb={2}>
+                    <Box as={CalendarDaysIcon} w={6} h={6} color="blue.500" />
+                    <CircularProgress 
+                      value={dashboardStats.todayCompletionRate} 
+                      size="40px" 
+                      color="blue.500"
+                      trackColor={borderColor}
+                    >
+                      <CircularProgressLabel fontSize="xs">
+                        {Math.round(dashboardStats.todayCompletionRate)}%
+                      </CircularProgressLabel>
+                    </CircularProgress>
+                  </HStack>
+                  <StatNumber 
+                    fontSize={{ base: "xl", md: "2xl" }} 
                     fontWeight="bold" 
-                    color="blue.500"
+                    color={primaryColor}
                   >
-                    {trips.length}
-                  </Text>
-                  <Text 
-                    color="gray.600" 
+                    {dashboardStats.todaysTrips}
+                  </StatNumber>
+                  <StatLabel 
+                    color={mutedColor}
                     fontSize={{ base: "xs", md: "sm" }}
                     fontWeight="medium"
                   >
-                    Total Trips
-                  </Text>
-                </VStack>
+                    Today's Trips
+                  </StatLabel>
+                  <StatHelpText fontSize="xs" color={mutedColor}>
+                    {dashboardStats.todayCompletionRate}% completed
+                  </StatHelpText>
+                </Stat>
               </CardBody>
             </Card>
             
-            <Card shadow="md" _hover={{ shadow: "lg" }} transition="all 0.2s">
-              <CardBody p={{ base: 4, md: 6 }} textAlign="center">
-                <VStack spacing={2}>
-                  <Text 
-                    fontSize={{ base: "2xl", md: "3xl" }} 
+            <Card 
+              bg={cardBg}
+              shadow="md" 
+              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
+              transition="all 0.2s"
+              borderLeft="4px solid"
+              borderLeftColor="green.500"
+            >
+              <CardBody p={{ base: 4, md: 6 }}>
+                <Stat>
+                  <HStack justify="space-between" align="center" mb={2}>
+                    <Box as={CheckCircleIconSolid} w={6} h={6} color="green.500" />
+                    <Badge colorScheme="green" fontSize="xs">
+                      +{dashboardStats.completedTrips > 10 ? '12%' : '5%'}
+                    </Badge>
+                  </HStack>
+                  <StatNumber 
+                    fontSize={{ base: "xl", md: "2xl" }} 
                     fontWeight="bold" 
-                    color="green.500"
+                    color={successColor}
                   >
-                    {trips.filter(trip => trip.status === 'completed').length}
-                  </Text>
-                  <Text 
-                    color="gray.600" 
+                    {dashboardStats.completedTrips}
+                  </StatNumber>
+                  <StatLabel 
+                    color={mutedColor}
                     fontSize={{ base: "xs", md: "sm" }}
                     fontWeight="medium"
                   >
                     Completed
-                  </Text>
-                </VStack>
+                  </StatLabel>
+                  <StatHelpText fontSize="xs" color="green.500">
+                    <StatArrow type="increase" />
+                    {dashboardStats.completionRate}% total rate
+                  </StatHelpText>
+                </Stat>
               </CardBody>
             </Card>
 
-            <Card shadow="md" _hover={{ shadow: "lg" }} transition="all 0.2s">
-              <CardBody p={{ base: 4, md: 6 }} textAlign="center">
-                <VStack spacing={2}>
-                  <Text 
-                    fontSize={{ base: "2xl", md: "3xl" }} 
+            <Card 
+              bg={cardBg}
+              shadow="md" 
+              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
+              transition="all 0.2s"
+              borderLeft="4px solid"
+              borderLeftColor="orange.500"
+            >
+              <CardBody p={{ base: 4, md: 6 }}>
+                <Stat>
+                  <HStack justify="space-between" align="center" mb={2}>
+                    <Box as={ClockIconSolid} w={6} h={6} color="orange.500" />
+                    {dashboardStats.unassignedTrips > 0 && (
+                      <Badge colorScheme="orange" fontSize="xs">
+                        Urgent
+                      </Badge>
+                    )}
+                  </HStack>
+                  <StatNumber 
+                    fontSize={{ base: "xl", md: "2xl" }} 
                     fontWeight="bold" 
-                    color="orange.500"
+                    color={warningColor}
                   >
-                    {trips.filter(trip => trip.status === 'in_progress').length}
-                  </Text>
-                  <Text 
-                    color="gray.600" 
+                    {dashboardStats.activeTrips}
+                  </StatNumber>
+                  <StatLabel 
+                    color={mutedColor}
                     fontSize={{ base: "xs", md: "sm" }}
                     fontWeight="medium"
                   >
-                    In Progress
-                  </Text>
-                </VStack>
+                    Active Trips
+                  </StatLabel>
+                  <StatHelpText fontSize="xs" color={mutedColor}>
+                    {dashboardStats.unassignedTrips} unassigned
+                  </StatHelpText>
+                </Stat>
               </CardBody>
             </Card>
 
-            <Card shadow="md" _hover={{ shadow: "lg" }} transition="all 0.2s">
-              <CardBody p={{ base: 4, md: 6 }} textAlign="center">
-                <VStack spacing={2}>
-                  <Text 
-                    fontSize={{ base: "2xl", md: "3xl" }} 
+            <Card 
+              bg={cardBg}
+              shadow="md" 
+              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
+              transition="all 0.2s"
+              borderLeft="4px solid"
+              borderLeftColor="purple.500"
+            >
+              <CardBody p={{ base: 4, md: 6 }}>
+                <Stat>
+                  <HStack justify="space-between" align="center" mb={2}>
+                    <Box as={TruckIconSolid} w={6} h={6} color="purple.500" />
+                    <CircularProgress 
+                      value={parseFloat(dashboardStats.driverUtilization)} 
+                      size="40px" 
+                      color="purple.500"
+                      trackColor={borderColor}
+                    >
+                      <CircularProgressLabel fontSize="xs">
+                        {Math.round(parseFloat(dashboardStats.driverUtilization))}%
+                      </CircularProgressLabel>
+                    </CircularProgress>
+                  </HStack>
+                  <StatNumber 
+                    fontSize={{ base: "xl", md: "2xl" }} 
                     fontWeight="bold" 
                     color="purple.500"
                   >
-                    {availableDrivers.length}
-                  </Text>
-                  <Text 
-                    color="gray.600" 
+                    {dashboardStats.availableDrivers}
+                  </StatNumber>
+                  <StatLabel 
+                    color={mutedColor}
                     fontSize={{ base: "xs", md: "sm" }}
                     fontWeight="medium"
                   >
                     Available Drivers
-                  </Text>
-                </VStack>
+                  </StatLabel>
+                  <StatHelpText fontSize="xs" color={mutedColor}>
+                    {dashboardStats.busyDrivers} busy, {dashboardStats.driverUtilization}% utilization
+                  </StatHelpText>
+                </Stat>
               </CardBody>
             </Card>
-          </Grid>
+          </SimpleGrid>
+          
+          {/* Quick Actions Section */}
+          <Card mb={{ base: 6, md: 8 }} bg={cardBg}>
+            <CardHeader>
+              <Heading size="md" display="flex" alignItems="center" gap={3}>
+                <Box as={Cog6ToothIcon} w={5} h={5} color="blue.500" />
+                Quick Actions
+              </Heading>
+            </CardHeader>
+            <CardBody pt={0}>
+              <Wrap spacing={4}>
+                <WrapItem>
+                  <Button 
+                    leftIcon={<Box as={PlusIcon} w={4} h={4} />}
+                    colorScheme="blue" 
+                    onClick={onOpen}
+                    size={{ base: "md", md: "md" }}
+                    variant="solid"
+                  >
+                    Create Trip
+                  </Button>
+                </WrapItem>
+                <WrapItem>
+                  <Button
+                    leftIcon={<Box as={MagnifyingGlassIcon} w={4} h={4} />}
+                    colorScheme="green"
+                    variant="outline"
+                    onClick={onTripManagementOpen}
+                    size={{ base: "md", md: "md" }}
+                  >
+                    Manage Trips
+                  </Button>
+                </WrapItem>
+                <WrapItem>
+                  <Button
+                    leftIcon={<Box as={ArrowPathIcon} w={4} h={4} />}
+                    onClick={handleRefresh}
+                    isLoading={refreshing}
+                    size={{ base: "md", md: "md" }}
+                    variant="outline"
+                  >
+                    Refresh Data
+                  </Button>
+                </WrapItem>
+                <WrapItem>
+                  <Menu>
+                    <MenuButton 
+                      as={Button} 
+                      rightIcon={<Box as={ChevronDownIcon} w={4} h={4} />}
+                      size={{ base: "md", md: "md" }}
+                      variant="outline"
+                    >
+                      Advanced Options
+                    </MenuButton>
+                    <MenuList>
+                      <MenuItem icon={<Box as={ChartBarIcon} w={4} h={4} />}>
+                        View Analytics
+                      </MenuItem>
+                      <MenuItem icon={<Box as={ArrowDownTrayIcon} w={4} h={4} />}>
+                        Export Data
+                      </MenuItem>
+                      <MenuDivider />
+                      <MenuItem icon={<Box as={Cog6ToothIcon} w={4} h={4} />}>
+                        Settings
+                      </MenuItem>
+                    </MenuList>
+                  </Menu>
+                </WrapItem>
+              </Wrap>
+            </CardBody>
+          </Card>
 
-          {/* Enhanced Tabbed Interface - Mobile-First Design */}
-          <Card mb={{ base: 6, md: 8 }}>
+          {/* Enhanced Tabbed Interface with Modern Icons */}
+          <Card mb={{ base: 6, md: 8 }} bg={cardBg}>
             <CardBody p={0}>
               <Tabs 
                 index={activeTab} 
@@ -605,94 +900,129 @@ const DispatcherDashboard = () => {
                 <TabList 
                   flexWrap="wrap"
                   borderBottom="2px solid"
-                  borderColor="gray.200"
-                  bg="gray.50"
+                  borderColor={borderColor}
+                  bg={bgColor}
                 >
                   <Tab 
                     flex={{ base: "1", sm: "initial" }}
                     fontSize={{ base: "sm", md: "md" }}
                     py={{ base: 3, md: 4 }}
+                    px={{ base: 3, md: 6 }}
                     _selected={{ 
-                      color: "blue.600", 
+                      color: primaryColor, 
                       borderColor: "blue.500",
-                      bg: "white"
+                      bg: cardBg
                     }}
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
                   >
-                    Today
+                    <Box as={CalendarDaysIcon} w={4} h={4} />
+                    <Text display={{ base: "none", sm: "inline" }}>Today</Text>
                   </Tab>
                   <Tab 
                     flex={{ base: "1", sm: "initial" }}
                     fontSize={{ base: "sm", md: "md" }}
                     py={{ base: 3, md: 4 }}
+                    px={{ base: 3, md: 6 }}
                     _selected={{ 
-                      color: "blue.600", 
+                      color: primaryColor, 
                       borderColor: "blue.500",
-                      bg: "white"
+                      bg: cardBg
                     }}
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
                   >
-                    Upcoming
+                    <Box as={ClockIcon} w={4} h={4} />
+                    <Text display={{ base: "none", sm: "inline" }}>Upcoming</Text>
                   </Tab>
                   <Tab 
                     flex={{ base: "1", sm: "initial" }}
                     fontSize={{ base: "sm", md: "md" }}
                     py={{ base: 3, md: 4 }}
+                    px={{ base: 3, md: 6 }}
                     _selected={{ 
-                      color: "blue.600", 
+                      color: primaryColor, 
                       borderColor: "blue.500",
-                      bg: "white"
+                      bg: cardBg
                     }}
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
                   >
-                    Completed
+                    <Box as={CheckCircleIcon} w={4} h={4} />
+                    <Text display={{ base: "none", sm: "inline" }}>Completed</Text>
                   </Tab>
                   <Tab 
                     flex={{ base: "1", sm: "initial" }}
                     fontSize={{ base: "sm", md: "md" }}
                     py={{ base: 3, md: 4 }}
+                    px={{ base: 3, md: 6 }}
                     _selected={{ 
-                      color: "blue.600", 
+                      color: primaryColor, 
                       borderColor: "blue.500",
-                      bg: "white"
+                      bg: cardBg
                     }}
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
                   >
-                    All Trips
+                    <Box as={ChartBarIcon} w={4} h={4} />
+                    <Text display={{ base: "none", sm: "inline" }}>All Trips</Text>
                   </Tab>
                   
-                  {/* Additional Dispatch Features */}
+                  {/* Enhanced Dispatch Features */}
                   <Tab 
                     flex={{ base: "1", sm: "initial" }}
                     fontSize={{ base: "sm", md: "md" }}
                     py={{ base: 3, md: 4 }}
+                    px={{ base: 3, md: 6 }}
                     _selected={{ 
-                      color: "blue.600", 
+                      color: primaryColor, 
                       borderColor: "blue.500",
-                      bg: "white"
+                      bg: cardBg
                     }}
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
                   >
-                    ⏰ Active Trips
+                    <Box as={TruckIcon} w={4} h={4} />
+                    <Text display={{ base: "none", md: "inline" }}>Active</Text>
                   </Tab>
                   <Tab 
                     flex={{ base: "1", sm: "initial" }}
                     fontSize={{ base: "sm", md: "md" }}
                     py={{ base: 3, md: 4 }}
+                    px={{ base: 3, md: 6 }}
                     _selected={{ 
-                      color: "blue.600", 
+                      color: primaryColor, 
                       borderColor: "blue.500",
-                      bg: "white"
+                      bg: cardBg
                     }}
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
                   >
-                    👥 Driver Assignment
+                    <Box as={UserGroupIcon} w={4} h={4} />
+                    <Text display={{ base: "none", md: "inline" }}>Drivers</Text>
                   </Tab>
                   <Tab 
                     flex={{ base: "1", sm: "initial" }}
                     fontSize={{ base: "sm", md: "md" }}
                     py={{ base: 3, md: 4 }}
+                    px={{ base: 3, md: 6 }}
                     _selected={{ 
-                      color: "blue.600", 
+                      color: primaryColor, 
                       borderColor: "blue.500",
-                      bg: "white"
+                      bg: cardBg
                     }}
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
                   >
-                    🗺️ Live Tracking
+                    <Box as={MapPinIcon} w={4} h={4} />
+                    <Text display={{ base: "none", md: "inline" }}>Tracking</Text>
                   </Tab>
                 </TabList>
 
@@ -828,7 +1158,7 @@ const DispatcherDashboard = () => {
                                   <Td>
                                     <HStack spacing={1} flexWrap="wrap" justify={{ base: "center", md: "flex-start" }}>
                                       <IconButton
-                                        icon={<ViewIcon />}
+                                        icon={<Box as={EyeIcon} w={4} h={4} />}
                                         size="xs"
                                         colorScheme="blue"
                                         onClick={() => handleView(trip)}
@@ -836,7 +1166,7 @@ const DispatcherDashboard = () => {
                                         title="View trip details"
                                       />
                                       <IconButton
-                                        icon={<EditIcon />}
+                                        icon={<Box as={PencilIcon} w={4} h={4} />}
                                         size="xs"
                                         colorScheme="yellow"
                                         onClick={() => handleEdit(trip)}
@@ -854,7 +1184,7 @@ const DispatcherDashboard = () => {
                                         </Button>
                                       )}
                                       <IconButton
-                                        icon={<DeleteIcon />}
+                                        icon={<Box as={TrashIcon} w={4} h={4} />}
                                         size="xs"
                                         colorScheme="red"
                                         onClick={() => handleDeleteClick(trip)}
@@ -863,7 +1193,7 @@ const DispatcherDashboard = () => {
                                       />
                                       {trip.riderPhone && (
                                         <IconButton
-                                          icon={<PhoneIcon />}
+                                          icon={<Box as={PhoneIcon} w={4} h={4} />}
                                           size="xs"
                                           colorScheme="green"
                                           aria-label="Call rider"
@@ -982,7 +1312,7 @@ const DispatcherDashboard = () => {
                             <Td>
                               <HStack spacing={1} flexWrap="wrap" justify={{ base: "center", md: "flex-start" }}>
                                 <IconButton
-                                  icon={<ViewIcon />}
+                                  icon={<Box as={EyeIcon} w={4} h={4} />}
                                   size="xs"
                                   colorScheme="blue"
                                   onClick={() => handleView(trip)}
@@ -990,7 +1320,7 @@ const DispatcherDashboard = () => {
                                   title="View trip details"
                                 />
                                 <IconButton
-                                  icon={<EditIcon />}
+                                  icon={<Box as={PencilIcon} w={4} h={4} />}
                                   size="xs"
                                   colorScheme="yellow"
                                   onClick={() => handleEdit(trip)}
@@ -1008,7 +1338,7 @@ const DispatcherDashboard = () => {
                                   </Button>
                                 )}
                                 <IconButton
-                                  icon={<DeleteIcon />}
+                                  icon={<Box as={TrashIcon} w={4} h={4} />}
                                   size="xs"
                                   colorScheme="red"
                                   onClick={() => handleDeleteClick(trip)}
@@ -1017,7 +1347,7 @@ const DispatcherDashboard = () => {
                                 />
                                 {trip.riderPhone && (
                                   <IconButton
-                                    icon={<PhoneIcon />}
+                                    icon={<Box as={PhoneIcon} w={4} h={4} />}
                                     size="xs"
                                     colorScheme="green"
                                     aria-label="Call rider"
@@ -1116,7 +1446,7 @@ const DispatcherDashboard = () => {
                             <Td>
                               <HStack spacing={1} flexWrap="wrap" justify={{ base: "center", md: "flex-start" }}>
                                 <IconButton
-                                  icon={<ViewIcon />}
+                                  icon={<Box as={EyeIcon} w={4} h={4} />}
                                   size="xs"
                                   colorScheme="blue"
                                   onClick={() => handleView(trip)}
@@ -1232,7 +1562,7 @@ const DispatcherDashboard = () => {
                             <Td>
                               <HStack spacing={1} flexWrap="wrap" justify={{ base: "center", md: "flex-start" }}>
                                 <IconButton
-                                  icon={<ViewIcon />}
+                                  icon={<Box as={EyeIcon} w={4} h={4} />}
                                   size="xs"
                                   colorScheme="blue"
                                   onClick={() => handleView(trip)}
@@ -1240,7 +1570,7 @@ const DispatcherDashboard = () => {
                                   title="View trip details"
                                 />
                                 <IconButton
-                                  icon={<EditIcon />}
+                                  icon={<Box as={PencilIcon} w={4} h={4} />}
                                   size="xs"
                                   colorScheme="yellow"
                                   onClick={() => handleEdit(trip)}
@@ -1258,7 +1588,7 @@ const DispatcherDashboard = () => {
                                   </Button>
                                 )}
                                 <IconButton
-                                  icon={<DeleteIcon />}
+                                  icon={<Box as={TrashIcon} w={4} h={4} />}
                                   size="xs"
                                   colorScheme="red"
                                   onClick={() => handleDeleteClick(trip)}
@@ -1267,7 +1597,7 @@ const DispatcherDashboard = () => {
                                 />
                                 {trip.riderPhone && (
                                   <IconButton
-                                    icon={<PhoneIcon />}
+                                    icon={<Box as={PhoneIcon} w={4} h={4} />}
                                     size="xs"
                                     colorScheme="green"
                                     aria-label="Call rider"
@@ -1578,7 +1908,7 @@ const DispatcherDashboard = () => {
                   justify={{ base: "center", sm: "flex-start" }}
                 >
                   <Button 
-                    leftIcon={<AddIcon />} 
+                    leftIcon={<Box as={PlusIcon} w={4} h={4} />} 
                     colorScheme="blue" 
                     onClick={onOpen}
                     size={{ base: "md", md: "md" }}
@@ -1588,7 +1918,7 @@ const DispatcherDashboard = () => {
                     Create Trip
                   </Button>
                   <Button
-                    leftIcon={<SearchIcon />}
+                    leftIcon={<Box as={MagnifyingGlassIcon} w={4} h={4} />}
                     colorScheme="green"
                     variant="outline"
                     onClick={onTripManagementOpen}
@@ -1599,7 +1929,7 @@ const DispatcherDashboard = () => {
                     Manage Trips
                   </Button>
                   <Button
-                    leftIcon={<RepeatIcon />}
+                    leftIcon={<Box as={ArrowPathIcon} w={4} h={4} />}
                     onClick={handleRefresh}
                     isLoading={refreshing}
                     loadingText="Refreshing..."
@@ -1697,7 +2027,7 @@ const DispatcherDashboard = () => {
                         </VStack>
                         {driver.phone && (
                           <IconButton
-                            icon={<PhoneIcon />}
+                            icon={<Box as={PhoneIcon} w={4} h={4} />}
                             size="sm"
                             colorScheme="green"
                             flexShrink={0}
@@ -1740,7 +2070,7 @@ const DispatcherDashboard = () => {
                         </VStack>
                         {driver.phone && (
                           <IconButton
-                            icon={<PhoneIcon />}
+                            icon={<Box as={PhoneIcon} w={4} h={4} />}
                             size="sm"
                             colorScheme="orange"
                             aria-label="Call driver"

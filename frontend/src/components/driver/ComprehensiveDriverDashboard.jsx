@@ -67,38 +67,41 @@ import {
   useColorModeValue
 } from '@chakra-ui/react';
 import {
-  SearchIcon,
-  ExternalLinkIcon,
+  MagnifyingGlassIcon,
+  ArrowTopRightOnSquareIcon,
   PhoneIcon,
   CheckCircleIcon,
-  TimeIcon,
-  CalendarIcon,
-  ViewIcon,
-  InfoIcon,
-  SettingsIcon,
-  ChatIcon,
-  WarningIcon,
-  EmailIcon,
-  EditIcon,
-  ChevronDownIcon
-} from '@chakra-ui/icons';
+  ClockIcon,
+  CalendarDaysIcon,
+  EyeIcon,
+  InformationCircleIcon,
+  Cog6ToothIcon,
+  ChatBubbleLeftRightIcon,
+  ExclamationTriangleIcon,
+  EnvelopeIcon,
+  PencilIcon,
+  ChevronDownIcon,
+  TruckIcon,
+  MapPinIcon,
+  ArrowRightIcon,
+  MapIcon,
+  UserIcon,
+  ChartBarIcon,
+  DocumentTextIcon,
+  FunnelIcon,
+  ArrowDownTrayIcon,
+  HomeIcon,
+  PlayIcon,
+  StopIcon
+} from '@heroicons/react/24/outline';
 import {
-  FaRoute,
-  FaMapMarkerAlt,
-  FaLocationArrow,
-  FaClock,
-  FaMap,
-  FaUser,
-  FaCar,
-  FaHistory,
-  FaChartLine,
-  FaToggleOn,
-  FaToggleOff,
-  FaFileAlt,
-  FaFilter,
-  FaDownload,
-  FaTruck
-} from 'react-icons/fa';
+  CheckCircleIcon as CheckCircleIconSolid,
+  ClockIcon as ClockIconSolid,
+  TruckIcon as TruckIconSolid,
+  MapPinIcon as MapPinIconSolid,
+  UserIcon as UserIconSolid,
+  ExclamationTriangleIcon as ExclamationTriangleIconSolid
+} from '@heroicons/react/24/solid';
 import axios from 'axios';
 import { useAuth } from "../../contexts/AuthContext";
 import Navbar from '../shared/Navbar';
@@ -659,7 +662,7 @@ const ComprehensiveDriverDashboard = () => {
                                               <Button
                                                 size="sm"
                                                 colorScheme="blue"
-                                                leftIcon={<FaRoute />}
+                                                leftIcon={<Box as={TruckIconSolid} w={4} h={4} />}
                                                 onClick={() => navigateToDestination(trip)}
                                               >
                                                 Navigate
@@ -698,7 +701,7 @@ const ComprehensiveDriverDashboard = () => {
                           <CardBody>
                             <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={4}>
                               <Button
-                                leftIcon={<FaLocationArrow />}
+                                leftIcon={<Box as={ArrowRightIcon} w={4} h={4} />}
                                 colorScheme="teal"
                                 variant="outline"
                                 onClick={getCurrentLocation}
@@ -708,7 +711,7 @@ const ComprehensiveDriverDashboard = () => {
                                 Update Location
                               </Button>
                               <Button
-                                leftIcon={<FaHistory />}
+                                leftIcon={<Box as={ClockIconSolid} w={4} h={4} />}
                                 colorScheme="blue"
                                 variant="outline"
                                 onClick={() => setActiveTab(2)}
@@ -718,7 +721,7 @@ const ComprehensiveDriverDashboard = () => {
                                 View Reports
                               </Button>
                               <Button
-                                leftIcon={<FaCar />}
+                                leftIcon={<Box as={TruckIconSolid} w={4} h={4} />}
                                 colorScheme="purple"
                                 variant="outline"
                                 onClick={() => setActiveTab(3)}
@@ -760,7 +763,7 @@ const ComprehensiveDriverDashboard = () => {
                         {myTrips.length === 0 ? (
                           <Center py={12}>
                             <VStack spacing={4}>
-                              <FaTruck size={48} color="gray" />
+                              <Box as={TruckIconSolid} w={12} h={12} color="gray.400" />
                               <Text color="gray.500" fontSize="lg" textAlign="center">
                                 No trips found
                               </Text>
@@ -822,7 +825,7 @@ const ComprehensiveDriverDashboard = () => {
                                       )}
                                       <IconButton
                                         size="sm"
-                                        icon={<FaRoute />}
+                                        icon={<Box as={TruckIconSolid} w={4} h={4} />}
                                         colorScheme="blue"
                                         variant="outline"
                                         onClick={() => navigateToDestination(trip)}
@@ -853,7 +856,7 @@ const ComprehensiveDriverDashboard = () => {
                             Performance Reports
                           </Heading>
                           <Button
-                            leftIcon={<FaFilter />}
+                            leftIcon={<Box as={FunnelIcon} w={4} h={4} />}
                             colorScheme="teal"
                             variant="outline"
                             size="sm"
@@ -953,7 +956,7 @@ const ComprehensiveDriverDashboard = () => {
                         {vehicles.length === 0 ? (
                           <Center py={12}>
                             <VStack spacing={4}>
-                              <FaCar size={48} color="gray" />
+                              <Box as={TruckIconSolid} w={12} h={12} color="gray.400" />
                               <Text color="gray.500" fontSize="lg">
                                 No vehicles assigned
                               </Text>
@@ -1051,7 +1054,7 @@ const ComprehensiveDriverDashboard = () => {
                                   </Text>
                                 </VStack>
                                 <Button
-                                  leftIcon={<FaLocationArrow />}
+                                  leftIcon={<Box as={ArrowRightIcon} w={4} h={4} />}
                                   colorScheme="teal"
                                   onClick={getCurrentLocation}
                                   size="sm"
@@ -1209,7 +1212,7 @@ const ComprehensiveDriverDashboard = () => {
                                   <Text fontWeight="bold" color="teal.600">Contact Information</Text>
                                   <VStack align="start" spacing={2}>
                                     <HStack>
-                                      <EmailIcon color="gray.500" />
+                                      <Box as={EnvelopeIcon} w={4} h={4} color="gray.500" />
                                       <Text fontSize="sm">{user?.email}</Text>
                                     </HStack>
                                     <HStack>
@@ -1235,7 +1238,7 @@ const ComprehensiveDriverDashboard = () => {
                                 </VStack>
                               </Grid>
 
-                              <Button leftIcon={<EditIcon />} colorScheme="teal" variant="outline">
+                              <Button leftIcon={<Box as={PencilIcon} w={4} h={4} />} colorScheme="teal" variant="outline">
                                 Edit Profile
                               </Button>
                             </VStack>

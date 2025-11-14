@@ -56,7 +56,6 @@ import {
 } from '@chakra-ui/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
 
 const RidersLanding = () => {
   const [riders, setRiders] = useState([]);
@@ -64,10 +63,10 @@ const RidersLanding = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchType, setSearchType] = useState('name'); // 'name' or 'id'
+  const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
   const toast = useToast();
 
   // Check if modal should open automatically (from sidebar)
@@ -162,14 +161,34 @@ const RidersLanding = () => {
               <Text color="gray.600">
                 Search, view, and manage all registered riders in the system.
               </Text>
-              <Button
-                leftIcon={<SearchIcon />}
-                colorScheme="blue"
-                onClick={onOpen}
-                size="sm"
-              >
-                Filter Riders
-              </Button>
+              <HStack spacing={3}>
+                <Button
+                  leftIcon={<SearchIcon />}
+                  colorScheme="blue"
+                  onClick={onOpen}
+                  size="sm"
+                >
+                  Filter Riders
+                </Button>
+                <Button
+                  leftIcon={<ViewIcon />}
+                  colorScheme="gray"
+                  variant={viewMode === 'table' ? 'solid' : 'outline'}
+                  onClick={() => setViewMode('table')}
+                  size="sm"
+                >
+                  Table View
+                </Button>
+                <Button
+                  leftIcon={<InfoIcon />}
+                  colorScheme="gray"
+                  variant={viewMode === 'cards' ? 'solid' : 'outline'}
+                  onClick={() => setViewMode('cards')}
+                  size="sm"
+                >
+                  Card View
+                </Button>
+              </HStack>
             </VStack>
           </CardBody>
         </Card>
@@ -211,10 +230,15 @@ const RidersLanding = () => {
           </Card>
         </SimpleGrid>
 
-        {/* Riders Table */}
+        {/* Riders Display */}
         <Card>
           <CardHeader>
-            <Heading size="md">Riders</Heading>
+            <HStack justify="space-between" align="center">
+              <Heading size="md">Riders</Heading>
+              <Text fontSize="sm" color="gray.500">
+                {filteredRiders.length} of {riders.length} riders
+              </Text>
+            </HStack>
           </CardHeader>
           <CardBody>
             {filteredRiders.length === 0 ? (
@@ -226,7 +250,7 @@ const RidersLanding = () => {
                   </Button>
                 </VStack>
               </Center>
-            ) : (
+            ) : viewMode === 'table' ? (
               <Table variant="simple">
                 <Thead>
                   <Tr>
@@ -280,6 +304,78 @@ const RidersLanding = () => {
                   ))}
                 </Tbody>
               </Table>
+            ) : (
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+                {filteredRiders.map((rider) => (
+                  <Card key={rider._id} _hover={{ shadow: 'md' }} transition="all 0.2s">
+                    <CardBody>
+                      <VStack spacing={3} align="stretch">
+                        <HStack justify="space-between" align="start">
+                          <VStack align="start" spacing={1} flex={1}>
+                            <HStack>
+                              <Avatar size="md" name={`${rider.firstName} ${rider.lastName}`} />
+                              <VStack align="start" spacing={0}>
+                                <Text fontWeight="bold" fontSize="md">
+                                  {rider.firstName} {rider.lastName}
+                                </Text>
+                                <Text fontSize="sm" color="gray.600">
+                                  ID: {rider.riderId}
+                                </Text>
+                              </VStack>
+                            </HStack>
+                          </VStack>
+                          <Badge colorScheme={rider.isActive ? 'green' : 'gray'}>
+                            {rider.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </HStack>
+
+                        <Divider />
+
+                        <VStack align="start" spacing={2}>
+                          <HStack>
+                            <PhoneIcon color="gray.500" boxSize={4} />
+                            <Text fontSize="sm">{rider.phone || 'No phone'}</Text>
+                          </HStack>
+                          <HStack>
+                            <CalendarIcon color="gray.500" boxSize={4} />
+                            <Text fontSize="sm">
+                              Last trip: {rider.trips && rider.trips.length > 0
+                                ? formatDate(rider.trips[rider.trips.length - 1].date)
+                                : 'No trips'
+                              }
+                            </Text>
+                          </HStack>
+                        </VStack>
+
+                        <Divider />
+
+                        <HStack spacing={2}>
+                          <Button
+                            size="sm"
+                            leftIcon={<ViewIcon />}
+                            colorScheme="blue"
+                            variant="outline"
+                            onClick={() => handleViewProfile(rider._id)}
+                            flex={1}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            leftIcon={<EditIcon />}
+                            colorScheme="gray"
+                            variant="outline"
+                            onClick={() => navigate(`/riders/${rider._id}/edit`)}
+                            flex={1}
+                          >
+                            Edit
+                          </Button>
+                        </HStack>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                ))}
+              </SimpleGrid>
             )}
           </CardBody>
         </Card>

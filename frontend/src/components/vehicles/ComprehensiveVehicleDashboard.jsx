@@ -97,7 +97,7 @@ import {
   FaUserTie
 } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
-// import axios from 'axios'; // Currently using mock data
+import axios from 'axios'; // Now using real API
 import Navbar from '../shared/Navbar';
 
 const ComprehensiveVehicleDashboard = () => {
@@ -125,6 +125,8 @@ const ComprehensiveVehicleDashboard = () => {
     mileage: '',
     notes: ''
   });
+  const [formErrors, setFormErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -143,106 +145,32 @@ const ComprehensiveVehicleDashboard = () => {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      
-      // Mock data for development - replace with actual API calls when backend is ready
-      const mockVehicles = [
-        {
-          _id: '1',
-          make: 'Ford',
-          model: 'Transit',
-          year: 2022,
-          licensePlate: 'ABC-123',
-          vin: '1FTBW3XM4NKA12345',
-          color: 'White',
-          status: 'active',
-          capacity: 8,
-          fuelType: 'gasoline',
-          mileage: 45230,
-          fuelLevel: 85,
-          lastService: '2025-10-15',
-          nextService: '2025-12-15',
-          assignedDriver: 'John Doe',
-          wheelchairAccessible: true,
-          createdAt: '2023-01-15T10:30:00Z'
-        },
-        {
-          _id: '2',
-          make: 'Chevrolet',
-          model: 'Express',
-          year: 2021,
-          licensePlate: 'DEF-456',
-          vin: '1GCWGBFP5M1234567',
-          color: 'Silver',
-          status: 'maintenance',
-          capacity: 12,
-          fuelType: 'gasoline',
-          mileage: 67890,
-          fuelLevel: 25,
-          lastService: '2025-09-20',
-          nextService: '2025-11-20',
-          assignedDriver: 'Jane Smith',
-          wheelchairAccessible: false,
-          createdAt: '2023-02-20T14:15:00Z'
-        },
-        {
-          _id: '3',
-          make: 'Toyota',
-          model: 'Sienna',
-          year: 2023,
-          licensePlate: 'GHI-789',
-          vin: '5TDKZ3DC4NS123456',
-          color: 'Blue',
-          status: 'active',
-          capacity: 7,
-          fuelType: 'hybrid',
-          mileage: 12450,
-          fuelLevel: 92,
-          lastService: '2025-11-01',
-          nextService: '2026-02-01',
-          assignedDriver: null,
-          wheelchairAccessible: true,
-          createdAt: '2023-06-10T09:45:00Z'
-        }
-      ];
 
-      const mockMaintenanceRecords = [
-        {
-          _id: '1',
-          vehicleId: '1',
-          vehiclePlate: 'ABC-123',
-          type: 'Oil Change',
-          date: '2025-10-15',
-          mileage: 45000,
-          cost: 89.99,
-          notes: 'Regular maintenance - oil and filter change',
-          status: 'completed'
-        },
-        {
-          _id: '2',
-          vehicleId: '2', 
-          vehiclePlate: 'DEF-456',
-          type: 'Brake Service',
-          date: '2025-11-08',
-          mileage: 67500,
-          cost: 245.50,
-          notes: 'Replaced front brake pads and rotors',
-          status: 'in-progress'
-        },
-        {
-          _id: '3',
-          vehicleId: '3',
-          vehiclePlate: 'GHI-789', 
-          type: 'Inspection',
-          date: '2025-11-01',
-          mileage: 12400,
-          cost: 35.00,
-          notes: 'Annual safety inspection - passed',
-          status: 'completed'
+      // Fetch vehicles from API
+      const vehiclesResponse = await axios.get('/api/vehicles', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      setVehicles(vehiclesResponse.data.vehicles || []);
+
+      // For now, maintenance records will be fetched from vehicle maintenance history
+      // This can be expanded when a dedicated maintenance API is added
+      const allMaintenanceRecords = [];
+      vehiclesResponse.data.vehicles?.forEach(vehicle => {
+        if (vehicle.maintenanceHistory && vehicle.maintenanceHistory.length > 0) {
+          vehicle.maintenanceHistory.forEach(record => {
+            allMaintenanceRecords.push({
+              _id: record._id,
+              vehicleId: vehicle._id,
+              vehiclePlate: vehicle.licensePlate,
+              vehicleName: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+              ...record
+            });
+          });
         }
-      ];
-      
-      setVehicles(mockVehicles);
-      setMaintenanceRecords(mockMaintenanceRecords);
+      });
+
+      setMaintenanceRecords(allMaintenanceRecords);
 
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -333,16 +261,58 @@ const ComprehensiveVehicleDashboard = () => {
     return 'red';
   };
 
+  // Form validation
+  const validateForm = () => {
+    const errors = {};
+
+    if (!newVehicle.make.trim()) errors.make = 'Make is required';
+    if (!newVehicle.model.trim()) errors.model = 'Model is required';
+    if (!newVehicle.year) errors.year = 'Year is required';
+    else if (parseInt(newVehicle.year) < 1900 || parseInt(newVehicle.year) > new Date().getFullYear() + 1) {
+      errors.year = 'Please enter a valid year';
+    }
+    if (!newVehicle.licensePlate.trim()) errors.licensePlate = 'License plate is required';
+    if (newVehicle.capacity && (parseInt(newVehicle.capacity) < 1 || parseInt(newVehicle.capacity) > 100)) {
+      errors.capacity = 'Capacity must be between 1 and 100';
+    }
+    if (newVehicle.mileage && parseInt(newVehicle.mileage) < 0) {
+      errors.mileage = 'Mileage cannot be negative';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   // Handle new vehicle creation
   const handleCreateVehicle = async () => {
+    if (!validateForm()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please correct the errors in the form',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      // Mock implementation - replace with actual API call
-      const response = { data: { success: true } };
-      
+      const vehicleData = {
+        ...newVehicle,
+        year: parseInt(newVehicle.year),
+        capacity: newVehicle.capacity ? parseInt(newVehicle.capacity) : undefined,
+        mileage: newVehicle.mileage ? parseInt(newVehicle.mileage) : undefined
+      };
+
+      const response = await axios.post('/api/vehicles', vehicleData, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+
       if (response.data.success) {
         toast({
           title: 'Success',
-          description: 'Vehicle created successfully',
+          description: `${newVehicle.year} ${newVehicle.make} ${newVehicle.model} added successfully`,
           status: 'success',
           duration: 3000,
           isClosable: true,
@@ -360,6 +330,7 @@ const ComprehensiveVehicleDashboard = () => {
           mileage: '',
           notes: ''
         });
+        setFormErrors({});
         onNewVehicleClose();
         fetchData();
       }
@@ -367,11 +338,13 @@ const ComprehensiveVehicleDashboard = () => {
       console.error('Error creating vehicle:', err);
       toast({
         title: 'Error',
-        description: 'Failed to create vehicle',
+        description: err.response?.data?.message || 'Failed to create vehicle',
         status: 'error',
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -398,10 +371,30 @@ const ComprehensiveVehicleDashboard = () => {
   };
 
   const handleUpdateVehicle = async () => {
+    if (!validateForm()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please correct the errors in the form',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      // Mock implementation - replace with actual API call
-      const response = { data: { success: true } };
-      
+      const vehicleData = {
+        ...newVehicle,
+        year: parseInt(newVehicle.year),
+        capacity: newVehicle.capacity ? parseInt(newVehicle.capacity) : undefined,
+        mileage: newVehicle.mileage ? parseInt(newVehicle.mileage) : undefined
+      };
+
+      const response = await axios.put(`/api/vehicles/${selectedVehicle._id}`, vehicleData, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+
       if (response.data.success) {
         toast({
           title: 'Success',
@@ -417,19 +410,23 @@ const ComprehensiveVehicleDashboard = () => {
       console.error('Error updating vehicle:', err);
       toast({
         title: 'Error',
-        description: 'Failed to update vehicle',
+        description: err.response?.data?.message || 'Failed to update vehicle',
         status: 'error',
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDeleteVehicle = async (vehicleId) => {
-    if (window.confirm('Are you sure you want to delete this vehicle?')) {
+    if (window.confirm('Are you sure you want to delete this vehicle? This action cannot be undone.')) {
       try {
-        // Mock implementation - replace with actual API call
-        console.log('Deleting vehicle with ID:', vehicleId);
+        await axios.delete(`/api/vehicles/${vehicleId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+
         toast({
           title: 'Success',
           description: 'Vehicle deleted successfully',
@@ -442,9 +439,9 @@ const ComprehensiveVehicleDashboard = () => {
         console.error('Error deleting vehicle:', err);
         toast({
           title: 'Error',
-          description: 'Failed to delete vehicle',
+          description: err.response?.data?.message || 'Failed to delete vehicle',
           status: 'error',
-          duration: 3000,
+          duration: 5000,
           isClosable: true,
         });
       }
@@ -1565,25 +1562,27 @@ const ComprehensiveVehicleDashboard = () => {
           <ModalBody>
             <VStack spacing={4} align="stretch">
               <SimpleGrid columns={2} spacing={4}>
-                <FormControl isRequired>
+                <FormControl isRequired isInvalid={!!formErrors.make}>
                   <FormLabel>Make</FormLabel>
                   <Input
                     placeholder="Vehicle make"
                     value={newVehicle.make}
                     onChange={(e) => setNewVehicle({...newVehicle, make: e.target.value})}
                   />
+                  {formErrors.make && <Text color="red.500" fontSize="sm">{formErrors.make}</Text>}
                 </FormControl>
                 
-                <FormControl isRequired>
+                <FormControl isRequired isInvalid={!!formErrors.model}>
                   <FormLabel>Model</FormLabel>
                   <Input
                     placeholder="Vehicle model"
                     value={newVehicle.model}
                     onChange={(e) => setNewVehicle({...newVehicle, model: e.target.value})}
                   />
+                  {formErrors.model && <Text color="red.500" fontSize="sm">{formErrors.model}</Text>}
                 </FormControl>
 
-                <FormControl isRequired>
+                <FormControl isRequired isInvalid={!!formErrors.year}>
                   <FormLabel>Year</FormLabel>
                   <Input
                     type="number"
@@ -1591,15 +1590,17 @@ const ComprehensiveVehicleDashboard = () => {
                     value={newVehicle.year}
                     onChange={(e) => setNewVehicle({...newVehicle, year: e.target.value})}
                   />
+                  {formErrors.year && <Text color="red.500" fontSize="sm">{formErrors.year}</Text>}
                 </FormControl>
 
-                <FormControl isRequired>
+                <FormControl isRequired isInvalid={!!formErrors.licensePlate}>
                   <FormLabel>License Plate</FormLabel>
                   <Input
                     placeholder="License plate"
                     value={newVehicle.licensePlate}
                     onChange={(e) => setNewVehicle({...newVehicle, licensePlate: e.target.value})}
                   />
+                  {formErrors.licensePlate && <Text color="red.500" fontSize="sm">{formErrors.licensePlate}</Text>}
                 </FormControl>
               </SimpleGrid>
 
@@ -1655,7 +1656,9 @@ const ComprehensiveVehicleDashboard = () => {
             <Button 
               colorScheme="orange" 
               onClick={isEditVehicleOpen ? handleUpdateVehicle : handleCreateVehicle}
-              isDisabled={!newVehicle.make || !newVehicle.model || !newVehicle.year || !newVehicle.licensePlate || !newVehicle.vin}
+              isLoading={isSubmitting}
+              loadingText={isEditVehicleOpen ? 'Updating...' : 'Adding...'}
+              isDisabled={isSubmitting}
             >
               {isEditVehicleOpen ? 'Update Vehicle' : 'Add Vehicle'}
             </Button>

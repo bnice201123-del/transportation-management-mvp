@@ -1,178 +1,67 @@
 import express from 'express';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import Vehicle from '../models/Vehicle.js';
 
 const router = express.Router();
 
-// Get all vehicles (mock data for now)
+// Get all vehicles
 router.get('/', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatcher', 'driver'), async (req, res) => {
   try {
-    const { status = 'active', page = 1, limit = 50 } = req.query;
+    const { status = 'all', page = 1, limit = 50, search, make, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
 
-    // Mock vehicle data - in a real app this would come from a Vehicle model
-    const mockVehicles = [
-      {
-        _id: '64a1b2c3d4e5f6789012345a',
-        make: 'Toyota',
-        model: 'Camry',
-        year: 2022,
-        licensePlate: 'ABC-1234',
-        color: 'Blue',
-        capacity: 4,
-        vehicleType: 'sedan',
-        isWheelchairAccessible: false,
-        status: 'active',
-        currentLocation: { lat: 40.7580, lng: -73.9855, address: '123 Main St, New York, NY' },
-        driver: { name: 'John Smith', phone: '555-0123', email: 'john.smith@company.com' },
-        currentTrip: { tripId: 'TRP001', destination: 'Brooklyn, NY' },
-        lastUpdated: new Date()
-      },
-      {
-        _id: '64a1b2c3d4e5f6789012345b',
-        make: 'Honda',
-        model: 'Accord',
-        year: 2021,
-        licensePlate: 'DEF-5678',
-        color: 'Silver',
-        capacity: 4,
-        vehicleType: 'sedan',
-        isWheelchairAccessible: false,
-        status: 'idle',
-        currentLocation: { lat: 40.7505, lng: -73.9934, address: '456 Oak Ave, New York, NY' },
-        driver: { name: 'Sarah Johnson', phone: '555-0456', email: 'sarah.j@company.com' },
-        currentTrip: null,
-        lastUpdated: new Date()
-      },
-      {
-        _id: '64a1b2c3d4e5f6789012345c',
-        make: 'Ford',
-        model: 'Transit',
-        year: 2023,
-        licensePlate: 'GHI-9012',
-        color: 'White',
-        capacity: 12,
-        vehicleType: 'van',
-        isWheelchairAccessible: true,
-        status: 'active',
-        currentLocation: { lat: 40.7614, lng: -73.9776, address: '789 Pine St, New York, NY' },
-        driver: { name: 'Mike Davis', phone: '555-0789', email: 'mike.d@company.com' },
-        currentTrip: { tripId: 'TRP002', destination: 'Queens, NY' },
-        lastUpdated: new Date()
-      },
-      {
-        _id: '64a1b2c3d4e5f6789012345d',
-        make: 'Chevrolet',
-        model: 'Suburban',
-        year: 2022,
-        licensePlate: 'JKL-3456',
-        color: 'Black',
-        capacity: 8,
-        vehicleType: 'suv',
-        isWheelchairAccessible: false,
-        status: 'offline',
-        currentLocation: { lat: 40.7690, lng: -73.9781, address: '321 Elm Dr, New York, NY' },
-        driver: null,
-        currentTrip: null,
-        lastUpdated: new Date(Date.now() - 30 * 60 * 1000) // 30 minutes ago
-      },
-      {
-        _id: '64a1b2c3d4e5f6789012345e',
-        make: 'Nissan',
-        model: 'NV200',
-        year: 2021,
-        licensePlate: 'MNO-7890',
-        color: 'Yellow',
-        capacity: 5,
-        vehicleType: 'van',
-        isWheelchairAccessible: true,
-        status: 'idle',
-        currentLocation: { lat: 40.7829, lng: -73.9654, address: '654 Cedar St, New York, NY' },
-        driver: { name: 'Lisa Wilson', phone: '555-0321', email: 'lisa.w@company.com' },
-        currentTrip: null,
-        lastUpdated: new Date()
-      },
-      {
-        _id: '64a1b2c3d4e5f6789012345f',
-        make: 'BMW',
-        model: 'X5',
-        year: 2023,
-        licensePlate: 'PQR-2468',
-        color: 'Gray',
-        capacity: 5,
-        vehicleType: 'suv',
-        isWheelchairAccessible: false,
-        status: 'active',
-        currentLocation: { lat: 40.7484, lng: -73.9857, address: '987 Maple Ave, New York, NY' },
-        driver: { name: 'Carlos Rodriguez', phone: '555-0654', email: 'carlos.r@company.com' },
-        currentTrip: { tripId: 'TRP003', destination: 'Manhattan, NY' },
-        lastUpdated: new Date()
-      },
-      {
-        _id: '64a1b2c3d4e5f6789012345g',
-        make: 'Mercedes',
-        model: 'Sprinter',
-        year: 2022,
-        licensePlate: 'STU-1357',
-        color: 'White',
-        capacity: 15,
-        vehicleType: 'van',
-        isWheelchairAccessible: true,
-        status: 'maintenance',
-        currentLocation: { lat: 40.7831, lng: -73.9712, address: 'Maintenance Depot, Bronx, NY' },
-        driver: null,
-        currentTrip: null,
-        lastUpdated: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
-      },
-      {
-        _id: '64a1b2c3d4e5f6789012345h',
-        make: 'Tesla',
-        model: 'Model S',
-        year: 2023,
-        licensePlate: 'VWX-9753',
-        color: 'Red',
-        capacity: 4,
-        vehicleType: 'sedan',
-        isWheelchairAccessible: false,
-        status: 'idle',
-        currentLocation: { lat: 40.7411, lng: -74.0040, address: '159 Broadway, New York, NY' },
-        driver: { name: 'Emma Thompson', phone: '555-0987', email: 'emma.t@company.com' },
-        currentTrip: null,
-        lastUpdated: new Date()
-      }
-    ];
+    // Build query
+    let query = { isActive: true };
 
-    // Filter by status if specified
-    let filteredVehicles = mockVehicles;
     if (status !== 'all') {
-      filteredVehicles = mockVehicles.filter(vehicle => vehicle.status === status);
+      query.status = status;
     }
+
+    if (search) {
+      query.$or = [
+        { make: { $regex: search, $options: 'i' } },
+        { model: { $regex: search, $options: 'i' } },
+        { licensePlate: { $regex: search, $options: 'i' } },
+        { vin: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    if (make && make !== 'all') {
+      query.make = make;
+    }
+
+    // Build sort options
+    const sortOptions = {};
+    sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
     // Pagination
     const skip = (page - 1) * limit;
-    const paginatedVehicles = filteredVehicles.slice(skip, skip + parseInt(limit));
-    const total = filteredVehicles.length;
 
-    console.log('Vehicles API response:', {
-      vehicles: paginatedVehicles,
-      vehicleCount: paginatedVehicles.length,
-      total: total
-    });
-    
+    const vehicles = await Vehicle.find(query)
+      .populate('currentDriver', 'firstName lastName email')
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await Vehicle.countDocuments(query);
+
     res.json({
       success: true,
       data: {
-        vehicles: paginatedVehicles
+        vehicles,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / limit)
+        }
       },
-      vehicles: paginatedVehicles, // Also include direct access
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
-      }
+      vehicles, // For backward compatibility
+      vehicleCount: vehicles.length
     });
   } catch (error) {
     console.error('Get vehicles error:', error);
-    res.status(500).json({ message: 'Server error fetching vehicles' });
+    res.status(500).json({ message: 'Server error fetching vehicles', error: error.message });
   }
 });
 
@@ -181,30 +70,328 @@ router.get('/:id', authenticateToken, authorizeRoles('admin', 'scheduler', 'disp
   try {
     const { id } = req.params;
 
-    // Mock vehicle lookup - in a real app this would query the Vehicle model
-    const mockVehicle = {
-      _id: id,
-      make: 'Toyota',
-      model: 'Camry',
-      year: 2022,
-      licensePlate: 'ABC-1234',
-      color: 'Blue',
-      capacity: 4,
-      vehicleType: 'sedan',
-      isWheelchairAccessible: false,
-      status: 'active',
-      driver: null,
-      features: ['Air Conditioning', 'GPS Navigation', 'Bluetooth'],
-      fuelType: 'gasoline',
-      mileage: 25000,
-      lastMaintenance: new Date('2023-10-15'),
-      nextMaintenanceDue: new Date('2024-01-15')
-    };
+    const vehicle = await Vehicle.findById(id)
+      .populate('currentDriver', 'firstName lastName email phone')
+      .populate('trips', 'pickupTime dropoffTime status')
+      .populate('createdBy', 'firstName lastName');
 
-    res.json(mockVehicle);
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle not found' });
+    }
+
+    res.json(vehicle);
   } catch (error) {
     console.error('Get vehicle error:', error);
-    res.status(500).json({ message: 'Server error fetching vehicle' });
+    res.status(500).json({ message: 'Server error fetching vehicle', error: error.message });
+  }
+});
+
+// Create new vehicle
+router.post('/', authenticateToken, authorizeRoles('admin', 'scheduler'), async (req, res) => {
+  try {
+    const vehicleData = {
+      ...req.body,
+      createdBy: req.user.id
+    };
+
+    const vehicle = new Vehicle(vehicleData);
+    await vehicle.save();
+
+    await vehicle.populate('currentDriver', 'firstName lastName email');
+
+    res.status(201).json({
+      success: true,
+      message: 'Vehicle created successfully',
+      vehicle
+    });
+  } catch (error) {
+    console.error('Create vehicle error:', error);
+
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'License plate already exists' });
+    }
+
+    res.status(500).json({ message: 'Server error creating vehicle', error: error.message });
+  }
+});
+
+// Update vehicle
+router.put('/:id', authenticateToken, authorizeRoles('admin', 'scheduler'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    // Remove fields that shouldn't be updated directly
+    delete updates._id;
+    delete updates.createdAt;
+    delete updates.createdBy;
+
+    const vehicle = await Vehicle.findByIdAndUpdate(
+      id,
+      { ...updates, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    ).populate('currentDriver', 'firstName lastName email');
+
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Vehicle updated successfully',
+      vehicle
+    });
+  } catch (error) {
+    console.error('Update vehicle error:', error);
+    res.status(500).json({ message: 'Server error updating vehicle', error: error.message });
+  }
+});
+
+// Delete vehicle (soft delete)
+router.delete('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const vehicle = await Vehicle.findByIdAndUpdate(
+      id,
+      { isActive: false, updatedAt: new Date() },
+      { new: true }
+    );
+
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Vehicle deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete vehicle error:', error);
+    res.status(500).json({ message: 'Server error deleting vehicle', error: error.message });
+  }
+});
+
+// Assign driver to vehicle
+router.post('/:id/assign-driver', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatcher'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { driverId } = req.body;
+
+    const vehicle = await Vehicle.findById(id);
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle not found' });
+    }
+
+    await vehicle.assignDriver(driverId);
+    await vehicle.populate('currentDriver', 'firstName lastName email');
+
+    res.json({
+      success: true,
+      message: 'Driver assigned successfully',
+      vehicle
+    });
+  } catch (error) {
+    console.error('Assign driver error:', error);
+    res.status(500).json({ message: 'Server error assigning driver', error: error.message });
+  }
+});
+
+// Unassign driver from vehicle
+router.post('/:id/unassign-driver', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatcher'), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const vehicle = await Vehicle.findById(id);
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle not found' });
+    }
+
+    await vehicle.unassignDriver();
+
+    res.json({
+      success: true,
+      message: 'Driver unassigned successfully',
+      vehicle
+    });
+  } catch (error) {
+    console.error('Unassign driver error:', error);
+    res.status(500).json({ message: 'Server error unassigning driver', error: error.message });
+  }
+});
+
+// Update vehicle location
+router.post('/:id/location', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatcher', 'driver'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { lat, lng, address } = req.body;
+
+    const vehicle = await Vehicle.findById(id);
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle not found' });
+    }
+
+    await vehicle.updateLocation(lat, lng, address);
+
+    res.json({
+      success: true,
+      message: 'Location updated successfully',
+      vehicle
+    });
+  } catch (error) {
+    console.error('Update location error:', error);
+    res.status(500).json({ message: 'Server error updating location', error: error.message });
+  }
+});
+
+// Add maintenance record
+router.post('/:id/maintenance', authenticateToken, authorizeRoles('admin', 'scheduler'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const maintenanceData = req.body;
+
+    const vehicle = await Vehicle.findById(id);
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle not found' });
+    }
+
+    vehicle.maintenanceHistory.push({
+      ...maintenanceData,
+      date: new Date()
+    });
+
+    await vehicle.save();
+    await vehicle.populate('currentDriver', 'firstName lastName email');
+
+    res.json({
+      success: true,
+      message: 'Maintenance record added successfully',
+      vehicle
+    });
+  } catch (error) {
+    console.error('Add maintenance error:', error);
+    res.status(500).json({ message: 'Server error adding maintenance record', error: error.message });
+  }
+});
+
+// Get vehicle statistics
+router.get('/stats/overview', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatcher'), async (req, res) => {
+  try {
+    const stats = await Vehicle.aggregate([
+      { $match: { isActive: true } },
+      {
+        $group: {
+          _id: null,
+          totalVehicles: { $sum: 1 },
+          activeVehicles: {
+            $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] }
+          },
+          idleVehicles: {
+            $sum: { $cond: [{ $eq: ['$status', 'idle'] }, 1, 0] }
+          },
+          maintenanceVehicles: {
+            $sum: { $cond: [{ $eq: ['$status', 'maintenance'] }, 1, 0] }
+          },
+          assignedVehicles: {
+            $sum: { $cond: [{ $ne: ['$currentDriver', null] }, 1, 0] }
+          },
+          avgFuelLevel: { $avg: '$fuelLevel' },
+          avgMileage: { $avg: '$mileage' },
+          wheelchairAccessible: {
+            $sum: { $cond: ['$isWheelchairAccessible', 1, 0] }
+          }
+        }
+      }
+    ]);
+
+    const result = stats[0] || {
+      totalVehicles: 0,
+      activeVehicles: 0,
+      idleVehicles: 0,
+      maintenanceVehicles: 0,
+      assignedVehicles: 0,
+      avgFuelLevel: 0,
+      avgMileage: 0,
+      wheelchairAccessible: 0
+    };
+
+    res.json({
+      success: true,
+      stats: result
+    });
+  } catch (error) {
+    console.error('Get vehicle stats error:', error);
+    res.status(500).json({ message: 'Server error fetching vehicle statistics', error: error.message });
+  }
+});
+
+// Add maintenance record to vehicle
+router.post('/:id/maintenance', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatcher'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const maintenanceData = req.body;
+
+    // Validate required fields
+    if (!maintenanceData.type || !maintenanceData.description) {
+      return res.status(400).json({
+        success: false,
+        message: 'Type and description are required'
+      });
+    }
+
+    // Find the vehicle
+    const vehicle = await Vehicle.findById(id);
+    if (!vehicle) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vehicle not found'
+      });
+    }
+
+    // Create maintenance record
+    const maintenanceRecord = {
+      _id: require('mongoose').Types.ObjectId(),
+      type: maintenanceData.type,
+      description: maintenanceData.description,
+      date: maintenanceData.date || new Date(),
+      mileage: maintenanceData.mileage,
+      cost: maintenanceData.cost,
+      performedBy: maintenanceData.performedBy,
+      notes: maintenanceData.notes,
+      createdAt: new Date(),
+      createdBy: req.user.id
+    };
+
+    // Add to vehicle's maintenance history
+    if (!vehicle.maintenanceHistory) {
+      vehicle.maintenanceHistory = [];
+    }
+    vehicle.maintenanceHistory.push(maintenanceRecord);
+
+    // Update lastMaintenance date if this is a service or repair
+    if (maintenanceData.type === 'service' || maintenanceData.type === 'repair') {
+      vehicle.lastMaintenance = maintenanceData.date || new Date();
+    }
+
+    // Update mileage if provided
+    if (maintenanceData.mileage) {
+      vehicle.mileage = maintenanceData.mileage;
+    }
+
+    await vehicle.save();
+
+    res.json({
+      success: true,
+      message: 'Maintenance record added successfully',
+      data: maintenanceRecord
+    });
+  } catch (error) {
+    console.error('Add maintenance record error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error adding maintenance record',
+      error: error.message
+    });
   }
 });
 

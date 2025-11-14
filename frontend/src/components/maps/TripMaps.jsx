@@ -8,6 +8,7 @@ import {
   Heading,
   Text,
   Button,
+  ButtonGroup,
   VStack,
   HStack,
   Badge,
@@ -74,6 +75,7 @@ const TripMaps = () => {
   const [timeFilter, setTimeFilter] = useState('all');
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('table'); // 'table' or 'card'
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
@@ -244,19 +246,95 @@ const TripMaps = () => {
           {/* Header */}
           <Card>
             <CardHeader>
-              <HStack>
-                <FaMap size={24} color="blue" />
-                <Box>
-                  <Heading size="lg">Trip Maps</Heading>
-                  <Text color="gray.600">
-                    View scheduled trips on interactive maps with route alternatives
-                  </Text>
-                </Box>
-              </HStack>
+              <Flex justify="space-between" align="center" direction={{ base: "column", md: "row" }} gap={4}>
+                <HStack>
+                  <FaMap size={24} color="blue" />
+                  <Box>
+                    <Heading size="lg">Trip Maps</Heading>
+                    <Text color="gray.600">
+                      View scheduled trips on interactive maps with route alternatives
+                    </Text>
+                  </Box>
+                </HStack>
+
+                {/* View Mode Toggle */}
+                <HStack spacing={2}>
+                  <Text fontSize="sm" color="gray.600">View:</Text>
+                  <ButtonGroup size="sm" isAttached variant="outline">
+                    <IconButton
+                      icon={<ViewIcon />}
+                      aria-label="Table view"
+                      colorScheme={viewMode === 'table' ? 'blue' : 'gray'}
+                      onClick={() => setViewMode('table')}
+                      title="Table View"
+                    />
+                    <IconButton
+                      icon={<FaFilter />}
+                      aria-label="Card view"
+                      colorScheme={viewMode === 'card' ? 'blue' : 'gray'}
+                      onClick={() => setViewMode('card')}
+                      title="Card View"
+                    />
+                  </ButtonGroup>
+                </HStack>
+              </Flex>
             </CardHeader>
           </Card>
 
-          {/* Statistics Cards */}
+          {/* Quick Date Filters */}
+          <Card bg="gray.50">
+            <CardBody>
+              <VStack spacing={3}>
+                <Text fontSize="sm" fontWeight="medium" color="gray.700">Quick Date Filters</Text>
+                <HStack spacing={2} flexWrap="wrap">
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    colorScheme="blue"
+                    onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    colorScheme="blue"
+                    onClick={() => {
+                      const tomorrow = new Date();
+                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      setSelectedDate(tomorrow.toISOString().split('T')[0]);
+                    }}
+                  >
+                    Tomorrow
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    colorScheme="blue"
+                    onClick={() => {
+                      const weekFromNow = new Date();
+                      weekFromNow.setDate(weekFromNow.getDate() + 7);
+                      setSelectedDate(weekFromNow.toISOString().split('T')[0]);
+                    }}
+                  >
+                    Next Week
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    colorScheme="gray"
+                    onClick={() => {
+                      const yesterday = new Date();
+                      yesterday.setDate(yesterday.getDate() - 1);
+                      setSelectedDate(yesterday.toISOString().split('T')[0]);
+                    }}
+                  >
+                    Yesterday
+                  </Button>
+                </HStack>
+              </VStack>
+            </CardBody>
+          </Card>
           <Grid templateColumns={{ base: "1fr", md: "repeat(4, 1fr)" }} gap={4}>
             <GridItem>
               <Stat>
@@ -295,8 +373,8 @@ const TripMaps = () => {
           <Card>
             <CardBody>
               <VStack spacing={4}>
-                <HStack w="full" spacing={4} flexWrap="wrap">
-                  <FormControl maxW="200px">
+                <Flex w="full" direction={{ base: "column", md: "row" }} gap={4}>
+                  <FormControl maxW={{ base: "full", md: "200px" }}>
                     <FormLabel fontSize="sm">Select Date</FormLabel>
                     <Input
                       type="date"
@@ -306,7 +384,7 @@ const TripMaps = () => {
                     />
                   </FormControl>
 
-                  <FormControl maxW="150px">
+                  <FormControl maxW={{ base: "full", md: "150px" }}>
                     <FormLabel fontSize="sm">Status</FormLabel>
                     <Select
                       value={statusFilter}
@@ -322,7 +400,7 @@ const TripMaps = () => {
                     </Select>
                   </FormControl>
 
-                  <FormControl maxW="150px">
+                  <FormControl maxW={{ base: "full", md: "150px" }}>
                     <FormLabel fontSize="sm">Time Filter</FormLabel>
                     <Select
                       value={timeFilter}
@@ -334,7 +412,7 @@ const TripMaps = () => {
                     </Select>
                   </FormControl>
 
-                  <FormControl flex="1" minW="200px">
+                  <FormControl flex="1" minW={{ base: "full", md: "200px" }}>
                     <FormLabel fontSize="sm">Search</FormLabel>
                     <InputGroup size="sm">
                       <InputLeftElement>
@@ -348,37 +426,41 @@ const TripMaps = () => {
                     </InputGroup>
                   </FormControl>
 
-                  <Button
-                    leftIcon={<RepeatIcon />}
-                    onClick={fetchTrips}
-                    size="sm"
-                    mt={6}
-                  >
-                    Refresh
-                  </Button>
-                </HStack>
+                  <Box alignSelf={{ base: "stretch", md: "flex-end" }}>
+                    <Button
+                      leftIcon={<RepeatIcon />}
+                      onClick={fetchTrips}
+                      size="sm"
+                      w={{ base: "full", md: "auto" }}
+                      mt={{ base: 0, md: 6 }}
+                    >
+                      Refresh
+                    </Button>
+                  </Box>
+                </Flex>
               </VStack>
             </CardBody>
           </Card>
 
-          {/* Trips Table */}
+          {/* Trips Display */}
           <Card>
             <CardHeader>
-              <HStack>
-                <FaCalendarDay />
-                <Heading size="md">
-                  Trip Schedule - {new Date(selectedDate).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </Heading>
-                <Spacer />
+              <Flex justify="space-between" align="center" direction={{ base: "column", md: "row" }} gap={4}>
+                <HStack>
+                  <FaCalendarDay />
+                  <Heading size="md">
+                    Trip Schedule - {new Date(selectedDate).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </Heading>
+                </HStack>
                 <Badge colorScheme="blue" fontSize="sm">
                   {filteredTrips.length} trips found
                 </Badge>
-              </HStack>
+              </Flex>
             </CardHeader>
             <CardBody>
               {filteredTrips.length === 0 ? (
@@ -386,7 +468,7 @@ const TripMaps = () => {
                   <AlertIcon />
                   No trips found for the selected criteria. Try adjusting your filters.
                 </Alert>
-              ) : (
+              ) : viewMode === 'table' ? (
                 <TableContainer>
                   <Table variant="simple" size="sm">
                     <Thead>
@@ -497,6 +579,108 @@ const TripMaps = () => {
                     </Tbody>
                   </Table>
                 </TableContainer>
+              ) : (
+                /* Card View for Mobile */
+                <VStack spacing={4} align="stretch">
+                  {Array.isArray(filteredTrips) && filteredTrips.map((trip) => {
+                    if (!trip || !trip._id) return null;
+                    
+                    return (
+                      <Card key={trip._id} shadow="sm" _hover={{ shadow: "md" }}>
+                        <CardBody p={4}>
+                          <VStack align="stretch" spacing={3}>
+                            {/* Header with Time and Status */}
+                            <Flex justify="space-between" align="center">
+                              <HStack>
+                                <TimeIcon boxSize={4} color="blue.500" />
+                                <VStack align="start" spacing={0}>
+                                  <Text fontSize="sm" fontWeight="bold">
+                                    {formatTime(trip.scheduledTime)}
+                                  </Text>
+                                  <Text fontSize="xs" color="gray.600">
+                                    {trip.scheduledDate ? 
+                                      new Date(trip.scheduledDate).toLocaleDateString() : 
+                                      'N/A'
+                                    }
+                                  </Text>
+                                </VStack>
+                              </HStack>
+                              <HStack>
+                                <Badge
+                                  colorScheme={getStatusColor(trip.status)}
+                                  variant="subtle"
+                                  fontSize="xs"
+                                >
+                                  {trip.status || 'unknown'}
+                                </Badge>
+                                <Tooltip label="View route on map">
+                                  <IconButton
+                                    icon={<FaRoute />}
+                                    size="sm"
+                                    colorScheme="blue"
+                                    variant="outline"
+                                    onClick={() => handleViewMap(trip)}
+                                    isDisabled={
+                                      !trip.pickupLocation?.address || 
+                                      !trip.dropoffLocation?.address
+                                    }
+                                  />
+                                </Tooltip>
+                              </HStack>
+                            </Flex>
+
+                            {/* Rider Info */}
+                            <Box>
+                              <HStack mb={1}>
+                                <FaUser size={14} color="green" />
+                                <Text fontSize="sm" fontWeight="medium">
+                                  {trip.riderName || 'Unknown Rider'}
+                                </Text>
+                              </HStack>
+                              {trip.riderPhone && (
+                                <HStack>
+                                  <FaPhone size={12} color="gray" />
+                                  <Text fontSize="xs" color="gray.600">
+                                    {trip.riderPhone}
+                                  </Text>
+                                </HStack>
+                              )}
+                            </Box>
+
+                            {/* Route Info */}
+                            <Box>
+                              <Text fontSize="xs" color="gray.600" mb={2}>Route</Text>
+                              <VStack align="start" spacing={1}>
+                                <HStack>
+                                  <FaMapMarkerAlt size={12} color="green" />
+                                  <Text fontSize="xs" noOfLines={2}>
+                                    {trip.pickupLocation?.address || 'N/A'}
+                                  </Text>
+                                </HStack>
+                                <HStack>
+                                  <FaMapMarkerAlt size={12} color="red" />
+                                  <Text fontSize="xs" noOfLines={2}>
+                                    {trip.dropoffLocation?.address || 'N/A'}
+                                  </Text>
+                                </HStack>
+                              </VStack>
+                            </Box>
+
+                            {/* Driver Info */}
+                            <Box>
+                              <HStack>
+                                <FaCar size={14} color="blue" />
+                                <Text fontSize="sm">
+                                  Driver: {trip.assignedDriver || 'Unassigned'}
+                                </Text>
+                              </HStack>
+                            </Box>
+                          </VStack>
+                        </CardBody>
+                      </Card>
+                    );
+                  })}
+                </VStack>
               )}
             </CardBody>
           </Card>

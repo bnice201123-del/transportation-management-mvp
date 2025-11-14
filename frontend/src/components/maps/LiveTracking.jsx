@@ -16,6 +16,7 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
+  InputRightElement,
   Button,
   useToast,
   Spinner,
@@ -36,9 +37,22 @@ import {
   Tag,
   TagLabel,
   SimpleGrid,
-  useColorModeValue
+  useColorModeValue,
+  Collapse,
+  Drawer,
+  DrawerBody,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  useDisclosure,
+  useBreakpointValue,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription
 } from '@chakra-ui/react';
-import { SearchIcon, RepeatIcon, ViewIcon, PhoneIcon, EmailIcon, TimeIcon } from '@chakra-ui/icons';
+import { SearchIcon, RepeatIcon, ViewIcon, PhoneIcon, EmailIcon, TimeIcon, ChevronDownIcon, ChevronUpIcon, DownloadIcon, CloseIcon } from '@chakra-ui/icons';
 import { FaCar, FaRoute, FaMapMarkerAlt, FaBatteryHalf, FaSignal } from 'react-icons/fa';
 import GoogleMap from './GoogleMap';
 import axios from 'axios';
@@ -52,15 +66,27 @@ const LiveTracking = () => {
   const [activeTrips, setActiveTrips] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(30); // seconds
   
   // Map state
-  const [mapCenter, setMapCenter] = useState({ lat: 40.7128, lng: -74.0060 }); // NYC default
+  const [mapCenter, setMapCenter] = useState({ lat: 44.9778, lng: -93.2650 }); // Minneapolis, MN
   const [mapZoom, setMapZoom] = useState(12);
   const [markers, setMarkers] = useState([]);
+  
+  // Mobile responsiveness state
+  const { isOpen: isFiltersOpen, onToggle: onFiltersToggle } = useDisclosure();
+  const { isOpen: isDetailsOpen, onOpen: onDetailsOpen, onClose: onDetailsClose } = useDisclosure();
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  
+  // Advanced tracking features
+  const [followedVehicle, setFollowedVehicle] = useState(null);
+  const [showRouteHistory, setShowRouteHistory] = useState(false);
+  const [routeHistory, setRouteHistory] = useState([]);
   
   const { user } = useAuth();
   const toast = useToast();
@@ -78,8 +104,11 @@ const LiveTracking = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
 
   // Fetch active driver locations and vehicles data
-  const fetchVehicles = useCallback(async () => {
+  const fetchVehicles = useCallback(async (isRetry = false) => {
     try {
+      setError(null);
+      if (!isRetry) setLoading(true);
+      
       // Fetch both vehicles and active driver locations
       const [vehiclesResponse, locationsResponse] = await Promise.all([
         axios.get('/api/vehicles'),
@@ -118,36 +147,53 @@ const LiveTracking = () => {
       const vehiclesArray = Array.isArray(enhancedVehicles) ? enhancedVehicles : [];
       console.log('Enhanced vehicles with real locations:', vehiclesArray);
       setVehicles(vehiclesArray);
+      setRetryCount(0); // Reset retry count on success
       
       // Create map markers for vehicles
       const vehicleMarkers = vehiclesArray.map(vehicle => ({
         id: vehicle._id,
-        position: vehicle.currentLocation || { lat: 40.7128 + Math.random() * 0.1, lng: -74.0060 + Math.random() * 0.1 },
+        position: vehicle.currentLocation || { lat: 44.9778 + Math.random() * 0.1, lng: -93.2650 + Math.random() * 0.1 },
         title: `${vehicle.make} ${vehicle.model} - ${vehicle.licensePlate}`,
         type: 'vehicle',
         status: vehicle.status || 'idle',
-        icon: {
-          url: `data:image/svg+xml;base64,${btoa(`
-            <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="16" cy="16" r="12" fill="${getStatusColor(vehicle.status || 'idle')}" stroke="#fff" stroke-width="2"/>
-              <text x="16" y="20" text-anchor="middle" fill="white" font-size="16">🚗</text>
-            </svg>
-          `)}`,
-          scaledSize: { width: 32, height: 32 }
-        },
+        icon: (() => {
+          const svgString = `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="12" fill="${getStatusColor(vehicle.status || 'idle')}" stroke="#fff" stroke-width="2"/>
+            <text x="16" y="20" text-anchor="middle" fill="white" font-size="12" font-family="Arial">CAR</text>
+          </svg>`;
+          return {
+            url: `data:image/svg+xml;base64,${btoa(svgString)}`,
+            scaledSize: { width: 32, height: 32 }
+          };
+        })(),
         info: vehicle
       }));
       
       setMarkers(vehicleMarkers);
     } catch (error) {
       console.error('Error fetching vehicles:', error);
+      setError(error);
+      
+      let errorMessage = 'Failed to fetch vehicles data';
+      if (error.code === 'NETWORK_ERROR' || !navigator.onLine) {
+        errorMessage = 'Network connection error. Please check your internet connection.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Authentication error. Please log in again.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'Access denied. You may not have permission to view this data.';
+      } else if (error.response?.status >= 500) {
+        errorMessage = 'Server error. Please try again later.';
+      }
+      
       toast({
-        title: 'Error',
-        description: 'Failed to fetch vehicles data',
+        title: 'Error Loading Data',
+        description: errorMessage,
         status: 'error',
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
+    } finally {
+      setLoading(false);
     }
   }, [toast]);
 
@@ -181,11 +227,15 @@ const LiveTracking = () => {
     let filtered = vehiclesArray;
     
     if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(vehicle => 
-        vehicle.make?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vehicle.model?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vehicle.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vehicle.driver?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+        vehicle.make?.toLowerCase().includes(searchLower) ||
+        vehicle.model?.toLowerCase().includes(searchLower) ||
+        vehicle.licensePlate?.toLowerCase().includes(searchLower) ||
+        vehicle.driver?.name?.toLowerCase().includes(searchLower) ||
+        vehicle.type?.toLowerCase().includes(searchLower) ||
+        vehicle.year?.toString().includes(searchLower) ||
+        vehicle._id?.toLowerCase().includes(searchLower)
       );
     }
     
@@ -220,6 +270,17 @@ const LiveTracking = () => {
     fetchActiveTrips();
   }, [fetchVehicles, fetchActiveTrips]);
 
+  // Follow vehicle functionality
+  useEffect(() => {
+    if (followedVehicle && vehicles.length > 0) {
+      const vehicle = vehicles.find(v => v._id === followedVehicle._id);
+      if (vehicle?.currentLocation) {
+        setMapCenter(vehicle.currentLocation);
+        setMapZoom(16);
+      }
+    }
+  }, [vehicles, followedVehicle]);
+
   // Handle vehicle selection
   const handleVehicleSelect = (vehicle) => {
     setSelectedVehicle(vehicle);
@@ -227,13 +288,118 @@ const LiveTracking = () => {
       setMapCenter(vehicle.currentLocation);
       setMapZoom(15);
     }
+    if (isMobile) {
+      onDetailsOpen();
+    }
+  };
+
+  // Toggle follow vehicle
+  const handleFollowVehicle = (vehicle) => {
+    if (followedVehicle?._id === vehicle._id) {
+      setFollowedVehicle(null);
+      toast({
+        title: 'Stopped Following',
+        description: `No longer following ${vehicle.make} ${vehicle.model}`,
+        status: 'info',
+        duration: 2000,
+        isClosable: true,
+      });
+    } else {
+      setFollowedVehicle(vehicle);
+      if (vehicle.currentLocation) {
+        setMapCenter(vehicle.currentLocation);
+        setMapZoom(16);
+      }
+      toast({
+        title: 'Following Vehicle',
+        description: `Now following ${vehicle.make} ${vehicle.model} in real-time`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
   };
 
   // Manual refresh
   const handleRefresh = () => {
     setLoading(true);
+    setError(null);
     fetchVehicles();
     fetchActiveTrips();
+  };
+
+  // Retry failed requests
+  const handleRetry = () => {
+    if (retryCount < 3) {
+      setRetryCount(prev => prev + 1);
+      fetchVehicles(true);
+    }
+  };
+
+  // Export data to CSV
+  const handleExport = () => {
+    try {
+      const headers = [
+        'Vehicle ID',
+        'Make',
+        'Model',
+        'Year',
+        'License Plate',
+        'Type',
+        'Status',
+        'Driver Name',
+        'Driver Phone',
+        'Current Location',
+        'Last Update'
+      ];
+
+      const csvData = filteredVehicles.map(vehicle => [
+        vehicle._id || '',
+        vehicle.make || '',
+        vehicle.model || '',
+        vehicle.year || '',
+        vehicle.licensePlate || '',
+        vehicle.type || '',
+        vehicle.status || 'idle',
+        vehicle.driver?.name || '',
+        vehicle.driver?.phone || '',
+        vehicle.currentLocation ? 
+          `${vehicle.currentLocation.lat.toFixed(6)}, ${vehicle.currentLocation.lng.toFixed(6)}` : '',
+        vehicle.updatedAt ? new Date(vehicle.updatedAt).toLocaleString() : new Date().toLocaleString()
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => row.map(field => `"${field}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `vehicle-tracking-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: 'Export Successful',
+        description: `Exported ${filteredVehicles.length} vehicle records to CSV`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to export vehicle data',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
   };
 
   // Get statistics
@@ -255,6 +421,46 @@ const LiveTracking = () => {
         <VStack spacing={4}>
           <Spinner size="xl" color="blue.500" />
           <Text>Loading live tracking data...</Text>
+        </VStack>
+      </Center>
+    );
+  }
+
+  if (error && (!Array.isArray(vehicles) || vehicles.length === 0)) {
+    return (
+      <Center height="100vh">
+        <VStack spacing={6} textAlign="center" maxW="md">
+          <Alert status="error" borderRadius="md">
+            <AlertIcon />
+            <Box>
+              <AlertTitle>Failed to Load Data</AlertTitle>
+              <AlertDescription>
+                {error.code === 'NETWORK_ERROR' || !navigator.onLine 
+                  ? 'Please check your internet connection and try again.'
+                  : 'Unable to load vehicle tracking data. Please try again.'}
+              </AlertDescription>
+            </Box>
+          </Alert>
+          
+          <HStack spacing={3}>
+            <Button 
+              colorScheme="blue" 
+              onClick={handleRetry}
+              isDisabled={retryCount >= 3}
+              leftIcon={<RepeatIcon />}
+            >
+              {retryCount >= 3 ? 'Max Retries Reached' : `Retry ${retryCount > 0 ? `(${retryCount}/3)` : ''}`}
+            </Button>
+            <Button variant="outline" onClick={() => setError(null)}>
+              Dismiss
+            </Button>
+          </HStack>
+          
+          {retryCount >= 3 && (
+            <Text fontSize="sm" color="gray.600">
+              If the problem persists, please contact support or try refreshing the page.
+            </Text>
+          )}
         </VStack>
       </Center>
     );
@@ -318,6 +524,18 @@ const LiveTracking = () => {
                   w={{ base: "full", md: "auto" }}
                 />
               </Tooltip>
+              
+              <Tooltip label="Export Data">
+                <IconButton
+                  icon={<DownloadIcon />}
+                  onClick={handleExport}
+                  colorScheme="green"
+                  variant="outline"
+                  size={{ base: "sm", md: "md" }}
+                  w={{ base: "full", md: "auto" }}
+                  isDisabled={filteredVehicles.length === 0}
+                />
+              </Tooltip>
             </VStack>
           </Flex>
 
@@ -375,38 +593,70 @@ const LiveTracking = () => {
             <GridItem order={{ base: 2, lg: 1 }}>
               <Card bg={cardBg} height={{ base: "auto", lg: "100%" }}>
                 <CardHeader pb={3}>
-                  <VStack spacing={3} align="stretch">
+                  <Flex justify="space-between" align="center">
                     <Heading size={{ base: "sm", md: "md" }}>Fleet Overview</Heading>
-                    
-                    {/* Search */}
-                    <InputGroup>
-                      <InputLeftElement>
-                        <SearchIcon color="gray.400" />
-                      </InputLeftElement>
-                      <Input
-                        placeholder="Search vehicles..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        bg="gray.50"
+                    {isMobile && (
+                      <IconButton
+                        icon={isFiltersOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                        onClick={onFiltersToggle}
+                        variant="ghost"
+                        size="sm"
+                        aria-label="Toggle filters"
                       />
-                    </InputGroup>
-                    
-                    {/* Status Filter */}
-                    <Select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      bg="gray.50"
-                    >
-                      <option value="all">All Statuses</option>
-                      <option value="active">Active</option>
-                      <option value="idle">Idle</option>
-                      <option value="offline">Offline</option>
-                      <option value="maintenance">Maintenance</option>
-                    </Select>
-                  </VStack>
-                </CardHeader>
-                
-                <CardBody pt={0} overflowY="auto" maxH={{ base: "300px", lg: "500px" }}>
+                    )}
+                  </Flex>
+                  
+                  {/* Collapsible Filters */}
+                  <Collapse in={!isMobile || isFiltersOpen}>
+                    <VStack spacing={3} align="stretch" mt={3}>
+                      {/* Search */}
+                      <InputGroup>
+                        <InputLeftElement>
+                          <SearchIcon color="gray.400" />
+                        </InputLeftElement>
+                        <Input
+                          placeholder="Search by make, model, license, driver, type, or year..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          bg="gray.50"
+                          size={{ base: "sm", md: "md" }}
+                        />
+                        {searchTerm && (
+                          <InputRightElement>
+                            <IconButton
+                              icon={<CloseIcon />}
+                              size="xs"
+                              variant="ghost"
+                              onClick={() => setSearchTerm('')}
+                              aria-label="Clear search"
+                            />
+                          </InputRightElement>
+                        )}
+                      </InputGroup>
+                      
+                      {/* Search Results Counter */}
+                      {searchTerm && (
+                        <Text fontSize="xs" color="gray.600" mt={1}>
+                          Found {filteredVehicles.length} vehicle{filteredVehicles.length !== 1 ? 's' : ''} matching "{searchTerm}"
+                        </Text>
+                      )}
+                      
+                      {/* Status Filter */}
+                      <Select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        bg="gray.50"
+                        size={{ base: "sm", md: "md" }}
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="idle">Idle</option>
+                        <option value="offline">Offline</option>
+                        <option value="maintenance">Maintenance</option>
+                      </Select>
+                    </VStack>
+                  </Collapse>
+                </CardHeader>                <CardBody pt={0} overflowY="auto" maxH={{ base: "300px", lg: "500px" }}>
                   <VStack spacing={3} align="stretch">
                     {filteredVehicles.length === 0 ? (
                       <Center py={8}>
@@ -438,13 +688,26 @@ const LiveTracking = () => {
                                   {vehicle.make} {vehicle.model}
                                 </Text>
                               </HStack>
-                              <Badge 
-                                colorScheme={statusColors[vehicle.status || 'idle']}
-                                fontSize={{ base: "2xs", md: "xs" }}
-                                mt={{ base: 1, md: 0 }}
-                              >
-                                {(vehicle.status || 'idle').toUpperCase()}
-                              </Badge>
+                              <HStack spacing={1}>
+                                <IconButton
+                                  icon={<ViewIcon />}
+                                  size="xs"
+                                  variant={followedVehicle?._id === vehicle._id ? "solid" : "ghost"}
+                                  colorScheme={followedVehicle?._id === vehicle._id ? "red" : "gray"}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleFollowVehicle(vehicle);
+                                  }}
+                                  aria-label={followedVehicle?._id === vehicle._id ? "Stop following" : "Follow vehicle"}
+                                  title={followedVehicle?._id === vehicle._id ? "Stop following this vehicle" : "Follow this vehicle in real-time"}
+                                />
+                                <Badge 
+                                  colorScheme={statusColors[vehicle.status || 'idle']}
+                                  fontSize={{ base: "2xs", md: "xs" }}
+                                >
+                                  {(vehicle.status || 'idle').toUpperCase()}
+                                </Badge>
+                              </HStack>
                             </HStack>
                             
                             <Text fontSize={{ base: "2xs", md: "xs" }} color="gray.600">
@@ -487,19 +750,38 @@ const LiveTracking = () => {
                     gap={2}
                   >
                     <Heading size={{ base: "sm", md: "md" }}>Live Map View</Heading>
-                    {selectedVehicle && (
-                      <HStack flexWrap="wrap" spacing={2}>
-                        <Text fontSize={{ base: "xs", md: "sm" }} color="gray.600" noOfLines={1}>
-                          Tracking: {selectedVehicle.make} {selectedVehicle.model}
-                        </Text>
-                        <Button
-                          size={{ base: "xs", md: "sm" }}
-                          variant="ghost"
-                          onClick={() => setSelectedVehicle(null)}
-                        >
-                          Clear
-                        </Button>
-                      </HStack>
+                    {(selectedVehicle || followedVehicle) && (
+                      <VStack align="start" spacing={1}>
+                        {selectedVehicle && (
+                          <HStack flexWrap="wrap" spacing={2}>
+                            <Text fontSize={{ base: "xs", md: "sm" }} color="gray.600" noOfLines={1}>
+                              Tracking: {selectedVehicle.make} {selectedVehicle.model}
+                            </Text>
+                            <Button
+                              size={{ base: "xs", md: "sm" }}
+                              variant="ghost"
+                              onClick={() => setSelectedVehicle(null)}
+                            >
+                              Clear
+                            </Button>
+                          </HStack>
+                        )}
+                        {followedVehicle && (
+                          <HStack flexWrap="wrap" spacing={2}>
+                            <Badge colorScheme="red" fontSize="xs">
+                              👁️ Following: {followedVehicle.make} {followedVehicle.model}
+                            </Badge>
+                            <Button
+                              size={{ base: "xs", md: "sm" }}
+                              variant="ghost"
+                              colorScheme="red"
+                              onClick={() => setFollowedVehicle(null)}
+                            >
+                              Stop Following
+                            </Button>
+                          </HStack>
+                        )}
+                      </VStack>
                     )}
                   </Flex>
                 </CardHeader>
@@ -519,7 +801,7 @@ const LiveTracking = () => {
                     />
                   </Box>
                   
-                  {selectedVehicle && (
+                  {!isMobile && selectedVehicle && (
                     <Box mt={4} p={{ base: 3, md: 4 }} bg="gray.50" borderRadius="md">
                       <Grid templateColumns={{ base: "1fr", md: "repeat(auto-fit, minmax(200px, 1fr))" }} gap={4}>
                         <VStack align="start" spacing={1}>
@@ -576,6 +858,88 @@ const LiveTracking = () => {
           </Grid>
         </VStack>
       </Container>
+
+      {/* Mobile Vehicle Details Drawer */}
+      <Drawer isOpen={isDetailsOpen} placement="bottom" onClose={onDetailsClose} size="lg">
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader>
+            <HStack>
+              <FaCar color={getStatusColor(selectedVehicle?.status || 'idle')} />
+              <Text>
+                {selectedVehicle?.make} {selectedVehicle?.model} ({selectedVehicle?.year})
+              </Text>
+            </HStack>
+          </DrawerHeader>
+          <DrawerBody>
+            {selectedVehicle && (
+              <VStack spacing={4} align="stretch">
+                <Grid templateColumns="repeat(auto-fit, minmax(150px, 1fr))" gap={4}>
+                  <VStack align="start" spacing={1}>
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.700">
+                      Vehicle Details
+                    </Text>
+                    <Text fontSize="sm">
+                      License: {selectedVehicle.licensePlate}
+                    </Text>
+                    <Text fontSize="sm" color="gray.600">
+                      Year: {selectedVehicle.year}
+                    </Text>
+                  </VStack>
+                  
+                  <VStack align="start" spacing={1}>
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.700">
+                      Status
+                    </Text>
+                    <Badge colorScheme={statusColors[selectedVehicle.status || 'idle']} fontSize="xs">
+                      {(selectedVehicle.status || 'idle').toUpperCase()}
+                    </Badge>
+                    <Text fontSize="xs" color="gray.600">
+                      Last Update: {new Date().toLocaleTimeString()}
+                    </Text>
+                  </VStack>
+                  
+                  {selectedVehicle.driver && (
+                    <VStack align="start" spacing={1}>
+                      <Text fontSize="sm" fontWeight="semibold" color="gray.700">
+                        Driver
+                      </Text>
+                      <HStack>
+                        <Avatar size="sm" name={selectedVehicle.driver.name} />
+                        <VStack align="start" spacing={0}>
+                          <Text fontSize="sm">{selectedVehicle.driver.name}</Text>
+                          {selectedVehicle.driver.phone && (
+                            <HStack spacing={1}>
+                              <PhoneIcon color="gray.500" w={3} h={3} />
+                              <Text fontSize="xs" color="gray.600">
+                                {selectedVehicle.driver.phone}
+                              </Text>
+                            </HStack>
+                          )}
+                        </VStack>
+                      </HStack>
+                    </VStack>
+                  )}
+                </Grid>
+                
+                {selectedVehicle.currentLocation && (
+                  <Box p={3} bg="gray.50" borderRadius="md">
+                    <HStack spacing={2}>
+                      <FaMapMarkerAlt color="blue.500" />
+                      <Text fontSize="sm" fontWeight="semibold">Current Location</Text>
+                    </HStack>
+                    <Text fontSize="xs" color="gray.600" mt={1}>
+                      Lat: {selectedVehicle.currentLocation.lat.toFixed(6)}, 
+                      Lng: {selectedVehicle.currentLocation.lng.toFixed(6)}
+                    </Text>
+                  </Box>
+                )}
+              </VStack>
+            )}
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
     </Box>
   );
 };

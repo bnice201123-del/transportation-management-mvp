@@ -47,6 +47,8 @@ import VehiclesDashboard from './components/vehicles/VehiclesDashboard';
 import VehiclesLanding from './components/vehicles/VehiclesLanding';
 import VehicleProfile from './components/vehicles/VehicleProfile';
 import NewVehicle from './components/vehicles/NewVehicle';
+import VehicleAssignment from './components/vehicles/VehicleAssignment';
+import VehicleMaintenance from './components/vehicles/VehicleMaintenance';
 import MapsDashboard from './components/maps/MapsDashboard';
 import TripMaps from './components/maps/TripMaps';
 import LiveTracking from './components/maps/LiveTracking';
@@ -578,7 +580,15 @@ const AppRoutes = () => {
         path="/vehicles/assignment"
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
-            <VehiclesLanding />
+            <VehicleAssignment />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vehicles/:vehicleId/maintenance"
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <VehicleMaintenance />
           </ProtectedRoute>
         }
       />

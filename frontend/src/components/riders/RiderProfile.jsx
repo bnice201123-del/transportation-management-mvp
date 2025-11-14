@@ -49,20 +49,21 @@ import {
   ArrowRightIcon,
   TimeIcon,
   SettingsIcon,
-  ArrowBackIcon
+  ArrowBackIcon,
+  AddIcon,
+  MinusIcon
 } from '@chakra-ui/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
 
 const RiderProfile = () => {
   const [rider, setRider] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isBalanceOpen, onOpen: onBalanceOpen, onClose: onBalanceClose } = useDisclosure();
   const navigate = useNavigate();
   const { riderId } = useParams();
-  const { user } = useAuth();
   const toast = useToast();
 
   // Edit form state
@@ -74,6 +75,14 @@ const RiderProfile = () => {
     phone: '',
     preferredVehicleType: ''
   });
+
+  // Balance management state
+  const [balanceForm, setBalanceForm] = useState({
+    type: 'trips', // 'trips', 'dollars', 'mileage'
+    amount: 0,
+    operation: 'add' // 'add' or 'subtract'
+  });
+  const [balanceUpdating, setBalanceUpdating] = useState(false);
 
   const fetchRider = useCallback(async () => {
     try {
@@ -137,6 +146,63 @@ const RiderProfile = () => {
       });
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleBalanceUpdate = async () => {
+    if (!balanceForm.amount || balanceForm.amount <= 0) {
+      toast({
+        title: 'Invalid Amount',
+        description: 'Please enter a valid amount greater than 0',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setBalanceUpdating(true);
+    try {
+      const updateData = {
+        type: balanceForm.type,
+        amount: balanceForm.amount,
+        operation: balanceForm.operation
+      };
+
+      const response = await axios.patch(`/api/users/${riderId}/balance`, updateData, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      if (response.data.success) {
+        toast({
+          title: 'Balance Updated',
+          description: `Successfully ${balanceForm.operation === 'add' ? 'added' : 'subtracted'} ${balanceForm.amount} ${balanceForm.type}`,
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+
+        // Reset form
+        setBalanceForm({
+          type: 'trips',
+          amount: 0,
+          operation: 'add'
+        });
+
+        onBalanceClose();
+        fetchRider(); // Refresh rider data
+      }
+    } catch (error) {
+      console.error('Error updating balance:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to update balance',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setBalanceUpdating(false);
     }
   };
 
@@ -244,7 +310,10 @@ const RiderProfile = () => {
             <Button leftIcon={<EditIcon />} colorScheme="blue" onClick={onOpen}>
               Edit Profile
             </Button>
-            <Button leftIcon={<CalendarIcon />} colorScheme="green" onClick={handleScheduleTrip}>
+            <Button leftIcon={<AddIcon />} colorScheme="green" onClick={onBalanceOpen}>
+              Manage Balance
+            </Button>
+            <Button leftIcon={<CalendarIcon />} colorScheme="purple" onClick={handleScheduleTrip}>
               Schedule Trip
             </Button>
           </HStack>
@@ -290,6 +359,90 @@ const RiderProfile = () => {
                   <SettingsIcon color="gray.500" />
                   <Text><strong>Preferred Vehicle:</strong> {rider.preferredVehicleType || 'Not specified'}</Text>
                 </HStack>
+              </VStack>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <Heading size="md">Service Balance</Heading>
+            </CardHeader>
+            <CardBody>
+              <VStack align="start" spacing={3}>
+                <Box>
+                  <Text fontWeight="bold">Balance Type:</Text>
+                  <Text color="gray.600" textTransform="capitalize">
+                    {rider.serviceBalance?.type || 'trips'}
+                  </Text>
+                </Box>
+                {rider.serviceBalance?.type === 'trips' ? (
+                  <Box>
+                    <Text fontWeight="bold">Trip Balance:</Text>
+                    <Text color="gray.600">
+                      {rider.serviceBalance?.tripCount || 0} trips remaining
+                    </Text>
+                  </Box>
+                ) : (
+                  <Box>
+                    <Text fontWeight="bold">Dollar Balance:</Text>
+                    <Text color="gray.600">
+                      ${(rider.serviceBalance?.dollarAmount || 0).toFixed(2)} remaining
+                    </Text>
+                  </Box>
+                )}
+                <Box>
+                  <Text fontWeight="bold">Mileage Balance:</Text>
+                  <Text color="gray.600">
+                    {rider.mileageBalance?.currentBalance || 0} miles remaining
+                  </Text>
+                </Box>
+                <Box>
+                  <Text fontWeight="bold">Pricing:</Text>
+                  <Text color="gray.600">
+                    ${rider.pricingDetails?.pricePerRide?.toFixed(2) || '15.00'} per ride, ${(rider.pricingDetails?.pricePerMile?.toFixed(2) || '0.50')} per mile
+                  </Text>
+                </Box>
+              </VStack>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <Heading size="md">Contract Information</Heading>
+            </CardHeader>
+            <CardBody>
+              <VStack align="start" spacing={3}>
+                {rider.contractDetails?.isActive ? (
+                  <>
+                    <Box>
+                      <Text fontWeight="bold">Contract Status:</Text>
+                      <Badge colorScheme="green">Active</Badge>
+                    </Box>
+                    <Box>
+                      <Text fontWeight="bold">Start Date:</Text>
+                      <Text color="gray.600">
+                        {formatDate(rider.contractDetails.startDate)}
+                      </Text>
+                    </Box>
+                    <Box>
+                      <Text fontWeight="bold">End Date:</Text>
+                      <Text color="gray.600">
+                        {formatDate(rider.contractDetails.endDate)}
+                      </Text>
+                    </Box>
+                    <Box>
+                      <Text fontWeight="bold">Days Remaining:</Text>
+                      <Text color="gray.600">
+                        {Math.max(0, Math.ceil((new Date(rider.contractDetails.endDate) - new Date()) / (1000 * 60 * 60 * 24)))} days
+                      </Text>
+                    </Box>
+                  </>
+                ) : (
+                  <Box>
+                    <Text fontWeight="bold">Contract Status:</Text>
+                    <Badge colorScheme="gray">No Active Contract</Badge>
+                  </Box>
+                )}
               </VStack>
             </CardBody>
           </Card>
@@ -456,6 +609,90 @@ const RiderProfile = () => {
               loadingText="Updating..."
             >
               Save Changes
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Balance Management Modal */}
+      <Modal isOpen={isBalanceOpen} onClose={onBalanceClose} size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Manage Rider Balance</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <Text fontSize="sm" color="gray.600">
+                Add or subtract from the rider's balance. This affects their available trips, dollars, or mileage.
+              </Text>
+
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="full">
+                <FormControl>
+                  <FormLabel>Balance Type</FormLabel>
+                  <Select
+                    value={balanceForm.type}
+                    onChange={(e) => setBalanceForm({...balanceForm, type: e.target.value})}
+                  >
+                    <option value="trips">Trip Balance</option>
+                    <option value="dollars">Dollar Balance</option>
+                    <option value="mileage">Mileage Balance</option>
+                  </Select>
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>Operation</FormLabel>
+                  <Select
+                    value={balanceForm.operation}
+                    onChange={(e) => setBalanceForm({...balanceForm, operation: e.target.value})}
+                  >
+                    <option value="add">Add to Balance</option>
+                    <option value="subtract">Subtract from Balance</option>
+                  </Select>
+                </FormControl>
+              </SimpleGrid>
+
+              <FormControl>
+                <FormLabel>
+                  Amount {balanceForm.type === 'dollars' ? '($)' : balanceForm.type === 'mileage' ? '(miles)' : '(trips)'}
+                </FormLabel>
+                <Input
+                  type="number"
+                  min="0"
+                  step={balanceForm.type === 'dollars' ? '0.01' : '1'}
+                  value={balanceForm.amount}
+                  onChange={(e) => setBalanceForm({...balanceForm, amount: parseFloat(e.target.value) || 0})}
+                  placeholder={`Enter amount to ${balanceForm.operation}`}
+                />
+              </FormControl>
+
+              <Alert status="info" borderRadius="md">
+                <AlertIcon />
+                <Box>
+                  <Text fontSize="sm">
+                    <strong>Current Balance:</strong> {
+                      balanceForm.type === 'trips'
+                        ? `${rider?.serviceBalance?.tripCount || 0} trips`
+                        : balanceForm.type === 'dollars'
+                        ? `$${(rider?.serviceBalance?.dollarAmount || 0).toFixed(2)}`
+                        : `${rider?.mileageBalance?.currentBalance || 0} miles`
+                    }
+                  </Text>
+                </Box>
+              </Alert>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onBalanceClose}>
+              Cancel
+            </Button>
+            <Button
+              colorScheme={balanceForm.operation === 'add' ? 'green' : 'red'}
+              leftIcon={balanceForm.operation === 'add' ? <AddIcon /> : <MinusIcon />}
+              onClick={handleBalanceUpdate}
+              isLoading={balanceUpdating}
+              loadingText="Updating..."
+            >
+              {balanceForm.operation === 'add' ? 'Add' : 'Subtract'} {balanceForm.amount} {balanceForm.type}
             </Button>
           </ModalFooter>
         </ModalContent>

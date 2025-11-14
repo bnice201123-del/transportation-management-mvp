@@ -14,6 +14,7 @@ import {
   Input,
   Select,
   Button,
+  ButtonGroup,
   Grid,
   GridItem,
   Text,
@@ -50,7 +51,9 @@ import {
   CalendarIcon,
   InfoIcon,
   RepeatIcon,
-  CloseIcon
+  CloseIcon,
+  ViewOffIcon,
+  DownloadIcon
 } from '@chakra-ui/icons';
 import { FaCar, FaUser, FaRoute } from 'react-icons/fa';
 import axios from 'axios';
@@ -79,6 +82,32 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
   const [hasSearched, setHasSearched] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [selectedTrip, setSelectedTrip] = useState(null);
+  const [savedSearches, setSavedSearches] = useState([
+    {
+      id: 'today',
+      name: 'Today\'s Trips',
+      criteria: {
+        dateFrom: new Date().toISOString().split('T')[0],
+        dateTo: new Date().toISOString().split('T')[0]
+      }
+    },
+    {
+      id: 'week',
+      name: 'This Week',
+      criteria: {
+        dateFrom: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        dateTo: new Date().toISOString().split('T')[0]
+      }
+    },
+    {
+      id: 'completed',
+      name: 'Completed Trips',
+      criteria: {
+        status: 'completed'
+      }
+    }
+  ]);
+  const [viewMode, setViewMode] = useState('table'); // 'table' or 'card'
   const toast = useToast();
 
   useEffect(() => {
@@ -186,6 +215,88 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
     setSelectedTrip(trip);
   };
 
+  const handleExportResults = () => {
+    if (!searchResults || searchResults.length === 0) {
+      toast({
+        title: 'No Data to Export',
+        description: 'Please perform a search first',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Create CSV content
+    const headers = [
+      'Trip ID',
+      'Rider Name',
+      'Rider Phone',
+      'Driver Name',
+      'Driver ID',
+      'Scheduled Date',
+      'Pickup Location',
+      'Dropoff Location',
+      'Status',
+      'Vehicle Make',
+      'Vehicle Model',
+      'License Plate',
+      'Created Date'
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      ...searchResults.map(trip => [
+        trip._id,
+        `"${trip.riderName || ''}"`,
+        `"${trip.riderPhone || ''}"`,
+        `"${trip.assignedDriver?.name || 'Unassigned'}"`,
+        trip.assignedDriver?._id || '',
+        trip.scheduledDateTime ? new Date(trip.scheduledDateTime).toISOString() : '',
+        `"${trip.pickupLocation?.address || ''}"`,
+        `"${trip.dropoffLocation?.address || ''}"`,
+        trip.status,
+        `"${trip.assignedVehicle?.make || ''}"`,
+        `"${trip.assignedVehicle?.model || ''}"`,
+        `"${trip.assignedVehicle?.licensePlate || ''}"`,
+        trip.createdAt ? new Date(trip.createdAt).toISOString() : ''
+      ].join(','))
+    ].join('\n');
+
+    // Create and download the file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `trip_search_results_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: 'Export Successful',
+      description: `Exported ${searchResults.length} trips to CSV`,
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
+  };
+
+  const handleLoadSavedSearch = (savedSearch) => {
+    setSearchCriteria({
+      ...searchCriteria,
+      ...savedSearch.criteria
+    });
+    toast({
+      title: 'Search Loaded',
+      description: `Loaded "${savedSearch.name}" search criteria`,
+      status: 'info',
+      duration: 2000,
+      isClosable: true,
+    });
+  };
+
   return (
     <Modal 
       isOpen={isOpen} 
@@ -237,6 +348,32 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
               {/* Search Criteria Tab */}
               <TabPanel>
                 <VStack spacing={6} align="stretch">
+                  {/* Quick Searches */}
+                  <Card bg="gray.50">
+                    <CardBody>
+                      <Text fontWeight="bold" mb={3} color="purple.600">
+                        ⚡ Quick Searches
+                      </Text>
+                      <Text fontSize="sm" color="gray.600" mb={3}>
+                        Load pre-configured search criteria
+                      </Text>
+                      <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={3}>
+                        {savedSearches.map((savedSearch) => (
+                          <Button
+                            key={savedSearch.id}
+                            size="sm"
+                            variant="outline"
+                            colorScheme="purple"
+                            onClick={() => handleLoadSavedSearch(savedSearch)}
+                            leftIcon={<SearchIcon />}
+                          >
+                            {savedSearch.name}
+                          </Button>
+                        ))}
+                      </Grid>
+                    </CardBody>
+                  </Card>
+
                   {/* Date Range */}
                   <Card>
                     <CardBody>
@@ -490,113 +627,250 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                   <VStack spacing={4} align="stretch">
                     {/* Results Summary */}
                     <Box bg="blue.50" p={4} borderRadius="md">
-                      <Text fontWeight="bold" color="blue.700">
-                        Found {searchResults.length} trip(s) matching your criteria
-                      </Text>
+                      <Flex justify="space-between" align="center" direction={{ base: "column", md: "row" }} gap={3}>
+                        <Text fontWeight="bold" color="blue.700">
+                          Found {searchResults.length} trip(s) matching your criteria
+                        </Text>
+                        <HStack spacing={2}>
+                          <Text fontSize="sm" color="blue.600">View:</Text>
+                          <ButtonGroup size="sm" isAttached variant="outline">
+                            <IconButton
+                              icon={<ViewIcon />}
+                              aria-label="Table view"
+                              colorScheme={viewMode === 'table' ? 'blue' : 'gray'}
+                              onClick={() => setViewMode('table')}
+                              title="Table View"
+                            />
+                            <IconButton
+                              icon={<ViewOffIcon />}
+                              aria-label="Card view"
+                              colorScheme={viewMode === 'card' ? 'blue' : 'gray'}
+                              onClick={() => setViewMode('card')}
+                              title="Card View"
+                            />
+                          </ButtonGroup>
+                          <Button
+                            leftIcon={<DownloadIcon />}
+                            size="sm"
+                            colorScheme="green"
+                            variant="outline"
+                            onClick={handleExportResults}
+                            isDisabled={!searchResults || searchResults.length === 0}
+                            title="Export to CSV"
+                          >
+                            Export
+                          </Button>
+                        </HStack>
+                      </Flex>
                     </Box>
 
-                    {/* Results Table - Responsive */}
-                    <TableContainer 
-                      overflowX="auto" 
-                      bg="white" 
-                      borderRadius="md" 
-                      shadow="sm"
-                    >
-                      <Table 
-                        variant="simple" 
-                        size={{ base: "sm", md: "md" }}
-                        fontSize={{ base: "xs", md: "sm" }}
+                    {/* Results Display - Table or Card View */}
+                    {viewMode === 'table' ? (
+                      <TableContainer 
+                        overflowX="auto" 
+                        bg="white" 
+                        borderRadius="md" 
+                        shadow="sm"
                       >
-                        <Thead>
-                          <Tr>
-                            <Th>Trip ID</Th>
-                            <Th>Rider</Th>
-                            <Th>Driver</Th>
-                            <Th>Date/Time</Th>
-                            <Th>Pickup</Th>
-                            <Th>Dropoff</Th>
-                            <Th>Status</Th>
-                            <Th>Vehicle</Th>
-                            <Th>Actions</Th>
-                          </Tr>
-                        </Thead>
-                        <Tbody>
-                          {Array.isArray(searchResults) && searchResults.map((trip) => (
-                            <Tr key={trip._id}>
-                              <Td>
-                                <Text fontFamily="mono" fontSize="xs">
-                                  {trip._id.slice(-8)}
-                                </Text>
-                              </Td>
-                              <Td>
-                                <VStack align="start" spacing={1}>
-                                  <Text fontWeight="medium">{trip.riderName}</Text>
-                                  {trip.riderPhone && (
+                        <Table 
+                          variant="simple" 
+                          size={{ base: "sm", md: "md" }}
+                          fontSize={{ base: "xs", md: "sm" }}
+                        >
+                          <Thead>
+                            <Tr>
+                              <Th>Trip ID</Th>
+                              <Th>Rider</Th>
+                              <Th>Driver</Th>
+                              <Th>Date/Time</Th>
+                              <Th>Pickup</Th>
+                              <Th>Dropoff</Th>
+                              <Th>Status</Th>
+                              <Th>Vehicle</Th>
+                              <Th>Actions</Th>
+                            </Tr>
+                          </Thead>
+                          <Tbody>
+                            {Array.isArray(searchResults) && searchResults.map((trip) => (
+                              <Tr key={trip._id}>
+                                <Td>
+                                  <Text fontFamily="mono" fontSize="xs">
+                                    {trip._id.slice(-8)}
+                                  </Text>
+                                </Td>
+                                <Td>
+                                  <VStack align="start" spacing={1}>
+                                    <Text fontWeight="medium">{trip.riderName}</Text>
+                                    {trip.riderPhone && (
+                                      <Text fontSize="xs" color="gray.600">
+                                        {trip.riderPhone}
+                                      </Text>
+                                    )}
+                                  </VStack>
+                                </Td>
+                                <Td>
+                                  <Text>
+                                    {trip.assignedDriver?.name || 'Unassigned'}
+                                  </Text>
+                                  {trip.assignedDriver?._id && (
                                     <Text fontSize="xs" color="gray.600">
-                                      {trip.riderPhone}
+                                      ID: {trip.assignedDriver._id.slice(-6)}
                                     </Text>
                                   )}
-                                </VStack>
-                              </Td>
-                              <Td>
-                                <Text>
-                                  {trip.assignedDriver?.name || 'Unassigned'}
-                                </Text>
-                                {trip.assignedDriver?._id && (
-                                  <Text fontSize="xs" color="gray.600">
-                                    ID: {trip.assignedDriver._id.slice(-6)}
+                                </Td>
+                                <Td>
+                                  <Text fontSize="sm">
+                                    {formatDate(trip.scheduledDateTime)}
                                   </Text>
-                                )}
-                              </Td>
-                              <Td>
-                                <Text fontSize="sm">
-                                  {formatDate(trip.scheduledDateTime)}
-                                </Text>
-                              </Td>
-                              <Td maxW="150px">
-                                <Text fontSize="xs" noOfLines={2}>
-                                  {trip.pickupLocation?.address}
-                                </Text>
-                              </Td>
-                              <Td maxW="150px">
-                                <Text fontSize="xs" noOfLines={2}>
-                                  {trip.dropoffLocation?.address}
-                                </Text>
-                              </Td>
-                              <Td>
-                                <Badge colorScheme={getStatusColor(trip.status)}>
-                                  {trip.status}
-                                </Badge>
-                              </Td>
-                              <Td>
-                                {trip.assignedVehicle ? (
-                                  <VStack align="start" spacing={1}>
-                                    <Text fontSize="sm">
-                                      {trip.assignedVehicle.make} {trip.assignedVehicle.model}
+                                </Td>
+                                <Td maxW="150px">
+                                  <Text fontSize="xs" noOfLines={2}>
+                                    {trip.pickupLocation?.address}
+                                  </Text>
+                                </Td>
+                                <Td maxW="150px">
+                                  <Text fontSize="xs" noOfLines={2}>
+                                    {trip.dropoffLocation?.address}
+                                  </Text>
+                                </Td>
+                                <Td>
+                                  <Badge colorScheme={getStatusColor(trip.status)}>
+                                    {trip.status}
+                                  </Badge>
+                                </Td>
+                                <Td>
+                                  {trip.assignedVehicle ? (
+                                    <VStack align="start" spacing={1}>
+                                      <Text fontSize="sm">
+                                        {trip.assignedVehicle.make} {trip.assignedVehicle.model}
+                                      </Text>
+                                      <Text fontSize="xs" color="gray.600">
+                                        {trip.assignedVehicle.licensePlate}
+                                      </Text>
+                                    </VStack>
+                                  ) : (
+                                    <Text color="gray.500">No vehicle</Text>
+                                  )}
+                                </Td>
+                                <Td>
+                                  <Tooltip label="View Details">
+                                    <IconButton
+                                      icon={<ViewIcon />}
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleViewTrip(trip)}
+                                    />
+                                  </Tooltip>
+                                </Td>
+                              </Tr>
+                            ))}
+                          </Tbody>
+                        </Table>
+                      </TableContainer>
+                    ) : (
+                      /* Card View for Mobile */
+                      <VStack spacing={3} align="stretch">
+                        {Array.isArray(searchResults) && searchResults.map((trip) => (
+                          <Card key={trip._id} shadow="sm" _hover={{ shadow: "md" }}>
+                            <CardBody p={4}>
+                              <VStack align="stretch" spacing={3}>
+                                {/* Header with Trip ID and Status */}
+                                <Flex justify="space-between" align="center">
+                                  <HStack>
+                                    <Text fontFamily="mono" fontSize="sm" fontWeight="bold">
+                                      {trip._id.slice(-8)}
                                     </Text>
-                                    <Text fontSize="xs" color="gray.600">
-                                      {trip.assignedVehicle.licensePlate}
+                                    <Badge colorScheme={getStatusColor(trip.status)} size="sm">
+                                      {trip.status}
+                                    </Badge>
+                                  </HStack>
+                                  <Tooltip label="View Details">
+                                    <IconButton
+                                      icon={<ViewIcon />}
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleViewTrip(trip)}
+                                    />
+                                  </Tooltip>
+                                </Flex>
+
+                                {/* Rider and Driver Info */}
+                                <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={3}>
+                                  <Box>
+                                    <Text fontSize="xs" color="gray.600" mb={1}>Rider</Text>
+                                    <VStack align="start" spacing={1}>
+                                      <Text fontWeight="medium" fontSize="sm">{trip.riderName}</Text>
+                                      {trip.riderPhone && (
+                                        <Text fontSize="xs" color="gray.600">
+                                          {trip.riderPhone}
+                                        </Text>
+                                      )}
+                                    </VStack>
+                                  </Box>
+                                  <Box>
+                                    <Text fontSize="xs" color="gray.600" mb={1}>Driver</Text>
+                                    <VStack align="start" spacing={1}>
+                                      <Text fontSize="sm">
+                                        {trip.assignedDriver?.name || 'Unassigned'}
+                                      </Text>
+                                      {trip.assignedDriver?._id && (
+                                        <Text fontSize="xs" color="gray.600">
+                                          ID: {trip.assignedDriver._id.slice(-6)}
+                                        </Text>
+                                      )}
+                                    </VStack>
+                                  </Box>
+                                </Grid>
+
+                                {/* Date and Time */}
+                                <Box>
+                                  <Text fontSize="xs" color="gray.600" mb={1}>Date & Time</Text>
+                                  <Text fontSize="sm">
+                                    {formatDate(trip.scheduledDateTime)}
+                                  </Text>
+                                </Box>
+
+                                {/* Locations */}
+                                <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={3}>
+                                  <Box>
+                                    <HStack mb={1}>
+                                      <Badge colorScheme="blue" size="sm">Pickup</Badge>
+                                    </HStack>
+                                    <Text fontSize="xs" noOfLines={2}>
+                                      {trip.pickupLocation?.address}
                                     </Text>
-                                  </VStack>
-                                ) : (
-                                  <Text color="gray.500">No vehicle</Text>
+                                  </Box>
+                                  <Box>
+                                    <HStack mb={1}>
+                                      <Badge colorScheme="orange" size="sm">Dropoff</Badge>
+                                    </HStack>
+                                    <Text fontSize="xs" noOfLines={2}>
+                                      {trip.dropoffLocation?.address}
+                                    </Text>
+                                  </Box>
+                                </Grid>
+
+                                {/* Vehicle Info */}
+                                {trip.assignedVehicle && (
+                                  <Box>
+                                    <Text fontSize="xs" color="gray.600" mb={1}>Vehicle</Text>
+                                    <HStack>
+                                      <FaCar />
+                                      <Text fontSize="sm">
+                                        {trip.assignedVehicle.make} {trip.assignedVehicle.model}
+                                      </Text>
+                                      <Text fontSize="xs" color="gray.600">
+                                        {trip.assignedVehicle.licensePlate}
+                                      </Text>
+                                    </HStack>
+                                  </Box>
                                 )}
-                              </Td>
-                              <Td>
-                                <Tooltip label="View Details">
-                                  <IconButton
-                                    icon={<ViewIcon />}
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleViewTrip(trip)}
-                                  />
-                                </Tooltip>
-                              </Td>
-                            </Tr>
-                          ))}
-                        </Tbody>
-                      </Table>
-                    </TableContainer>
+                              </VStack>
+                            </CardBody>
+                          </Card>
+                        ))}
+                      </VStack>
+                    )}
 
                     {/* Trip Details Modal */}
                     {selectedTrip && (

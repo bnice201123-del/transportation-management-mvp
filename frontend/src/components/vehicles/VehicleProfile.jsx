@@ -55,11 +55,11 @@ import {
   CalendarIcon,
   TimeIcon,
   InfoIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  SettingsIcon
 } from '@chakra-ui/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
 
 const VehicleProfile = () => {
   const [vehicle, setVehicle] = useState(null);
@@ -75,7 +75,6 @@ const VehicleProfile = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
   const { vehicleId } = useParams();
-  const { user } = useAuth();
   const toast = useToast();
 
   // Edit form state
@@ -256,6 +255,9 @@ const VehicleProfile = () => {
           />
           <Heading size="lg">Vehicle Profile</Heading>
           <Spacer />
+          <Button leftIcon={<SettingsIcon />} colorScheme="green" mr={3} onClick={() => navigate(`/vehicles/${vehicleId}/maintenance`)}>
+            Maintenance
+          </Button>
           <Button leftIcon={<EditIcon />} colorScheme="blue" onClick={onOpen}>
             Edit Vehicle
           </Button>

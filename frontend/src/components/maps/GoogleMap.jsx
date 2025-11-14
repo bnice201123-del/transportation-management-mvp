@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Wrapper, Status } from '@googlemaps/react-wrapper';
-import { Box, Spinner, Alert, AlertIcon, Text } from '@chakra-ui/react';
+import { Box, Spinner, Alert, AlertIcon, AlertTitle, AlertDescription, Text, VStack } from '@chakra-ui/react';
 
 const render = (status) => {
   switch (status) {
@@ -141,10 +141,22 @@ const GoogleMap = (props) => {
       <Alert status="warning">
         <AlertIcon />
         <Box>
-          <Text fontWeight="bold">Google Maps API Key Required</Text>
-          <Text fontSize="sm">
-            Please add your Google Maps API key to the .env file as VITE_GOOGLE_MAPS_API_KEY
-          </Text>
+          <AlertTitle>Google Maps API Key Required</AlertTitle>
+          <AlertDescription>
+            <Text mb={2}>
+              Please add your Google Maps API key to the <code>.env</code> file as <code>VITE_GOOGLE_MAPS_API_KEY</code>
+            </Text>
+            <Text fontSize="sm" mb={2}>
+              Steps to get an API key:
+            </Text>
+            <VStack align="start" spacing={1} fontSize="sm">
+              <Text>1. Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" style={{color: 'blue'}}>Google Cloud Console</a></Text>
+              <Text>2. Create a new project or select existing one</Text>
+              <Text>3. Enable "Maps JavaScript API"</Text>
+              <Text>4. Create credentials (API Key)</Text>
+              <Text>5. Optionally restrict the key to your domain</Text>
+            </VStack>
+          </AlertDescription>
         </Box>
       </Alert>
     );

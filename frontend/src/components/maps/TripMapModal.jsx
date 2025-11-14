@@ -188,9 +188,9 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
   if (!trip) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="6xl" scrollBehavior="inside">
+    <Modal isOpen={isOpen} onClose={onClose} size={{ base: "full", lg: "6xl" }} scrollBehavior="inside">
       <ModalOverlay />
-      <ModalContent maxH="90vh">
+      <ModalContent maxH={{ base: "100vh", lg: "90vh" }} m={{ base: 0, lg: 4 }}>
         <ModalHeader>
           <HStack>
             <FaRoute color="blue" />
@@ -207,8 +207,8 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
         </ModalHeader>
         <ModalCloseButton />
         
-        <ModalBody p={0}>
-          <Grid templateColumns={{ base: "1fr", lg: "1fr 350px" }} h="70vh">
+        <ModalBody p={{ base: 2, lg: 0 }}>
+          <Grid templateColumns={{ base: "1fr", lg: "1fr 350px" }} h={{ base: "calc(100vh - 200px)", lg: "70vh" }}>
             {/* Map Section */}
             <GridItem>
               <Box h="full" position="relative">
@@ -252,8 +252,8 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
             </GridItem>
 
             {/* Route Information Panel */}
-            <GridItem bg="gray.50" overflowY="auto">
-              <VStack spacing={4} p={4} align="stretch">
+            <GridItem bg="gray.50" overflowY="auto" display={{ base: routes.length === 0 ? 'none' : 'block', lg: 'block' }}>
+              <VStack spacing={4} p={{ base: 3, lg: 4 }} align="stretch">
                 {/* Trip Details */}
                 <Card size="sm">
                   <CardBody>

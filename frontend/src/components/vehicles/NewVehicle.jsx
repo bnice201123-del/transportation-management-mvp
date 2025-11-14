@@ -32,7 +32,6 @@ import {
 } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
 
 const NewVehicle = () => {
   const [formData, setFormData] = useState({
@@ -52,7 +51,6 @@ const NewVehicle = () => {
   });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
   const toast = useToast();
 
   const handleInputChange = (field, value) => {

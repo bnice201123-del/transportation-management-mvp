@@ -17,6 +17,7 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
+  InputRightElement,
   Select,
   Spinner,
   Center,
@@ -60,7 +61,20 @@ import {
   AvatarGroup,
   Wrap,
   WrapItem,
-  useColorModeValue
+  useColorModeValue,
+  Collapse,
+  Drawer,
+  DrawerBody,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  useBreakpointValue,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel
 } from '@chakra-ui/react';
 import {
   AddIcon,
@@ -115,10 +129,18 @@ const RoutePlanning = () => {
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
   
   // Modal states
   const { isOpen: isNewRouteOpen, onOpen: onNewRouteOpen, onClose: onNewRouteClose } = useDisclosure();
   const { isOpen: isStopModalOpen, onOpen: onStopModalOpen, onClose: onStopModalClose } = useDisclosure();
+  const { isOpen: isRouteDetailsOpen, onOpen: onRouteDetailsOpen, onClose: onRouteDetailsClose } = useDisclosure();
+  
+  // Mobile responsiveness
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const { isOpen: isStatsCollapsed, onToggle: onStatsToggle } = useDisclosure(true);
   
   // Form states
   const [newRoute, setNewRoute] = useState({
@@ -147,11 +169,22 @@ const RoutePlanning = () => {
   const textColor = useColorModeValue('gray.600', 'gray.300');
   const toast = useToast();
 
-  const fetchInitialData = useCallback(async () => {
-    setLoading(true);
+  const fetchInitialData = useCallback(async (isRetry = false) => {
     try {
-      // Simulate API calls
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setError(null);
+      if (!isRetry) setLoading(true);
+      
+      // Simulate API calls with potential failure
+      await new Promise((resolve, reject) => {
+        setTimeout(() => {
+          // Simulate occasional network errors
+          if (Math.random() < 0.1) { // 10% chance of error
+            reject(new Error('Network connection failed'));
+          } else {
+            resolve();
+          }
+        }, 1000);
+      });
       
       // Mock vehicles data
       const mockVehicles = [
@@ -204,19 +237,50 @@ const RoutePlanning = () => {
       setVehicles(mockVehicles);
       setDrivers(mockDrivers);
       setRoutes(mockRoutes);
+      setRetryCount(0); // Reset retry count on success
     } catch (err) {
       console.error('Error loading data:', err);
+      setError(err);
+      
+      let errorMessage = 'Failed to load route planning data';
+      if (err.message.includes('Network') || !navigator.onLine) {
+        errorMessage = 'Network connection error. Please check your internet connection.';
+      } else if (err.message.includes('timeout')) {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (err.response?.status === 401) {
+        errorMessage = 'Authentication error. Please log in again.';
+      } else if (err.response?.status === 403) {
+        errorMessage = 'Access denied. You may not have permission to view this data.';
+      } else if (err.response?.status >= 500) {
+        errorMessage = 'Server error. Please try again later.';
+      }
+      
       toast({
-        title: 'Error',
-        description: 'Failed to load route planning data',
+        title: 'Error Loading Data',
+        description: errorMessage,
         status: 'error',
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
     } finally {
       setLoading(false);
     }
   }, [toast]);
+
+  const handleRetry = () => {
+    if (retryCount < maxRetries) {
+      setRetryCount(prev => prev + 1);
+      fetchInitialData(true); // Pass true to indicate this is a retry
+    } else {
+      toast({
+        title: 'Max Retries Reached',
+        description: 'Unable to load data after multiple attempts. Please refresh the page.',
+        status: 'warning',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
 
   // Mock data initialization
   useEffect(() => {
@@ -387,6 +451,145 @@ const RoutePlanning = () => {
     }));
   };
 
+  // Export routes to CSV
+  const handleExportRoutes = () => {
+    try {
+      const headers = [
+        'Route ID',
+        'Route Name',
+        'Description',
+        'Status',
+        'Vehicle',
+        'Driver',
+        'Total Stops',
+        'Total Distance',
+        'Estimated Time',
+        'Departure Time',
+        'Priority',
+        'Created Date'
+      ];
+
+      const csvData = routes.map(route => [
+        route._id || '',
+        route.name || '',
+        route.description || '',
+        route.status || '',
+        vehicles.find(v => v._id === route.vehicleId)?.make + ' ' + vehicles.find(v => v._id === route.vehicleId)?.model || '',
+        drivers.find(d => d._id === route.driverId)?.name || '',
+        route.totalStops || 0,
+        route.totalDistance || '',
+        route.estimatedTime || '',
+        route.departureTime || '',
+        route.priority || '',
+        route.createdAt ? new Date(route.createdAt).toLocaleString() : ''
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => row.map(field => `"${field}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `routes-export-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: 'Export Successful',
+        description: `Exported ${routes.length} routes to CSV`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to export routes data',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  // Export stops for active route
+  const handleExportStops = () => {
+    if (!activeRoute) {
+      toast({
+        title: 'No Route Selected',
+        description: 'Please select a route to export stops',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      const headers = [
+        'Stop Number',
+        'Address',
+        'Contact Name',
+        'Contact Phone',
+        'Time Window',
+        'Service Time (min)',
+        'Priority',
+        'Notes',
+        'Status'
+      ];
+
+      const csvData = activeRoute.stops.map((stop, index) => [
+        index + 1,
+        stop.address || '',
+        stop.contactName || '',
+        stop.contactPhone || '',
+        stop.timeWindow || '',
+        stop.serviceTime || '',
+        stop.priority || '',
+        stop.notes || '',
+        stop.status || 'pending'
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => row.map(field => `"${field}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${activeRoute.name}-stops-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: 'Export Successful',
+        description: `Exported ${activeRoute.stops.length} stops to CSV`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to export stops data',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
 
 
   const getStatusColor = (status) => {
@@ -413,6 +616,57 @@ const RoutePlanning = () => {
     route.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  if (error && !loading) {
+    return (
+      <Box bg={bgColor} minH="100vh">
+        <Navbar title="Route Planning" />
+        <Center h="50vh">
+          <VStack spacing={6}>
+            <Alert status="error" maxW="md">
+              <AlertIcon />
+              <VStack align="start" spacing={2}>
+                <Text fontWeight="bold">Failed to Load Route Planning Data</Text>
+                <Text fontSize="sm">
+                  {error.message.includes('Network') || !navigator.onLine
+                    ? 'Network connection error. Please check your internet connection.'
+                    : error.message.includes('timeout')
+                    ? 'Request timed out. Please try again.'
+                    : error.response?.status === 401
+                    ? 'Authentication error. Please log in again.'
+                    : error.response?.status === 403
+                    ? 'Access denied. You may not have permission to view this data.'
+                    : error.response?.status >= 500
+                    ? 'Server error. Please try again later.'
+                    : 'An unexpected error occurred while loading the data.'}
+                </Text>
+                <HStack spacing={3}>
+                  <Button
+                    colorScheme="red"
+                    size="sm"
+                    onClick={handleRetry}
+                    isDisabled={retryCount >= maxRetries}
+                    leftIcon={<RepeatIcon />}
+                  >
+                    Retry {retryCount > 0 && `(${retryCount}/${maxRetries})`}
+                  </Button>
+                  {retryCount >= maxRetries && (
+                    <Button
+                      colorScheme="gray"
+                      size="sm"
+                      onClick={() => window.location.reload()}
+                    >
+                      Refresh Page
+                    </Button>
+                  )}
+                </HStack>
+              </VStack>
+            </Alert>
+          </VStack>
+        </Center>
+      </Box>
+    );
+  }
+
   if (loading) {
     return (
       <Box bg={bgColor} minH="100vh">
@@ -437,279 +691,629 @@ const RoutePlanning = () => {
           {/* Header Section */}
           <Card bg={cardBg} shadow="sm">
             <CardHeader>
-              <Flex align="center">
-                <HStack spacing={3}>
+              <Flex align="center" direction={{ base: "column", md: "row" }} gap={{ base: 4, md: 0 }}>
+                <HStack spacing={3} flex="1">
                   <FaMapMarkedAlt color="green" size="24px" />
                   <VStack align="start" spacing={0}>
-                    <Heading size="lg" color="green.600">Route Planning</Heading>
-                    <Text color={textColor} fontSize="sm">
+                    <Heading size={{ base: "md", md: "lg" }} color="green.600">Route Planning</Heading>
+                    <Text color={textColor} fontSize={{ base: "xs", md: "sm" }}>
                       Plan and optimize multi-stop routes for efficient transportation
                     </Text>
                   </VStack>
                 </HStack>
                 <Spacer />
-                <HStack spacing={3}>
-                  <Button
-                    leftIcon={<AddIcon />}
-                    colorScheme="green"
-                    onClick={onNewRouteOpen}
-                    size="lg"
-                  >
-                    New Route
-                  </Button>
-                  <Button
-                    leftIcon={<FaSync />}
-                    variant="outline"
-                    colorScheme="green"
-                    onClick={fetchInitialData}
-                    isLoading={loading}
-                  >
-                    Refresh
-                  </Button>
-                </HStack>
+                <VStack spacing={2} align={{ base: "stretch", md: "flex-end" }} w={{ base: "full", md: "auto" }}>
+                  <HStack spacing={2} justify={{ base: "center", md: "flex-end" }}>
+                    <Button
+                      leftIcon={<AddIcon />}
+                      colorScheme="green"
+                      onClick={onNewRouteOpen}
+                      size={{ base: "sm", md: "lg" }}
+                      w={{ base: "full", md: "auto" }}
+                    >
+                      New Route
+                    </Button>
+                    <Button
+                      leftIcon={<FaDownload />}
+                      variant="outline"
+                      colorScheme="green"
+                      onClick={handleExportRoutes}
+                      size={{ base: "sm", md: "lg" }}
+                      w={{ base: "full", md: "auto" }}
+                      isDisabled={routes.length === 0}
+                    >
+                      Export Routes
+                    </Button>
+                    <Button
+                      leftIcon={<FaSync />}
+                      variant="outline"
+                      colorScheme="green"
+                      onClick={fetchInitialData}
+                      isLoading={loading}
+                      size={{ base: "sm", md: "lg" }}
+                      w={{ base: "full", md: "auto" }}
+                    >
+                      Refresh
+                    </Button>
+                  </HStack>
+                </VStack>
               </Flex>
             </CardHeader>
           </Card>
 
           {/* Stats Overview */}
-          <SimpleGrid columns={{ base: 1, md: 4 }} spacing={6}>
-            <Card bg={cardBg} shadow="sm">
-              <CardBody textAlign="center">
-                <VStack spacing={2}>
-                  <FaRoute color="green" size="32px" />
-                  <Text fontSize="2xl" fontWeight="bold" color="green.500">
-                    {routes.length}
-                  </Text>
-                  <Text color={textColor} fontSize="sm">Total Routes</Text>
-                </VStack>
+          <Card bg={cardBg} shadow="sm">
+            <CardHeader pb={2}>
+              <Flex justify="space-between" align="center">
+                <Heading size={{ base: "sm", md: "md" }} color="green.600">Overview</Heading>
+                {isMobile && (
+                  <IconButton
+                    icon={isStatsCollapsed ? <ChevronDownIcon /> : <ChevronUpIcon />}
+                    onClick={onStatsToggle}
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Toggle stats"
+                  />
+                )}
+              </Flex>
+            </CardHeader>
+            <Collapse in={!isMobile || isStatsCollapsed}>
+              <CardBody pt={0}>
+                <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: 3, md: 6 }}>
+                  <Card variant="outline" bg="gray.50">
+                    <CardBody textAlign="center" p={{ base: 3, md: 6 }}>
+                      <VStack spacing={2}>
+                        <FaRoute color="green" size={{ base: "24px", md: "32px" }} />
+                        <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold" color="green.500">
+                          {routes.length}
+                        </Text>
+                        <Text color={textColor} fontSize={{ base: "xs", md: "sm" }}>Total Routes</Text>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                  
+                  <Card variant="outline" bg="gray.50">
+                    <CardBody textAlign="center" p={{ base: 3, md: 6 }}>
+                      <VStack spacing={2}>
+                        <FaPlay color="blue" size={{ base: "24px", md: "32px" }} />
+                        <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold" color="blue.500">
+                          {routes.filter(r => r.status === 'active').length}
+                        </Text>
+                        <Text color={textColor} fontSize={{ base: "xs", md: "sm" }}>Active Routes</Text>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                  
+                  <Card variant="outline" bg="gray.50">
+                    <CardBody textAlign="center" p={{ base: 3, md: 6 }}>
+                      <VStack spacing={2}>
+                        <FaMapPin color="orange" size={{ base: "24px", md: "32px" }} />
+                        <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold" color="orange.500">
+                          {routes.reduce((sum, route) => sum + route.totalStops, 0)}
+                        </Text>
+                        <Text color={textColor} fontSize={{ base: "xs", md: "sm" }}>Total Stops</Text>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                  
+                  <Card variant="outline" bg="gray.50">
+                    <CardBody textAlign="center" p={{ base: 3, md: 6 }}>
+                      <VStack spacing={2}>
+                        <FaCar color="purple" size={{ base: "24px", md: "32px" }} />
+                        <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold" color="purple.500">
+                          {vehicles.filter(v => v.status === 'active').length}
+                        </Text>
+                        <Text color={textColor} fontSize={{ base: "xs", md: "sm" }}>Available Vehicles</Text>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                </SimpleGrid>
               </CardBody>
-            </Card>
-            
-            <Card bg={cardBg} shadow="sm">
-              <CardBody textAlign="center">
-                <VStack spacing={2}>
-                  <FaPlay color="blue" size="32px" />
-                  <Text fontSize="2xl" fontWeight="bold" color="blue.500">
-                    {routes.filter(r => r.status === 'active').length}
-                  </Text>
-                  <Text color={textColor} fontSize="sm">Active Routes</Text>
-                </VStack>
-              </CardBody>
-            </Card>
-            
-            <Card bg={cardBg} shadow="sm">
-              <CardBody textAlign="center">
-                <VStack spacing={2}>
-                  <FaMapPin color="orange" size="32px" />
-                  <Text fontSize="2xl" fontWeight="bold" color="orange.500">
-                    {routes.reduce((sum, route) => sum + route.totalStops, 0)}
-                  </Text>
-                  <Text color={textColor} fontSize="sm">Total Stops</Text>
-                </VStack>
-              </CardBody>
-            </Card>
-            
-            <Card bg={cardBg} shadow="sm">
-              <CardBody textAlign="center">
-                <VStack spacing={2}>
-                  <FaCar color="purple" size="32px" />
-                  <Text fontSize="2xl" fontWeight="bold" color="purple.500">
-                    {vehicles.filter(v => v.status === 'active').length}
-                  </Text>
-                  <Text color={textColor} fontSize="sm">Available Vehicles</Text>
-                </VStack>
-              </CardBody>
-            </Card>
-          </SimpleGrid>
+            </Collapse>
+          </Card>
 
-          {/* Main Content Grid */}
-          <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={6}>
-            
-            {/* Routes List */}
-            <GridItem>
-              <Card bg={cardBg} shadow="sm">
-                <CardHeader>
-                  <VStack align="stretch" spacing={4}>
-                    <Heading size="md" color="green.600">Routes</Heading>
-                    <InputGroup>
-                      <InputLeftElement pointerEvents="none">
-                        <SearchIcon color="gray.300" />
-                      </InputLeftElement>
-                      <Input
-                        placeholder="Search routes..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </InputGroup>
-                  </VStack>
-                </CardHeader>
-                <CardBody>
-                  <VStack spacing={3} align="stretch">
-                    {filteredRoutes.length === 0 ? (
-                      <Center py={8}>
-                        <VStack spacing={4}>
-                          <FaRoute color="gray" size="48px" />
-                          <Text color={textColor}>No routes found</Text>
-                          <Button
-                            leftIcon={<AddIcon />}
-                            colorScheme="green"
-                            onClick={onNewRouteOpen}
-                          >
-                            Create First Route
-                          </Button>
-                        </VStack>
-                      </Center>
-                    ) : (
-                      filteredRoutes.map((route) => (
-                        <Card
-                          key={route._id}
-                          variant="outline"
-                          cursor="pointer"
-                          _hover={{ shadow: "md" }}
-                          bg={activeRoute?._id === route._id ? "green.50" : "white"}
-                          border={activeRoute?._id === route._id ? "2px solid" : "1px solid"}
-                          borderColor={activeRoute?._id === route._id ? "green.500" : "gray.200"}
-                          onClick={() => setActiveRoute(route)}
-                        >
-                          <CardBody>
-                            <VStack align="stretch" spacing={3}>
-                              <Flex justify="space-between" align="center">
+          {/* Main Content */}
+          {isMobile ? (
+            <Tabs variant="soft-rounded" colorScheme="green">
+              <TabList mb={4}>
+                <Tab fontSize="sm">Routes</Tab>
+                <Tab fontSize="sm" isDisabled={!activeRoute}>
+                  {activeRoute ? `${activeRoute.name}` : 'Route Details'}
+                </Tab>
+              </TabList>
+              <TabPanels>
+                <TabPanel p={0}>
+                  {/* Routes List - Mobile */}
+                  <Card bg={cardBg} shadow="sm">
+                    <CardHeader pb={3}>
+                      <VStack align="stretch" spacing={4}>
+                        <Heading size="md" color="green.600">Routes</Heading>
+                        <InputGroup>
+                          <InputLeftElement pointerEvents="none">
+                            <SearchIcon color="gray.300" />
+                          </InputLeftElement>
+                          <Input
+                            placeholder="Search routes..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            size="sm"
+                          />
+                        </InputGroup>
+                      </VStack>
+                    </CardHeader>
+                    <CardBody>
+                      <VStack spacing={3} align="stretch">
+                        {filteredRoutes.length === 0 ? (
+                          <Center py={8}>
+                            <VStack spacing={4}>
+                              <FaRoute color="gray" size="48px" />
+                              <Text color={textColor}>No routes found</Text>
+                              <Button
+                                leftIcon={<AddIcon />}
+                                colorScheme="green"
+                                onClick={onNewRouteOpen}
+                                size="sm"
+                              >
+                                Create First Route
+                              </Button>
+                            </VStack>
+                          </Center>
+                        ) : (
+                          filteredRoutes.map((route) => (
+                            <Card
+                              key={route._id}
+                              variant="outline"
+                              cursor="pointer"
+                              _hover={{ shadow: "md" }}
+                              bg={activeRoute?._id === route._id ? "green.50" : "white"}
+                              border={activeRoute?._id === route._id ? "2px solid" : "1px solid"}
+                              borderColor={activeRoute?._id === route._id ? "green.500" : "gray.200"}
+                              onClick={() => setActiveRoute(route)}
+                            >
+                              <CardBody py={3}>
+                                <VStack align="stretch" spacing={2}>
+                                  <Flex justify="space-between" align="center">
+                                    <VStack align="start" spacing={1} flex="1">
+                                      <Heading size="sm">{route.name}</Heading>
+                                      <Text fontSize="xs" color={textColor} noOfLines={2}>
+                                        {route.description}
+                                      </Text>
+                                    </VStack>
+                                    <Badge colorScheme={getStatusColor(route.status)} fontSize="xs">
+                                      {route.status}
+                                    </Badge>
+                                  </Flex>
+                                  
+                                  <HStack spacing={3} fontSize="xs" color={textColor} justify="space-between">
+                                    <HStack>
+                                      <FaMapPin />
+                                      <Text>{route.totalStops} stops</Text>
+                                    </HStack>
+                                    <HStack>
+                                      <FaClock />
+                                      <Text>{route.estimatedTime}</Text>
+                                    </HStack>
+                                  </HStack>
+                                  
+                                  <HStack justify="space-between" pt={1}>
+                                    <HStack spacing={1}>
+                                      <Avatar size="xs" name={drivers.find(d => d._id === route.driverId)?.name} />
+                                      <Text fontSize="xs" noOfLines={1}>
+                                        {drivers.find(d => d._id === route.driverId)?.name || 'Unassigned'}
+                                      </Text>
+                                    </HStack>
+                                    <HStack spacing={1}>
+                                      <IconButton
+                                        icon={<FaOptinMonster />}
+                                        size="xs"
+                                        variant="ghost"
+                                        colorScheme="green"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleOptimizeRoute(route._id);
+                                        }}
+                                        isLoading={optimizing}
+                                        title="Optimize Route"
+                                      />
+                                      <Menu>
+                                        <MenuButton
+                                          as={IconButton}
+                                          icon={<SettingsIcon />}
+                                          size="xs"
+                                          variant="ghost"
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                        <MenuList>
+                                          <MenuItem icon={<EditIcon />} onClick={(e) => e.stopPropagation()}>
+                                            Edit Route
+                                          </MenuItem>
+                                          <MenuItem icon={<DeleteIcon />} color="red.500" onClick={(e) => e.stopPropagation()}>
+                                            Delete Route
+                                          </MenuItem>
+                                        </MenuList>
+                                      </Menu>
+                                    </HStack>
+                                  </HStack>
+                                </VStack>
+                              </CardBody>
+                            </Card>
+                          ))
+                        )}
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                </TabPanel>
+                <TabPanel p={0}>
+                  {/* Route Details - Mobile */}
+                  <Card bg={cardBg} shadow="sm">
+                    <CardHeader>
+                      <Flex justify="space-between" align="center">
+                        <Heading size="md" color="green.600">
+                          {activeRoute ? `${activeRoute.name} - Stops` : 'Select a Route'}
+                        </Heading>
+                        {activeRoute && (
+                          <HStack spacing={2}>
+                            <Button
+                              leftIcon={<FaDownload />}
+                              size="sm"
+                              variant="outline"
+                              colorScheme="green"
+                              onClick={handleExportStops}
+                              isDisabled={activeRoute.stops.length === 0}
+                            >
+                              Export
+                            </Button>
+                            <Button
+                              leftIcon={<AddIcon />}
+                              size="sm"
+                              colorScheme="green"
+                              onClick={onStopModalOpen}
+                            >
+                              Add Stop
+                            </Button>
+                          </HStack>
+                        )}
+                      </Flex>
+                    </CardHeader>
+                    <CardBody>
+                      {!activeRoute ? (
+                        <Center py={12}>
+                          <VStack spacing={4}>
+                            <FaMapPin color="gray" size="48px" />
+                            <Text color={textColor}>Select a route to view and manage stops</Text>
+                          </VStack>
+                        </Center>
+                      ) : (
+                        <VStack align="stretch" spacing={4}>
+                          
+                          {/* Route Info */}
+                          <Card variant="outline" bg="gray.50">
+                            <CardBody p={3}>
+                              <SimpleGrid columns={1} spacing={3}>
                                 <VStack align="start" spacing={1}>
-                                  <Heading size="sm">{route.name}</Heading>
-                                  <Text fontSize="xs" color={textColor}>
-                                    {route.description}
+                                  <Text fontSize="xs" color={textColor} fontWeight="bold">VEHICLE</Text>
+                                  <Text fontSize="sm">
+                                    {vehicles.find(v => v._id === activeRoute.vehicleId)?.make} {vehicles.find(v => v._id === activeRoute.vehicleId)?.model}
                                   </Text>
                                 </VStack>
-                                <Badge colorScheme={getStatusColor(route.status)}>
-                                  {route.status}
-                                </Badge>
-                              </Flex>
-                              
-                              <HStack spacing={4} fontSize="sm" color={textColor}>
-                                <HStack>
-                                  <FaMapPin />
-                                  <Text>{route.totalStops} stops</Text>
-                                </HStack>
-                                <HStack>
-                                  <FaRuler />
-                                  <Text>{route.totalDistance}</Text>
-                                </HStack>
-                                <HStack>
-                                  <FaClock />
-                                  <Text>{route.estimatedTime}</Text>
-                                </HStack>
-                              </HStack>
-                              
-                              <HStack justify="space-between">
-                                <HStack spacing={2}>
-                                  <Avatar size="xs" name={drivers.find(d => d._id === route.driverId)?.name} />
-                                  <Text fontSize="xs">
-                                    {drivers.find(d => d._id === route.driverId)?.name || 'Unassigned'}
+                                <VStack align="start" spacing={1}>
+                                  <Text fontSize="xs" color={textColor} fontWeight="bold">DRIVER</Text>
+                                  <Text fontSize="sm">
+                                    {drivers.find(d => d._id === activeRoute.driverId)?.name || 'Unassigned'}
                                   </Text>
-                                </HStack>
-                                <HStack spacing={1}>
-                                  <IconButton
-                                    icon={<FaOptinMonster />}
-                                    size="sm"
-                                    variant="ghost"
-                                    colorScheme="green"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleOptimizeRoute(route._id);
-                                    }}
-                                    isLoading={optimizing}
-                                    title="Optimize Route"
-                                  />
-                                  <IconButton
-                                    icon={<EditIcon />}
-                                    size="sm"
-                                    variant="ghost"
-                                    colorScheme="blue"
-                                    onClick={(e) => e.stopPropagation()}
-                                    title="Edit Route"
-                                  />
-                                  <IconButton
-                                    icon={<DeleteIcon />}
-                                    size="sm"
-                                    variant="ghost"
-                                    colorScheme="red"
-                                    onClick={(e) => e.stopPropagation()}
-                                    title="Delete Route"
-                                  />
-                                </HStack>
-                              </HStack>
-                            </VStack>
-                          </CardBody>
-                        </Card>
-                      ))
-                    )}
-                  </VStack>
-                </CardBody>
-              </Card>
-            </GridItem>
+                                </VStack>
+                              </SimpleGrid>
+                            </CardBody>
+                          </Card>
 
-            {/* Route Details & Stops */}
-            <GridItem>
-              <Card bg={cardBg} shadow="sm">
-                <CardHeader>
-                  <Flex justify="space-between" align="center">
-                    <Heading size="md" color="green.600">
-                      {activeRoute ? `${activeRoute.name} - Stops` : 'Select a Route'}
-                    </Heading>
-                    {activeRoute && (
-                      <Button
-                        leftIcon={<AddIcon />}
-                        size="sm"
-                        colorScheme="green"
-                        onClick={onStopModalOpen}
-                      >
-                        Add Stop
-                      </Button>
-                    )}
-                  </Flex>
-                </CardHeader>
-                <CardBody>
-                  {!activeRoute ? (
-                    <Center py={12}>
-                      <VStack spacing={4}>
-                        <FaMapPin color="gray" size="48px" />
-                        <Text color={textColor}>Select a route to view and manage stops</Text>
-                      </VStack>
-                    </Center>
-                  ) : (
+                          {/* Stops List */}
+                          {activeRoute.stops.length === 0 ? (
+                            <Center py={8}>
+                              <VStack spacing={4}>
+                                <FaMapPin color="gray" size="32px" />
+                                <Text color={textColor}>No stops added yet</Text>
+                                <Button
+                                  leftIcon={<AddIcon />}
+                                  colorScheme="green"
+                                  size="sm"
+                                  onClick={onStopModalOpen}
+                                >
+                                  Add First Stop
+                                </Button>
+                              </VStack>
+                            </Center>
+                          ) : (
+                            <VStack spacing={2} align="stretch">
+                              {activeRoute.stops.map((stop, index) => (
+                                <Card
+                                  key={stop.id}
+                                  variant="outline"
+                                  bg="white"
+                                  shadow="sm"
+                                >
+                                  <CardBody py={3}>
+                                    <HStack spacing={3}>
+                                      <Badge colorScheme="blue" fontSize="xs">
+                                        {index + 1}
+                                      </Badge>
+                                      <VStack align="start" spacing={1} flex={1}>
+                                        <Text fontSize="sm" fontWeight="bold" noOfLines={2}>
+                                          {stop.address}
+                                        </Text>
+                                        <HStack spacing={2} fontSize="xs" color={textColor} flexWrap="wrap">
+                                          <Text>{stop.contactName}</Text>
+                                          <Text>{stop.timeWindow}</Text>
+                                          <Badge
+                                            size="sm"
+                                            colorScheme={getPriorityColor(stop.priority)}
+                                          >
+                                            {stop.priority}
+                                          </Badge>
+                                        </HStack>
+                                      </VStack>
+                                      <VStack spacing={1}>
+                                        <IconButton
+                                          icon={<FaArrowUp />}
+                                          size="xs"
+                                          variant="ghost"
+                                          colorScheme="gray"
+                                          onClick={() => {
+                                            if (index > 0) {
+                                              const stops = [...activeRoute.stops];
+                                              [stops[index], stops[index - 1]] = [stops[index - 1], stops[index]];
+                                              const updatedRoute = { ...activeRoute, stops };
+                                              setActiveRoute(updatedRoute);
+                                              const updatedRoutes = routes.map(route => 
+                                                route._id === activeRoute._id ? updatedRoute : route
+                                              );
+                                              setRoutes(updatedRoutes);
+                                            }
+                                          }}
+                                          isDisabled={index === 0}
+                                          title="Move Up"
+                                        />
+                                        <IconButton
+                                          icon={<FaArrowDown />}
+                                          size="xs"
+                                          variant="ghost"
+                                          colorScheme="gray"
+                                          onClick={() => {
+                                            if (index < activeRoute.stops.length - 1) {
+                                              const stops = [...activeRoute.stops];
+                                              [stops[index], stops[index + 1]] = [stops[index + 1], stops[index]];
+                                              const updatedRoute = { ...activeRoute, stops };
+                                              setActiveRoute(updatedRoute);
+                                              const updatedRoutes = routes.map(route => 
+                                                route._id === activeRoute._id ? updatedRoute : route
+                                              );
+                                              setRoutes(updatedRoutes);
+                                            }
+                                          }}
+                                          isDisabled={index === activeRoute.stops.length - 1}
+                                          title="Move Down"
+                                        />
+                                        <IconButton
+                                          icon={<DeleteIcon />}
+                                          size="xs"
+                                          variant="ghost"
+                                          colorScheme="red"
+                                          onClick={() => handleDeleteStop(stop.id)}
+                                          title="Remove Stop"
+                                        />
+                                      </VStack>
+                                    </HStack>
+                                  </CardBody>
+                                </Card>
+                              ))}
+                            </VStack>
+                          )}
+                        </VStack>
+                      )}
+                    </CardBody>
+                  </Card>
+                </TabPanel>
+              </TabPanels>
+            </Tabs>
+          ) : (
+            /* Desktop Layout */
+            <Grid templateColumns="1fr 1fr" gap={6}>
+              {/* Routes List */}
+              <GridItem>
+                <Card bg={cardBg} shadow="sm">
+                  <CardHeader>
                     <VStack align="stretch" spacing={4}>
-                      
-                      {/* Route Info */}
-                      <Card variant="outline" bg="gray.50">
-                        <CardBody>
-                          <SimpleGrid columns={2} spacing={4}>
-                            <VStack align="start" spacing={1}>
-                              <Text fontSize="xs" color={textColor} fontWeight="bold">VEHICLE</Text>
-                              <Text fontSize="sm">
-                                {vehicles.find(v => v._id === activeRoute.vehicleId)?.make} {vehicles.find(v => v._id === activeRoute.vehicleId)?.model}
-                              </Text>
-                            </VStack>
-                            <VStack align="start" spacing={1}>
-                              <Text fontSize="xs" color={textColor} fontWeight="bold">DRIVER</Text>
-                              <Text fontSize="sm">
-                                {drivers.find(d => d._id === activeRoute.driverId)?.name || 'Unassigned'}
-                              </Text>
-                            </VStack>
-                          </SimpleGrid>
-                        </CardBody>
-                      </Card>
-
-                      {/* Stops List */}
-                      {activeRoute.stops.length === 0 ? (
+                      <Heading size="md" color="green.600">Routes</Heading>
+                      <InputGroup>
+                        <InputLeftElement pointerEvents="none">
+                          <SearchIcon color="gray.300" />
+                        </InputLeftElement>
+                        <Input
+                          placeholder="Search routes..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </InputGroup>
+                    </VStack>
+                  </CardHeader>
+                  <CardBody>
+                    <VStack spacing={3} align="stretch">
+                      {filteredRoutes.length === 0 ? (
                         <Center py={8}>
                           <VStack spacing={4}>
-                            <FaMapPin color="gray" size="32px" />
-                            <Text color={textColor}>No stops added yet</Text>
+                            <FaRoute color="gray" size="48px" />
+                            <Text color={textColor}>No routes found</Text>
                             <Button
                               leftIcon={<AddIcon />}
                               colorScheme="green"
-                              size="sm"
-                              onClick={onStopModalOpen}
+                              onClick={onNewRouteOpen}
+                            >
+                              Create First Route
+                            </Button>
+                          </VStack>
+                        </Center>
+                      ) : (
+                        filteredRoutes.map((route) => (
+                          <Card
+                            key={route._id}
+                            variant="outline"
+                            cursor="pointer"
+                            _hover={{ shadow: "md" }}
+                            bg={activeRoute?._id === route._id ? "green.50" : "white"}
+                            border={activeRoute?._id === route._id ? "2px solid" : "1px solid"}
+                            borderColor={activeRoute?._id === route._id ? "green.500" : "gray.200"}
+                            onClick={() => setActiveRoute(route)}
+                          >
+                            <CardBody>
+                              <VStack align="stretch" spacing={3}>
+                                <Flex justify="space-between" align="center">
+                                  <VStack align="start" spacing={1}>
+                                    <Heading size="sm">{route.name}</Heading>
+                                    <Text fontSize="xs" color={textColor}>
+                                      {route.description}
+                                    </Text>
+                                  </VStack>
+                                  <Badge colorScheme={getStatusColor(route.status)}>
+                                    {route.status}
+                                  </Badge>
+                                </Flex>
+                                
+                                <HStack spacing={4} fontSize="sm" color={textColor}>
+                                  <HStack>
+                                    <FaMapPin />
+                                    <Text>{route.totalStops} stops</Text>
+                                  </HStack>
+                                  <HStack>
+                                    <FaRuler />
+                                    <Text>{route.totalDistance}</Text>
+                                  </HStack>
+                                  <HStack>
+                                    <FaClock />
+                                    <Text>{route.estimatedTime}</Text>
+                                  </HStack>
+                                </HStack>
+                                
+                                <HStack justify="space-between">
+                                  <HStack spacing={2}>
+                                    <Avatar size="xs" name={drivers.find(d => d._id === route.driverId)?.name} />
+                                    <Text fontSize="xs">
+                                      {drivers.find(d => d._id === route.driverId)?.name || 'Unassigned'}
+                                    </Text>
+                                  </HStack>
+                                  <HStack spacing={1}>
+                                    <IconButton
+                                      icon={<FaOptinMonster />}
+                                      size="sm"
+                                      variant="ghost"
+                                      colorScheme="green"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOptimizeRoute(route._id);
+                                      }}
+                                      isLoading={optimizing}
+                                      title="Optimize Route"
+                                    />
+                                    <IconButton
+                                      icon={<EditIcon />}
+                                      size="sm"
+                                      variant="ghost"
+                                      colorScheme="blue"
+                                      onClick={(e) => e.stopPropagation()}
+                                      title="Edit Route"
+                                    />
+                                    <IconButton
+                                      icon={<DeleteIcon />}
+                                      size="sm"
+                                      variant="ghost"
+                                      colorScheme="red"
+                                      onClick={(e) => e.stopPropagation()}
+                                      title="Delete Route"
+                                    />
+                                  </HStack>
+                                </HStack>
+                              </VStack>
+                            </CardBody>
+                          </Card>
+                        ))
+                      )}
+                    </VStack>
+                  </CardBody>
+                </Card>
+              </GridItem>
+
+              {/* Route Details & Stops */}
+              <GridItem>
+                <Card bg={cardBg} shadow="sm">
+                  <CardHeader>
+                    <Flex justify="space-between" align="center">
+                      <Heading size="md" color="green.600">
+                        {activeRoute ? `${activeRoute.name} - Stops` : 'Select a Route'}
+                      </Heading>
+                      {activeRoute && (
+                        <HStack spacing={2}>
+                          <Button
+                            leftIcon={<FaDownload />}
+                            size="sm"
+                            variant="outline"
+                            colorScheme="green"
+                            onClick={handleExportStops}
+                            isDisabled={activeRoute.stops.length === 0}
+                          >
+                            Export Stops
+                          </Button>
+                          <Button
+                            leftIcon={<AddIcon />}
+                            size="sm"
+                            colorScheme="green"
+                            onClick={onStopModalOpen}
+                          >
+                            Add Stop
+                          </Button>
+                        </HStack>
+                      )}
+                    </Flex>
+                  </CardHeader>
+                  <CardBody>
+                    {!activeRoute ? (
+                      <Center py={12}>
+                        <VStack spacing={4}>
+                          <FaMapPin color="gray" size="48px" />
+                          <Text color={textColor}>Select a route to view and manage stops</Text>
+                        </VStack>
+                      </Center>
+                    ) : (
+                      <VStack align="stretch" spacing={4}>
+                        
+                        {/* Route Info */}
+                        <Card variant="outline" bg="gray.50">
+                          <CardBody>
+                            <SimpleGrid columns={2} spacing={4}>
+                              <VStack align="start" spacing={1}>
+                                <Text fontSize="xs" color={textColor} fontWeight="bold">VEHICLE</Text>
+                                <Text fontSize="sm">
+                                  {vehicles.find(v => v._id === activeRoute.vehicleId)?.make} {vehicles.find(v => v._id === activeRoute.vehicleId)?.model}
+                                </Text>
+                              </VStack>
+                              <VStack align="start" spacing={1}>
+                                <Text fontSize="xs" color={textColor} fontWeight="bold">DRIVER</Text>
+                                <Text fontSize="sm">
+                                  {drivers.find(d => d._id === activeRoute.driverId)?.name || 'Unassigned'}
+                                </Text>
+                              </VStack>
+                            </SimpleGrid>
+                          </CardBody>
+                        </Card>
+
+                        {/* Stops List */}
+                        {activeRoute.stops.length === 0 ? (
+                          <Center py={8}>
+                            <VStack spacing={4}>
+                              <FaMapPin color="gray" size="32px" />
+                              <Text color={textColor}>No stops added yet</Text>
+                              <Button
+                                leftIcon={<AddIcon />}
+                                colorScheme="green"
+                                size="sm"
+                                onClick={onStopModalOpen}
                             >
                               Add First Stop
                             </Button>
@@ -806,6 +1410,7 @@ const RoutePlanning = () => {
               </Card>
             </GridItem>
           </Grid>
+          )}
         </VStack>
       </Container>
 

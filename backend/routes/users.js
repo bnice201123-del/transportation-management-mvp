@@ -261,4 +261,82 @@ router.patch('/:id/deactivate', authenticateToken, authorizeRoles('admin'), asyn
   }
 });
 
+// Update rider balance
+router.patch('/:id/balance', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatcher'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { type, amount, operation } = req.body;
+
+    if (!type || !amount || !operation) {
+      return res.status(400).json({
+        success: false,
+        message: 'Type, amount, and operation are required'
+      });
+    }
+
+    if (amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Amount must be greater than 0'
+      });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (user.role !== 'rider') {
+      return res.status(400).json({
+        success: false,
+        message: 'User is not a rider'
+      });
+    }
+
+    // Update balance based on type
+    if (type === 'trips') {
+      if (operation === 'add') {
+        user.serviceBalance.tripCount = (user.serviceBalance.tripCount || 0) + amount;
+      } else if (operation === 'subtract') {
+        user.serviceBalance.tripCount = Math.max(0, (user.serviceBalance.tripCount || 0) - amount);
+      }
+    } else if (type === 'dollars') {
+      if (operation === 'add') {
+        user.serviceBalance.dollarAmount = (user.serviceBalance.dollarAmount || 0) + amount;
+      } else if (operation === 'subtract') {
+        user.serviceBalance.dollarAmount = Math.max(0, (user.serviceBalance.dollarAmount || 0) - amount);
+      }
+    } else if (type === 'mileage') {
+      if (operation === 'add') {
+        user.mileageBalance.currentBalance = (user.mileageBalance.currentBalance || 0) + amount;
+      } else if (operation === 'subtract') {
+        user.mileageBalance.currentBalance = Math.max(0, (user.mileageBalance.currentBalance || 0) - amount);
+        user.mileageBalance.totalUsed = (user.mileageBalance.totalUsed || 0) + Math.min(amount, (user.mileageBalance.currentBalance || 0));
+      }
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `Balance updated successfully`,
+      user: {
+        _id: user._id,
+        serviceBalance: user.serviceBalance,
+        mileageBalance: user.mileageBalance
+      }
+    });
+  } catch (error) {
+    console.error('Update balance error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error updating balance',
+      error: error.message
+    });
+  }
+});
+
 export default router;

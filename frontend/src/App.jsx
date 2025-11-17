@@ -628,7 +628,9 @@ const AppRoutes = () => {
         path="/maps/tracking" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
-            <LiveTracking />
+            <ErrorBoundary fallbackMessage="Failed to load live tracking. Please check your internet connection and try again.">
+              <LiveTracking />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -636,7 +638,9 @@ const AppRoutes = () => {
         path="/maps/routes" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
-            <RoutePlanning />
+            <ErrorBoundary fallbackMessage="Failed to load route planning. Please check your internet connection and try again.">
+              <RoutePlanning />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />

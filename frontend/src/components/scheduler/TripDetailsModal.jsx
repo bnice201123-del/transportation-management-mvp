@@ -62,7 +62,8 @@ import {
   FaStopwatch,
   FaRoad,
   FaGasPump,
-  FaClipboardList
+  FaClipboardList,
+  FaInfo
 } from 'react-icons/fa';
 
 const TripDetailsModal = ({ isOpen, onClose, trip }) => {

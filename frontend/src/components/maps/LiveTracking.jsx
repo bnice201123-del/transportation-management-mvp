@@ -150,24 +150,45 @@ const LiveTracking = () => {
       setRetryCount(0); // Reset retry count on success
       
       // Create map markers for vehicles
-      const vehicleMarkers = vehiclesArray.map(vehicle => ({
-        id: vehicle._id,
-        position: vehicle.currentLocation || { lat: 44.9778 + Math.random() * 0.1, lng: -93.2650 + Math.random() * 0.1 },
-        title: `${vehicle.make} ${vehicle.model} - ${vehicle.licensePlate}`,
-        type: 'vehicle',
-        status: vehicle.status || 'idle',
-        icon: (() => {
-          const svgString = `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="16" cy="16" r="12" fill="${getStatusColor(vehicle.status || 'idle')}" stroke="#fff" stroke-width="2"/>
-            <text x="16" y="20" text-anchor="middle" fill="white" font-size="12" font-family="Arial">CAR</text>
-          </svg>`;
-          return {
-            url: `data:image/svg+xml;base64,${btoa(svgString)}`,
-            scaledSize: { width: 32, height: 32 }
+      const vehicleMarkers = vehiclesArray.map(vehicle => {
+        // Validate and ensure position has valid lat/lng
+        let position = vehicle.currentLocation;
+        if (!position || typeof position.lat !== 'number' || typeof position.lng !== 'number' || isNaN(position.lat) || isNaN(position.lng)) {
+          // Generate a fallback position if current location is invalid
+          position = { 
+            lat: 44.9778 + Math.random() * 0.1 - 0.05, 
+            lng: -93.2650 + Math.random() * 0.1 - 0.05 
           };
-        })(),
-        info: vehicle
-      }));
+        }
+        
+        return {
+          id: vehicle._id,
+          position: position,
+          title: `${vehicle.make} ${vehicle.model} - ${vehicle.licensePlate}`,
+          type: 'vehicle',
+          status: vehicle.status || 'idle',
+          icon: (() => {
+            try {
+              const svgString = `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="16" r="12" fill="${getStatusColor(vehicle.status || 'idle')}" stroke="#fff" stroke-width="2"/>
+                <text x="16" y="20" text-anchor="middle" fill="white" font-size="12" font-family="Arial">CAR</text>
+              </svg>`;
+              return {
+                url: `data:image/svg+xml;base64,${btoa(svgString)}`,
+                scaledSize: { width: 32, height: 32 }
+              };
+            } catch (error) {
+              console.warn('Failed to create SVG marker for vehicle:', vehicle._id, error);
+              // Fallback to default marker
+              return {
+                url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTIiIGZpbGw9IiM2Mzc0OGQiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyIi8+Cjx0ZXh0IHg9IjE2IiB5PSIyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMTIiIGZvbnQtZmFtaWx5PSJBcmlhbCI+Q0FSPC90ZXh0Pgo8L3N2Zz4K',
+                scaledSize: { width: 32, height: 32 }
+              };
+            }
+          })(),
+          info: vehicle
+        };
+      });
       
       setMarkers(vehicleMarkers);
     } catch (error) {

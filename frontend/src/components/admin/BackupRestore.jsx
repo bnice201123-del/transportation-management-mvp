@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -187,14 +187,12 @@ const BackupRestore = () => {
   const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
   const { isOpen: isRestoreModalOpen, onOpen: onRestoreModalOpen, onClose: onRestoreModalClose } = useDisclosure();
   const { isOpen: isSettingsModalOpen, onOpen: onSettingsModalOpen, onClose: onSettingsModalClose } = useDisclosure();
-  const { isOpen: isDetailsModalOpen, onOpen: onDetailsModalOpen, onClose: onDetailsModalClose } = useDisclosure();
 
   // Responsive design
   const isMobile = useBreakpointValue({ base: true, md: false });
   const containerMaxW = useBreakpointValue({ base: 'full', md: '7xl' });
   const tableSize = useBreakpointValue({ base: 'sm', md: 'md' });
   const tableVariant = useBreakpointValue({ base: 'simple', md: 'striped' });
-  const cardColumns = useBreakpointValue({ base: 1, sm: 2, md: 3, lg: 4 });
 
   // Color mode values
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -208,7 +206,6 @@ const BackupRestore = () => {
   const headerBg = useColorModeValue('linear-gradient(135deg, #4299e1 0%, #3182ce 100%)', 'linear-gradient(135deg, #2b6cb0 0%, #2c5282 100%)');
   const successColor = useColorModeValue('green.500', 'green.300');
   const errorColor = useColorModeValue('red.500', 'red.300');
-  const warningColor = useColorModeValue('orange.500', 'orange.300');
   const tableHeaderBg = useColorModeValue('gray.50', 'gray.700');
   const statIconBg = useColorModeValue('gray.50', 'gray.700');
 
@@ -220,10 +217,9 @@ const BackupRestore = () => {
   const [backupSchedules, setBackupSchedules] = useState([]);
   const [selectedBackup, setSelectedBackup] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [processingBackup, setProcessingBackup] = useState(null);
-  const [restoringBackup, setRestoringBackup] = useState(null);
+  const [processingBackup] = useState(null);
+  const [restoringBackup] = useState(null);
   const [viewMode, setViewMode] = useState('table');
-  const [bulkSelection, setBulkSelection] = useState([]);
 
   // Enhanced filter and sorting states
   const [searchTerm, setSearchTerm] = useState('');
@@ -252,9 +248,6 @@ const BackupRestore = () => {
   const [backupFrequency, setBackupFrequency] = useState('daily');
   const [retentionDays, setRetentionDays] = useState(30);
   const [maxBackups, setMaxBackups] = useState(10);
-
-  // Additional state handlers
-  const [isLoading, setIsLoading] = useState(false);
 
   // Filter and sort handlers
   const handleSortChange = (field) => {
@@ -413,6 +406,7 @@ const BackupRestore = () => {
     setFilteredBackups(mockBackups);
     setRestoreHistory(mockRestoreHistory);
     setBackupSchedules(mockSchedules);
+    setLoading(false);
   }, []);
 
   // Filter backups based on search and filters

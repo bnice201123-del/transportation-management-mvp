@@ -186,7 +186,7 @@ const AdminStatistics = () => {
     }
     
     try {
-      const response = await axios.get(`/analytics/statistics?range=${timeRange}`);
+      const response = await axios.get(`/api/analytics/statistics?range=${timeRange}`);
       setStatistics(response.data);
       setLastUpdated(new Date());
       
@@ -1265,36 +1265,52 @@ const AdminStatistics = () => {
                 <HStack>
                   <Icon as={CheckCircleIcon} color="green.500" />
                   <VStack align="start" spacing={0}>
-                    <Text fontWeight="bold">
-                      {loading ? <Skeleton height="20px" width="30px" /> : (statistics.overview?.activeTrips || '0')}
-                    </Text>
+                    {loading ? (
+                      <Skeleton height="20px" width="30px" />
+                    ) : (
+                      <Text fontWeight="bold">
+                        {statistics.overview?.activeTrips || '0'}
+                      </Text>
+                    )}
                     <Text fontSize="sm" color="gray.500">Active Trips</Text>
                   </VStack>
                 </HStack>
                 <HStack>
                   <Icon as={CalendarIcon} color="blue.500" />
                   <VStack align="start" spacing={0}>
-                    <Text fontWeight="bold">
-                      {loading ? <Skeleton height="20px" width="30px" /> : (statistics.overview?.completedTrips || '0')}
-                    </Text>
+                    {loading ? (
+                      <Skeleton height="20px" width="30px" />
+                    ) : (
+                      <Text fontWeight="bold">
+                        {statistics.overview?.completedTrips || '0'}
+                      </Text>
+                    )}
                     <Text fontSize="sm" color="gray.500">Completed Today</Text>
                   </VStack>
                 </HStack>
                 <HStack>
                   <Icon as={WarningIcon} color="orange.500" />
                   <VStack align="start" spacing={0}>
-                    <Text fontWeight="bold">
-                      {loading ? <Skeleton height="20px" width="30px" /> : (statistics.overview?.cancelledTrips || '0')}
-                    </Text>
+                    {loading ? (
+                      <Skeleton height="20px" width="30px" />
+                    ) : (
+                      <Text fontWeight="bold">
+                        {statistics.overview?.cancelledTrips || '0'}
+                      </Text>
+                    )}
                     <Text fontSize="sm" color="gray.500">Cancelled Trips</Text>
                   </VStack>
                 </HStack>
                 <HStack>
                   <Icon as={FaCar} color="purple.500" />
                   <VStack align="start" spacing={0}>
-                    <Text fontWeight="bold">
-                      {loading ? <Skeleton height="20px" width="30px" /> : (statistics.overview?.totalDrivers || '0')}
-                    </Text>
+                    {loading ? (
+                      <Skeleton height="20px" width="30px" />
+                    ) : (
+                      <Text fontWeight="bold">
+                        {statistics.overview?.totalDrivers || '0'}
+                      </Text>
+                    )}
                     <Text fontSize="sm" color="gray.500">Total Drivers</Text>
                   </VStack>
                 </HStack>

@@ -469,6 +469,11 @@ router.post('/', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'a
       createdBy: req.user._id
     };
 
+    // Sanitize ObjectId fields - convert empty strings to null
+    if (tripData.assignedDriver === '' || tripData.assignedDriver === 'null' || tripData.assignedDriver === 'undefined') {
+      tripData.assignedDriver = null;
+    }
+
     const trip = new Trip(tripData);
     await trip.save();
 
@@ -510,8 +515,14 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
     // Schedulers, dispatchers and admins can update any trip
 
+    // Sanitize ObjectId fields - convert empty strings to null
+    const updateData = { ...req.body };
+    if (updateData.assignedDriver === '' || updateData.assignedDriver === 'null' || updateData.assignedDriver === 'undefined') {
+      updateData.assignedDriver = null;
+    }
+
     // Update trip
-    Object.assign(trip, req.body);
+    Object.assign(trip, updateData);
     await trip.save();
 
     // Log activity

@@ -65,6 +65,7 @@ import {
   UserIcon as UserIconSolid,
   TruckIcon as TruckIconSolid
 } from '@heroicons/react/24/solid';
+import { FaMapMarkerAlt, FaUser, FaPhone, FaEnvelope, FaCar } from 'react-icons/fa';
 import axios from '../../config/axios';
 
 const CalendarOverview = ({ onTripUpdate }) => {
@@ -73,7 +74,10 @@ const CalendarOverview = ({ onTripUpdate }) => {
   const [viewMode, setViewMode] = useState('month'); // day, week, month, year
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedTrip, setSelectedTrip] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedDateTrips, setSelectedDateTrips] = useState([]);
   const { isOpen: isDetailsOpen, onOpen: onDetailsOpen, onClose: onDetailsClose } = useDisclosure();
+  const { isOpen: isDayTripsOpen, onOpen: onDayTripsOpen, onClose: onDayTripsClose } = useDisclosure();
 
   // Color mode values
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -82,6 +86,9 @@ const CalendarOverview = ({ onTripUpdate }) => {
   const textColor = useColorModeValue('gray.600', 'gray.300');
   const headerBg = useColorModeValue('green.50', 'green.900');
   const mutedBgColor = useColorModeValue('gray.50', 'gray.900');
+  const dateTextColor = useColorModeValue('gray.800', 'gray.200');
+  const tripNameBg = useColorModeValue('blue.50', 'blue.900');
+  const tripNameColor = useColorModeValue('gray.800', 'gray.100');
 
   // Fetch trips data
   const fetchTrips = async () => {
@@ -89,10 +96,101 @@ const CalendarOverview = ({ onTripUpdate }) => {
       setLoading(true);
       const response = await axios.get('/api/trips');
       const tripsData = response.data?.trips || [];
-      setTrips(tripsData);
+      console.log('Fetched trips from API:', tripsData.length, tripsData);
+      
+      // If no trips from API, use mock data for demonstration
+      if (tripsData.length === 0) {
+        console.log('No trips from API, using mock data for demonstration');
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth();
+        
+        const mockTrips = [
+          {
+            _id: '1',
+            riderName: 'John Smith',
+            riderPhone: '(555) 123-4567',
+            riderEmail: 'john.smith@email.com',
+            pickupLocation: { address: '123 Main St, Downtown' },
+            dropoffLocation: { address: '456 Oak Ave, Uptown' },
+            scheduledDate: new Date(currentYear, currentMonth, 17).toISOString(),
+            scheduledTime: '09:00',
+            status: 'scheduled',
+            assignedDriver: { firstName: 'Mike', lastName: 'Johnson' }
+          },
+          {
+            _id: '2',
+            riderName: 'Sarah Wilson',
+            riderPhone: '(555) 987-6543',
+            riderEmail: 'sarah.w@email.com',
+            pickupLocation: { address: '789 Pine St, Westside' },
+            dropoffLocation: { address: '321 Elm Dr, Eastside' },
+            scheduledDate: new Date(currentYear, currentMonth, 17).toISOString(),
+            scheduledTime: '14:30',
+            status: 'scheduled',
+            assignedDriver: { firstName: 'Anna', lastName: 'Davis' }
+          },
+          {
+            _id: '3',
+            riderName: 'Robert Brown',
+            riderPhone: '(555) 456-7890',
+            riderEmail: 'r.brown@email.com',
+            pickupLocation: { address: '555 Center Ave, Midtown' },
+            dropoffLocation: { address: '888 North Blvd, Uptown' },
+            scheduledDate: new Date(currentYear, currentMonth, 18).toISOString(),
+            scheduledTime: '11:15',
+            status: 'in-progress',
+            assignedDriver: { firstName: 'Tom', lastName: 'Wilson' }
+          },
+          {
+            _id: '4',
+            riderName: 'Emily Davis',
+            riderPhone: '(555) 234-5678',
+            riderEmail: 'emily.d@email.com',
+            pickupLocation: { address: '111 Park Ave, Downtown' },
+            dropoffLocation: { address: '222 Lake Rd, Suburb' },
+            scheduledDate: new Date(currentYear, currentMonth, 20).toISOString(),
+            scheduledTime: '10:00',
+            status: 'scheduled',
+            assignedDriver: { firstName: 'Chris', lastName: 'Lee' }
+          },
+          {
+            _id: '5',
+            riderName: 'Michael Jones',
+            riderPhone: '(555) 345-6789',
+            riderEmail: 'mjones@email.com',
+            pickupLocation: { address: '333 River St, Westend' },
+            dropoffLocation: { address: '444 Hill Dr, Northside' },
+            scheduledDate: new Date(currentYear, currentMonth, 20).toISOString(),
+            scheduledTime: '15:30',
+            status: 'scheduled',
+            assignedDriver: null
+          },
+          {
+            _id: '6',
+            riderName: 'Jennifer Lee',
+            riderPhone: '(555) 567-8901',
+            riderEmail: 'jlee@email.com',
+            pickupLocation: { address: '777 Beach Rd, Coastside' },
+            dropoffLocation: { address: '999 Mountain View, Hillside' },
+            scheduledDate: new Date(currentYear, currentMonth, 20).toISOString(),
+            scheduledTime: '16:45',
+            status: 'scheduled',
+            assignedDriver: { firstName: 'David', lastName: 'Martinez' }
+          }
+        ];
+        console.log('Using mock trips:', mockTrips.length, mockTrips);
+        setTrips(mockTrips);
+      } else {
+        setTrips(tripsData);
+      }
     } catch (error) {
       console.error('Error fetching trips:', error);
-      // Mock data for development
+      // Fallback mock data on error
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth();
+      
       const mockTrips = [
         {
           _id: '1',
@@ -101,7 +199,7 @@ const CalendarOverview = ({ onTripUpdate }) => {
           riderEmail: 'john.smith@email.com',
           pickupLocation: { address: '123 Main St, Downtown' },
           dropoffLocation: { address: '456 Oak Ave, Uptown' },
-          scheduledDate: '2025-11-05',
+          scheduledDate: new Date(currentYear, currentMonth, 17).toISOString(),
           scheduledTime: '09:00',
           status: 'scheduled',
           assignedDriver: { firstName: 'Mike', lastName: 'Johnson' }
@@ -113,7 +211,7 @@ const CalendarOverview = ({ onTripUpdate }) => {
           riderEmail: 'sarah.w@email.com',
           pickupLocation: { address: '789 Pine St, Westside' },
           dropoffLocation: { address: '321 Elm Dr, Eastside' },
-          scheduledDate: '2025-11-06',
+          scheduledDate: new Date(currentYear, currentMonth, 17).toISOString(),
           scheduledTime: '14:30',
           status: 'scheduled',
           assignedDriver: { firstName: 'Anna', lastName: 'Davis' }
@@ -125,12 +223,49 @@ const CalendarOverview = ({ onTripUpdate }) => {
           riderEmail: 'r.brown@email.com',
           pickupLocation: { address: '555 Center Ave, Midtown' },
           dropoffLocation: { address: '888 North Blvd, Uptown' },
-          scheduledDate: '2025-11-07',
+          scheduledDate: new Date(currentYear, currentMonth, 18).toISOString(),
           scheduledTime: '11:15',
           status: 'in-progress',
           assignedDriver: { firstName: 'Tom', lastName: 'Wilson' }
+        },
+        {
+          _id: '4',
+          riderName: 'Emily Davis',
+          riderPhone: '(555) 234-5678',
+          riderEmail: 'emily.d@email.com',
+          pickupLocation: { address: '111 Park Ave, Downtown' },
+          dropoffLocation: { address: '222 Lake Rd, Suburb' },
+          scheduledDate: new Date(currentYear, currentMonth, 20).toISOString(),
+          scheduledTime: '10:00',
+          status: 'scheduled',
+          assignedDriver: { firstName: 'Chris', lastName: 'Lee' }
+        },
+        {
+          _id: '5',
+          riderName: 'Michael Jones',
+          riderPhone: '(555) 345-6789',
+          riderEmail: 'mjones@email.com',
+          pickupLocation: { address: '333 River St, Westend' },
+          dropoffLocation: { address: '444 Hill Dr, Northside' },
+          scheduledDate: new Date(currentYear, currentMonth, 20).toISOString(),
+          scheduledTime: '15:30',
+          status: 'scheduled',
+          assignedDriver: null
+        },
+        {
+          _id: '6',
+          riderName: 'Jennifer Lee',
+          riderPhone: '(555) 567-8901',
+          riderEmail: 'jlee@email.com',
+          pickupLocation: { address: '777 Beach Rd, Coastside' },
+          dropoffLocation: { address: '999 Mountain View, Hillside' },
+          scheduledDate: new Date(currentYear, currentMonth, 20).toISOString(),
+          scheduledTime: '16:45',
+          status: 'scheduled',
+          assignedDriver: { firstName: 'David', lastName: 'Martinez' }
         }
       ];
+      console.log('Error - using mock trips:', mockTrips.length, mockTrips);
       setTrips(mockTrips);
     } finally {
       setLoading(false);
@@ -140,6 +275,17 @@ const CalendarOverview = ({ onTripUpdate }) => {
   useEffect(() => {
     fetchTrips();
   }, []);
+
+  // Debug: log when trips change
+  useEffect(() => {
+    console.log('Trips state updated:', trips.length, 'trips');
+    if (trips.length > 0) {
+      console.log('Trip dates:', trips.map(t => ({
+        name: t.riderName,
+        date: new Date(t.scheduledDate).toDateString()
+      })));
+    }
+  }, [trips]);
 
   // Filter trips based on current view and date
   const filteredTrips = useMemo(() => {
@@ -236,6 +382,15 @@ const CalendarOverview = ({ onTripUpdate }) => {
     onDetailsOpen();
   };
 
+  // Handle date click to show all trips for that day
+  const handleDateClick = (day) => {
+    if (day.trips.length > 0) {
+      setSelectedDate(day.date);
+      setSelectedDateTrips(day.trips);
+      onDayTripsOpen();
+    }
+  };
+
   // Generate calendar grid for month view
   const generateCalendarGrid = () => {
     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -243,13 +398,21 @@ const CalendarOverview = ({ onTripUpdate }) => {
     const startDate = new Date(startOfMonth);
     startDate.setDate(startDate.getDate() - startDate.getDay());
 
+    console.log('Generating calendar for:', currentDate.toLocaleDateString());
+    console.log('Total trips available:', trips.length);
+
     const days = [];
     const currentDateObj = new Date(startDate);
 
     for (let i = 0; i < 42; i++) {
-      const dayTrips = trips.filter(trip => 
-        new Date(trip.scheduledDate).toDateString() === currentDateObj.toDateString()
-      );
+      const dayTrips = trips.filter(trip => {
+        const tripDate = new Date(trip.scheduledDate);
+        const matches = tripDate.toDateString() === currentDateObj.toDateString();
+        if (matches) {
+          console.log(`Trip "${trip.riderName}" matches date ${currentDateObj.toDateString()}`);
+        }
+        return matches;
+      });
 
       days.push({
         date: new Date(currentDateObj),
@@ -259,6 +422,16 @@ const CalendarOverview = ({ onTripUpdate }) => {
       });
 
       currentDateObj.setDate(currentDateObj.getDate() + 1);
+    }
+
+    // Debug: log days with trips
+    const daysWithTrips = days.filter(d => d.trips.length > 0);
+    console.log('Days with trips:', daysWithTrips.length);
+    if (daysWithTrips.length > 0) {
+      daysWithTrips.forEach(day => {
+        console.log(`  ${day.date.toDateString()}: ${day.trips.length} trip(s)`, 
+          day.trips.map(t => t.riderName));
+      });
     }
 
     return days;
@@ -438,45 +611,49 @@ const CalendarOverview = ({ onTripUpdate }) => {
               {generateCalendarGrid().map((day, index) => (
                 <Box
                   key={index}
-                  h="120px"
+                  minH="120px"
                   p={2}
                   borderRight="1px"
                   borderBottom="1px"
                   borderColor={borderColor}
                   bg={day.isCurrentMonth ? bgColor : mutedBgColor}
                   opacity={day.isCurrentMonth ? 1 : 0.6}
-                  _hover={{ bg: hoverBg }}
-                  cursor="pointer"
+                  _hover={{ bg: hoverBg, shadow: 'sm' }}
+                  cursor={day.trips.length > 0 ? 'pointer' : 'default'}
+                  onClick={() => handleDateClick(day)}
+                  transition="all 0.2s"
                 >
-                  <VStack align="start" spacing={1} h="full">
+                  <VStack align="start" spacing={2} h="full">
                     <Text
-                      fontSize="sm"
-                      fontWeight={day.isToday ? 'bold' : 'normal'}
-                      color={day.isToday ? 'blue.500' : textColor}
+                      fontSize="md"
+                      fontWeight={day.isToday ? 'bold' : 'semibold'}
+                      color={day.isToday ? 'blue.500' : dateTextColor}
+                      textDecoration={day.trips.length > 0 ? 'underline' : 'none'}
+                      cursor={day.trips.length > 0 ? 'pointer' : 'default'}
+                      _hover={day.trips.length > 0 ? { color: 'blue.600' } : {}}
+                      mb={1}
                     >
                       {day.date.getDate()}
                     </Text>
                     {day.trips.slice(0, 3).map(trip => (
-                      <Badge
+                      <Text
                         key={trip._id}
-                        size="xs"
-                        colorScheme={getStatusColor(trip.status)}
-                        cursor="pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTripSelect(trip);
-                        }}
-                        title={`${trip.riderName} - ${trip.scheduledTime}`}
+                        fontSize="xs"
+                        color={tripNameColor}
+                        fontWeight="medium"
                         maxW="full"
                         isTruncated
-                        fontSize="10px"
+                        title={`${trip.riderName} - ${trip.scheduledTime}`}
                         px={1}
+                        py={0.5}
+                        bg={tripNameBg}
+                        borderRadius="sm"
                       >
-                        {trip.scheduledTime} {trip.riderName.split(' ')[0]}
-                      </Badge>
+                        • {trip.riderName.split(' ')[0]}
+                      </Text>
                     ))}
                     {day.trips.length > 3 && (
-                      <Text fontSize="xs" color={textColor}>
+                      <Text fontSize="xs" color="blue.600" fontWeight="bold">
                         +{day.trips.length - 3} more
                       </Text>
                     )}
@@ -498,7 +675,7 @@ const CalendarOverview = ({ onTripUpdate }) => {
             {filteredTrips.length === 0 ? (
               <Center py={8}>
                 <VStack spacing={4}>
-                  <CalendarIcon boxSize={12} color="gray.400" />
+                  <CalendarDaysIcon width={48} height={48} color="gray" />
                   <Text color={textColor}>No trips scheduled for this period</Text>
                   <Button leftIcon={<Box as={PlusIcon} w={4} h={4} />} colorScheme="blue" size="sm">
                     Schedule New Trip
@@ -568,7 +745,7 @@ const CalendarOverview = ({ onTripUpdate }) => {
                         
                         <VStack spacing={2}>
                           <IconButton
-                            icon={<ViewIcon />}
+                            icon={<Box as={EyeIcon} w={4} h={4} />}
                             size="sm"
                             variant="ghost"
                             colorScheme="blue"
@@ -579,7 +756,7 @@ const CalendarOverview = ({ onTripUpdate }) => {
                             }}
                           />
                           <IconButton
-                            icon={<EditIcon />}
+                            icon={<Box as={PencilIcon} w={4} h={4} />}
                             size="sm"
                             variant="ghost"
                             colorScheme="orange"
@@ -602,7 +779,7 @@ const CalendarOverview = ({ onTripUpdate }) => {
         <ModalContent>
           <ModalHeader>
             <HStack>
-              <CalendarIcon color="blue.500" />
+              <CalendarDaysIcon color="blue.500" width={24} height={24} />
               <Text>Trip Details</Text>
             </HStack>
           </ModalHeader>
@@ -624,7 +801,7 @@ const CalendarOverview = ({ onTripUpdate }) => {
                 <SimpleGrid columns={2} spacing={4}>
                   <VStack align="start" spacing={2}>
                     <HStack>
-                      <CalendarIcon />
+                      <Box as={CalendarDaysIcon} w={5} h={5} />
                       <Text fontWeight="medium">Date & Time</Text>
                     </HStack>
                     <Text ml={6}>
@@ -697,6 +874,109 @@ const CalendarOverview = ({ onTripUpdate }) => {
                 )}
               </VStack>
             )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* Day Trips Modal - Shows all trips for selected date */}
+      <Modal isOpen={isDayTripsOpen} onClose={onDayTripsClose} size="xl" scrollBehavior="inside">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            <HStack>
+              <CalendarDaysIcon color="blue.500" width={24} height={24} />
+              <VStack align="start" spacing={0}>
+                <Text>Trips for {selectedDate && selectedDate.toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}</Text>
+                <Text fontSize="sm" fontWeight="normal" color={textColor}>
+                  {selectedDateTrips.length} {selectedDateTrips.length === 1 ? 'trip' : 'trips'} scheduled
+                </Text>
+              </VStack>
+            </HStack>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <VStack spacing={3} align="stretch">
+              {selectedDateTrips.length === 0 ? (
+                <Center py={8}>
+                  <VStack spacing={2}>
+                    <CalendarDaysIconSolid width={48} height={48} color="gray" />
+                    <Text color={textColor}>No trips scheduled for this day</Text>
+                  </VStack>
+                </Center>
+              ) : (
+                selectedDateTrips.map((trip) => (
+                  <Card
+                    key={trip._id}
+                    variant="outline"
+                  >
+                    <CardBody>
+                      <Grid templateColumns="auto 1fr auto" gap={4} alignItems="center">
+                        <Box>
+                          <Badge colorScheme={getStatusColor(trip.status)} fontSize="xs">
+                            {trip.status}
+                          </Badge>
+                        </Box>
+                        <VStack align="start" spacing={1}>
+                          <HStack>
+                            <UserIcon width={16} height={16} />
+                            <Text fontWeight="bold" fontSize="md">
+                              {trip.riderName}
+                            </Text>
+                          </HStack>
+                          <HStack spacing={4} fontSize="sm" color={textColor}>
+                            <HStack>
+                              <ClockIcon width={14} height={14} />
+                              <Text>{trip.scheduledTime}</Text>
+                            </HStack>
+                            {trip.riderPhone && (
+                              <HStack>
+                                <PhoneIcon width={14} height={14} />
+                                <Text>{trip.riderPhone}</Text>
+                              </HStack>
+                            )}
+                          </HStack>
+                          <VStack align="start" spacing={0} fontSize="xs" color={textColor}>
+                            <HStack>
+                              <MapPinIcon width={12} height={12} color="green" />
+                              <Text isTruncated maxW="350px">
+                                {typeof trip.pickupLocation === 'object' 
+                                  ? trip.pickupLocation.address 
+                                  : trip.pickupLocation}
+                              </Text>
+                            </HStack>
+                            <HStack>
+                              <MapPinIcon width={12} height={12} color="red" />
+                              <Text isTruncated maxW="350px">
+                                {typeof trip.dropoffLocation === 'object' 
+                                  ? trip.dropoffLocation.address 
+                                  : trip.dropoffLocation}
+                              </Text>
+                            </HStack>
+                          </VStack>
+                        </VStack>
+                        <Box>
+                          {trip.assignedDriver && (
+                            <HStack fontSize="xs" color={textColor}>
+                              <TruckIcon width={14} height={14} />
+                              <Text>
+                                {typeof trip.assignedDriver === 'object' 
+                                  ? `${trip.assignedDriver.firstName} ${trip.assignedDriver.lastName}`
+                                  : 'Assigned'}
+                              </Text>
+                            </HStack>
+                          )}
+                        </Box>
+                      </Grid>
+                    </CardBody>
+                  </Card>
+                ))
+              )}
+            </VStack>
           </ModalBody>
         </ModalContent>
       </Modal>

@@ -828,7 +828,7 @@ const ComprehensiveDriverDashboard = () => {
                                       />
                                       <IconButton
                                         size="sm"
-                                        icon={<ViewIcon />}
+                                        icon={<EyeIcon />}
                                         colorScheme="gray"
                                         variant="outline"
                                         aria-label="View details"

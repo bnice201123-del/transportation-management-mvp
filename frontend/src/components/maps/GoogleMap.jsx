@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Wrapper, Status } from '@googlemaps/react-wrapper';
-import { Box, Spinner, Alert, AlertIcon, AlertTitle, AlertDescription, Text, VStack } from '@chakra-ui/react';
+import { Box, Spinner, Alert, AlertIcon, AlertTitle, AlertDescription, Text, VStack, HStack } from '@chakra-ui/react';
+import GoogleMapsError from '../shared/GoogleMapsError';
 
 const render = (status) => {
   switch (status) {
@@ -13,9 +14,26 @@ const render = (status) => {
       );
     case Status.FAILURE:
       return (
-        <Alert status="error">
-          <AlertIcon />
-          Error loading Google Maps. Please check your API key.
+        <Alert status="error" flexDirection="column" alignItems="start">
+          <HStack mb={2}>
+            <AlertIcon />
+            <AlertTitle>Error loading Google Maps</AlertTitle>
+          </HStack>
+          <AlertDescription>
+            <VStack align="start" spacing={2} fontSize="sm">
+              <Text>Possible causes:</Text>
+              <Text>• Invalid or expired API key</Text>
+              <Text>• API key has domain restrictions (check allowed referrers)</Text>
+              <Text>• Maps JavaScript API not enabled in Google Cloud Console</Text>
+              <Text>• Billing not enabled on Google Cloud project</Text>
+              <Text fontWeight="bold" mt={2}>
+                Current API Key: {import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.substring(0, 20)}...
+              </Text>
+              <Text mt={2}>
+                To fix: Visit <a href="https://console.cloud.google.com/google/maps-apis" target="_blank" rel="noopener noreferrer" style={{color: 'blue', textDecoration: 'underline'}}>Google Maps Platform</a>
+              </Text>
+            </VStack>
+          </AlertDescription>
         </Alert>
       );
     case Status.SUCCESS:
@@ -84,11 +102,23 @@ const MapComponent = ({
       
       // Add new markers
       const newMarkers = markers.map((markerData, index) => {
+        // Process icon to ensure proper Google Maps objects
+        let iconConfig = markerData.icon;
+        if (iconConfig && iconConfig.scaledSize && !(iconConfig.scaledSize instanceof window.google.maps.Size)) {
+          iconConfig = {
+            ...iconConfig,
+            scaledSize: new window.google.maps.Size(
+              iconConfig.scaledSize.width || 30, 
+              iconConfig.scaledSize.height || 30
+            )
+          };
+        }
+
         const marker = new window.google.maps.Marker({
           position: markerData.position,
           map,
           title: markerData.title || `Marker ${index + 1}`,
-          icon: markerData.icon || {
+          icon: iconConfig || {
             url: markerData.type === 'pickup' 
               ? 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDOC4xMyAyIDUgNS4xMyA1IDljMCA1LjI1IDcgMTMgNyAxM3M3LTcuNzUgNy0xM2MwLTMuODctMy4xMy03LTctN3ptMCA5LjVjLTEuMzggMC0yLjUtMS4xMi0yLjUtMi41czEuMTItMi41IDIuNS0yLjUgMi41IDEuMTIgMi41IDIuNS0xLjEyIDIuNS0yLjUgMi41eiIgZmlsbD0iIzRGOEVGNyIvPgo8L3N2Zz4K'
               : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDOC4xMyAyIDUgNS4xMyA1IDljMCA1LjI1IDcgMTMgNyAxM3M3LTcuNzUgNy0xM2MwLTMuODctMy4xMy03LTctN3ptMCA5LjVjLTEuMzggMC0yLjUtMS4xMi0yLjUtMi41czEuMTItMi41IDIuNS0yLjUgMi41IDEuMTIgMi41IDIuNS0xLjEyIDIuNS0yLjUgMi41eiIgZmlsbD0iI0VEOEUzNiIvPgo8L3N2Zz4K',
@@ -137,35 +167,18 @@ const GoogleMap = (props) => {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
   if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
-    return (
-      <Alert status="warning">
-        <AlertIcon />
-        <Box>
-          <AlertTitle>Google Maps API Key Required</AlertTitle>
-          <AlertDescription>
-            <Text mb={2}>
-              Please add your Google Maps API key to the <code>.env</code> file as <code>VITE_GOOGLE_MAPS_API_KEY</code>
-            </Text>
-            <Text fontSize="sm" mb={2}>
-              Steps to get an API key:
-            </Text>
-            <VStack align="start" spacing={1} fontSize="sm">
-              <Text>1. Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" style={{color: 'blue'}}>Google Cloud Console</a></Text>
-              <Text>2. Create a new project or select existing one</Text>
-              <Text>3. Enable "Maps JavaScript API"</Text>
-              <Text>4. Create credentials (API Key)</Text>
-              <Text>5. Optionally restrict the key to your domain</Text>
-            </VStack>
-          </AlertDescription>
-        </Box>
-      </Alert>
-    );
+    return <GoogleMapsError apiKey={apiKey} />;
   }
 
   return (
     <Wrapper 
       apiKey={apiKey} 
-      render={render}
+      render={(status) => {
+        if (status === Status.FAILURE) {
+          return <GoogleMapsError apiKey={apiKey} />;
+        }
+        return render(status);
+      }}
       libraries={['places', 'geometry', 'directions']}
     >
       <MapComponent {...props} />

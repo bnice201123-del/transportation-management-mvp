@@ -110,6 +110,8 @@ const AdminOverview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [filterView, setFilterView] = useState('all'); // 'all', 'active', 'pending', 'completed'
+  const [isExporting, setIsExporting] = useState(false);
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -258,6 +260,143 @@ const AdminOverview = () => {
   useEffect(() => {
     fetchOverviewData();
   }, [fetchOverviewData]);
+
+  // Export Data Function
+  const handleExportData = async () => {
+    setIsExporting(true);
+    try {
+      // Prepare data for export
+      const exportData = {
+        overview: {
+          totalUsers: overviewData?.totalUsers || 0,
+          activeUsers: overviewData?.activeUsers || 0,
+          totalTrips: overviewData?.totalTrips || 0,
+          todayTrips: overviewData?.todayTrips || 0,
+          activeDrivers: overviewData?.activeDrivers || 0,
+          pendingTrips: overviewData?.pendingTrips || 0,
+          completedTrips: overviewData?.completedTrips || 0,
+          cancelledTrips: overviewData?.cancelledTrips || 0,
+          inProgressTrips: overviewData?.inProgressTrips || 0
+        },
+        usersByRole: overviewData?.usersByRole || {},
+        systemStats: overviewData?.systemStats || {},
+        systemHealth: systemHealth || {},
+        exportDate: new Date().toISOString(),
+        exportedBy: 'Admin'
+      };
+
+      // Convert to JSON string
+      const jsonString = JSON.stringify(exportData, null, 2);
+      
+      // Create blob and download
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `admin-overview-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // Also create CSV format
+      const csvData = [
+        ['Metric', 'Value'],
+        ['Total Users', overviewData?.totalUsers || 0],
+        ['Active Users', overviewData?.activeUsers || 0],
+        ['Total Trips', overviewData?.totalTrips || 0],
+        ['Today Trips', overviewData?.todayTrips || 0],
+        ['Active Drivers', overviewData?.activeDrivers || 0],
+        ['Pending Trips', overviewData?.pendingTrips || 0],
+        ['Completed Trips', overviewData?.completedTrips || 0],
+        ['Cancelled Trips', overviewData?.cancelledTrips || 0],
+        ['In Progress Trips', overviewData?.inProgressTrips || 0],
+        ['', ''],
+        ['Users by Role', ''],
+        ['Admin', overviewData?.usersByRole?.admin || 0],
+        ['Scheduler', overviewData?.usersByRole?.scheduler || 0],
+        ['Dispatcher', overviewData?.usersByRole?.dispatcher || 0],
+        ['Driver', overviewData?.usersByRole?.driver || 0],
+        ['Rider', overviewData?.usersByRole?.rider || 0]
+      ];
+
+      const csvContent = csvData.map(row => row.join(',')).join('\n');
+      const csvBlob = new Blob([csvContent], { type: 'text/csv' });
+      const csvUrl = URL.createObjectURL(csvBlob);
+      const csvLink = document.createElement('a');
+      csvLink.href = csvUrl;
+      csvLink.download = `admin-overview-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(csvLink);
+      csvLink.click();
+      document.body.removeChild(csvLink);
+      URL.revokeObjectURL(csvUrl);
+
+      toast({
+        title: 'Export Successful',
+        description: 'Data exported as JSON and CSV files',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to export data. Please try again.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Filter View Function
+  const handleFilterView = (filter) => {
+    setFilterView(filter);
+    toast({
+      title: 'Filter Applied',
+      description: `Now showing ${filter} view`,
+      status: 'info',
+      duration: 2000,
+      isClosable: true,
+    });
+  };
+
+  // Get filtered data based on current filter
+  const getFilteredData = () => {
+    if (!overviewData) return null;
+
+    switch (filterView) {
+      case 'active':
+        return {
+          ...overviewData,
+          displayTrips: overviewData.inProgressTrips,
+          displayLabel: 'Active Trips'
+        };
+      case 'pending':
+        return {
+          ...overviewData,
+          displayTrips: overviewData.pendingTrips,
+          displayLabel: 'Pending Trips'
+        };
+      case 'completed':
+        return {
+          ...overviewData,
+          displayTrips: overviewData.completedTrips,
+          displayLabel: 'Completed Trips'
+        };
+      default:
+        return {
+          ...overviewData,
+          displayTrips: overviewData.totalTrips,
+          displayLabel: 'All Trips'
+        };
+    }
+  };
+
+  const filteredData = getFilteredData();
 
   // Enhanced Stat Card Component
   const StatCard = ({ 
@@ -927,15 +1066,49 @@ const AdminOverview = () => {
                       Actions
                     </MenuButton>
                     <MenuList>
-                      <MenuItem icon={<FaDownload />}>Export Data</MenuItem>
-                      <MenuItem icon={<FaFilter />}>Filter View</MenuItem>
-                      <MenuItem icon={<FaCog />}>Settings</MenuItem>
+                      <MenuItem 
+                        icon={<FaDownload />} 
+                        onClick={handleExportData}
+                        isDisabled={isExporting}
+                      >
+                        {isExporting ? 'Exporting...' : 'Export Data'}
+                      </MenuItem>
+                      <MenuItem icon={<FaFilter />} onClick={() => handleFilterView('all')}>
+                        Show All
+                      </MenuItem>
+                      <MenuItem icon={<FaFilter />} onClick={() => handleFilterView('active')}>
+                        Show Active Only
+                      </MenuItem>
+                      <MenuItem icon={<FaFilter />} onClick={() => handleFilterView('pending')}>
+                        Show Pending Only
+                      </MenuItem>
+                      <MenuItem icon={<FaFilter />} onClick={() => handleFilterView('completed')}>
+                        Show Completed Only
+                      </MenuItem>
+                      <MenuItem icon={<FaCog />} onClick={() => navigate('/admin/settings')}>
+                        Settings
+                      </MenuItem>
                     </MenuList>
                   </Menu>
                 </HStack>
               </HStack>
               <Divider />
             </Box>
+
+            {/* Filter Status Badge */}
+            {filterView !== 'all' && (
+              <Alert status="info" variant="left-accent" mb={4}>
+                <AlertIcon />
+                <HStack justify="space-between" w="full">
+                  <Text>
+                    Showing {filterView} items only • {filteredData?.displayLabel}: {filteredData?.displayTrips || 0}
+                  </Text>
+                  <Button size="sm" variant="ghost" onClick={() => handleFilterView('all')}>
+                    Clear Filter
+                  </Button>
+                </HStack>
+              </Alert>
+            )}
 
             {/* Key Metrics Grid */}
             <SimpleGrid columns={columnsCount} spacing={cardSpacing}>

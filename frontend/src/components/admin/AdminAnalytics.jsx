@@ -132,14 +132,24 @@ const AdminAnalytics = () => {
       // Fetch multiple data sources for comprehensive analytics
       const [analyticsRes, tripsRes, usersRes, activitiesRes] = await Promise.all([
         axios.get('/api/analytics/dashboard').catch(() => ({ data: null })),
-        axios.get('/api/trips').catch(() => ({ data: [] })),
-        axios.get('/api/users').catch(() => ({ data: [] })),
-        axios.get('/api/activities').catch(() => ({ data: [] }))
+        axios.get('/api/trips').catch(() => ({ data: { trips: [] } })),
+        axios.get('/api/users').catch(() => ({ data: { users: [] } })),
+        axios.get('/api/activities').catch(() => ({ data: { activities: [] } }))
       ]);
 
-      const trips = tripsRes.data || [];
-      const users = usersRes.data || [];
-      const activities = activitiesRes.data || [];
+      // Extract data with proper fallbacks
+      const trips = Array.isArray(tripsRes.data?.trips) ? tripsRes.data.trips : 
+                    Array.isArray(tripsRes.data?.data?.trips) ? tripsRes.data.data.trips :
+                    Array.isArray(tripsRes.data) ? tripsRes.data : [];
+      
+      const users = Array.isArray(usersRes.data?.users) ? usersRes.data.users :
+                    Array.isArray(usersRes.data?.data?.users) ? usersRes.data.data.users :
+                    Array.isArray(usersRes.data) ? usersRes.data : [];
+      
+      const activities = Array.isArray(activitiesRes.data?.activities) ? activitiesRes.data.activities :
+                         Array.isArray(activitiesRes.data?.data?.activities) ? activitiesRes.data.data.activities :
+                         Array.isArray(activitiesRes.data) ? activitiesRes.data : [];
+      
       const baseAnalytics = analyticsRes.data;
 
       // Calculate comprehensive analytics

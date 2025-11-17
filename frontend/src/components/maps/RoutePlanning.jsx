@@ -85,6 +85,7 @@ import {
   TimeIcon,
   CalendarIcon,
   ChevronDownIcon,
+  ChevronUpIcon,
   DragHandleIcon,
   InfoIcon,
   WarningIcon,
@@ -174,16 +175,11 @@ const RoutePlanning = () => {
       setError(null);
       if (!isRetry) setLoading(true);
       
-      // Simulate API calls with potential failure
-      await new Promise((resolve, reject) => {
+      // Simulate API calls
+      await new Promise((resolve) => {
         setTimeout(() => {
-          // Simulate occasional network errors
-          if (Math.random() < 0.1) { // 10% chance of error
-            reject(new Error('Network connection failed'));
-          } else {
-            resolve();
-          }
-        }, 1000);
+          resolve();
+        }, 500);
       });
       
       // Mock vehicles data
@@ -763,7 +759,9 @@ const RoutePlanning = () => {
                   <Card variant="outline" bg="gray.50">
                     <CardBody textAlign="center" p={{ base: 3, md: 6 }}>
                       <VStack spacing={2}>
-                        <FaRoute color="green" size={{ base: "24px", md: "32px" }} />
+                        <Box fontSize={{ base: "24px", md: "32px" }}>
+                          <FaRoute color="green" />
+                        </Box>
                         <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold" color="green.500">
                           {routes.length}
                         </Text>
@@ -775,7 +773,9 @@ const RoutePlanning = () => {
                   <Card variant="outline" bg="gray.50">
                     <CardBody textAlign="center" p={{ base: 3, md: 6 }}>
                       <VStack spacing={2}>
-                        <FaPlay color="blue" size={{ base: "24px", md: "32px" }} />
+                        <Box fontSize={{ base: "24px", md: "32px" }}>
+                          <FaPlay color="blue" />
+                        </Box>
                         <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold" color="blue.500">
                           {routes.filter(r => r.status === 'active').length}
                         </Text>
@@ -787,7 +787,9 @@ const RoutePlanning = () => {
                   <Card variant="outline" bg="gray.50">
                     <CardBody textAlign="center" p={{ base: 3, md: 6 }}>
                       <VStack spacing={2}>
-                        <FaMapPin color="orange" size={{ base: "24px", md: "32px" }} />
+                        <Box fontSize={{ base: "24px", md: "32px" }}>
+                          <FaMapPin color="orange" />
+                        </Box>
                         <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold" color="orange.500">
                           {routes.reduce((sum, route) => sum + route.totalStops, 0)}
                         </Text>
@@ -799,7 +801,9 @@ const RoutePlanning = () => {
                   <Card variant="outline" bg="gray.50">
                     <CardBody textAlign="center" p={{ base: 3, md: 6 }}>
                       <VStack spacing={2}>
-                        <FaCar color="purple" size={{ base: "24px", md: "32px" }} />
+                        <Box fontSize={{ base: "24px", md: "32px" }}>
+                          <FaCar color="purple" />
+                        </Box>
                         <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold" color="purple.500">
                           {vehicles.filter(v => v.status === 'active').length}
                         </Text>

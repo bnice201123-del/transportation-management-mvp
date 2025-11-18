@@ -110,6 +110,7 @@ import axios from 'axios';
 // Removed unused import - useAuth was not being used in this component
 import Navbar from '../shared/Navbar';
 import RiderInfoModal from '../shared/RiderInfoModal';
+import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 
 const ComprehensiveRiderDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -1541,10 +1542,11 @@ const ComprehensiveRiderDashboard = () => {
 
                   <FormControl>
                     <FormLabel fontSize="sm">Address</FormLabel>
-                    <Input
+                    <PlacesAutocomplete
                       placeholder="Home address (optional)"
                       value={newRider.address}
-                      onChange={(e) => setNewRider({...newRider, address: e.target.value})}
+                      onChange={(address) => setNewRider({...newRider, address: address})}
+                      onSelect={(place) => setNewRider({...newRider, address: place.address})}
                     />
                   </FormControl>
                 </VStack>

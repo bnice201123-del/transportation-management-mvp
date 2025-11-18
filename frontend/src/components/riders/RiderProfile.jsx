@@ -68,6 +68,7 @@ import {
 } from '@chakra-ui/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 
 const RiderProfile = () => {
   const [rider, setRider] = useState(null);
@@ -771,9 +772,11 @@ const RiderProfile = () => {
 
               <FormControl>
                 <FormLabel>Address</FormLabel>
-                <Textarea
+                <PlacesAutocomplete
                   value={editForm.address}
-                  onChange={(e) => setEditForm({...editForm, address: e.target.value})}
+                  onChange={(address) => setEditForm({...editForm, address: address})}
+                  onSelect={(place) => setEditForm({...editForm, address: place.address})}
+                  placeholder="Enter address"
                 />
               </FormControl>
 

@@ -79,11 +79,11 @@ const RidersLanding = () => {
   const fetchRiders = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/users?role=rider', {
+      const response = await axios.get('/api/riders', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
-      setRiders(response.data.users);
-      setFilteredRiders(response.data.users);
+      setRiders(response.data);
+      setFilteredRiders(response.data);
     } catch (error) {
       console.error('Error fetching riders:', error);
       toast({

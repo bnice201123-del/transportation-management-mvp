@@ -119,12 +119,12 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
   const fetchDropdownData = async () => {
     try {
       const [ridersRes, vehiclesRes, driversRes] = await Promise.all([
-        axios.get('/api/users?role=rider'),
+        axios.get('/api/riders'),
         axios.get('/api/vehicles'),
         axios.get('/api/users?role=driver')
       ]);
 
-      setRiders(ridersRes.data?.users || ridersRes.data || []);
+      setRiders(ridersRes.data || []);
       setVehicles(vehiclesRes.data?.vehicles || vehiclesRes.data?.data?.vehicles || vehiclesRes.data || []);
       setDrivers(driversRes.data?.users || driversRes.data || []);
     } catch (error) {

@@ -106,6 +106,7 @@ import axios from 'axios';
 import { useAuth } from "../../contexts/AuthContext";
 import Navbar from '../shared/Navbar';
 import GoogleMap from '../maps/GoogleMap';
+import RiderInfoModal from '../shared/RiderInfoModal';
 
 const ComprehensiveDriverDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -118,9 +119,11 @@ const ComprehensiveDriverDashboard = () => {
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
   const [reportType, setReportType] = useState('all');
+  const [selectedRider, setSelectedRider] = useState({ id: null, name: null });
   const { user } = useAuth();
   const toast = useToast();
   const { isOpen: isReportOpen, onOpen: onReportOpen, onClose: onReportClose } = useDisclosure();
+  const { isOpen: isRiderInfoOpen, onOpen: onRiderInfoOpen, onClose: onRiderInfoClose } = useDisclosure();
   const [navigationModal, setNavigationModal] = useState({ isOpen: false, address: '', coordinates: null });
 
   // Color scheme
@@ -230,6 +233,13 @@ const ComprehensiveDriverDashboard = () => {
     } finally {
       setUpdating(false);
     }
+  };
+
+  // Handle rider name click
+  const handleRiderClick = (e, riderId, riderName) => {
+    e.stopPropagation();
+    setSelectedRider({ id: riderId, name: riderName });
+    onRiderInfoOpen();
   };
 
   // Navigation function to open destination in maps app
@@ -615,9 +625,21 @@ const ComprehensiveDriverDashboard = () => {
                                             <Text fontWeight="bold" color="teal.600">
                                               Trip ID: {trip.tripId}
                                             </Text>
-                                            <Text fontSize="sm" color="gray.600">
-                                              Rider: {trip.riderName}
-                                            </Text>
+                                            <HStack>
+                                              <Text fontSize="sm" color="gray.600">
+                                                Rider:
+                                              </Text>
+                                              <Text 
+                                                fontSize="sm" 
+                                                color="blue.600"
+                                                fontWeight="medium"
+                                                cursor="pointer"
+                                                _hover={{ textDecoration: 'underline', color: 'blue.700' }}
+                                                onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, trip.riderName)}
+                                              >
+                                                {trip.riderName}
+                                              </Text>
+                                            </HStack>
                                           </VStack>
                                           <Badge 
                                             colorScheme={getStatusColor(trip.status)} 
@@ -786,9 +808,21 @@ const ComprehensiveDriverDashboard = () => {
                                           {trip.status.replace('_', ' ').toUpperCase()}
                                         </Badge>
                                       </HStack>
-                                      <Text fontSize="sm" color="gray.600">
-                                        Rider: {trip.riderName}
-                                      </Text>
+                                      <HStack>
+                                        <Text fontSize="sm" color="gray.600">
+                                          Rider:
+                                        </Text>
+                                        <Text 
+                                          fontSize="sm" 
+                                          color="blue.600"
+                                          fontWeight="medium"
+                                          cursor="pointer"
+                                          _hover={{ textDecoration: 'underline', color: 'blue.700' }}
+                                          onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, trip.riderName)}
+                                        >
+                                          {trip.riderName}
+                                        </Text>
+                                      </HStack>
                                       <Text fontSize="xs" color="gray.500">
                                         📍 {trip.pickupLocation?.address || trip.pickupLocation} → {trip.dropoffLocation?.address || trip.dropoffLocation}
                                       </Text>
@@ -927,7 +961,18 @@ const ComprehensiveDriverDashboard = () => {
                                           {trip.status}
                                         </Badge>
                                       </Td>
-                                      <Td fontSize="sm">{trip.riderName}</Td>
+                                      <Td>
+                                        <Text 
+                                          fontSize="sm"
+                                          color="blue.600"
+                                          fontWeight="medium"
+                                          cursor="pointer"
+                                          _hover={{ textDecoration: 'underline', color: 'blue.700' }}
+                                          onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, trip.riderName)}
+                                        >
+                                          {trip.riderName}
+                                        </Text>
+                                      </Td>
                                       <Td fontSize="xs" color="gray.500" display={{ base: "none", md: "table-cell" }}>
                                         {trip.pickupLocation?.address || trip.pickupLocation}
                                       </Td>
@@ -1346,6 +1391,14 @@ const ComprehensiveDriverDashboard = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Rider Info Modal */}
+      <RiderInfoModal
+        isOpen={isRiderInfoOpen}
+        onClose={onRiderInfoClose}
+        riderId={selectedRider.id}
+        riderName={selectedRider.name}
+      />
     </Box>
   );
 };

@@ -15,22 +15,32 @@ router.post('/register', authenticateToken, authorizeRoles('admin'), async (req,
     console.log('Destructured values:', { email, password, firstName, lastName, role, phone });
     console.log('req.body.password:', req.body.password);
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists with this email' });
+    // Check if user already exists (only if email is provided)
+    if (email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ message: 'User already exists with this email' });
+      }
     }
 
     // Validate required fields
-    if (!req.body.password || req.body.password.trim() === '') {
-      console.log('Password validation failed - req.body.password:', req.body.password);
-      return res.status(400).json({ message: 'Password is required' });
+    // Password is not required for riders - generate a default one if not provided
+    let userPassword = req.body.password;
+    if (!userPassword || userPassword.trim() === '') {
+      if (role === 'rider') {
+        // Generate a default password for riders
+        userPassword = `Rider${Date.now()}`;
+        console.log('Generated default password for rider');
+      } else {
+        console.log('Password validation failed - req.body.password:', req.body.password);
+        return res.status(400).json({ message: 'Password is required' });
+      }
     }
 
     // Create new user
     const userData = {
-      email: req.body.email,
-      password: req.body.password,
+      email: req.body.email || `rider${Date.now()}@placeholder.com`,
+      password: userPassword,
       firstName: req.body.firstName,
       lastName: req.body.lastName,
       role: req.body.role,

@@ -115,6 +115,8 @@ import axios from 'axios';
 import Navbar from '../shared/Navbar';
 import TripManagementModal from '../scheduler/TripManagementModal';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
+import RiderInfoModal from '../shared/RiderInfoModal';
+import TripDetailsModal from '../scheduler/TripDetailsModal';
 
 const DispatcherDashboard = () => {
   // Core state management
@@ -186,6 +188,10 @@ const DispatcherDashboard = () => {
     onOpen: onTripManagementOpen,
     onClose: onTripManagementClose
   } = useDisclosure();
+  
+  // State for clickable riders and trips
+  const [selectedRider, setSelectedRider] = useState(null);
+  const [viewTripDetails, setViewTripDetails] = useState(null);
   
   const [tripToAssign, setTripToAssign] = useState(null);
   const [selectedDriverId, setSelectedDriverId] = useState('');
@@ -491,6 +497,17 @@ const DispatcherDashboard = () => {
   const handleView = (trip) => {
     setSelectedTrip(trip);
     onViewOpen();
+  };
+
+  // Click handlers for rider and trip details
+  const handleRiderClick = (e, riderId) => {
+    e.stopPropagation();
+    setSelectedRider(riderId);
+  };
+
+  const handleTripClick = (e, trip) => {
+    e.stopPropagation();
+    setViewTripDetails(trip);
   };
 
   const handleDeleteClick = (trip) => {
@@ -1095,10 +1112,27 @@ const DispatcherDashboard = () => {
                             <Tbody>
                               {displayedTrips.map((trip) => (
                                 <Tr key={trip._id}>
-                                  <Td>{trip.tripId}</Td>
+                                  <Td>
+                                    <Text 
+                                      color="blue.600" 
+                                      cursor="pointer" 
+                                      _hover={{ textDecoration: 'underline' }}
+                                      onClick={(e) => handleTripClick(e, trip)}
+                                    >
+                                      {trip.tripId}
+                                    </Text>
+                                  </Td>
                                   <Td>
                                     <VStack align="start" spacing={0}>
-                                      <Text fontSize="sm">{trip.riderName}</Text>
+                                      <Text 
+                                        fontSize="sm"
+                                        color="blue.600" 
+                                        cursor="pointer" 
+                                        _hover={{ textDecoration: 'underline' }}
+                                        onClick={(e) => handleRiderClick(e, trip.rider?._id || trip.rider)}
+                                      >
+                                        {trip.riderName}
+                                      </Text>
                                       {trip.riderPhone && (
                                         <Text fontSize="xs" color="gray.500" display={{ base: "block", sm: "none" }}>
                                           {trip.riderPhone}
@@ -1249,10 +1283,27 @@ const DispatcherDashboard = () => {
                       <Tbody>
                         {displayedTrips.map((trip) => (
                           <Tr key={trip._id}>
-                            <Td>{trip.tripId}</Td>
+                            <Td>
+                              <Text 
+                                color="blue.600" 
+                                cursor="pointer" 
+                                _hover={{ textDecoration: 'underline' }}
+                                onClick={(e) => handleTripClick(e, trip)}
+                              >
+                                {trip.tripId}
+                              </Text>
+                            </Td>
                             <Td>
                               <VStack align="start" spacing={0}>
-                                <Text fontSize="sm">{trip.riderName}</Text>
+                                <Text 
+                                  fontSize="sm"
+                                  color="blue.600" 
+                                  cursor="pointer" 
+                                  _hover={{ textDecoration: 'underline' }}
+                                  onClick={(e) => handleRiderClick(e, trip.rider?._id || trip.rider)}
+                                >
+                                  {trip.riderName}
+                                </Text>
                                 {trip.riderPhone && (
                                   <Text fontSize="xs" color="gray.500" display={{ base: "block", sm: "none" }}>
                                     {trip.riderPhone}
@@ -1400,10 +1451,27 @@ const DispatcherDashboard = () => {
                       <Tbody>
                         {displayedTrips.map((trip) => (
                           <Tr key={trip._id}>
-                            <Td>{trip.tripId}</Td>
+                            <Td>
+                              <Text 
+                                color="blue.600" 
+                                cursor="pointer" 
+                                _hover={{ textDecoration: 'underline' }}
+                                onClick={(e) => handleTripClick(e, trip)}
+                              >
+                                {trip.tripId}
+                              </Text>
+                            </Td>
                             <Td>
                               <VStack align="start" spacing={0}>
-                                <Text fontSize="sm">{trip.riderName}</Text>
+                                <Text 
+                                  fontSize="sm"
+                                  color="blue.600" 
+                                  cursor="pointer" 
+                                  _hover={{ textDecoration: 'underline' }}
+                                  onClick={(e) => handleRiderClick(e, trip.rider?._id || trip.rider)}
+                                >
+                                  {trip.riderName}
+                                </Text>
                                 {trip.riderPhone && (
                                   <Text fontSize="xs" color="gray.500" display={{ base: "block", sm: "none" }}>
                                     {trip.riderPhone}
@@ -1499,10 +1567,27 @@ const DispatcherDashboard = () => {
                       <Tbody>
                         {displayedTrips.map((trip) => (
                           <Tr key={trip._id}>
-                            <Td>{trip.tripId}</Td>
+                            <Td>
+                              <Text 
+                                color="blue.600" 
+                                cursor="pointer" 
+                                _hover={{ textDecoration: 'underline' }}
+                                onClick={(e) => handleTripClick(e, trip)}
+                              >
+                                {trip.tripId}
+                              </Text>
+                            </Td>
                             <Td>
                               <VStack align="start" spacing={0}>
-                                <Text fontSize="sm">{trip.riderName}</Text>
+                                <Text 
+                                  fontSize="sm"
+                                  color="blue.600" 
+                                  cursor="pointer" 
+                                  _hover={{ textDecoration: 'underline' }}
+                                  onClick={(e) => handleRiderClick(e, trip.rider?._id || trip.rider)}
+                                >
+                                  {trip.riderName}
+                                </Text>
                                 {trip.riderPhone && (
                                   <Text fontSize="xs" color="gray.500" display={{ base: "block", sm: "none" }}>
                                     {trip.riderPhone}
@@ -1675,7 +1760,27 @@ const DispatcherDashboard = () => {
                                 <CardBody p={4}>
                                   <HStack justify="space-between" align="start">
                                     <VStack align="start" spacing={1}>
-                                      <Text fontWeight="bold">{trip.tripId} - {trip.riderName}</Text>
+                                      <Text fontWeight="bold">
+                                        <Text 
+                                          as="span"
+                                          color="blue.600" 
+                                          cursor="pointer" 
+                                          _hover={{ textDecoration: 'underline' }}
+                                          onClick={(e) => handleTripClick(e, trip)}
+                                        >
+                                          {trip.tripId}
+                                        </Text>
+                                        {' - '}
+                                        <Text 
+                                          as="span"
+                                          color="blue.600" 
+                                          cursor="pointer" 
+                                          _hover={{ textDecoration: 'underline' }}
+                                          onClick={(e) => handleRiderClick(e, trip.rider?._id || trip.rider)}
+                                        >
+                                          {trip.riderName}
+                                        </Text>
+                                      </Text>
                                       <Text fontSize="sm" color="gray.600">
                                         {getLocationText(trip.pickupLocation)} → {getLocationText(trip.dropoffLocation)}
                                       </Text>
@@ -1727,12 +1832,29 @@ const DispatcherDashboard = () => {
                                 <CardBody p={3}>
                                   <VStack align="start" spacing={2}>
                                     <HStack justify="space-between" w="full">
-                                      <Text fontWeight="bold" fontSize="sm">{trip.tripId}</Text>
+                                      <Text 
+                                        fontWeight="bold" 
+                                        fontSize="sm"
+                                        color="blue.600" 
+                                        cursor="pointer" 
+                                        _hover={{ textDecoration: 'underline' }}
+                                        onClick={(e) => handleTripClick(e, trip)}
+                                      >
+                                        {trip.tripId}
+                                      </Text>
                                       <Text fontSize="xs" color="gray.600">
                                         {formatDate(trip.scheduledDate)}
                                       </Text>
                                     </HStack>
-                                    <Text fontSize="sm">{trip.riderName}</Text>
+                                    <Text 
+                                      fontSize="sm"
+                                      color="blue.600" 
+                                      cursor="pointer" 
+                                      _hover={{ textDecoration: 'underline' }}
+                                      onClick={(e) => handleRiderClick(e, trip.rider?._id || trip.rider)}
+                                    >
+                                      {trip.riderName}
+                                    </Text>
                                     <Text fontSize="xs" color="gray.600">
                                       {getLocationText(trip.pickupLocation)}
                                     </Text>
@@ -1869,8 +1991,25 @@ const DispatcherDashboard = () => {
                                 <CardBody p={3}>
                                   <HStack justify="space-between">
                                     <VStack align="start" spacing={1}>
-                                      <Text fontWeight="bold" fontSize="sm">{trip.tripId}</Text>
-                                      <Text fontSize="xs">{trip.riderName}</Text>
+                                      <Text 
+                                        fontWeight="bold" 
+                                        fontSize="sm"
+                                        color="blue.600" 
+                                        cursor="pointer" 
+                                        _hover={{ textDecoration: 'underline' }}
+                                        onClick={(e) => handleTripClick(e, trip)}
+                                      >
+                                        {trip.tripId}
+                                      </Text>
+                                      <Text 
+                                        fontSize="xs"
+                                        color="blue.600" 
+                                        cursor="pointer" 
+                                        _hover={{ textDecoration: 'underline' }}
+                                        onClick={(e) => handleRiderClick(e, trip.rider?._id || trip.rider)}
+                                      >
+                                        {trip.riderName}
+                                      </Text>
                                       <Badge colorScheme="purple" size="sm">Tracking Active</Badge>
                                     </VStack>
                                     <Button size="xs" colorScheme="purple" variant="outline">
@@ -2244,8 +2383,30 @@ const DispatcherDashboard = () => {
             <ModalBody>
               {selectedTrip && (
                 <VStack align="start" spacing={3}>
-                  <Text><strong>Trip ID:</strong> {selectedTrip.tripId}</Text>
-                  <Text><strong>Rider:</strong> {selectedTrip.riderName}</Text>
+                  <Text>
+                    <strong>Trip ID:</strong>{' '}
+                    <Text 
+                      as="span"
+                      color="blue.600" 
+                      cursor="pointer" 
+                      _hover={{ textDecoration: 'underline' }}
+                      onClick={(e) => handleTripClick(e, selectedTrip)}
+                    >
+                      {selectedTrip.tripId}
+                    </Text>
+                  </Text>
+                  <Text>
+                    <strong>Rider:</strong>{' '}
+                    <Text 
+                      as="span"
+                      color="blue.600" 
+                      cursor="pointer" 
+                      _hover={{ textDecoration: 'underline' }}
+                      onClick={(e) => handleRiderClick(e, selectedTrip.rider?._id || selectedTrip.rider)}
+                    >
+                      {selectedTrip.riderName}
+                    </Text>
+                  </Text>
                   {selectedTrip.riderPhone && (
                     <Text><strong>Phone:</strong> {selectedTrip.riderPhone}</Text>
                   )}
@@ -2327,8 +2488,30 @@ const DispatcherDashboard = () => {
               {tripToAssign && (
                 <VStack spacing={4} align="stretch">
                   <Box p={4} bg="gray.50" rounded="md">
-                    <Text><strong>Trip ID:</strong> {tripToAssign.tripId}</Text>
-                    <Text><strong>Rider:</strong> {tripToAssign.riderName}</Text>
+                    <Text>
+                      <strong>Trip ID:</strong>{' '}
+                      <Text 
+                        as="span"
+                        color="blue.600" 
+                        cursor="pointer" 
+                        _hover={{ textDecoration: 'underline' }}
+                        onClick={(e) => handleTripClick(e, tripToAssign)}
+                      >
+                        {tripToAssign.tripId}
+                      </Text>
+                    </Text>
+                    <Text>
+                      <strong>Rider:</strong>{' '}
+                      <Text 
+                        as="span"
+                        color="blue.600" 
+                        cursor="pointer" 
+                        _hover={{ textDecoration: 'underline' }}
+                        onClick={(e) => handleRiderClick(e, tripToAssign.rider?._id || tripToAssign.rider)}
+                      >
+                        {tripToAssign.riderName}
+                      </Text>
+                    </Text>
                     <Text><strong>Pickup:</strong> {tripToAssign.pickupLocation.address}</Text>
                     <Text><strong>Dropoff:</strong> {tripToAssign.dropoffLocation.address}</Text>
                     <Text><strong>Scheduled:</strong> {formatDate(tripToAssign.scheduledDate)}</Text>
@@ -2407,6 +2590,20 @@ const DispatcherDashboard = () => {
           isOpen={isTripManagementOpen}
           onClose={onTripManagementClose}
           onTripUpdate={fetchTrips}
+        />
+
+        {/* Rider Info Modal */}
+        <RiderInfoModal
+          isOpen={!!selectedRider}
+          onClose={() => setSelectedRider(null)}
+          riderId={selectedRider}
+        />
+
+        {/* Trip Details Modal */}
+        <TripDetailsModal
+          isOpen={!!viewTripDetails}
+          onClose={() => setViewTripDetails(null)}
+          trip={viewTripDetails}
         />
         </Container>
       </Box>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -35,9 +35,11 @@ import {
   Stat,
   StatLabel,
   StatNumber,
-  StatHelpText
+  StatHelpText,
+  useDisclosure
 } from '@chakra-ui/react';
 import TripMap from '../maps/TripMap';
+import RiderInfoModal from '../shared/RiderInfoModal';
 import {
   PhoneIcon,
   EmailIcon,
@@ -67,7 +69,16 @@ import {
 } from 'react-icons/fa';
 
 const TripDetailsModal = ({ isOpen, onClose, trip }) => {
+  const [selectedRider, setSelectedRider] = React.useState({ id: null, name: null });
+  const { isOpen: isRiderInfoOpen, onOpen: onRiderInfoOpen, onClose: onRiderInfoClose } = useDisclosure();
+  
   if (!trip) return null;
+
+  const handleRiderClick = (e, riderId, riderName) => {
+    e.stopPropagation();
+    setSelectedRider({ id: riderId, name: riderName });
+    onRiderInfoOpen();
+  };
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -171,7 +182,16 @@ const TripDetailsModal = ({ isOpen, onClose, trip }) => {
                   <VStack align="start" spacing={3}>
                     <Box>
                       <Text fontSize="sm" color="gray.600">Full Name</Text>
-                      <Text fontSize="lg" fontWeight="semibold">{trip.riderName || 'Not provided'}</Text>
+                      <Text 
+                        fontSize="lg" 
+                        fontWeight="semibold"
+                        color="blue.600"
+                        cursor="pointer"
+                        _hover={{ textDecoration: 'underline', color: 'blue.700' }}
+                        onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, trip.riderName)}
+                      >
+                        {trip.riderName || 'Not provided'}
+                      </Text>
                     </Box>
                     
                     {trip.riderPhone && (
@@ -700,6 +720,14 @@ const TripDetailsModal = ({ isOpen, onClose, trip }) => {
           </Button>
         </ModalFooter>
       </ModalContent>
+      
+      {/* Rider Info Modal */}
+      <RiderInfoModal
+        isOpen={isRiderInfoOpen}
+        onClose={onRiderInfoClose}
+        riderId={selectedRider.id}
+        riderName={selectedRider.name}
+      />
     </Modal>
   );
 };

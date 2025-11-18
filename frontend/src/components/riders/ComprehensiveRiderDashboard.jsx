@@ -109,6 +109,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 // Removed unused import - useAuth was not being used in this component
 import Navbar from '../shared/Navbar';
+import RiderInfoModal from '../shared/RiderInfoModal';
 
 const ComprehensiveRiderDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -120,15 +121,17 @@ const ComprehensiveRiderDashboard = () => {
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
   const [selectedRider, setSelectedRider] = useState(null);
+  const [selectedRiderForModal, setSelectedRiderForModal] = useState(null);
   
   // New rider form states
   const [newRider, setNewRider] = useState({
     firstName: '',
     lastName: '',
     email: '',
-    password: '',
     phone: '',
     address: '',
+    dateOfBirth: '',
+    riderId: '',
     notes: '',
     
     // Service Balance
@@ -150,6 +153,31 @@ const ComprehensiveRiderDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
+
+  // Generate Rider ID: [BirthYear][4 Random Letters]
+  const generateRiderId = (dateOfBirth) => {
+    if (!dateOfBirth) return '';
+    
+    const birthYear = new Date(dateOfBirth).getFullYear();
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let randomLetters = '';
+    
+    for (let i = 0; i < 4; i++) {
+      randomLetters += letters.charAt(Math.floor(Math.random() * letters.length));
+    }
+    
+    return `${birthYear}${randomLetters}`;
+  };
+
+  // Update riderId when dateOfBirth changes
+  const handleDateOfBirthChange = (date) => {
+    const newRiderId = generateRiderId(date);
+    setNewRider({
+      ...newRider,
+      dateOfBirth: date,
+      riderId: newRiderId
+    });
+  };
   
   // Modal states
   const { isOpen: isNewRiderOpen, onOpen: onNewRiderOpen, onClose: onNewRiderClose } = useDisclosure();
@@ -165,9 +193,9 @@ const ComprehensiveRiderDashboard = () => {
     try {
       setLoading(true);
       
-      // Fetch riders (users with role 'rider')
-      const ridersResponse = await axios.get('/api/users?role=rider');
-      setRiders(ridersResponse.data.users || []);
+      // Fetch riders from the new riders API
+      const ridersResponse = await axios.get('/api/riders');
+      setRiders(ridersResponse.data || []);
 
       // Fetch trips for rider history
       const tripsResponse = await axios.get('/api/trips');
@@ -256,13 +284,19 @@ const ComprehensiveRiderDashboard = () => {
     }
   };
 
+  // Handle rider name/ID click
+  const handleRiderClick = (e, riderId) => {
+    e.stopPropagation();
+    setSelectedRiderForModal(riderId);
+  };
+
   // Handle new rider creation
   const handleCreateRider = async () => {
     // Validation
-    if (!newRider.firstName || !newRider.lastName || !newRider.email || !newRider.password) {
+    if (!newRider.firstName || !newRider.lastName || !newRider.dateOfBirth) {
       toast({
         title: 'Validation Error',
-        description: 'Please fill in all required fields (First Name, Last Name, Email, Password)',
+        description: 'Please fill in all required fields (First Name, Last Name, Date of Birth)',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -334,8 +368,10 @@ const ComprehensiveRiderDashboard = () => {
 
       console.log('Sending rider data from dashboard:', riderData);
 
-      const response = await axios.post('/api/auth/register', riderData);
-      if (response.data.success) {
+      const response = await axios.post('/api/riders', riderData);
+      
+      // Check for successful response (status 201)
+      if (response.status === 201 || response.data.message) {
         toast({
           title: 'Success',
           description: `Rider ${newRider.firstName} ${newRider.lastName} created successfully`,
@@ -343,12 +379,16 @@ const ComprehensiveRiderDashboard = () => {
           duration: 3000,
           isClosable: true,
         });
+        
+        // Reset form
         setNewRider({
           firstName: '',
           lastName: '',
           email: '',
           phone: '',
           address: '',
+          dateOfBirth: '',
+          riderId: '',
           notes: '',
           
           // Service Balance
@@ -366,16 +406,20 @@ const ComprehensiveRiderDashboard = () => {
           mileageBalance: 500,
           pricePerMile: 0.50
         });
+        
+        // Close modal and refresh data
         onNewRiderClose();
         fetchData();
       }
     } catch (err) {
       console.error('Error creating rider:', err);
+      console.error('Error response:', err.response?.data);
+      console.error('Error status:', err.response?.status);
       toast({
         title: 'Error',
         description: err.response?.data?.message || 'Failed to create rider',
         status: 'error',
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
     }
@@ -400,18 +444,16 @@ const ComprehensiveRiderDashboard = () => {
 
   const handleUpdateRider = async () => {
     try {
-      const response = await axios.put(`/api/users/${selectedRider._id}`, newRider);
-      if (response.data.success) {
-        toast({
-          title: 'Success',
-          description: 'Rider updated successfully',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-        onEditRiderClose();
-        fetchData();
-      }
+      await axios.put(`/api/riders/${selectedRider._id}`, newRider);
+      toast({
+        title: 'Success',
+        description: 'Rider updated successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      onEditRiderClose();
+      fetchData();
     } catch (err) {
       console.error('Error updating rider:', err);
       toast({
@@ -425,12 +467,12 @@ const ComprehensiveRiderDashboard = () => {
   };
 
   const handleDeleteRider = async (riderId) => {
-    if (window.confirm('Are you sure you want to deactivate this rider?')) {
+    if (window.confirm('Are you sure you want to delete this rider?')) {
       try {
-        await axios.patch(`/api/users/${riderId}/deactivate`);
+        await axios.delete(`/api/riders/${riderId}`);
         toast({
           title: 'Success',
-          description: 'Rider deactivated successfully',
+          description: 'Rider deleted successfully',
           status: 'success',
           duration: 3000,
           isClosable: true,
@@ -479,9 +521,21 @@ const ComprehensiveRiderDashboard = () => {
               <Text 
                 color={textColor} 
                 fontSize={{ base: "md", md: "lg" }}
+                mb={4}
               >
                 Manage riders, track history, and analyze rider engagement
               </Text>
+              <Button
+                leftIcon={<AddIcon />}
+                colorScheme="pink"
+                size={{ base: "md", md: "lg" }}
+                onClick={onNewRiderOpen}
+                shadow="md"
+                _hover={{ transform: 'translateY(-2px)', shadow: 'lg' }}
+                transition="all 0.2s"
+              >
+                Add New Rider
+              </Button>
             </Box>
 
             {/* Quick Stats Cards */}
@@ -685,7 +739,14 @@ const ComprehensiveRiderDashboard = () => {
                                         bg="pink.500"
                                       />
                                       <VStack align="start" spacing={0}>
-                                        <Text fontSize="sm" fontWeight="bold">
+                                        <Text 
+                                          fontSize="sm" 
+                                          fontWeight="bold"
+                                          color="blue.600"
+                                          cursor="pointer"
+                                          _hover={{ textDecoration: 'underline' }}
+                                          onClick={(e) => handleRiderClick(e, rider._id)}
+                                        >
                                           {rider.firstName} {rider.lastName}
                                         </Text>
                                         <Text fontSize="xs" color="gray.500">
@@ -841,10 +902,23 @@ const ComprehensiveRiderDashboard = () => {
                                             bg="pink.500"
                                           />
                                           <VStack align="start" spacing={0}>
-                                            <Text fontWeight="bold" fontSize="sm">
+                                            <Text 
+                                              fontWeight="bold" 
+                                              fontSize="sm"
+                                              color="blue.600"
+                                              cursor="pointer"
+                                              _hover={{ textDecoration: 'underline' }}
+                                              onClick={(e) => handleRiderClick(e, rider._id)}
+                                            >
                                               {rider.firstName} {rider.lastName}
                                             </Text>
-                                            <Text fontSize="xs" color="gray.500">
+                                            <Text 
+                                              fontSize="xs" 
+                                              color="blue.500"
+                                              cursor="pointer"
+                                              _hover={{ textDecoration: 'underline' }}
+                                              onClick={(e) => handleRiderClick(e, rider._id)}
+                                            >
                                               ID: {rider.riderId || 'N/A'}
                                             </Text>
                                           </VStack>
@@ -1231,7 +1305,14 @@ const ComprehensiveRiderDashboard = () => {
                                               name={`${rider.firstName} ${rider.lastName}`}
                                               bg="pink.500"
                                             />
-                                            <Text fontSize="sm" fontWeight="medium">
+                                            <Text 
+                                              fontSize="sm" 
+                                              fontWeight="medium"
+                                              color="blue.600"
+                                              cursor="pointer"
+                                              _hover={{ textDecoration: 'underline' }}
+                                              onClick={(e) => handleRiderClick(e, rider._id)}
+                                            >
                                               {rider.firstName} {rider.lastName}
                                             </Text>
                                           </HStack>
@@ -1376,6 +1457,8 @@ const ComprehensiveRiderDashboard = () => {
           email: '',
           phone: '',
           address: '',
+          dateOfBirth: '',
+          riderId: '',
           notes: '',
           
           // Service Balance
@@ -1424,36 +1507,37 @@ const ComprehensiveRiderDashboard = () => {
                     </FormControl>
                   </SimpleGrid>
 
-                  <SimpleGrid columns={2} spacing={4} w="full">
-                    <FormControl isRequired>
-                      <FormLabel fontSize="sm">Email</FormLabel>
-                      <Input
-                        type="email"
-                        placeholder="Email address"
-                        value={newRider.email}
-                        onChange={(e) => setNewRider({...newRider, email: e.target.value})}
-                      />
-                    </FormControl>
-
-                    <FormControl isRequired>
-                      <FormLabel fontSize="sm">Phone</FormLabel>
-                      <Input
-                        placeholder="Phone number"
-                        value={newRider.phone}
-                        onChange={(e) => setNewRider({...newRider, phone: e.target.value})}
-                      />
-                    </FormControl>
-                  </SimpleGrid>
-
                   <FormControl isRequired>
-                    <FormLabel fontSize="sm">Password</FormLabel>
+                    <FormLabel fontSize="sm">Phone</FormLabel>
                     <Input
-                      type="password"
-                      placeholder="Password"
-                      value={newRider.password}
-                      onChange={(e) => setNewRider({...newRider, password: e.target.value})}
+                      placeholder="Phone number"
+                      value={newRider.phone}
+                      onChange={(e) => setNewRider({...newRider, phone: e.target.value})}
                     />
                   </FormControl>
+
+                  <FormControl isRequired>
+                    <FormLabel fontSize="sm">Date of Birth</FormLabel>
+                    <Input
+                      type="date"
+                      value={newRider.dateOfBirth}
+                      onChange={(e) => handleDateOfBirthChange(e.target.value)}
+                    />
+                  </FormControl>
+
+                  {/* Display Generated Rider ID */}
+                  {newRider.riderId && (
+                    <Box p={3} bg="blue.50" borderRadius="md" borderWidth="1px" borderColor="blue.200">
+                      <HStack>
+                        <Text fontSize="sm" fontWeight="bold" color="blue.700">
+                          Generated Rider ID:
+                        </Text>
+                        <Badge colorScheme="blue" fontSize="md" px={3} py={1}>
+                          {newRider.riderId}
+                        </Badge>
+                      </HStack>
+                    </Box>
+                  )}
 
                   <FormControl>
                     <FormLabel fontSize="sm">Address</FormLabel>
@@ -1701,13 +1785,20 @@ const ComprehensiveRiderDashboard = () => {
             <Button 
               colorScheme="pink" 
               onClick={isEditRiderOpen ? handleUpdateRider : handleCreateRider}
-              isDisabled={!newRider.firstName || !newRider.lastName || !newRider.email || !newRider.phone}
+              isDisabled={!newRider.firstName || !newRider.lastName || !newRider.phone || !newRider.dateOfBirth}
             >
               {isEditRiderOpen ? 'Update Rider' : 'Create Rider'}
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Rider Info Modal */}
+      <RiderInfoModal
+        isOpen={!!selectedRiderForModal}
+        onClose={() => setSelectedRiderForModal(null)}
+        riderId={selectedRiderForModal}
+      />
     </Box>
   );
 };

@@ -39,7 +39,20 @@ import {
   FormLabel,
   Input,
   Select,
-  Textarea
+  Textarea,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Alert,
+  AlertIcon
 } from '@chakra-ui/react';
 import {
   EditIcon,
@@ -58,6 +71,8 @@ import axios from 'axios';
 
 const RiderProfile = () => {
   const [rider, setRider] = useState(null);
+  const [trips, setTrips] = useState([]);
+  const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -87,7 +102,7 @@ const RiderProfile = () => {
   const fetchRider = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/users/${riderId}`, {
+      const response = await axios.get(`/api/riders/${riderId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setRider(response.data);
@@ -99,6 +114,28 @@ const RiderProfile = () => {
         phone: response.data.phone || '',
         preferredVehicleType: response.data.preferredVehicleType || ''
       });
+
+      // Fetch rider's trips
+      try {
+        const tripsResponse = await axios.get(`/api/trips?riderId=${riderId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        setTrips(tripsResponse.data?.trips || tripsResponse.data || []);
+      } catch (err) {
+        console.error('Error fetching trips:', err);
+        setTrips([]);
+      }
+
+      // Fetch complaints (if endpoint exists)
+      try {
+        const complaintsResponse = await axios.get(`/api/complaints?riderId=${riderId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        setComplaints(complaintsResponse.data?.complaints || complaintsResponse.data || []);
+      } catch (err) {
+        console.error('Error fetching complaints:', err);
+        setComplaints([]);
+      }
     } catch (error) {
       console.error('Error fetching rider:', error);
       toast({
@@ -121,7 +158,7 @@ const RiderProfile = () => {
   const handleEdit = async () => {
     try {
       setUpdating(true);
-      await axios.put(`/api/users/${riderId}`, editForm, {
+      await axios.put(`/api/riders/${riderId}`, editForm, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
 
@@ -221,30 +258,35 @@ const RiderProfile = () => {
   };
 
   const getMostRecentTrip = () => {
-    if (!rider?.trips || rider.trips.length === 0) return null;
-    return rider.trips.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    if (!Array.isArray(trips) || trips.length === 0) return null;
+    const completedTrips = trips.filter(trip => trip.status === 'completed');
+    if (completedTrips.length === 0) return null;
+    return completedTrips.sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate))[0];
   };
 
   const getUpcomingTrip = () => {
-    if (!rider?.trips || rider.trips.length === 0) return null;
+    if (!Array.isArray(trips) || trips.length === 0) return null;
     const now = new Date();
-    return rider.trips
-      .filter(trip => new Date(trip.date) > now)
-      .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+    const futureTrips = trips.filter(trip => {
+      const tripDate = new Date(trip.scheduledDate);
+      return tripDate > now && trip.status !== 'cancelled';
+    });
+    if (futureTrips.length === 0) return null;
+    return futureTrips.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate))[0];
   };
 
   const getTripFrequency = () => {
-    if (!rider?.trips || rider.trips.length === 0) return 'No trips';
+    if (!Array.isArray(trips) || trips.length === 0) return 'No trips';
 
-    const trips = rider.trips.sort((a, b) => new Date(a.date) - new Date(b.date));
-    const firstTrip = new Date(trips[0].date);
-    const lastTrip = new Date(trips[trips.length - 1].date);
+    const sortedTrips = [...trips].sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
+    const firstTrip = new Date(sortedTrips[0].scheduledDate);
+    const lastTrip = new Date(sortedTrips[sortedTrips.length - 1].scheduledDate);
     const monthsDiff = (lastTrip.getFullYear() - firstTrip.getFullYear()) * 12 +
                       (lastTrip.getMonth() - firstTrip.getMonth());
 
-    if (monthsDiff <= 0) return `${trips.length} trips`;
+    if (monthsDiff <= 0) return `${sortedTrips.length} trips`;
 
-    const avgTripsPerMonth = trips.length / monthsDiff;
+    const avgTripsPerMonth = sortedTrips.length / monthsDiff;
     if (avgTripsPerMonth >= 2) return 'Frequent';
     if (avgTripsPerMonth >= 1) return 'Regular';
     if (avgTripsPerMonth >= 0.5) return 'Occasional';
@@ -252,9 +294,9 @@ const RiderProfile = () => {
   };
 
   const getFrequentDestination = () => {
-    if (!rider?.trips || rider.trips.length === 0) return 'N/A';
+    if (!Array.isArray(trips) || trips.length === 0) return 'N/A';
 
-    const destinations = rider.trips.map(trip => trip.destination).filter(Boolean);
+    const destinations = trips.map(trip => trip.dropoffLocation).filter(Boolean);
     if (destinations.length === 0) return 'N/A';
 
     const destinationCounts = destinations.reduce((acc, dest) => {
@@ -313,8 +355,8 @@ const RiderProfile = () => {
             <Button leftIcon={<AddIcon />} colorScheme="green" onClick={onBalanceOpen}>
               Manage Balance
             </Button>
-            <Button leftIcon={<CalendarIcon />} colorScheme="purple" onClick={handleScheduleTrip}>
-              Schedule Trip
+            <Button leftIcon={<CalendarIcon />} colorScheme="pink" onClick={handleScheduleTrip}>
+              Create Trip
             </Button>
           </HStack>
         </Flex>
@@ -456,13 +498,13 @@ const RiderProfile = () => {
                 <Box>
                   <Text fontWeight="bold">Most Recent Trip:</Text>
                   <Text color="gray.600">
-                    {recentTrip ? formatDate(recentTrip.date) : 'No trips'}
+                    {recentTrip ? formatDate(recentTrip.scheduledDate) : 'No trips'}
                   </Text>
                 </Box>
                 <Box>
                   <Text fontWeight="bold">Upcoming Trip:</Text>
                   <Text color="gray.600">
-                    {upcomingTrip ? formatDate(upcomingTrip.date) : 'No upcoming trips'}
+                    {upcomingTrip ? formatDate(upcomingTrip.scheduledDate) : 'No upcoming trips'}
                   </Text>
                 </Box>
                 <Box>
@@ -485,17 +527,17 @@ const RiderProfile = () => {
               <SimpleGrid columns={2} spacing={4}>
                 <Stat>
                   <StatLabel>Total Trips</StatLabel>
-                  <StatNumber>{rider.trips?.length || 0}</StatNumber>
+                  <StatNumber>{Array.isArray(trips) ? trips.length : 0}</StatNumber>
                 </Stat>
                 <Stat>
                   <StatLabel>This Month</StatLabel>
                   <StatNumber>
-                    {rider.trips?.filter(trip => {
-                      const tripDate = new Date(trip.date);
+                    {Array.isArray(trips) ? trips.filter(trip => {
+                      const tripDate = new Date(trip.scheduledDate);
                       const now = new Date();
                       return tripDate.getMonth() === now.getMonth() &&
                              tripDate.getFullYear() === now.getFullYear();
-                    }).length || 0}
+                    }).length : 0}
                   </StatNumber>
                 </Stat>
               </SimpleGrid>
@@ -503,34 +545,194 @@ const RiderProfile = () => {
           </Card>
         </SimpleGrid>
 
-        {/* Recent Trips */}
-        {rider.trips && rider.trips.length > 0 && (
-          <Card>
-            <CardHeader>
-              <Heading size="md">Recent Trips</Heading>
-            </CardHeader>
-            <CardBody>
-              <VStack align="start" spacing={3}>
-                {rider.trips
-                  .sort((a, b) => new Date(b.date) - new Date(a.date))
-                  .slice(0, 5)
-                  .map((trip, index) => (
-                    <HStack key={index} w="full" justify="space-between">
-                      <VStack align="start" spacing={1}>
-                        <Text fontWeight="bold">{formatDate(trip.date)}</Text>
-                        <Text fontSize="sm" color="gray.600">
-                          {trip.origin} → {trip.destination}
-                        </Text>
+        {/* Trips and Complaints Tabs */}
+        <Card>
+          <CardBody>
+            <Tabs colorScheme="pink" variant="enclosed">
+              <TabList>
+                <Tab>
+                  <TimeIcon mr={2} />
+                  Upcoming Trips ({Array.isArray(trips) ? trips.filter(trip => {
+                    const tripDate = new Date(trip.scheduledDate);
+                    return tripDate >= new Date() || ['pending', 'assigned', 'in-progress'].includes(trip.status);
+                  }).length : 0})
+                </Tab>
+                <Tab>
+                  <CalendarIcon mr={2} />
+                  Past Trips ({Array.isArray(trips) ? trips.filter(trip => {
+                    const tripDate = new Date(trip.scheduledDate);
+                    return tripDate < new Date() && ['completed', 'cancelled'].includes(trip.status);
+                  }).length : 0})
+                </Tab>
+                <Tab>
+                  <SettingsIcon mr={2} />
+                  Complaints ({Array.isArray(complaints) ? complaints.length : 0})
+                </Tab>
+              </TabList>
+
+              <TabPanels>
+                {/* Upcoming Trips Tab */}
+                <TabPanel>
+                  {!Array.isArray(trips) || trips.filter(trip => {
+                    const tripDate = new Date(trip.scheduledDate);
+                    return tripDate >= new Date() || ['pending', 'assigned', 'in-progress'].includes(trip.status);
+                  }).length === 0 ? (
+                    <Center py={8}>
+                      <VStack spacing={3}>
+                        <CalendarIcon boxSize={12} color="gray.400" />
+                        <Text color="gray.500">No upcoming trips</Text>
                       </VStack>
-                      <Badge colorScheme={trip.status === 'completed' ? 'green' : 'blue'}>
-                        {trip.status}
-                      </Badge>
-                    </HStack>
-                  ))}
-              </VStack>
-            </CardBody>
-          </Card>
-        )}
+                    </Center>
+                  ) : (
+                    <Box overflowX="auto">
+                      <Table variant="simple">
+                        <Thead>
+                          <Tr>
+                            <Th>Date & Time</Th>
+                            <Th>Pickup</Th>
+                            <Th>Dropoff</Th>
+                            <Th>Status</Th>
+                            <Th>Driver</Th>
+                          </Tr>
+                        </Thead>
+                        <Tbody>
+                          {trips
+                            .filter(trip => {
+                              const tripDate = new Date(trip.scheduledDate);
+                              return tripDate >= new Date() || ['pending', 'assigned', 'in-progress'].includes(trip.status);
+                            })
+                            .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate))
+                            .map((trip) => (
+                            <Tr key={trip._id}>
+                              <Td>
+                                <VStack align="start" spacing={0}>
+                                  <Text fontWeight="bold">
+                                    {new Date(trip.scheduledDate).toLocaleDateString()}
+                                  </Text>
+                                  <Text fontSize="sm" color="gray.500">
+                                    {trip.scheduledTime}
+                                  </Text>
+                                </VStack>
+                              </Td>
+                              <Td>{trip.pickupLocation}</Td>
+                              <Td>{trip.dropoffLocation}</Td>
+                              <Td>
+                                <Badge colorScheme={
+                                  trip.status === 'pending' ? 'yellow' :
+                                  trip.status === 'assigned' ? 'blue' :
+                                  trip.status === 'in-progress' ? 'purple' :
+                                  trip.status === 'completed' ? 'green' : 'red'
+                                }>
+                                  {trip.status}
+                                </Badge>
+                              </Td>
+                              <Td>{trip.driverName || 'Not assigned'}</Td>
+                            </Tr>
+                          ))}
+                        </Tbody>
+                      </Table>
+                    </Box>
+                  )}
+                </TabPanel>
+
+                {/* Past Trips Tab */}
+                <TabPanel>
+                  {!Array.isArray(trips) || trips.filter(trip => {
+                    const tripDate = new Date(trip.scheduledDate);
+                    return tripDate < new Date() && ['completed', 'cancelled'].includes(trip.status);
+                  }).length === 0 ? (
+                    <Center py={8}>
+                      <VStack spacing={3}>
+                        <CalendarIcon boxSize={12} color="gray.400" />
+                        <Text color="gray.500">No past trips</Text>
+                      </VStack>
+                    </Center>
+                  ) : (
+                    <Box overflowX="auto">
+                      <Table variant="simple">
+                        <Thead>
+                          <Tr>
+                            <Th>Date & Time</Th>
+                            <Th>Pickup</Th>
+                            <Th>Dropoff</Th>
+                            <Th>Status</Th>
+                            <Th>Driver</Th>
+                            <Th>Cost</Th>
+                          </Tr>
+                        </Thead>
+                        <Tbody>
+                          {trips
+                            .filter(trip => {
+                              const tripDate = new Date(trip.scheduledDate);
+                              return tripDate < new Date() && ['completed', 'cancelled'].includes(trip.status);
+                            })
+                            .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate))
+                            .map((trip) => (
+                            <Tr key={trip._id}>
+                              <Td>
+                                <VStack align="start" spacing={0}>
+                                  <Text fontWeight="bold">
+                                    {new Date(trip.scheduledDate).toLocaleDateString()}
+                                  </Text>
+                                  <Text fontSize="sm" color="gray.500">
+                                    {trip.scheduledTime}
+                                  </Text>
+                                </VStack>
+                              </Td>
+                              <Td>{trip.pickupLocation}</Td>
+                              <Td>{trip.dropoffLocation}</Td>
+                              <Td>
+                                <Badge colorScheme={trip.status === 'completed' ? 'green' : 'red'}>
+                                  {trip.status}
+                                </Badge>
+                              </Td>
+                              <Td>{trip.driverName || 'N/A'}</Td>
+                              <Td>{trip.cost ? `$${trip.cost}` : 'N/A'}</Td>
+                            </Tr>
+                          ))}
+                        </Tbody>
+                      </Table>
+                    </Box>
+                  )}
+                </TabPanel>
+
+                {/* Complaints Tab */}
+                <TabPanel>
+                  {!Array.isArray(complaints) || complaints.length === 0 ? (
+                    <Center py={8}>
+                      <VStack spacing={3}>
+                        <SettingsIcon boxSize={12} color="green.400" />
+                        <Text color="gray.500">No complaints filed</Text>
+                      </VStack>
+                    </Center>
+                  ) : (
+                    <VStack spacing={4} align="stretch">
+                      {complaints.map((complaint, index) => (
+                        <Alert key={index} status={complaint.resolved ? 'success' : 'warning'} borderRadius="md">
+                          <AlertIcon />
+                          <Box flex="1">
+                            <HStack justify="space-between" mb={2}>
+                              <Text fontWeight="bold">
+                                {complaint.title || 'Complaint'}
+                              </Text>
+                              <Badge colorScheme={complaint.resolved ? 'green' : 'red'}>
+                                {complaint.resolved ? 'Resolved' : 'Open'}
+                              </Badge>
+                            </HStack>
+                            <Text fontSize="sm" mb={2}>{complaint.description}</Text>
+                            <Text fontSize="xs" color="gray.500">
+                              Filed: {new Date(complaint.createdAt).toLocaleDateString()}
+                            </Text>
+                          </Box>
+                        </Alert>
+                      ))}
+                    </VStack>
+                  )}
+                </TabPanel>
+              </TabPanels>
+            </Tabs>
+          </CardBody>
+        </Card>
       </VStack>
 
       {/* Edit Modal */}

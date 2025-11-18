@@ -67,6 +67,7 @@ import {
 } from '@heroicons/react/24/solid';
 import { FaMapMarkerAlt, FaUser, FaPhone, FaEnvelope, FaCar } from 'react-icons/fa';
 import axios from '../../config/axios';
+import RiderInfoModal from '../shared/RiderInfoModal';
 
 const CalendarOverview = ({ onTripUpdate }) => {
   const [trips, setTrips] = useState([]);
@@ -76,8 +77,10 @@ const CalendarOverview = ({ onTripUpdate }) => {
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateTrips, setSelectedDateTrips] = useState([]);
+  const [selectedRider, setSelectedRider] = useState({ id: null, name: null });
   const { isOpen: isDetailsOpen, onOpen: onDetailsOpen, onClose: onDetailsClose } = useDisclosure();
   const { isOpen: isDayTripsOpen, onOpen: onDayTripsOpen, onClose: onDayTripsClose } = useDisclosure();
+  const { isOpen: isRiderInfoOpen, onOpen: onRiderInfoOpen, onClose: onRiderInfoClose } = useDisclosure();
 
   // Color mode values
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -391,6 +394,13 @@ const CalendarOverview = ({ onTripUpdate }) => {
     }
   };
 
+  // Handle rider name click
+  const handleRiderClick = (e, riderId, riderName) => {
+    e.stopPropagation(); // Prevent parent click handlers
+    setSelectedRider({ id: riderId, name: riderName });
+    onRiderInfoOpen();
+  };
+
   // Generate calendar grid for month view
   const generateCalendarGrid = () => {
     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -699,7 +709,13 @@ const CalendarOverview = ({ onTripUpdate }) => {
                             <Badge colorScheme={getStatusColor(trip.status)} fontSize="xs">
                               {trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
                             </Badge>
-                            <Text fontWeight="bold" color="blue.600">
+                            <Text 
+                              fontWeight="bold" 
+                              color="blue.600"
+                              cursor="pointer"
+                              _hover={{ textDecoration: 'underline', color: 'blue.700' }}
+                              onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, trip.riderName)}
+                            >
                               {trip.riderName}
                             </Text>
                             <HStack spacing={1}>
@@ -788,7 +804,14 @@ const CalendarOverview = ({ onTripUpdate }) => {
             {selectedTrip && (
               <VStack spacing={4} align="stretch">
                 <HStack justify="space-between">
-                  <Text fontSize="lg" fontWeight="bold">
+                  <Text 
+                    fontSize="lg" 
+                    fontWeight="bold"
+                    color="blue.600"
+                    cursor="pointer"
+                    _hover={{ textDecoration: 'underline', color: 'blue.700' }}
+                    onClick={(e) => handleRiderClick(e, selectedTrip.riderId || selectedTrip._id, selectedTrip.riderName)}
+                  >
                     {selectedTrip.riderName}
                   </Text>
                   <Badge colorScheme={getStatusColor(selectedTrip.status)}>
@@ -924,7 +947,14 @@ const CalendarOverview = ({ onTripUpdate }) => {
                         <VStack align="start" spacing={1}>
                           <HStack>
                             <UserIcon width={16} height={16} />
-                            <Text fontWeight="bold" fontSize="md">
+                            <Text 
+                              fontWeight="bold" 
+                              fontSize="md"
+                              color="blue.600"
+                              cursor="pointer"
+                              _hover={{ textDecoration: 'underline', color: 'blue.700' }}
+                              onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, trip.riderName)}
+                            >
                               {trip.riderName}
                             </Text>
                           </HStack>
@@ -980,6 +1010,14 @@ const CalendarOverview = ({ onTripUpdate }) => {
           </ModalBody>
         </ModalContent>
       </Modal>
+
+      {/* Rider Info Modal */}
+      <RiderInfoModal
+        isOpen={isRiderInfoOpen}
+        onClose={onRiderInfoClose}
+        riderId={selectedRider.id}
+        riderName={selectedRider.name}
+      />
     </Box>
   );
 };

@@ -207,7 +207,7 @@ const ComprehensiveVehicleDashboard = () => {
       vehicle.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vehicle.vin?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = filterStatus === 'all' || vehicle.status === filterStatus;
+    const matchesStatus = filterStatus === 'all' || (vehicle.status || 'inactive') === filterStatus;
     
     return matchesSearch && matchesStatus;
   });
@@ -226,8 +226,8 @@ const ComprehensiveVehicleDashboard = () => {
 
   // Statistics
   const totalVehicles = vehicles.length;
-  const activeVehicles = vehicles.filter(vehicle => vehicle.status === 'active').length;
-  const maintenanceVehicles = vehicles.filter(vehicle => vehicle.status === 'maintenance').length;
+  const activeVehicles = vehicles.filter(vehicle => (vehicle.status || 'inactive') === 'active').length;
+  const maintenanceVehicles = vehicles.filter(vehicle => (vehicle.status || 'inactive') === 'maintenance').length;
   const avgFuelLevel = vehicles.reduce((sum, vehicle) => sum + (vehicle.fuelLevel || 0), 0) / vehicles.length;
 
   // Utility functions
@@ -708,8 +708,8 @@ const ComprehensiveVehicleDashboard = () => {
                                         </Text>
                                       </VStack>
                                     </HStack>
-                                    <Badge colorScheme={getStatusColor(vehicle.status)}>
-                                      {vehicle.status}
+                                    <Badge colorScheme={getStatusColor(vehicle.status || 'inactive')}>
+                                      {vehicle.status || 'inactive'}
                                     </Badge>
                                   </HStack>
                                 ))}
@@ -736,8 +736,8 @@ const ComprehensiveVehicleDashboard = () => {
                                         {record.type}
                                       </Text>
                                     </VStack>
-                                    <Badge colorScheme={getStatusColor(record.status)}>
-                                      {record.status}
+                                    <Badge colorScheme={getStatusColor(record.status || 'pending')}>
+                                      {record.status || 'pending'}
                                     </Badge>
                                   </HStack>
                                 ))}
@@ -867,8 +867,8 @@ const ComprehensiveVehicleDashboard = () => {
                                       </Td>
                                       <Td>
                                         <VStack align="start" spacing={1}>
-                                          <Badge colorScheme={getStatusColor(vehicle.status)}>
-                                            {vehicle.status}
+                                          <Badge colorScheme={getStatusColor(vehicle.status || 'inactive')}>
+                                            {vehicle.status || 'inactive'}
                                           </Badge>
                                           <HStack spacing={1}>
                                             <Text fontSize="xs">👥 {vehicle.capacity}</Text>
@@ -1022,7 +1022,7 @@ const ComprehensiveVehicleDashboard = () => {
                           <Stat bg={cardBg} p={4} rounded="lg" shadow="sm">
                             <StatLabel>Completed</StatLabel>
                             <StatNumber color="green.500">
-                              {maintenanceRecords.filter(record => record.status === 'completed').length}
+                              {maintenanceRecords.filter(record => (record.status || 'pending') === 'completed').length}
                             </StatNumber>
                             <StatHelpText>Maintenance tasks</StatHelpText>
                           </Stat>
@@ -1030,7 +1030,7 @@ const ComprehensiveVehicleDashboard = () => {
                           <Stat bg={cardBg} p={4} rounded="lg" shadow="sm">
                             <StatLabel>In Progress</StatLabel>
                             <StatNumber color="yellow.500">
-                              {maintenanceRecords.filter(record => record.status === 'in-progress').length}
+                              {maintenanceRecords.filter(record => (record.status || 'pending') === 'in-progress').length}
                             </StatNumber>
                             <StatHelpText>Active work</StatHelpText>
                           </Stat>
@@ -1101,7 +1101,7 @@ const ComprehensiveVehicleDashboard = () => {
                                           colorScheme={getStatusColor(record.status)} 
                                           fontSize="xs"
                                         >
-                                          {record.status.replace('-', ' ').toUpperCase()}
+                                          {record.status ? record.status.replace('-', ' ').toUpperCase() : 'N/A'}
                                         </Badge>
                                       </Td>
                                       <Td>
@@ -1405,8 +1405,8 @@ const ComprehensiveVehicleDashboard = () => {
                                         </Text>
                                       </Td>
                                       <Td>
-                                        <Badge colorScheme={getStatusColor(vehicle.status)}>
-                                          {vehicle.status}
+                                        <Badge colorScheme={getStatusColor(vehicle.status || 'inactive')}>
+                                          {vehicle.status || 'inactive'}
                                         </Badge>
                                       </Td>
                                     </Tr>

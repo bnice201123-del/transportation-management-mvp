@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -119,6 +120,9 @@ import RiderInfoModal from '../shared/RiderInfoModal';
 import TripDetailsModal from '../scheduler/TripDetailsModal';
 
 const DispatcherDashboard = () => {
+  // Navigation
+  const navigate = useNavigate();
+  
   // Core state management
   const [trips, setTrips] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -864,6 +868,17 @@ const DispatcherDashboard = () => {
                     size={{ base: "md", md: "md" }}
                   >
                     Manage Trips
+                  </Button>
+                </WrapItem>
+                <WrapItem>
+                  <Button
+                    leftIcon={<Box as={UserGroupIconSolid} w={4} h={4} />}
+                    colorScheme="purple"
+                    variant="outline"
+                    onClick={() => navigate('/riders?tab=all-riders')}
+                    size={{ base: "md", md: "md" }}
+                  >
+                    All Riders
                   </Button>
                 </WrapItem>
                 <WrapItem>

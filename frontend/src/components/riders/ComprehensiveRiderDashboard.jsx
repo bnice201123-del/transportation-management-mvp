@@ -225,6 +225,8 @@ const ComprehensiveRiderDashboard = () => {
     const params = new URLSearchParams(location.search);
     if (params.get('tab') === 'history') {
       setActiveTab(2);
+    } else if (params.get('tab') === 'all-riders') {
+      setActiveTab(1);
     }
   }, [location]);
 

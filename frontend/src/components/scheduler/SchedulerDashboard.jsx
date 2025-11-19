@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -127,6 +127,7 @@ import CalendarOverview from './CalendarOverview';
 
 const SchedulerDashboard = ({ view }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const isManageView = view === 'manage' || location.pathname.includes('/manage') || location.search.includes('view=manage');
   const isCalendarView = view === 'calendar' || location.pathname.includes('/calendar') || location.search.includes('view=calendar');
   
@@ -1008,8 +1009,19 @@ const SchedulerDashboard = ({ view }) => {
                 </WrapItem>
                 <WrapItem>
                   <Button
-                    leftIcon={<Box as={CalendarDaysIcon} w={4} h={4} />}
+                    leftIcon={<Box as={UserGroupIconSolid} w={4} h={4} />}
                     colorScheme="purple"
+                    variant="outline"
+                    onClick={() => navigate('/riders?tab=all-riders')}
+                    size={{ base: "md", md: "md" }}
+                  >
+                    All Riders
+                  </Button>
+                </WrapItem>
+                <WrapItem>
+                  <Button
+                    leftIcon={<Box as={CalendarDaysIcon} w={4} h={4} />}
+                    colorScheme="teal"
                     variant="outline"
                     onClick={() => window.location.href = '/scheduler/calendar'}
                     size={{ base: "md", md: "md" }}

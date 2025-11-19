@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -47,7 +48,9 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  useColorModeValue
+  useColorModeValue,
+  Wrap,
+  WrapItem
 } from '@chakra-ui/react';
 import {
   MagnifyingGlassIcon,
@@ -62,6 +65,7 @@ import {
   PlayIcon,
   StopIcon,
   UserIcon,
+  UserGroupIcon,
   BellIcon,
   HomeIcon,
   Cog6ToothIcon,
@@ -73,6 +77,7 @@ import {
   MapPinIcon as MapPinIconSolid,
   ClockIcon as ClockIconSolid,
   UserIcon as UserIconSolid,
+  UserGroupIcon as UserGroupIconSolid,
   BellIcon as BellIconSolid
 } from '@heroicons/react/24/solid';
 import { FaNavigation } from 'react-icons/fa';
@@ -83,6 +88,7 @@ import GoogleMap from '../maps/GoogleMap';
 import TripMap from '../maps/TripMap';
 
 const DriverDashboard = () => {
+  const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
   const [isAvailable, setIsAvailable] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -390,6 +396,43 @@ const DriverDashboard = () => {
             </SimpleGrid>
           </CardBody>
         </Card>
+
+        {/* Quick Actions Section - Conditional for admins/dispatchers/schedulers */}
+        {user?.role && ['admin', 'dispatcher', 'scheduler'].includes(user.role) && (
+          <Card mb={cardSpacing} bg={cardBg}>
+            <CardHeader>
+              <Heading size="md" display="flex" alignItems="center" gap={3}>
+                <Box as={Cog6ToothIcon} w={5} h={5} color="blue.500" />
+                Quick Actions
+              </Heading>
+            </CardHeader>
+            <CardBody pt={0}>
+              <Wrap spacing={4}>
+                <WrapItem>
+                  <Button
+                    leftIcon={<Box as={UserGroupIconSolid} w={4} h={4} />}
+                    colorScheme="purple"
+                    variant="outline"
+                    onClick={() => navigate('/riders')}
+                    size={{ base: "md", md: "md" }}
+                  >
+                    All Riders
+                  </Button>
+                </WrapItem>
+                <WrapItem>
+                  <Button
+                    leftIcon={<Box as={ArrowPathIcon} w={4} h={4} />}
+                    onClick={fetchTrips}
+                    size={{ base: "md", md: "md" }}
+                    variant="outline"
+                  >
+                    Refresh Trips
+                  </Button>
+                </WrapItem>
+              </Wrap>
+            </CardBody>
+          </Card>
+        )}
 
         {/* Main Content with Tabs */}
         <Tabs>

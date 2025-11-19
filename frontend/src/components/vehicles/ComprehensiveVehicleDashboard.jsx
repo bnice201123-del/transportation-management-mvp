@@ -123,10 +123,12 @@ const ComprehensiveVehicleDashboard = () => {
     capacity: '',
     fuelType: 'gasoline',
     mileage: '',
+    trackingPhone: '',
     notes: ''
   });
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [customColorInput, setCustomColorInput] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -272,11 +274,16 @@ const ComprehensiveVehicleDashboard = () => {
       errors.year = 'Please enter a valid year';
     }
     if (!newVehicle.licensePlate.trim()) errors.licensePlate = 'License plate is required';
+    if (!newVehicle.trackingPhone.trim()) errors.trackingPhone = 'Tracking phone number is required';
+    else if (!/^[\d\s\-()+ ]+$/.test(newVehicle.trackingPhone)) {
+      errors.trackingPhone = 'Please enter a valid phone number';
+    }
+    if (!newVehicle.mileage) errors.mileage = 'Current mileage is required';
+    else if (parseInt(newVehicle.mileage) < 0) {
+      errors.mileage = 'Mileage cannot be negative';
+    }
     if (newVehicle.capacity && (parseInt(newVehicle.capacity) < 1 || parseInt(newVehicle.capacity) > 100)) {
       errors.capacity = 'Capacity must be between 1 and 100';
-    }
-    if (newVehicle.mileage && parseInt(newVehicle.mileage) < 0) {
-      errors.mileage = 'Mileage cannot be negative';
     }
 
     setFormErrors(errors);
@@ -328,9 +335,11 @@ const ComprehensiveVehicleDashboard = () => {
           capacity: '',
           fuelType: 'gasoline',
           mileage: '',
+          trackingPhone: '',
           notes: ''
         });
         setFormErrors({});
+        setCustomColorInput(false);
         onNewVehicleClose();
         fetchData();
       }
@@ -856,7 +865,13 @@ const ComprehensiveVehicleDashboard = () => {
                                             <Text fontWeight="bold" fontSize="sm">
                                               {vehicle.licensePlate}
                                             </Text>
-                                            <Text fontSize="xs" color="gray.500">
+                                            <Text 
+                                              fontSize="xs" 
+                                              color="orange.500"
+                                              cursor="pointer"
+                                              _hover={{ textDecoration: 'underline', color: 'orange.600' }}
+                                              onClick={() => navigate(`/vehicles/${vehicle._id}`)}
+                                            >
                                               {vehicle.year} {vehicle.make} {vehicle.model}
                                             </Text>
                                             <Text fontSize="xs" color="gray.400">
@@ -935,7 +950,7 @@ const ComprehensiveVehicleDashboard = () => {
                                             </MenuItem>
                                             <MenuItem
                                               icon={<FaUserTie />}
-                                              onClick={() => navigate('/vehicles/assign', { state: { vehicle } })}
+                                              onClick={() => navigate('/vehicles/assignment', { state: { vehicle } })}
                                             >
                                               Assign Driver
                                             </MenuItem>
@@ -1181,6 +1196,16 @@ const ComprehensiveVehicleDashboard = () => {
                                 </FormControl>
 
                                 <FormControl isRequired>
+                                  <FormLabel>Tracking Phone Number</FormLabel>
+                                  <Input
+                                    type="tel"
+                                    placeholder="+1 (555) 123-4567"
+                                    value={newVehicle.trackingPhone}
+                                    onChange={(e) => setNewVehicle({...newVehicle, trackingPhone: e.target.value})}
+                                  />
+                                </FormControl>
+
+                                <FormControl isRequired>
                                   <FormLabel>VIN</FormLabel>
                                   <Input
                                     placeholder="Vehicle Identification Number"
@@ -1191,11 +1216,54 @@ const ComprehensiveVehicleDashboard = () => {
 
                                 <FormControl>
                                   <FormLabel>Color</FormLabel>
-                                  <Input
-                                    placeholder="e.g., White, Silver, Blue"
-                                    value={newVehicle.color}
-                                    onChange={(e) => setNewVehicle({...newVehicle, color: e.target.value})}
-                                  />
+                                  {customColorInput ? (
+                                    <Input
+                                      placeholder="Enter custom color"
+                                      value={newVehicle.color}
+                                      onChange={(e) => setNewVehicle({...newVehicle, color: e.target.value})}
+                                    />
+                                  ) : (
+                                    <Select
+                                      value={newVehicle.color}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (value === 'other') {
+                                          setCustomColorInput(true);
+                                          setNewVehicle({...newVehicle, color: ''});
+                                        } else {
+                                          setNewVehicle({...newVehicle, color: value});
+                                        }
+                                      }}
+                                    >
+                                      <option value="">Select a color</option>
+                                      <option value="White">White</option>
+                                      <option value="Black">Black</option>
+                                      <option value="Silver">Silver</option>
+                                      <option value="Gray">Gray</option>
+                                      <option value="Red">Red</option>
+                                      <option value="Blue">Blue</option>
+                                      <option value="Green">Green</option>
+                                      <option value="Yellow">Yellow</option>
+                                      <option value="Orange">Orange</option>
+                                      <option value="Brown">Brown</option>
+                                      <option value="Beige">Beige</option>
+                                      <option value="Gold">Gold</option>
+                                      <option value="other">Other (Custom)</option>
+                                    </Select>
+                                  )}
+                                  {customColorInput && (
+                                    <Button
+                                      size="sm"
+                                      mt={2}
+                                      variant="link"
+                                      onClick={() => {
+                                        setCustomColorInput(false);
+                                        setNewVehicle({...newVehicle, color: ''});
+                                      }}
+                                    >
+                                      Back to color list
+                                    </Button>
+                                  )}
                                 </FormControl>
 
                                 <FormControl isRequired>
@@ -1222,7 +1290,7 @@ const ComprehensiveVehicleDashboard = () => {
                                 </FormControl>
                               </SimpleGrid>
 
-                              <FormControl>
+                              <FormControl isRequired isInvalid={!!formErrors.mileage}>
                                 <FormLabel>Current Mileage</FormLabel>
                                 <Input
                                   type="number"
@@ -1230,6 +1298,7 @@ const ComprehensiveVehicleDashboard = () => {
                                   value={newVehicle.mileage}
                                   onChange={(e) => setNewVehicle({...newVehicle, mileage: e.target.value})}
                                 />
+                                {formErrors.mileage && <Text color="red.500" fontSize="sm">{formErrors.mileage}</Text>}
                               </FormControl>
 
                               <FormControl>
@@ -1257,8 +1326,10 @@ const ComprehensiveVehicleDashboard = () => {
                                       capacity: '',
                                       fuelType: 'gasoline',
                                       mileage: '',
+                                      trackingPhone: '',
                                       notes: ''
                                     });
+                                    setCustomColorInput(false);
                                   }}
                                 >
                                   Clear Form
@@ -1266,7 +1337,7 @@ const ComprehensiveVehicleDashboard = () => {
                                 <Button
                                   colorScheme="orange"
                                   onClick={handleCreateVehicle}
-                                  isDisabled={!newVehicle.make || !newVehicle.model || !newVehicle.year || !newVehicle.licensePlate || !newVehicle.vin}
+                                  isDisabled={!newVehicle.make || !newVehicle.model || !newVehicle.year || !newVehicle.licensePlate || !newVehicle.trackingPhone || !newVehicle.vin || !newVehicle.mileage}
                                 >
                                   Add Vehicle
                                 </Button>
@@ -1541,6 +1612,7 @@ const ComprehensiveVehicleDashboard = () => {
         onNewVehicleClose();
         onEditVehicleClose();
         setSelectedVehicle(null);
+        setCustomColorInput(false);
         setNewVehicle({
           make: '',
           model: '',
@@ -1552,6 +1624,7 @@ const ComprehensiveVehicleDashboard = () => {
           capacity: '',
           fuelType: 'gasoline',
           mileage: '',
+          trackingPhone: '',
           notes: ''
         });
       }} size="xl">
@@ -1602,6 +1675,17 @@ const ComprehensiveVehicleDashboard = () => {
                   />
                   {formErrors.licensePlate && <Text color="red.500" fontSize="sm">{formErrors.licensePlate}</Text>}
                 </FormControl>
+
+                <FormControl isRequired isInvalid={!!formErrors.trackingPhone}>
+                  <FormLabel>Tracking Phone Number</FormLabel>
+                  <Input
+                    type="tel"
+                    placeholder="+1 (555) 123-4567"
+                    value={newVehicle.trackingPhone}
+                    onChange={(e) => setNewVehicle({...newVehicle, trackingPhone: e.target.value})}
+                  />
+                  {formErrors.trackingPhone && <Text color="red.500" fontSize="sm">{formErrors.trackingPhone}</Text>}
+                </FormControl>
               </SimpleGrid>
 
               <FormControl isRequired>
@@ -1616,11 +1700,53 @@ const ComprehensiveVehicleDashboard = () => {
               <SimpleGrid columns={2} spacing={4}>
                 <FormControl>
                   <FormLabel>Color</FormLabel>
-                  <Input
-                    placeholder="Vehicle color"
-                    value={newVehicle.color}
-                    onChange={(e) => setNewVehicle({...newVehicle, color: e.target.value})}
-                  />
+                  {customColorInput ? (
+                    <VStack align="stretch" spacing={2}>
+                      <Input
+                        placeholder="Enter custom color"
+                        value={newVehicle.color}
+                        onChange={(e) => setNewVehicle({...newVehicle, color: e.target.value})}
+                      />
+                      <Button
+                        size="sm"
+                        variant="link"
+                        onClick={() => {
+                          setCustomColorInput(false);
+                          setNewVehicle({...newVehicle, color: ''});
+                        }}
+                      >
+                        Back to color list
+                      </Button>
+                    </VStack>
+                  ) : (
+                    <Select
+                      value={newVehicle.color}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === 'other') {
+                          setCustomColorInput(true);
+                          setNewVehicle({...newVehicle, color: ''});
+                        } else {
+                          setNewVehicle({...newVehicle, color: value});
+                        }
+                      }}
+                    >
+                      <option value="">Select a color</option>
+                      <option value="White">White</option>
+                      <option value="Black">Black</option>
+                      <option value="Silver">Silver</option>
+                      <option value="Gray">Gray</option>
+                      <option value="Red">Red</option>
+                      <option value="Blue">Blue</option>
+                      <option value="Green">Green</option>
+                      <option value="Yellow">Yellow</option>
+                      <option value="Orange">Orange</option>
+                      <option value="Brown">Brown</option>
+                      <option value="Beige">Beige</option>
+                      <option value="Gold">Gold</option>
+                      <option value="other">Other (Custom)</option>
+                    </Select>
+                  )}
                 </FormControl>
 
                 <FormControl isRequired>
@@ -1633,6 +1759,17 @@ const ComprehensiveVehicleDashboard = () => {
                   />
                 </FormControl>
               </SimpleGrid>
+
+              <FormControl isRequired isInvalid={!!formErrors.mileage}>
+                <FormLabel>Current Mileage</FormLabel>
+                <Input
+                  type="number"
+                  placeholder="Current odometer reading"
+                  value={newVehicle.mileage}
+                  onChange={(e) => setNewVehicle({...newVehicle, mileage: e.target.value})}
+                />
+                {formErrors.mileage && <Text color="red.500" fontSize="sm">{formErrors.mileage}</Text>}
+              </FormControl>
 
               <FormControl>
                 <FormLabel>Notes</FormLabel>
@@ -1650,6 +1787,7 @@ const ComprehensiveVehicleDashboard = () => {
               onNewVehicleClose();
               onEditVehicleClose();
               setSelectedVehicle(null);
+              setCustomColorInput(false);
             }}>
               Cancel
             </Button>

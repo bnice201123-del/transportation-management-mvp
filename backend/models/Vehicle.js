@@ -73,6 +73,11 @@ const vehicleSchema = new mongoose.Schema({
   },
 
   // Location tracking
+  trackingPhone: {
+    type: String,
+    required: true,
+    trim: true
+  },
   currentLocation: {
     lat: Number,
     lng: Number,

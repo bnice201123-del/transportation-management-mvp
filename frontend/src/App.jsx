@@ -46,6 +46,7 @@ import DebugVehicleDashboard from './components/vehicles/DebugVehicleDashboard';
 import VehiclesDashboard from './components/vehicles/VehiclesDashboard';
 import VehiclesLanding from './components/vehicles/VehiclesLanding';
 import VehicleProfile from './components/vehicles/VehicleProfile';
+import VehicleProfilePage from './components/vehicles/VehicleProfilePage';
 import NewVehicle from './components/vehicles/NewVehicle';
 import VehicleAssignment from './components/vehicles/VehicleAssignment';
 import VehicleMaintenance from './components/vehicles/VehicleMaintenance';
@@ -561,22 +562,6 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/vehicles/:vehicleId"
-        element={
-          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
-            <VehicleProfile />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/vehicles/:vehicleId/edit"
-        element={
-          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
-            <VehicleProfile />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/vehicles/assignment"
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
@@ -607,6 +592,14 @@ const AppRoutes = () => {
             <VehicleLog />
           </ProtectedRoute>
         } 
+      />
+      <Route
+        path="/vehicles/:id"
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin', 'driver']}>
+            <VehicleProfilePage />
+          </ProtectedRoute>
+        }
       />
       <Route 
         path="/maps" 

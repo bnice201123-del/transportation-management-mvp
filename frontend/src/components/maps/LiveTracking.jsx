@@ -54,6 +54,7 @@ import {
 } from '@chakra-ui/react';
 import { SearchIcon, RepeatIcon, ViewIcon, PhoneIcon, EmailIcon, TimeIcon, ChevronDownIcon, ChevronUpIcon, DownloadIcon, CloseIcon } from '@chakra-ui/icons';
 import { FaCar, FaRoute, FaMapMarkerAlt, FaBatteryHalf, FaSignal } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import GoogleMap from './GoogleMap';
 import axios from 'axios';
 import '../../config/axios';
@@ -89,6 +90,7 @@ const LiveTracking = () => {
   const [routeHistory, setRouteHistory] = useState([]);
   
   const { user } = useAuth();
+  const navigate = useNavigate();
   const toast = useToast();
   const refreshIntervalRef = useRef(null);
   
@@ -705,6 +707,13 @@ const LiveTracking = () => {
                                   fontWeight="semibold" 
                                   fontSize={{ base: "xs", md: "sm" }}
                                   noOfLines={1}
+                                  color="orange.500"
+                                  cursor="pointer"
+                                  _hover={{ textDecoration: 'underline', color: 'orange.600' }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/vehicles/${vehicle._id}`);
+                                  }}
                                 >
                                   {vehicle.make} {vehicle.model}
                                 </Text>

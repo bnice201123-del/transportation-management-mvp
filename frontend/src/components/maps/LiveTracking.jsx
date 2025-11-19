@@ -384,7 +384,7 @@ const LiveTracking = () => {
         vehicle.status || 'idle',
         vehicle.driver?.name || '',
         vehicle.driver?.phone || '',
-        vehicle.currentLocation ? 
+        vehicle.currentLocation?.lat && vehicle.currentLocation?.lng ? 
           `${vehicle.currentLocation.lat.toFixed(6)}, ${vehicle.currentLocation.lng.toFixed(6)}` : '',
         vehicle.updatedAt ? new Date(vehicle.updatedAt).toLocaleString() : new Date().toLocaleString()
       ]);
@@ -944,7 +944,7 @@ const LiveTracking = () => {
                   )}
                 </Grid>
                 
-                {selectedVehicle.currentLocation && (
+                {selectedVehicle.currentLocation?.lat && selectedVehicle.currentLocation?.lng && (
                   <Box p={3} bg="gray.50" borderRadius="md">
                     <HStack spacing={2}>
                       <FaMapMarkerAlt color="blue.500" />

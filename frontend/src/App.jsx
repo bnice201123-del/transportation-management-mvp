@@ -59,8 +59,6 @@ import DriverLocationTracking from './components/driver/DriverLocationTracking';
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { isAuthenticated, user, loading } = useAuth();
 
-  // console.log('ProtectedRoute - isAuthenticated:', isAuthenticated, 'user:', user, 'loading:', loading, 'allowedRoles:', allowedRoles);
-
   if (loading) {
     return (
       <Center height="100vh">
@@ -70,7 +68,6 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   }
 
   if (!isAuthenticated) {
-    console.log('ProtectedRoute - Not authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
@@ -78,29 +75,22 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     const userRoles = user?.roles || [user?.role];
     const hasAccess = allowedRoles.some(role => userRoles.includes(role));
     if (!hasAccess) {
-      console.log('ProtectedRoute - Access denied!');
-      console.log('  User roles:', JSON.stringify(userRoles));
-      console.log('  Allowed roles:', JSON.stringify(allowedRoles));
-      console.log('  User object:', user);
       return <Navigate to="/unauthorized" replace />;
     }
   }
 
-  console.log('ProtectedRoute - Access granted');
   return children;
 };
 
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
 
-  console.log('AppRoutes - isAuthenticated:', isAuthenticated);
-
   return (
     <Routes>
       {/* Public routes */}
       <Route 
         path="/login" 
-        element={!isAuthenticated ? <Login /> : <Dashboard />} 
+        element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} 
       />
 
       {/* Dashboard route - automatically redirects to appropriate role dashboard */}

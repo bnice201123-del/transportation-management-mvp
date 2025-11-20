@@ -107,6 +107,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import Navbar from '../shared/Navbar';
 import GoogleMap from '../maps/GoogleMap';
 import RiderInfoModal from '../shared/RiderInfoModal';
+import DriveMode from './DriveMode';
 
 const ComprehensiveDriverDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -120,6 +121,7 @@ const ComprehensiveDriverDashboard = () => {
   const [filterEndDate, setFilterEndDate] = useState('');
   const [reportType, setReportType] = useState('all');
   const [selectedRider, setSelectedRider] = useState({ id: null, name: null });
+  const [selectedTrip, setSelectedTrip] = useState(null);
   const { user } = useAuth();
   const toast = useToast();
   const { isOpen: isReportOpen, onOpen: onReportOpen, onClose: onReportClose } = useDisclosure();
@@ -551,6 +553,18 @@ const ComprehensiveDriverDashboard = () => {
                     >
                       👤 Profile
                     </Tab>
+                    <Tab 
+                      flex={{ base: "1", sm: "initial" }}
+                      fontSize={{ base: "sm", md: "md" }}
+                      py={{ base: 3, md: 4 }}
+                      _selected={{ 
+                        color: "teal.600", 
+                        borderColor: "teal.500",
+                        bg: "white"
+                      }}
+                    >
+                      🚗 Drive Mode
+                    </Tab>
                   </TabList>
 
                   <TabPanels>
@@ -665,6 +679,17 @@ const ComprehensiveDriverDashboard = () => {
                                               🕐 {formatDate(trip.scheduledDate)}
                                             </Text>
                                             <HStack spacing={2}>
+                                              <Button
+                                                size="sm"
+                                                colorScheme="green"
+                                                leftIcon={<Box as={PlayIcon} w={4} h={4} />}
+                                                onClick={() => {
+                                                  setSelectedTrip(trip);
+                                                  setActiveTab(7); // Drive Mode tab
+                                                }}
+                                              >
+                                                Drive
+                                              </Button>
                                               {trip.phone && (
                                                 <Button
                                                   size="sm"
@@ -841,6 +866,19 @@ const ComprehensiveDriverDashboard = () => {
                                     </VStack>
 
                                     <HStack justify={{ base: "start", md: "end" }} spacing={2}>
+                                      {(trip.status === 'assigned' || trip.status === 'in_progress') && (
+                                        <Button
+                                          size="sm"
+                                          leftIcon={<Box as={PlayIcon} w={4} h={4} />}
+                                          colorScheme="green"
+                                          onClick={() => {
+                                            setSelectedTrip(trip);
+                                            setActiveTab(7); // Drive Mode is the 8th tab (index 7)
+                                          }}
+                                        >
+                                          Drive
+                                        </Button>
+                                      )}
                                       {trip.phone && (
                                         <IconButton
                                           size="sm"
@@ -1285,6 +1323,27 @@ const ComprehensiveDriverDashboard = () => {
                           </CardBody>
                         </Card>
                       </VStack>
+                    </TabPanel>
+
+                    {/* Drive Mode Tab */}
+                    <TabPanel px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
+                      <DriveMode
+                        trip={selectedTrip}
+                        onComplete={async () => {
+                          if (selectedTrip) {
+                            await updateTripStatus(selectedTrip._id, 'completed');
+                            setSelectedTrip(null);
+                            setActiveTab(0); // Return to dashboard
+                          }
+                        }}
+                        onCancel={async () => {
+                          if (selectedTrip) {
+                            await updateTripStatus(selectedTrip._id, 'cancelled');
+                            setSelectedTrip(null);
+                            setActiveTab(0); // Return to dashboard
+                          }
+                        }}
+                      />
                     </TabPanel>
                   </TabPanels>
                 </Tabs>

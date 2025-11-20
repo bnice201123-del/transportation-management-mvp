@@ -30,32 +30,27 @@ const Login = () => {
     e.preventDefault();
     setError('');
 
-    console.log('🔥 FORM SUBMITTED! Email:', email, 'Password length:', password.length);
-
     if (!email || !password) {
-      console.log('❌ Missing credentials');
       setError('Please fill in all fields');
       return;
     }
 
-    console.log('✅ Credentials provided, starting login process');
-
     const result = await login(email, password);
-    console.log('Login - Login result:', result);
-    console.log('Login - Result success:', result.success);
-    console.log('Login - Result error:', result.error);
-    console.log('Login - Result user:', result.user);
     
     if (!result.success) {
-      console.log('Login - Login failed:', result.error);
       setError(result.error);
     } else {
-      console.log('Login - Login successful, waiting for auth state update...');
-      // Wait longer for AuthContext state to update
-      setTimeout(() => {
-        console.log('Login - Navigating to dashboard');
-        navigate('/dashboard', { replace: true });
-      }, 500);
+      // Navigate directly to role-specific dashboard
+      const userRole = result.user?.role;
+      const roleRoutes = {
+        'admin': '/admin/overview',
+        'scheduler': '/scheduler',
+        'dispatcher': '/dispatcher',
+        'driver': '/driver'
+      };
+      
+      const destination = roleRoutes[userRole] || '/dashboard';
+      navigate(destination, { replace: true });
     }
   };
 
@@ -121,24 +116,8 @@ const Login = () => {
                     width="100%"
                     isLoading={loading}
                     loadingText="Signing in..."
-                    onClick={(e) => {
-                      console.log('🔥 BUTTON CLICKED!');
-                      handleSubmit(e);
-                    }}
                   >
                     Sign In
-                  </Button>
-
-                  <Button
-                    type="button"
-                    colorScheme="green"
-                    width="100%"
-                    onClick={() => {
-                      console.log('Test navigation button clicked');
-                      navigate('/test');
-                    }}
-                  >
-                    Test Navigation (Debug)
                   </Button>
                 </VStack>
               </Box>

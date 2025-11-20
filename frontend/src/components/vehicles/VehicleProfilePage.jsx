@@ -123,7 +123,11 @@ const VehicleProfilePage = () => {
       const tripsResponse = await axios.get('/api/trips', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const allTrips = tripsResponse.data.trips || tripsResponse.data || [];
+      const allTrips = Array.isArray(tripsResponse.data.trips) 
+        ? tripsResponse.data.trips 
+        : Array.isArray(tripsResponse.data) 
+          ? tripsResponse.data 
+          : [];
       const vehicleTrips = allTrips.filter(
         trip => trip.vehicle?._id === id || trip.vehicle === id
       );

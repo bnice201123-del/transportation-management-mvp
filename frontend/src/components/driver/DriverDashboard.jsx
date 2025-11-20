@@ -90,6 +90,7 @@ import TripMap from '../maps/TripMap';
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
+  const [assignedVehicle, setAssignedVehicle] = useState(null);
   const [isAvailable, setIsAvailable] = useState(true);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -105,6 +106,18 @@ const DriverDashboard = () => {
   const headerBg = useColorModeValue('blue.50', 'blue.900');
   const cardSpacing = { base: 4, md: 6 };
   const buttonSize = { base: "md", md: "lg" };
+
+  const fetchAssignedVehicle = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/vehicles');
+      const vehicles = response.data.vehicles || [];
+      // Find vehicle where currentDriver matches the logged-in user
+      const myVehicle = vehicles.find(v => v.currentDriver?._id === user._id || v.currentDriver === user._id);
+      setAssignedVehicle(myVehicle || null);
+    } catch (error) {
+      console.error('Error fetching assigned vehicle:', error);
+    }
+  }, [user._id]);
 
   const fetchTrips = useCallback(async () => {
     try {
@@ -213,6 +226,7 @@ const DriverDashboard = () => {
 
   useEffect(() => {
     fetchTrips();
+    fetchAssignedVehicle();
     getCurrentLocation();
     
     // Update location every 2 minutes when available
@@ -229,7 +243,7 @@ const DriverDashboard = () => {
       clearInterval(locationInterval);
       clearInterval(tripsInterval);
     };
-  }, [fetchTrips, isAvailable, user._id, getCurrentLocation]);
+  }, [fetchTrips, fetchAssignedVehicle, isAvailable, user._id, getCurrentLocation]);
 
   const openGoogleMaps = (address, coordinates = null) => {
     setNavigationModal({ isOpen: true, address, coordinates });
@@ -385,6 +399,31 @@ const DriverDashboard = () => {
                   >
                     Update
                   </Button>
+                </StatHelpText>
+              </Stat>
+
+              <Stat>
+                <StatLabel>Assigned Vehicle</StatLabel>
+                <StatNumber fontSize="sm" color={assignedVehicle ? 'green.500' : 'gray.500'}>
+                  {assignedVehicle 
+                    ? `${assignedVehicle.year} ${assignedVehicle.make} ${assignedVehicle.model}`
+                    : 'Not Assigned'
+                  }
+                </StatNumber>
+                <StatHelpText>
+                  {assignedVehicle ? (
+                    <Text 
+                      fontSize="xs" 
+                      color="blue.500"
+                      cursor="pointer"
+                      _hover={{ textDecoration: 'underline' }}
+                      onClick={() => navigate(`/vehicles/${assignedVehicle._id}`)}
+                    >
+                      {assignedVehicle.licensePlate}
+                    </Text>
+                  ) : (
+                    <Text fontSize="xs">Contact dispatcher</Text>
+                  )}
                 </StatHelpText>
               </Stat>
               

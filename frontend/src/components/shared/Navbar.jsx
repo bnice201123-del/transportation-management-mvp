@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Flex,
@@ -30,6 +30,51 @@ import Sidebar from './Sidebar';
 const Navbar = ({ title }) => {
   const { user, logout } = useAuth();
   const { isOpen: isMobileMenuOpen, onOpen: onMobileMenuOpen, onClose: onMobileMenuClose } = useDisclosure();
+  
+  // Active role state for multi-role users
+  const [activeRole, setActiveRole] = useState(null);
+
+  // Initialize active role from localStorage or user's primary role
+  useEffect(() => {
+    if (user) {
+      const savedRole = localStorage.getItem('activeRole');
+      const userRoles = user.roles || [user.role];
+      
+      if (savedRole && userRoles.includes(savedRole)) {
+        setActiveRole(savedRole);
+      } else {
+        setActiveRole(user.role);
+      }
+    }
+  }, [user]);
+
+  // Handle role switching
+  const handleRoleSwitch = (role) => {
+    setActiveRole(role);
+    localStorage.setItem('activeRole', role);
+    
+    // Navigate to appropriate dashboard
+    if (role === 'admin') {
+      window.location.href = '/admin/overview';
+    } else if (role === 'dispatcher') {
+      window.location.href = '/dispatcher';
+    } else if (role === 'scheduler') {
+      window.location.href = '/scheduler';
+    } else if (role === 'driver') {
+      window.location.href = '/driver-dashboard';
+    } else if (role === 'rider') {
+      window.location.href = '/dashboard';
+    }
+  };
+
+  // Get available roles for the user
+  const getAvailableRoles = () => {
+    if (!user) return [];
+    return user.roles || [user.role];
+  };
+
+  const availableRoles = getAvailableRoles();
+  const hasMultipleRoles = availableRoles.length > 1;
 
   const handleLogout = () => {
     logout();
@@ -89,8 +134,15 @@ const Navbar = ({ title }) => {
                 <Box 
                   cursor="pointer"
                   onClick={() => {
-                    if (user?.role === 'admin') {
+                    const currentRole = activeRole || user?.role;
+                    if (currentRole === 'admin') {
                       window.location.href = '/admin/overview';
+                    } else if (currentRole === 'dispatcher') {
+                      window.location.href = '/dispatcher';
+                    } else if (currentRole === 'scheduler') {
+                      window.location.href = '/scheduler';
+                    } else if (currentRole === 'driver') {
+                      window.location.href = '/driver-dashboard';
                     } else {
                       window.location.href = '/dashboard';
                     }
@@ -111,8 +163,15 @@ const Navbar = ({ title }) => {
               <Box 
                 cursor="pointer"
                 onClick={() => {
-                  if (user?.role === 'admin') {
+                  const currentRole = activeRole || user?.role;
+                  if (currentRole === 'admin') {
                     window.location.href = '/admin/overview';
+                  } else if (currentRole === 'dispatcher') {
+                    window.location.href = '/dispatcher';
+                  } else if (currentRole === 'scheduler') {
+                    window.location.href = '/scheduler';
+                  } else if (currentRole === 'driver') {
+                    window.location.href = '/driver-dashboard';
                   } else {
                     window.location.href = '/dashboard';
                   }
@@ -137,18 +196,57 @@ const Navbar = ({ title }) => {
                   <Avatar
                     size="xs"
                     name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-                    bg={`${getRoleBadgeColor(user?.role)}.500`}
+                    bg={`${getRoleBadgeColor(activeRole || user?.role)}.500`}
                   />
                   <Text fontSize="sm" color="gray.600">
                     {user ? `${user.firstName} ${user.lastName}` : 'User'}
                   </Text>
-                  <Badge 
-                    colorScheme={getRoleBadgeColor(user?.role)} 
-                    variant="subtle"
-                    fontSize="xs"
-                  >
-                    {user ? getRoleDisplayName(user.role) : 'Role'}
-                  </Badge>
+                  
+                  {/* Role Badge with switcher for multi-role users */}
+                  {hasMultipleRoles ? (
+                    <Menu>
+                      <MenuButton
+                        as={Badge}
+                        colorScheme={getRoleBadgeColor(activeRole || user?.role)}
+                        variant="subtle"
+                        fontSize="xs"
+                        cursor="pointer"
+                        px={2}
+                        py={1}
+                        borderRadius="md"
+                        _hover={{ transform: 'scale(1.05)' }}
+                      >
+                        {getRoleDisplayName(activeRole || user.role)} <ChevronDownIcon />
+                      </MenuButton>
+                      <MenuList>
+                        <Text fontSize="xs" color="gray.500" px={3} py={1} fontWeight="bold">
+                          Switch Role
+                        </Text>
+                        <MenuDivider />
+                        {availableRoles.map((role) => (
+                          <MenuItem
+                            key={role}
+                            onClick={() => handleRoleSwitch(role)}
+                            bg={role === activeRole ? `${getRoleBadgeColor(role)}.50` : 'transparent'}
+                            fontWeight={role === activeRole ? 'bold' : 'normal'}
+                          >
+                            <Badge colorScheme={getRoleBadgeColor(role)} mr={2}>
+                              {getRoleDisplayName(role)}
+                            </Badge>
+                            {role === activeRole && '✓'}
+                          </MenuItem>
+                        ))}
+                      </MenuList>
+                    </Menu>
+                  ) : (
+                    <Badge 
+                      colorScheme={getRoleBadgeColor(activeRole || user?.role)} 
+                      variant="subtle"
+                      fontSize="xs"
+                    >
+                      {user ? getRoleDisplayName(activeRole || user.role) : 'Role'}
+                    </Badge>
+                  )}
                 </HStack>
               </VStack>
             </Box>

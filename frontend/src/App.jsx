@@ -74,9 +74,13 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
-    console.log('ProtectedRoute - User role not allowed:', user?.role, 'allowed:', allowedRoles);
-    return <Navigate to="/unauthorized" replace />;
+  if (allowedRoles.length > 0) {
+    const userRoles = user?.roles || [user?.role];
+    const hasAccess = allowedRoles.some(role => userRoles.includes(role));
+    if (!hasAccess) {
+      console.log('ProtectedRoute - User roles not allowed:', userRoles, 'allowed:', allowedRoles);
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   console.log('ProtectedRoute - Access granted');

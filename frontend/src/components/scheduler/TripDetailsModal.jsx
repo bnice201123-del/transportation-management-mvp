@@ -427,17 +427,21 @@ const TripDetailsModal = ({ isOpen, onClose, trip }) => {
 
                   <Box>
                     <Text fontSize="sm" color="gray.600" mb={2}>Assigned Vehicle</Text>
-                    {trip.assignedVehicle ? (
+                    {(trip.assignedVehicle || trip.vehicle) ? (
                       <VStack align="start" spacing={2}>
                         <Text fontSize="lg" fontWeight="semibold">
-                          🚗 {trip.assignedVehicle.make} {trip.assignedVehicle.model}
+                          🚗 {(trip.assignedVehicle || trip.vehicle)?.make} {(trip.assignedVehicle || trip.vehicle)?.model}
                         </Text>
-                        <Text color="gray.600">
-                          🏷️ {trip.assignedVehicle.licensePlate}
-                        </Text>
-                        <Text color="gray.600">
-                          🎨 {trip.assignedVehicle.color}
-                        </Text>
+                        {(trip.assignedVehicle || trip.vehicle)?.licensePlate && (
+                          <Text color="gray.600">
+                            🏷️ {(trip.assignedVehicle || trip.vehicle).licensePlate}
+                          </Text>
+                        )}
+                        {(trip.assignedVehicle || trip.vehicle)?.color && (
+                          <Text color="gray.600">
+                            🎨 {(trip.assignedVehicle || trip.vehicle).color}
+                          </Text>
+                        )}
                       </VStack>
                     ) : (
                       <Alert status="warning">

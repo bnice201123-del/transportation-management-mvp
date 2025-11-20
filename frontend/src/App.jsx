@@ -78,7 +78,10 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     const userRoles = user?.roles || [user?.role];
     const hasAccess = allowedRoles.some(role => userRoles.includes(role));
     if (!hasAccess) {
-      console.log('ProtectedRoute - User roles not allowed:', userRoles, 'allowed:', allowedRoles);
+      console.log('ProtectedRoute - Access denied!');
+      console.log('  User roles:', JSON.stringify(userRoles));
+      console.log('  Allowed roles:', JSON.stringify(allowedRoles));
+      console.log('  User object:', user);
       return <Navigate to="/unauthorized" replace />;
     }
   }

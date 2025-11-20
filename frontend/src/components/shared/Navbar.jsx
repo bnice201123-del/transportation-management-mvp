@@ -34,6 +34,7 @@ const Navbar = ({ title }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationTimeoutRef = useRef(null);
+  const isNavigatingRef = useRef(false);
   
   // Active role state for multi-role users
   const [activeRole, setActiveRole] = useState(null);
@@ -48,12 +49,20 @@ const Navbar = ({ title }) => {
         setActiveRole(savedRole);
       } else {
         setActiveRole(user.role);
+        // Save the default role to prevent re-initialization
+        localStorage.setItem('activeRole', user.role);
       }
     }
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.role]); // Only re-run when user role changes, not on every user object change
 
   // Handle role switching with debounce to prevent navigation flooding
   const handleRoleSwitch = (role) => {
+    // Prevent multiple simultaneous navigation attempts
+    if (isNavigatingRef.current) {
+      return;
+    }
+
     // Clear any pending navigation
     if (navigationTimeoutRef.current) {
       clearTimeout(navigationTimeoutRef.current);
@@ -76,14 +85,24 @@ const Navbar = ({ title }) => {
 
     // Only navigate if not already on the target path
     if (location.pathname !== targetPath) {
+      isNavigatingRef.current = true;
       navigationTimeoutRef.current = setTimeout(() => {
         navigate(targetPath);
-      }, 100);
+        // Reset navigation flag after a delay
+        setTimeout(() => {
+          isNavigatingRef.current = false;
+        }, 500);
+      }, 150);
     }
   };
 
   // Navigate to dashboard based on active role with debounce
   const navigateToDashboard = () => {
+    // Prevent multiple simultaneous navigation attempts
+    if (isNavigatingRef.current) {
+      return;
+    }
+
     // Clear any pending navigation
     if (navigationTimeoutRef.current) {
       clearTimeout(navigationTimeoutRef.current);
@@ -104,9 +123,14 @@ const Navbar = ({ title }) => {
 
     // Only navigate if not already on the target path
     if (location.pathname !== targetPath) {
+      isNavigatingRef.current = true;
       navigationTimeoutRef.current = setTimeout(() => {
         navigate(targetPath);
-      }, 100);
+        // Reset navigation flag after a delay
+        setTimeout(() => {
+          isNavigatingRef.current = false;
+        }, 500);
+      }, 150);
     }
   };
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Center, Spinner, Text, VStack } from '@chakra-ui/react';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,8 +6,39 @@ import { useAuth } from '../contexts/AuthContext';
 const Dashboard = () => {
   const { user, isAuthenticated, loading } = useAuth();
 
-  // Debug logging
-  console.log('Dashboard - loading:', loading, 'isAuthenticated:', isAuthenticated, 'user:', user);
+  // Memoize the dashboard route calculation to prevent unnecessary re-renders
+  const dashboardRoute = useMemo(() => {
+    if (!user) return '/login';
+
+    const getDashboardRoute = (role) => {
+      switch (role) {
+        case 'admin':
+          return '/admin/overview';
+        case 'scheduler':
+          return '/scheduler';
+        case 'dispatcher':
+          return '/dispatcher';
+        case 'driver':
+          return '/driver-dashboard';
+        default:
+          return '/login';
+      }
+    };
+
+    // Get active role from localStorage or use user's primary role
+    const activeRole = localStorage.getItem('activeRole');
+    const userRoles = user.roles || [user.role];
+    
+    // Use activeRole if it's valid for this user, otherwise use first role in array
+    let roleToUse = user.role;
+    if (activeRole && userRoles.includes(activeRole)) {
+      roleToUse = activeRole;
+    } else if (userRoles.length > 0) {
+      roleToUse = userRoles[0];
+    }
+
+    return getDashboardRoute(roleToUse);
+  }, [user]);
 
   // Show loading spinner while authentication is being checked
   if (loading) {
@@ -23,28 +54,8 @@ const Dashboard = () => {
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    console.log('Dashboard - Not authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
   }
-
-  // Redirect based on user role
-  const getDashboardRoute = (role) => {
-    switch (role) {
-      case 'admin':
-        return '/admin/overview';
-      case 'scheduler':
-        return '/scheduler';
-      case 'dispatcher':
-        return '/dispatcher';
-      case 'driver':
-        return '/driver';
-      default:
-        return '/login'; // Fallback for unknown roles
-    }
-  };
-
-  const dashboardRoute = getDashboardRoute(user?.role);
-  console.log('Dashboard - Redirecting to:', dashboardRoute, 'for role:', user?.role);
 
   // Redirect to appropriate dashboard
   return <Navigate to={dashboardRoute} replace />;

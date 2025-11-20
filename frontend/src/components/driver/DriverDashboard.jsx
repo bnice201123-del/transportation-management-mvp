@@ -86,6 +86,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import Navbar from '../shared/Navbar';
 import GoogleMap from '../maps/GoogleMap';
 import TripMap from '../maps/TripMap';
+import DriveMode from './DriveMode';
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
@@ -96,6 +97,8 @@ const DriverDashboard = () => {
   const [updating, setUpdating] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [navigationModal, setNavigationModal] = useState({ isOpen: false, address: '', coordinates: null });
+  const [activeDriveTrip, setActiveDriveTrip] = useState(null);
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
   const { user } = useAuth();
   const toast = useToast();
 
@@ -474,12 +477,18 @@ const DriverDashboard = () => {
         )}
 
         {/* Main Content with Tabs */}
-        <Tabs>
+        <Tabs index={activeTabIndex} onChange={setActiveTabIndex}>
           <TabList>
             <Tab>
               <HStack spacing={2}>
                 <Box as={TruckIconSolid} w={4} h={4} />
                 <Text>Active Trips ({activeTrips.length})</Text>
+              </HStack>
+            </Tab>
+            <Tab>
+              <HStack spacing={2}>
+                <Box as={PlayIcon} w={4} h={4} />
+                <Text>Drive Mode</Text>
               </HStack>
             </Tab>
             <Tab>
@@ -652,25 +661,53 @@ const DriverDashboard = () => {
                               {/* Action Buttons */}
                               <HStack spacing={4} justify="center">
                                 {trip.status === 'assigned' && (
-                                  <Button
-                                    colorScheme="blue"
-                                    size="lg"
-                                    onClick={() => updateTripStatus(trip._id, 'in_progress')}
-                                    leftIcon={<Box as={PlayIcon} w={5} h={5} />}
-                                  >
-                                    Start Trip
-                                  </Button>
+                                  <>
+                                    <Button
+                                      colorScheme="blue"
+                                      size="lg"
+                                      onClick={() => updateTripStatus(trip._id, 'in_progress')}
+                                      leftIcon={<Box as={PlayIcon} w={5} h={5} />}
+                                    >
+                                      Start Trip
+                                    </Button>
+                                    <Button
+                                      colorScheme="green"
+                                      variant="outline"
+                                      size="lg"
+                                      onClick={() => {
+                                        setActiveDriveTrip(trip);
+                                        setActiveTabIndex(1); // Switch to Drive Mode tab
+                                      }}
+                                      leftIcon={<Box as={MapIcon} w={5} h={5} />}
+                                    >
+                                      Enter Drive Mode
+                                    </Button>
+                                  </>
                                 )}
                                 
                                 {trip.status === 'in_progress' && (
-                                  <Button
-                                    colorScheme="green"
-                                    size="lg"
-                                    leftIcon={<CheckCircleIcon />}
-                                    onClick={() => updateTripStatus(trip._id, 'completed')}
-                                  >
-                                    Complete Trip
-                                  </Button>
+                                  <>
+                                    <Button
+                                      colorScheme="green"
+                                      size="lg"
+                                      leftIcon={<CheckCircleIcon />}
+                                      onClick={() => updateTripStatus(trip._id, 'completed')}
+                                    >
+                                      Complete Trip
+                                    </Button>
+                                    <Button
+                                      colorScheme="blue"
+                                      variant="outline"
+                                      size="lg"
+                                      onClick={() => {
+                                        setActiveDriveTrip(trip);
+                                        setActiveTabIndex(1); // Switch to Drive Mode tab
+                                      }}
+                                      leftIcon={<Box as={MapIcon} w={5} h={5} />}
+                                    >
+                                      Enter Drive Mode
+                                    </Button>
+                                  </>
                                 )}
                               </HStack>
                             </VStack>
@@ -681,6 +718,33 @@ const DriverDashboard = () => {
                   )}
                 </CardBody>
               </Card>
+            </TabPanel>
+
+            {/* Drive Mode Tab */}
+            <TabPanel px={0}>
+              <DriveMode 
+                trip={activeDriveTrip}
+                onComplete={async () => {
+                  if (activeDriveTrip) {
+                    await updateTripStatus(activeDriveTrip._id, 'completed');
+                    setActiveDriveTrip(null);
+                    // Add delay before tab switch to prevent navigation flooding
+                    setTimeout(() => {
+                      setActiveTabIndex(0);
+                    }, 100);
+                  }
+                }}
+                onCancel={async () => {
+                  if (activeDriveTrip) {
+                    await updateTripStatus(activeDriveTrip._id, 'cancelled');
+                    setActiveDriveTrip(null);
+                    // Add delay before tab switch to prevent navigation flooding
+                    setTimeout(() => {
+                      setActiveTabIndex(0);
+                    }, 100);
+                  }
+                }}
+              />
             </TabPanel>
 
             {/* Route Map Tab */}

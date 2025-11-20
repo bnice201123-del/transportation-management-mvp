@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Flex,
@@ -30,6 +31,9 @@ import Sidebar from './Sidebar';
 const Navbar = ({ title }) => {
   const { user, logout } = useAuth();
   const { isOpen: isMobileMenuOpen, onOpen: onMobileMenuOpen, onClose: onMobileMenuClose } = useDisclosure();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const navigationTimeoutRef = useRef(null);
   
   // Active role state for multi-role users
   const [activeRole, setActiveRole] = useState(null);
@@ -48,24 +52,72 @@ const Navbar = ({ title }) => {
     }
   }, [user]);
 
-  // Handle role switching
+  // Handle role switching with debounce to prevent navigation flooding
   const handleRoleSwitch = (role) => {
+    // Clear any pending navigation
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+    }
+
     setActiveRole(role);
     localStorage.setItem('activeRole', role);
     
-    // Navigate to appropriate dashboard
+    // Get target path based on role
+    let targetPath = '/dashboard';
     if (role === 'admin') {
-      window.location.href = '/admin/overview';
+      targetPath = '/admin/overview';
     } else if (role === 'dispatcher') {
-      window.location.href = '/dispatcher';
+      targetPath = '/dispatcher';
     } else if (role === 'scheduler') {
-      window.location.href = '/scheduler';
+      targetPath = '/scheduler';
     } else if (role === 'driver') {
-      window.location.href = '/driver-dashboard';
-    } else if (role === 'rider') {
-      window.location.href = '/dashboard';
+      targetPath = '/driver-dashboard';
+    }
+
+    // Only navigate if not already on the target path
+    if (location.pathname !== targetPath) {
+      navigationTimeoutRef.current = setTimeout(() => {
+        navigate(targetPath);
+      }, 100);
     }
   };
+
+  // Navigate to dashboard based on active role with debounce
+  const navigateToDashboard = () => {
+    // Clear any pending navigation
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+    }
+
+    const currentRole = activeRole || user?.role;
+    let targetPath = '/dashboard';
+    
+    if (currentRole === 'admin') {
+      targetPath = '/admin/overview';
+    } else if (currentRole === 'dispatcher') {
+      targetPath = '/dispatcher';
+    } else if (currentRole === 'scheduler') {
+      targetPath = '/scheduler';
+    } else if (currentRole === 'driver') {
+      targetPath = '/driver-dashboard';
+    }
+
+    // Only navigate if not already on the target path
+    if (location.pathname !== targetPath) {
+      navigationTimeoutRef.current = setTimeout(() => {
+        navigate(targetPath);
+      }, 100);
+    }
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Get available roles for the user
   const getAvailableRoles = () => {
@@ -133,20 +185,7 @@ const Navbar = ({ title }) => {
                 />
                 <Box 
                   cursor="pointer"
-                  onClick={() => {
-                    const currentRole = activeRole || user?.role;
-                    if (currentRole === 'admin') {
-                      window.location.href = '/admin/overview';
-                    } else if (currentRole === 'dispatcher') {
-                      window.location.href = '/dispatcher';
-                    } else if (currentRole === 'scheduler') {
-                      window.location.href = '/scheduler';
-                    } else if (currentRole === 'driver') {
-                      window.location.href = '/driver-dashboard';
-                    } else {
-                      window.location.href = '/dashboard';
-                    }
-                  }}
+                  onClick={navigateToDashboard}
                 >
                   <Text fontSize={{ base: "lg", md: "2xl" }} fontWeight="bold" color="green.600">
                     TransportHub
@@ -162,20 +201,7 @@ const Navbar = ({ title }) => {
             <Box flex="1" display={{ base: "none", md: "block" }}>
               <Box 
                 cursor="pointer"
-                onClick={() => {
-                  const currentRole = activeRole || user?.role;
-                  if (currentRole === 'admin') {
-                    window.location.href = '/admin/overview';
-                  } else if (currentRole === 'dispatcher') {
-                    window.location.href = '/dispatcher';
-                  } else if (currentRole === 'scheduler') {
-                    window.location.href = '/scheduler';
-                  } else if (currentRole === 'driver') {
-                    window.location.href = '/driver-dashboard';
-                  } else {
-                    window.location.href = '/dashboard';
-                  }
-                }}
+                onClick={navigateToDashboard}
               >
                 <Text fontSize={{ base: "lg", md: "2xl" }} fontWeight="bold" color="green.600">
                   TransportHub

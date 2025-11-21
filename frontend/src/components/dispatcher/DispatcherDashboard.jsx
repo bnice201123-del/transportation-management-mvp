@@ -597,23 +597,30 @@ const DispatcherDashboard = () => {
       case 'assigned':
         return 'orange';
       default:
-        return 'gray';
-    }
-  };
+      return 'gray';
+  }
+};
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString() + ' ' + 
-           new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+const formatDate = (dateString) => {
+  if (!dateString) return 'Not scheduled';
+  
+  const date = new Date(dateString);
+  
+  // Check if date is valid
+  if (isNaN(date.getTime())) {
+    return 'Invalid Date';
+  }
+  
+  return date.toLocaleDateString() + ' ' + 
+         date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
 
-  const getLocationText = (location) => {
-    if (!location) return 'N/A';
-    if (typeof location === 'string') return location;
-    if (typeof location === 'object' && location.address) return location.address;
-    return 'Location not specified';
-  };
-
-  if (loading) {
+const getLocationText = (location) => {
+  if (!location) return 'N/A';
+  if (typeof location === 'string') return location;
+  if (typeof location === 'object' && location.address) return location.address;
+  return 'Location not specified';
+};  if (loading) {
     return (
       <AppLayout title="Dispatcher Dashboard">
         <Center h="50vh">

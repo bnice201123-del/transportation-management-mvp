@@ -116,8 +116,6 @@ const AdminStatistics = () => {
   // Responsive values - must be before early returns
   const metricColumns = useBreakpointValue({ base: 1, sm: 2, md: 3, lg: 5 });
   const chartColumns = useBreakpointValue({ base: 1, lg: 2 });
-  const containerPadding = useBreakpointValue({ base: 4, md: 6, lg: 8 });
-  const cardSpacing = useBreakpointValue({ base: 4, md: 6 });
 
   // Additional UI values
   const statBg = useColorModeValue('gray.50', 'gray.700');
@@ -573,23 +571,27 @@ const AdminStatistics = () => {
           },
         }}
       >
-        <Container maxW="7xl" p={containerPadding}>
-        <VStack spacing={cardSpacing} align="stretch">
+        <Container maxW="7xl" p={{ base: 4, md: 6, lg: 8 }}>
+        <VStack spacing={{ base: 4, md: 6, lg: 8 }} align="stretch">
           {/* Enhanced Header with Mobile Responsive Design */}
           <Box>
             <Flex 
               justify="space-between" 
               align={{ base: "start", md: "center" }}
               direction={{ base: "column", md: "row" }}
-              gap={4}
+              gap={{ base: 3, md: 4 }}
               mb={4}
             >
               <VStack align="start" spacing={2}>
-                <Heading size={{ base: "lg", md: "xl" }} color={textColor} fontWeight="bold">
+                <Heading 
+                  size={{ base: "md", md: "lg", lg: "xl" }}
+                  color="teal.600" 
+                  fontWeight="bold"
+                >
                   📊 System Statistics
                 </Heading>
                 <HStack spacing={2} align="center" flexWrap="wrap">
-                  <Text fontSize="sm" color="gray.500">
+                  <Text fontSize={{ base: "xs", md: "sm" }} color="gray.500">
                     Last updated: {lastUpdated.toLocaleTimeString()}
                   </Text>
                   {refreshing && (
@@ -662,14 +664,21 @@ const AdminStatistics = () => {
           </Box>
 
           {/* Enhanced Key Metrics Overview with Animation and Better UX */}
-          <Card bg={cardBg} borderColor={borderColor} shadow="lg" borderRadius="xl">
+          <Card 
+            bg={cardBg} 
+            borderColor={borderColor} 
+            shadow="md" 
+            borderRadius="lg"
+            transition="all 0.2s"
+            _hover={{ shadow: 'xl' }}
+          >
             <CardHeader pb={2}>
-              <HStack justify="space-between" align="center">
+              <HStack justify="space-between" align="center" flexWrap="wrap" gap={2}>
                 <VStack align="start" spacing={1}>
-                  <Heading size={{ base: "md", md: "lg" }} color={textColor}>
+                  <Heading size={{ base: "sm", md: "md", lg: "lg" }} color="teal.600">
                     📊 Key Performance Metrics
                   </Heading>
-                  <Text fontSize="sm" color="gray.500">
+                  <Text fontSize={{ base: "xs", md: "sm" }} color="gray.500">
                     Real-time insights • Updated {lastUpdated.toLocaleTimeString()}
                   </Text>
                 </VStack>
@@ -693,11 +702,10 @@ const AdminStatistics = () => {
                 </HStack>
               </HStack>
             </CardHeader>
-            <CardBody pt={2}>
+            <CardBody pt={2} p={{ base: 4, md: 5, lg: 6 }}>
               <SimpleGrid 
                 columns={{ base: 1, sm: 2, md: 3, lg: 5 }} 
-                spacing={{ base: 4, md: 6 }}
-                mb={4}
+                spacing={{ base: 3, md: 4, lg: 6 }}
               >
                 <StatCard
                   title="Total Trips"
@@ -854,22 +862,29 @@ const AdminStatistics = () => {
           </Card>
 
           {/* Enhanced Performance Metrics - Mobile Responsive */}
-          <Card bg={cardBg} shadow="lg" borderRadius="xl" borderColor={borderColor}>
+          <Card 
+            bg={cardBg} 
+            shadow="md" 
+            borderRadius="lg" 
+            borderColor={borderColor}
+            transition="all 0.2s"
+            _hover={{ shadow: 'xl' }}
+          >
             <CardHeader pb={3}>
               <Flex 
                 justify="space-between" 
                 align={{ base: "start", md: "center" }}
                 direction={{ base: "column", md: "row" }}
-                gap={4}
+                gap={{ base: 3, md: 4 }}
               >
                 <VStack align="start" spacing={1}>
                   <HStack spacing={2}>
-                    <Text fontSize="2xl">📈</Text>
-                    <Heading size={{ base: "md", md: "lg" }} color={textColor}>
+                    <Text fontSize={{ base: "xl", md: "2xl" }}>📈</Text>
+                    <Heading size={{ base: "sm", md: "md", lg: "lg" }} color="teal.600">
                       Performance Dashboard
                     </Heading>
                   </HStack>
-                  <Text fontSize="sm" color="gray.500">
+                  <Text fontSize={{ base: "xs", md: "sm" }} color="gray.500">
                     Real-time operational metrics • Last updated {lastUpdated.toLocaleTimeString()}
                   </Text>
                 </VStack>
@@ -884,7 +899,7 @@ const AdminStatistics = () => {
                       onClick={handleRefresh}
                       isLoading={refreshing}
                       loadingText="Refreshing"
-                      colorScheme="blue"
+                      colorScheme="teal"
                       variant={refreshing ? "solid" : "outline"}
                     >
                       {refreshing ? "Refreshing..." : "Refresh"}

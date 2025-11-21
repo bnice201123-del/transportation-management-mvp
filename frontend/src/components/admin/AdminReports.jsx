@@ -130,15 +130,12 @@ const AdminReports = () => {
   // Responsive values
   const isMobile = useBreakpointValue({ base: true, lg: false });
   const cardPadding = useBreakpointValue({ base: 3, md: 4, lg: 6 });
-  const headerDirection = useBreakpointValue({ base: 'column', md: 'row' });
   const buttonSize = useBreakpointValue({ base: 'sm', md: 'md' });
   const spacing = useBreakpointValue({ base: 3, md: 4, lg: 6 });
-  const headingSize = useBreakpointValue({ base: 'md', md: 'lg' });
   const fontSize = useBreakpointValue({ base: 'sm', md: 'md' });
   const iconSize = useBreakpointValue({ base: 6, md: 8 });
   const cardFontSize = useBreakpointValue({ base: 'sm', md: 'md' });
   const cardDescSize = useBreakpointValue({ base: 'xs', md: 'sm' });
-  const statNumberSize = useBreakpointValue({ base: 'lg', md: 'xl' });
   
   // Color mode values
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -435,25 +432,27 @@ const AdminReports = () => {
   const QuickReportCard = ({ title, description, icon, type, color }) => (
     <Card 
       cursor="pointer" 
-      _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }} 
+      _hover={{ shadow: 'xl', transform: 'translateY(-4px)' }} 
       transition="all 0.2s"
       bg={cardBg}
       borderColor={borderColor}
       h="full"
+      shadow="md"
+      borderRadius="lg"
     >
-      <CardBody p={cardPadding}>
-        <VStack spacing={spacing} h="full">
-          <Icon as={icon} boxSize={iconSize} color={color} />
+      <CardBody p={{ base: 4, md: 5, lg: 6 }}>
+        <VStack spacing={{ base: 3, md: 4 }} h="full">
+          <Icon as={icon} boxSize={{ base: 8, md: 10 }} color={color} />
           <Text 
             fontWeight="bold" 
             textAlign="center" 
-            fontSize={cardFontSize}
+            fontSize={{ base: "sm", md: "md" }}
             noOfLines={1}
           >
             {title}
           </Text>
           <Text 
-            fontSize={cardDescSize} 
+            fontSize={{ base: "xs", md: "sm" }}
             color="gray.600" 
             textAlign="center"
             noOfLines={2}
@@ -462,14 +461,14 @@ const AdminReports = () => {
             {description}
           </Text>
           <Button 
-            size={buttonSize} 
-            colorScheme="blue" 
-            leftIcon={isMobile ? undefined : <DownloadIcon />}
+            size={{ base: "sm", md: "md" }}
+            colorScheme="teal" 
+            leftIcon={<DownloadIcon />}
             onClick={() => {
               setReportConfig(prev => ({ ...prev, type }));
               onGenerateOpen();
             }}
-            w={isMobile ? "full" : "auto"}
+            w={{ base: "full", md: "auto" }}
           >
             Generate
           </Button>
@@ -495,27 +494,34 @@ const AdminReports = () => {
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh" bg={bgColor}>
       <Navbar />
-      <Box flex="1" p={cardPadding}>
+      <Box flex="1" p={{ base: 4, md: 6, lg: 8 }}>
         <Container maxW="7xl">
-          <VStack align="stretch" spacing={spacing}>
+          <VStack align="stretch" spacing={{ base: 4, md: 6, lg: 8 }}>
             {/* Header */}
             <Flex 
               justify="space-between" 
-              align={isMobile ? "start" : "center"} 
-              direction={headerDirection}
-              gap={4}
+              align={{ base: "start", md: "center" }} 
+              direction={{ base: "column", md: "row" }}
+              gap={{ base: 3, md: 4 }}
               bg={cardBg}
-              p={cardPadding}
+              p={{ base: 4, md: 5, lg: 6 }}
               borderRadius="lg"
-              shadow="sm"
+              shadow="md"
               borderWidth="1px"
               borderColor={borderColor}
             >
               <Box>
-                <Heading size={headingSize} mb={2}>
+                <Heading 
+                  size={{ base: "md", md: "lg", lg: "xl" }}
+                  mb={2}
+                  color="teal.600"
+                >
                   Reports Center
                 </Heading>
-                <Text color="gray.600" fontSize={fontSize}>
+                <Text 
+                  color="gray.600" 
+                  fontSize={{ base: "sm", md: "md" }}
+                >
                   Generate, schedule, and manage system reports
                 </Text>
               </Box>
@@ -576,37 +582,42 @@ const AdminReports = () => {
             </Flex>
 
             {/* Stats Overview */}
-            <Card bg={cardBg} borderColor={borderColor}>
-              <CardBody>
-                <StatGroup>
+            <Card 
+              bg={cardBg} 
+              borderColor={borderColor}
+              shadow="md"
+              borderRadius="lg"
+            >
+              <CardBody p={{ base: 4, md: 5, lg: 6 }}>
+                <StatGroup flexDirection={{ base: "column", md: "row" }} gap={{ base: 4, md: 0 }}>
                   <Stat>
-                    <StatLabel>Total Reports</StatLabel>
-                    <StatNumber fontSize={statNumberSize}>
+                    <StatLabel fontSize={{ base: "xs", md: "sm" }}>Total Reports</StatLabel>
+                    <StatNumber fontSize={{ base: "2xl", md: "3xl" }}>
                       {reports.length}
                     </StatNumber>
-                    <StatHelpText>
+                    <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
                       <StatArrow type="increase" />
                       12% this month
                     </StatHelpText>
                   </Stat>
                   <Stat>
-                    <StatLabel>Scheduled Reports</StatLabel>
-                    <StatNumber fontSize={statNumberSize}>
+                    <StatLabel fontSize={{ base: "xs", md: "sm" }}>Scheduled Reports</StatLabel>
+                    <StatNumber fontSize={{ base: "2xl", md: "3xl" }}>
                       {scheduledReports.filter(r => r.active).length}
                     </StatNumber>
-                    <StatHelpText>
+                    <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
                       <StatArrow type="increase" />
                       Active automations
                     </StatHelpText>
                   </Stat>
                   <Stat>
-                    <StatLabel>This Week</StatLabel>
-                    <StatNumber fontSize={statNumberSize}>
+                    <StatLabel fontSize={{ base: "xs", md: "sm" }}>This Week</StatLabel>
+                    <StatNumber fontSize={{ base: "2xl", md: "3xl" }}>
                       {reports.filter(r => 
                         new Date(r.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
                       ).length}
                     </StatNumber>
-                    <StatHelpText>
+                    <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
                       Reports generated
                     </StatHelpText>
                   </Stat>
@@ -615,18 +626,22 @@ const AdminReports = () => {
             </Card>
 
             {/* Quick Reports */}
-            <Card bg={cardBg} borderColor={borderColor}>
+            <Card 
+              bg={cardBg} 
+              borderColor={borderColor}
+              shadow="md"
+              borderRadius="lg"
+            >
               <CardHeader pb={2}>
-                <Heading size="md">Quick Reports</Heading>
-                <Text fontSize="sm" color="gray.600" mt={1}>
+                <Heading size={{ base: "sm", md: "md" }}>Quick Reports</Heading>
+                <Text fontSize={{ base: "xs", md: "sm" }} color="gray.600" mt={1}>
                   Generate common reports with one click
                 </Text>
               </CardHeader>
-              <CardBody pt={2}>
+              <CardBody pt={2} p={{ base: 4, md: 5, lg: 6 }}>
                 <SimpleGrid 
                   columns={{ base: 1, sm: 2, lg: 4 }} 
-                  spacing={spacing}
-                  minChildWidth={isMobile ? "none" : "200px"}
+                  spacing={{ base: 3, md: 4, lg: 6 }}
                 >
                   <QuickReportCard
                     title="Trip Analytics"
@@ -661,32 +676,45 @@ const AdminReports = () => {
             </Card>
 
             {/* Main Content Tabs */}
-            <Card bg={cardBg} borderColor={borderColor}>
+            <Card 
+              bg={cardBg} 
+              borderColor={borderColor}
+              shadow="md"
+              borderRadius="lg"
+            >
               <Tabs 
                 variant="enclosed" 
-                colorScheme="blue" 
-                orientation={isMobile ? "horizontal" : "horizontal"}
+                colorScheme="teal" 
+                orientation="horizontal"
                 isFitted={isMobile}
               >
-                <TabList flexDirection={isMobile ? "column" : "row"} mb={4}>
-                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4}>
+                <TabList 
+                  flexDirection="row" 
+                  mb={4}
+                  overflowX={{ base: "auto", md: "visible" }}
+                >
+                  <Tab fontSize={{ base: "xs", md: "sm" }} p={{ base: 2, md: 4 }}>
                     Recent Reports
                   </Tab>
-                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4}>
+                  <Tab fontSize={{ base: "xs", md: "sm" }} p={{ base: 2, md: 4 }}>
                     Scheduled Reports
                   </Tab>
-                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4}>
+                  <Tab fontSize={{ base: "xs", md: "sm" }} p={{ base: 2, md: 4 }}>
                     Report Templates
                   </Tab>
                 </TabList>
 
               <TabPanels>
                 {/* Recent Reports */}
-                <TabPanel p={cardPadding} pt={6}>
+                <TabPanel p={{ base: 4, md: 5, lg: 6 }} pt={6}>
                   <Box>
                     <Flex justify="space-between" align="center" mb={4}>
-                      <Heading size="md">Report History</Heading>
-                      <Button size={buttonSize} leftIcon={<RepeatIcon />} onClick={fetchReports}>
+                      <Heading size={{ base: "sm", md: "md" }}>Report History</Heading>
+                      <Button 
+                        size={{ base: "sm", md: "md" }}
+                        leftIcon={<RepeatIcon />} 
+                        onClick={fetchReports}
+                      >
                         Refresh
                       </Button>
                     </Flex>

@@ -334,12 +334,60 @@ const AdminDashboard = () => {
   return (
     <AppLayout title="Admin Dashboard">
       {analytics && (
-        <>
+        <Box p={[4, 6, 8]} maxW="100%" mx="auto">
+          <VStack spacing={8} mb={10} align="left">
+            {/* Page Header with Responsive Typography */}
+            <Heading
+              fontSize={['2xl', '3xl', '4xl', '5xl']}
+              color="blue.600"
+              textAlign={{ base: 'center', md: 'left' }}
+            >
+              Admin Dashboard
+            </Heading>
+            
+            {/* Date Range Selector */}
+            <Flex 
+              direction={{ base: 'column', md: 'row' }}
+              gap={{ base: 3, md: 4 }}
+              justify={{ base: 'center', md: 'space-between' }}
+              align={{ base: 'stretch', md: 'center' }}
+            >
+              <Text fontSize={{ base: 'sm', md: 'md' }} color="gray.600">
+                Last updated: {formatDateTime(lastRefresh)}
+              </Text>
+              <HStack spacing={3}>
+                <Select 
+                  value={dateRange} 
+                  onChange={(e) => setDateRange(e.target.value)}
+                  size={{ base: 'sm', md: 'md' }}
+                  maxW={{ base: '100%', md: '200px' }}
+                >
+                  <option value="24h">Last 24 Hours</option>
+                  <option value="7d">Last 7 Days</option>
+                  <option value="30d">Last 30 Days</option>
+                  <option value="90d">Last 90 Days</option>
+                </Select>
+                <IconButton
+                  icon={<RepeatIcon />}
+                  onClick={handleRefresh}
+                  isLoading={refreshing}
+                  size={{ base: 'sm', md: 'md' }}
+                  colorScheme="blue"
+                  aria-label="Refresh data"
+                />
+              </HStack>
+            </Flex>
+          </VStack>
+
           {/* Overview Statistics - Responsive Grid with Enhanced Cards */}
           <SimpleGrid 
-            columns={{ base: 1, sm: 2, xl: 4 }}
-            spacing={{ base: 4, md: 6 }} 
-            mb={{ base: 6, md: 8 }}
+            templateColumns={{
+              base: '1fr',
+              sm: 'repeat(2, 1fr)',
+              lg: 'repeat(4, 1fr)'
+            }}
+            spacing={{ base: 4, md: 6, lg: 8 }} 
+            mb={{ base: 6, md: 8, lg: 10 }}
           >
               <Card 
                 borderRadius="xl" 
@@ -454,36 +502,85 @@ const AdminDashboard = () => {
               </HStack>
             </Flex>
 
-            <Tabs>
-              <TabList>
-                <Tab>Trip Analytics</Tab>
-                <Tab>Driver Performance</Tab>
-                <Tab>Recent Activity</Tab>
+            <Tabs variant="enclosed" colorScheme="blue">
+              <TabList 
+                flexWrap={{ base: "wrap", md: "nowrap" }}
+                borderBottom="2px solid"
+                borderColor="gray.200"
+              >
+                <Tab 
+                  fontSize={{ base: "sm", md: "md" }}
+                  px={{ base: 3, md: 4 }}
+                  py={{ base: 2, md: 3 }}
+                  _selected={{ 
+                    color: "blue.600", 
+                    borderColor: "blue.600",
+                    fontWeight: "bold"
+                  }}
+                >
+                  Trip Analytics
+                </Tab>
+                <Tab 
+                  fontSize={{ base: "sm", md: "md" }}
+                  px={{ base: 3, md: 4 }}
+                  py={{ base: 2, md: 3 }}
+                  _selected={{ 
+                    color: "blue.600", 
+                    borderColor: "blue.600",
+                    fontWeight: "bold"
+                  }}
+                >
+                  Driver Performance
+                </Tab>
+                <Tab 
+                  fontSize={{ base: "sm", md: "md" }}
+                  px={{ base: 3, md: 4 }}
+                  py={{ base: 2, md: 3 }}
+                  _selected={{ 
+                    color: "blue.600", 
+                    borderColor: "blue.600",
+                    fontWeight: "bold"
+                  }}
+                >
+                  Recent Activity
+                </Tab>
               </TabList>
 
               <TabPanels>
                 {/* Trip Analytics Tab */}
-                <TabPanel>
-                  <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={6}>
+                <TabPanel px={{ base: 2, md: 4 }} py={{ base: 4, md: 6 }}>
+                  <Grid 
+                    templateColumns={{ 
+                      base: '1fr', 
+                      lg: 'repeat(2, 1fr)' 
+                    }} 
+                    gap={{ base: 4, md: 6, lg: 8 }}
+                  >
                     {/* Weekly Stats Chart (Simple display) */}
-                    <Card>
-                      <CardHeader>
-                        <Heading size="md">Weekly Trip Statistics</Heading>
+                    <Card 
+                      borderRadius="lg"
+                      boxShadow="sm"
+                      _hover={{ boxShadow: "md" }}
+                      transition="all 0.2s"
+                    >
+                      <CardHeader pb={{ base: 2, md: 3 }}>
+                        <Heading size={{ base: "sm", md: "md" }}>Weekly Trip Statistics</Heading>
                       </CardHeader>
-                      <CardBody>
-                        <VStack align="stretch" spacing={4}>
+                      <CardBody pt={{ base: 2, md: 4 }}>
+                        <VStack align="stretch" spacing={{ base: 3, md: 4 }}>
                           {analytics.weeklyStats.map((stat) => (
                             <Box key={stat._id}>
                               <HStack justify="space-between" mb={2}>
-                                <Text>{formatDate(stat._id)}</Text>
-                                <Text fontWeight="bold">
+                                <Text fontSize={{ base: "xs", md: "sm" }}>{formatDate(stat._id)}</Text>
+                                <Text fontWeight="bold" fontSize={{ base: "xs", md: "sm" }}>
                                   {stat.completed}/{stat.count} completed
                                 </Text>
                               </HStack>
                               <Progress 
                                 value={stat.count > 0 ? (stat.completed / stat.count) * 100 : 0}
                                 colorScheme="green"
-                                size="sm"
+                                size={{ base: "sm", md: "md" }}
+                                borderRadius="full"
                               />
                             </Box>
                           ))}
@@ -492,33 +589,62 @@ const AdminDashboard = () => {
                     </Card>
 
                     {/* Status Breakdown */}
-                    <Card>
-                      <CardHeader>
-                        <Heading size="md">Trip Status Breakdown</Heading>
+                    <Card 
+                      borderRadius="lg"
+                      boxShadow="sm"
+                      _hover={{ boxShadow: "md" }}
+                      transition="all 0.2s"
+                    >
+                      <CardHeader pb={{ base: 2, md: 3 }}>
+                        <Heading size={{ base: "sm", md: "md" }}>Trip Status Breakdown</Heading>
                       </CardHeader>
-                      <CardBody>
-                        <VStack align="stretch" spacing={4}>
+                      <CardBody pt={{ base: 2, md: 4 }}>
+                        <VStack align="stretch" spacing={{ base: 3, md: 4 }}>
                           <HStack justify="space-between">
-                            <Text>Completed</Text>
-                            <Badge colorScheme="green" variant="solid">
+                            <Text fontSize={{ base: "sm", md: "md" }}>Completed</Text>
+                            <Badge 
+                              colorScheme="green" 
+                              variant="solid"
+                              fontSize={{ base: "xs", md: "sm" }}
+                              px={{ base: 2, md: 3 }}
+                              py={{ base: 0.5, md: 1 }}
+                            >
                               {analytics.tripStats.completed}
                             </Badge>
                           </HStack>
                           <HStack justify="space-between">
-                            <Text>In Progress</Text>
-                            <Badge colorScheme="blue" variant="solid">
+                            <Text fontSize={{ base: "sm", md: "md" }}>In Progress</Text>
+                            <Badge 
+                              colorScheme="blue" 
+                              variant="solid"
+                              fontSize={{ base: "xs", md: "sm" }}
+                              px={{ base: 2, md: 3 }}
+                              py={{ base: 0.5, md: 1 }}
+                            >
                               {analytics.tripStats.inProgress}
                             </Badge>
                           </HStack>
                           <HStack justify="space-between">
-                            <Text>Pending</Text>
-                            <Badge colorScheme="orange" variant="solid">
+                            <Text fontSize={{ base: "sm", md: "md" }}>Pending</Text>
+                            <Badge 
+                              colorScheme="orange" 
+                              variant="solid"
+                              fontSize={{ base: "xs", md: "sm" }}
+                              px={{ base: 2, md: 3 }}
+                              py={{ base: 0.5, md: 1 }}
+                            >
                               {analytics.tripStats.pending}
                             </Badge>
                           </HStack>
                           <HStack justify="space-between">
-                            <Text>Cancelled</Text>
-                            <Badge colorScheme="red" variant="solid">
+                            <Text fontSize={{ base: "sm", md: "md" }}>Cancelled</Text>
+                            <Badge 
+                              colorScheme="red" 
+                              variant="solid"
+                              fontSize={{ base: "xs", md: "sm" }}
+                              px={{ base: 2, md: 3 }}
+                              py={{ base: 0.5, md: 1 }}
+                            >
                               {analytics.tripStats.cancelled}
                             </Badge>
                           </HStack>
@@ -529,22 +655,27 @@ const AdminDashboard = () => {
                 </TabPanel>
 
                 {/* Driver Performance Tab */}
-                <TabPanel>
-                  <Card>
-                    <CardHeader>
-                      <Heading size="md">Driver Performance Metrics</Heading>
+                <TabPanel px={{ base: 2, md: 4 }} py={{ base: 4, md: 6 }}>
+                  <Card 
+                    borderRadius="lg"
+                    boxShadow="sm"
+                    _hover={{ boxShadow: "md" }}
+                    transition="all 0.2s"
+                  >
+                    <CardHeader pb={{ base: 2, md: 3 }}>
+                      <Heading size={{ base: "sm", md: "md" }}>Driver Performance Metrics</Heading>
                     </CardHeader>
-                    <CardBody>
+                    <CardBody pt={{ base: 2, md: 4 }}>
                       <TableContainer overflowX="auto">
                         <Table variant="simple" size={{ base: "sm", md: "md" }}>
-                          <Thead>
+                          <Thead bg="gray.50">
                             <Tr>
-                              <Th>Driver</Th>
-                              <Th isNumeric>Total Trips</Th>
-                              <Th isNumeric display={{ base: "none", md: "table-cell" }}>Completed</Th>
-                              <Th display={{ base: "none", lg: "table-cell" }}>Completion Rate</Th>
-                              <Th display={{ base: "none", lg: "table-cell" }}>Vehicle</Th>
-                              <Th display={{ base: "none", md: "table-cell" }}>Rating</Th>
+                              <Th fontSize={{ base: "xs", md: "sm" }}>Driver</Th>
+                              <Th isNumeric fontSize={{ base: "xs", md: "sm" }}>Total Trips</Th>
+                              <Th isNumeric display={{ base: "none", md: "table-cell" }} fontSize={{ base: "xs", md: "sm" }}>Completed</Th>
+                              <Th display={{ base: "none", lg: "table-cell" }} fontSize={{ base: "xs", md: "sm" }}>Completion Rate</Th>
+                              <Th display={{ base: "none", lg: "table-cell" }} fontSize={{ base: "xs", md: "sm" }}>Vehicle</Th>
+                              <Th display={{ base: "none", md: "table-cell" }} fontSize={{ base: "xs", md: "sm" }}>Rating</Th>
                             </Tr>
                           </Thead>
                           <Tbody>
@@ -600,33 +731,59 @@ const AdminDashboard = () => {
                 </TabPanel>
 
                 {/* Recent Activity Tab */}
-                <TabPanel>
-                  <Card>
-                    <CardHeader>
-                      <Heading size="md">Recent System Activity</Heading>
+                <TabPanel px={{ base: 2, md: 4 }} py={{ base: 4, md: 6 }}>
+                  <Card 
+                    borderRadius="lg"
+                    boxShadow="sm"
+                    _hover={{ boxShadow: "md" }}
+                    transition="all 0.2s"
+                  >
+                    <CardHeader pb={{ base: 2, md: 3 }}>
+                      <Heading size={{ base: "sm", md: "md" }}>Recent System Activity</Heading>
                     </CardHeader>
-                    <CardBody>
-                      <VStack align="stretch" spacing={4}>
+                    <CardBody pt={{ base: 2, md: 4 }}>
+                      <VStack align="stretch" spacing={{ base: 3, md: 4 }}>
                         {analytics.recentActivity.map((activity) => (
-                          <Box key={activity._id} p={4} bg="gray.50" rounded="md">
-                            <HStack justify="space-between">
-                              <VStack align="start" spacing={0}>
-                                <Text fontWeight="bold">
+                          <Box 
+                            key={activity._id} 
+                            p={{ base: 3, md: 4 }} 
+                            bg="gray.50" 
+                            rounded="lg"
+                            _hover={{ bg: "gray.100" }}
+                            transition="all 0.2s"
+                          >
+                            <Flex 
+                              direction={{ base: "column", sm: "row" }}
+                              justify={{ base: "start", sm: "space-between" }}
+                              gap={{ base: 2, sm: 0 }}
+                            >
+                              <VStack align="start" spacing={0} flex={1}>
+                                <Text fontWeight="bold" fontSize={{ base: "sm", md: "md" }}>
                                   {activity.userId ? 
                                     `${activity.userId.firstName} ${activity.userId.lastName}` : 
                                     'System'}
                                 </Text>
-                                <Text fontSize="sm">{activity.description}</Text>
+                                <Text fontSize={{ base: "xs", md: "sm" }} color="gray.600">
+                                  {activity.description}
+                                </Text>
                               </VStack>
-                              <VStack align="end" spacing={0}>
-                                <Badge colorScheme="blue">
+                              <VStack 
+                                align={{ base: "start", sm: "end" }} 
+                                spacing={1}
+                                minW={{ base: "auto", sm: "150px" }}
+                              >
+                                <Badge 
+                                  colorScheme="blue"
+                                  fontSize={{ base: "2xs", md: "xs" }}
+                                  px={{ base: 2, md: 2 }}
+                                >
                                   {activity.action.replace('_', ' ').toUpperCase()}
                                 </Badge>
-                                <Text fontSize="xs" color="gray.500">
+                                <Text fontSize={{ base: "2xs", md: "xs" }} color="gray.500">
                                   {new Date(activity.createdAt).toLocaleString()}
                                 </Text>
                               </VStack>
-                            </HStack>
+                            </Flex>
                           </Box>
                         ))}
                       </VStack>
@@ -635,7 +792,7 @@ const AdminDashboard = () => {
               </TabPanel>
             </TabPanels>
           </Tabs>
-        </>
+        </Box>
       )}
 
       {/* Trip Management Modal */}

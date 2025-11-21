@@ -110,13 +110,9 @@ const AdminAnalytics = () => {
   // Responsive values
   const isMobile = useBreakpointValue({ base: true, lg: false });
   const cardPadding = useBreakpointValue({ base: 3, md: 4, lg: 6 });
-  const headerDirection = useBreakpointValue({ base: 'column', md: 'row' });
   const buttonSize = useBreakpointValue({ base: 'sm', md: 'md' });
   const spacing = useBreakpointValue({ base: 3, md: 4, lg: 6 });
-  const headingSize = useBreakpointValue({ base: 'md', md: 'lg' });
   const fontSize = useBreakpointValue({ base: 'sm', md: 'md' });
-  const iconSize = useBreakpointValue({ base: 5, md: 6 });
-  const statSize = useBreakpointValue({ base: 'lg', md: 'xl', lg: '2xl' });
   
   // Color mode values
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -296,18 +292,26 @@ const AdminAnalytics = () => {
   };
 
   const StatCard = ({ title, value, change, changeType, icon, color, subtitle, isPercentage = false }) => (
-    <Card bg={cardBg} borderColor={borderColor} h="full">
-      <CardBody p={cardPadding}>
+    <Card 
+      bg={cardBg} 
+      borderColor={borderColor} 
+      h="full"
+      shadow="md"
+      borderRadius="lg"
+      transition="all 0.2s"
+      _hover={{ transform: 'translateY(-2px)', boxShadow: 'xl' }}
+    >
+      <CardBody p={{ base: 4, md: 5, lg: 6 }}>
         <Flex 
           align="center" 
           justify="space-between"
-          direction={isMobile ? "column" : "row"}
-          textAlign={isMobile ? "center" : "left"}
+          direction={{ base: "column", md: "row" }}
+          textAlign={{ base: "center", md: "left" }}
         >
-          <Box flex="1" mb={isMobile ? 3 : 0}>
+          <Box flex="1" mb={{ base: 3, md: 0 }}>
             <Stat>
-              <StatLabel fontSize={fontSize} color={textColor}>{title}</StatLabel>
-              <StatNumber fontSize={statSize} fontWeight="bold">
+              <StatLabel fontSize={{ base: "xs", md: "sm" }} color={textColor}>{title}</StatLabel>
+              <StatNumber fontSize={{ base: "xl", md: "2xl", lg: "3xl" }} fontWeight="bold">
                 {isPercentage ? `${value}%` : value}
               </StatNumber>
               {subtitle && (
@@ -318,20 +322,20 @@ const AdminAnalytics = () => {
               {change && (
                 <StatHelpText fontSize="xs" mt={1}>
                   <StatArrow type={changeType} />
-                  {isMobile ? change.split(' ')[0] : change}
+                  {change}
                 </StatHelpText>
               )}
             </Stat>
           </Box>
-          <Box ml={isMobile ? 0 : 4}>
+          <Box ml={{ base: 0, md: 4 }}>
             <CircularProgress 
               value={isPercentage ? parseFloat(value) : 75} 
               color={color}
-              size={isMobile ? "50px" : "60px"}
+              size={{ base: "50px", md: "60px", lg: "70px" }}
               thickness="8px"
             >
               <CircularProgressLabel>
-                <Icon as={icon} boxSize={iconSize} color={color} />
+                <Icon as={icon} boxSize={{ base: 5, md: 6 }} color={color} />
               </CircularProgressLabel>
             </CircularProgress>
           </Box>
@@ -341,56 +345,62 @@ const AdminAnalytics = () => {
   );
 
   const PerformanceCard = () => (
-    <Card bg={cardBg} borderColor={borderColor} h="full">
+    <Card 
+      bg={cardBg} 
+      borderColor={borderColor} 
+      h="full"
+      shadow="md"
+      borderRadius="lg"
+    >
       <CardHeader pb={2}>
-        <Heading size="sm" display="flex" alignItems="center" gap={2}>
-          <Icon as={FaTachometerAlt} boxSize={iconSize} />
+        <Heading size={{ base: "xs", md: "sm" }} display="flex" alignItems="center" gap={2}>
+          <Icon as={FaTachometerAlt} boxSize={{ base: 4, md: 5 }} />
           System Performance
         </Heading>
       </CardHeader>
-      <CardBody pt={2} p={cardPadding}>
-        <VStack spacing={spacing}>
+      <CardBody pt={2} p={{ base: 4, md: 5, lg: 6 }}>
+        <VStack spacing={{ base: 3, md: 4 }}>
           <Box width="full">
             <HStack justify="space-between" mb={2}>
-              <Text fontSize={fontSize}>System Uptime</Text>
-              <Text fontSize={fontSize} fontWeight="bold">
+              <Text fontSize={{ base: "xs", md: "sm" }}>System Uptime</Text>
+              <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="bold">
                 {analytics?.performance.systemUptime || 0}%
               </Text>
             </HStack>
             <Progress 
               value={analytics?.performance.systemUptime || 0} 
               colorScheme="green"
-              size={isMobile ? "sm" : "md"}
+              size={{ base: "sm", md: "md" }}
               borderRadius="md"
             />
           </Box>
           
           <Box width="full">
             <HStack justify="space-between" mb={2}>
-              <Text fontSize={fontSize}>Server Load</Text>
-              <Text fontSize={fontSize} fontWeight="bold">
+              <Text fontSize={{ base: "xs", md: "sm" }}>Server Load</Text>
+              <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="bold">
                 {analytics?.performance.serverLoad || 0}%
               </Text>
             </HStack>
             <Progress 
               value={analytics?.performance.serverLoad || 0} 
               colorScheme={analytics?.performance.serverLoad > 80 ? 'red' : 'blue'}
-              size={isMobile ? "sm" : "md"}
+              size={{ base: "sm", md: "md" }}
               borderRadius="md"
             />
           </Box>
 
           <Box width="full">
             <HStack justify="space-between" mb={2}>
-              <Text fontSize={fontSize}>Error Rate</Text>
-              <Text fontSize={fontSize} fontWeight="bold">
+              <Text fontSize={{ base: "xs", md: "sm" }}>Error Rate</Text>
+              <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="bold">
                 {analytics?.performance.errorRate || 0}%
               </Text>
             </HStack>
             <Progress 
               value={(analytics?.performance.errorRate || 0) * 10} 
               colorScheme="red"
-              size={isMobile ? "sm" : "md"}
+              size={{ base: "sm", md: "md" }}
               borderRadius="md"
             />
           </Box>
@@ -398,7 +408,7 @@ const AdminAnalytics = () => {
           <Divider />
 
           <VStack spacing={2} width="full">
-            <Text fontSize={fontSize} fontWeight="medium">Peak Hours</Text>
+            <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">Peak Hours</Text>
             <Wrap justify="center" spacing={1}>
               {analytics?.performance.peakHours?.map((hour, index) => (
                 <WrapItem key={index}>
@@ -406,7 +416,7 @@ const AdminAnalytics = () => {
                     colorScheme="orange" 
                     variant="outline"
                     fontSize="xs"
-                    px={2}
+                    px={{ base: 2, md: 3 }}
                     py={1}
                   >
                     {hour}
@@ -421,22 +431,25 @@ const AdminAnalytics = () => {
   );
 
   const GeographicInsights = () => (
-    <Card>
+    <Card 
+      shadow="md"
+      borderRadius="lg"
+    >
       <CardHeader>
-        <Heading size="sm" display="flex" alignItems="center" gap={2}>
-          <Icon as={FaMapMarkerAlt} />
+        <Heading size={{ base: "xs", md: "sm" }} display="flex" alignItems="center" gap={2}>
+          <Icon as={FaMapMarkerAlt} boxSize={{ base: 4, md: 5 }} />
           Geographic Insights
         </Heading>
       </CardHeader>
-      <CardBody pt={0}>
-        <VStack spacing={4}>
-          <Text fontSize="sm" fontWeight="medium" alignSelf="start">Top Routes</Text>
+      <CardBody pt={0} p={{ base: 4, md: 5, lg: 6 }}>
+        <VStack spacing={{ base: 3, md: 4 }}>
+          <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="medium" alignSelf="start">Top Routes</Text>
           <VStack spacing={2} width="full">
             {analytics?.geographic.topRoutes?.map((route, index) => (
-              <Box key={index} p={3} bg="gray.50" rounded="md" width="full">
+              <Box key={index} p={{ base: 2, md: 3 }} bg="gray.50" rounded="md" width="full">
                 <HStack justify="space-between">
                   <VStack align="start" spacing={0}>
-                    <Text fontSize="sm" fontWeight="medium">
+                    <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="medium">
                       {route.from} → {route.to}
                     </Text>
                     <Text fontSize="xs" color="gray.600">
@@ -451,18 +464,18 @@ const AdminAnalytics = () => {
 
           <Divider />
 
-          <SimpleGrid columns={2} spacing={3} width="full">
+          <SimpleGrid columns={{ base: 2, md: 3 }} spacing={{ base: 2, md: 3 }} width="full">
             <VStack>
-              <Text fontSize="2xl" fontWeight="bold" color="blue.500">
+              <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold" color="blue.500">
                 {analytics?.geographic.coverage.zones}
               </Text>
-              <Text fontSize="xs" color="gray.500">Coverage Zones</Text>
+              <Text fontSize="xs" color="gray.500" textAlign="center">Coverage Zones</Text>
             </VStack>
             <VStack>
-              <Text fontSize="2xl" fontWeight="bold" color="green.500">
+              <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold" color="green.500">
                 {analytics?.geographic.coverage.totalMiles}
               </Text>
-              <Text fontSize="xs" color="gray.500">Total Miles</Text>
+              <Text fontSize="xs" color="gray.500" textAlign="center">Total Miles</Text>
             </VStack>
           </SimpleGrid>
         </VStack>
@@ -471,18 +484,24 @@ const AdminAnalytics = () => {
   );
 
   const UserAnalyticsCard = () => (
-    <Card bg={cardBg} borderColor={borderColor} h="full">
+    <Card 
+      bg={cardBg} 
+      borderColor={borderColor} 
+      h="full"
+      shadow="md"
+      borderRadius="lg"
+    >
       <CardHeader pb={2}>
-        <Heading size="sm" display="flex" alignItems="center" gap={2}>
-          <Icon as={FaUsers} boxSize={iconSize} />
+        <Heading size={{ base: "xs", md: "sm" }} display="flex" alignItems="center" gap={2}>
+          <Icon as={FaUsers} boxSize={{ base: 4, md: 5 }} />
           User Analytics
         </Heading>
       </CardHeader>
-      <CardBody pt={2} p={cardPadding}>
-        <VStack spacing={spacing}>
-          <SimpleGrid columns={2} spacing={spacing} width="full">
+      <CardBody pt={2} p={{ base: 4, md: 5, lg: 6 }}>
+        <VStack spacing={{ base: 3, md: 4 }}>
+          <SimpleGrid columns={2} spacing={{ base: 3, md: 4 }} width="full">
             <VStack spacing={1}>
-              <Text fontSize={statSize} fontWeight="bold" color="green.500">
+              <Text fontSize={{ base: "xl", md: "2xl", lg: "3xl" }} fontWeight="bold" color="green.500">
                 {analytics?.userAnalytics.newUsersThisPeriod || 0}
               </Text>
               <Text fontSize="xs" color={textColor} textAlign="center">
@@ -490,7 +509,7 @@ const AdminAnalytics = () => {
               </Text>
             </VStack>
             <VStack spacing={1}>
-              <Text fontSize={statSize} fontWeight="bold" color="blue.500">
+              <Text fontSize={{ base: "xl", md: "2xl", lg: "3xl" }} fontWeight="bold" color="blue.500">
                 {analytics?.userAnalytics.userGrowthRate || 0}%
               </Text>
               <Text fontSize="xs" color={textColor} textAlign="center">
@@ -502,16 +521,16 @@ const AdminAnalytics = () => {
           <Divider />
 
           <Box width="full">
-            <Text fontSize={fontSize} fontWeight="medium" mb={3}>
+            <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="medium" mb={3}>
               Role Distribution
             </Text>
             {Object.entries(analytics?.userAnalytics.usersByRole || {}).map(([role, count]) => (
               <Box key={role} mb={3} _last={{ mb: 0 }}>
                 <HStack justify="space-between" mb={1}>
-                  <Text fontSize={fontSize} textTransform="capitalize" noOfLines={1}>
+                  <Text fontSize={{ base: "xs", md: "sm" }} textTransform="capitalize" noOfLines={1}>
                     {role}s
                   </Text>
-                  <Text fontSize={fontSize} fontWeight="bold">
+                  <Text fontSize={{ base: "xs", md: "sm" }} fontWeight="bold">
                     {count}
                   </Text>
                 </HStack>
@@ -522,7 +541,7 @@ const AdminAnalytics = () => {
                     role === 'scheduler' ? 'blue' :
                     role === 'dispatcher' ? 'green' : 'purple'
                   }
-                  size={isMobile ? "sm" : "md"}
+                  size={{ base: "sm", md: "md" }}
                   borderRadius="md"
                 />
               </Box>
@@ -591,23 +610,30 @@ const AdminAnalytics = () => {
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh" bg={bgColor}>
       <Navbar />
-      <Box flex="1" p={cardPadding}>
+      <Box flex="1" p={{ base: 4, md: 6, lg: 8 }}>
         <Container maxW="7xl">
-          <VStack align="stretch" spacing={spacing}>
-            {/* Header */}
-            <Card bg={headerBg} borderColor={borderColor} shadow="sm">
-              <CardBody p={cardPadding}>
+          <VStack align="stretch" spacing={{ base: 4, md: 6, lg: 8 }}>
+            {/* Header Card */}
+            <Card bg={headerBg} borderColor={borderColor} shadow="md" borderRadius="lg">
+              <CardBody p={{ base: 4, md: 6, lg: 8 }}>
                 <Flex 
                   justify="space-between" 
-                  align={isMobile ? "start" : "center"} 
-                  direction={headerDirection}
-                  gap={4}
+                  align={{ base: "start", md: "center" }} 
+                  direction={{ base: "column", md: "row" }}
+                  gap={{ base: 3, md: 4 }}
                 >
                   <Box flex="1">
-                    <Heading size={headingSize} mb={2}>
+                    <Heading 
+                      size={{ base: "md", md: "lg", lg: "xl" }} 
+                      mb={2}
+                      color="teal.600"
+                    >
                       Analytics Dashboard
                     </Heading>
-                    <Text color={textColor} fontSize={fontSize}>
+                    <Text 
+                      color={textColor} 
+                      fontSize={{ base: "sm", md: "md" }}
+                    >
                       Comprehensive system analytics and performance metrics
                     </Text>
                   </Box>
@@ -682,13 +708,16 @@ const AdminAnalytics = () => {
 
             {/* KPI Cards */}
             <Box>
-              <Heading size="md" mb={4} color={textColor}>
+              <Heading 
+                size={{ base: "sm", md: "md" }} 
+                mb={{ base: 3, md: 4 }} 
+                color="teal.600"
+              >
                 Key Performance Indicators
               </Heading>
               <SimpleGrid 
                 columns={{ base: 1, sm: 2, lg: 4 }} 
-                spacing={spacing}
-                minChildWidth={isMobile ? "none" : "200px"}
+                spacing={{ base: 3, md: 4, lg: 6 }}
               >
                 <StatCard
                   title="Trip Completion Rate"
@@ -729,60 +758,70 @@ const AdminAnalytics = () => {
             </Box>
 
             {/* Main Analytics Tabs */}
-            <Card bg={cardBg} borderColor={borderColor}>
+            <Card 
+              bg={cardBg} 
+              borderColor={borderColor}
+              shadow="md"
+              borderRadius="lg"
+            >
               <Tabs 
                 variant="enclosed" 
-                colorScheme="blue"
-                orientation={isMobile ? "horizontal" : "horizontal"}
+                colorScheme="teal"
+                orientation="horizontal"
                 isFitted={isMobile}
                 index={activeTab}
                 onChange={setActiveTab}
               >
                 <TabList 
-                  flexDirection={isMobile ? "row" : "row"}
-                  overflowX={isMobile ? "auto" : "visible"}
+                  flexDirection="row"
+                  overflowX={{ base: "auto", md: "visible" }}
                   overflowY="hidden"
                 >
-                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4} minW={isMobile ? "auto" : "100px"}>
+                  <Tab fontSize={{ base: "xs", md: "sm" }} p={{ base: 2, md: 4 }} minW={{ base: "auto", md: "100px" }}>
                     {isMobile ? "Trips" : "Trip Analytics"}
                   </Tab>
-                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4} minW={isMobile ? "auto" : "100px"}>
+                  <Tab fontSize={{ base: "xs", md: "sm" }} p={{ base: 2, md: 4 }} minW={{ base: "auto", md: "100px" }}>
                     {isMobile ? "Users" : "User Insights"}
                   </Tab>
-                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4} minW={isMobile ? "auto" : "100px"}>
+                  <Tab fontSize={{ base: "xs", md: "sm" }} p={{ base: 2, md: 4 }} minW={{ base: "auto", md: "100px" }}>
                     Performance
                   </Tab>
-                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4} minW={isMobile ? "auto" : "100px"}>
+                  <Tab fontSize={{ base: "xs", md: "sm" }} p={{ base: 2, md: 4 }} minW={{ base: "auto", md: "100px" }}>
                     {isMobile ? "Geo" : "Geographic"}
                   </Tab>
-                  <Tab fontSize={fontSize} p={isMobile ? 2 : 4} minW={isMobile ? "auto" : "100px"}>
+                  <Tab fontSize={{ base: "xs", md: "sm" }} p={{ base: 2, md: 4 }} minW={{ base: "auto", md: "100px" }}>
                     Reports
                   </Tab>
                 </TabList>
 
               <TabPanels>
                 {/* Trip Analytics */}
-                <TabPanel p={cardPadding} pt={6}>
+                <TabPanel p={{ base: 4, md: 5, lg: 6 }} pt={6}>
                   <Grid 
                     templateColumns={{ base: "1fr", lg: "2fr 1fr" }} 
-                    gap={spacing}
+                    gap={{ base: 4, md: 5, lg: 6 }}
                   >
-                    <VStack spacing={spacing}>
-                      <Card width="full" bg={cardBg} borderColor={borderColor}>
+                    <VStack spacing={{ base: 3, md: 4, lg: 6 }}>
+                      <Card 
+                        width="full" 
+                        bg={cardBg} 
+                        borderColor={borderColor}
+                        shadow="md"
+                        borderRadius="lg"
+                      >
                         <CardHeader pb={2}>
-                          <Heading size="md">Trip Overview</Heading>
-                          <Text fontSize="sm" color={textColor} mt={1}>
+                          <Heading size={{ base: "sm", md: "md" }}>Trip Overview</Heading>
+                          <Text fontSize={{ base: "xs", md: "sm" }} color={textColor} mt={1}>
                             Current period trip statistics
                           </Text>
                         </CardHeader>
-                        <CardBody pt={2}>
+                        <CardBody pt={2} p={{ base: 4, md: 5 }}>
                           <SimpleGrid 
                             columns={{ base: 2, md: 4 }} 
-                            spacing={spacing}
-                            minChildWidth={isMobile ? "80px" : "100px"}
+                            spacing={{ base: 3, md: 4 }}
                           >
                             <VStack spacing={1}>
-                              <Text fontSize={statSize} fontWeight="bold" color="green.500">
+                              <Text fontSize={{ base: "xl", md: "2xl", lg: "3xl" }} fontWeight="bold" color="green.500">
                                 {analytics?.kpis.completedTrips || 0}
                               </Text>
                               <Text fontSize="xs" color={textColor} textAlign="center">
@@ -790,7 +829,7 @@ const AdminAnalytics = () => {
                               </Text>
                             </VStack>
                             <VStack spacing={1}>
-                              <Text fontSize={statSize} fontWeight="bold" color="blue.500">
+                              <Text fontSize={{ base: "xl", md: "2xl", lg: "3xl" }} fontWeight="bold" color="blue.500">
                                 {analytics?.kpis.inProgressTrips || 0}
                               </Text>
                               <Text fontSize="xs" color={textColor} textAlign="center">
@@ -798,7 +837,7 @@ const AdminAnalytics = () => {
                               </Text>
                             </VStack>
                             <VStack spacing={1}>
-                              <Text fontSize={statSize} fontWeight="bold" color="orange.500">
+                              <Text fontSize={{ base: "xl", md: "2xl", lg: "3xl" }} fontWeight="bold" color="orange.500">
                                 {analytics?.kpis.pendingTrips || 0}
                               </Text>
                               <Text fontSize="xs" color={textColor} textAlign="center">
@@ -806,7 +845,7 @@ const AdminAnalytics = () => {
                               </Text>
                             </VStack>
                             <VStack spacing={1}>
-                              <Text fontSize={statSize} fontWeight="bold" color="red.500">
+                              <Text fontSize={{ base: "xl", md: "2xl", lg: "3xl" }} fontWeight="bold" color="red.500">
                                 {analytics?.kpis.cancelledTrips || 0}
                               </Text>
                               <Text fontSize="xs" color={textColor} textAlign="center">

@@ -393,11 +393,12 @@ const DriveMode = ({ trip, onComplete, onCancel }) => {
 
                 <IconButton
                   icon={<ArrowRightIcon />}
-                  size={{ base: "xs", md: "sm" }}
+                  size={{ base: "sm", md: "md" }}
                   colorScheme="green"
-                  variant="ghost"
+                  variant="solid"
                   onClick={openNavigation}
-                  aria-label="Open navigation"
+                  aria-label="Open navigation to Google Maps"
+                  title="Navigate in Google Maps"
                 />
               </HStack>
             </HStack>

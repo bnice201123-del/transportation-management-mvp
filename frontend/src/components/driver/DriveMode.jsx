@@ -324,16 +324,21 @@ const DriveMode = ({ trip, onComplete, onCancel }) => {
   }
 
   return (
-    <Box h="calc(100vh - 200px)" display="flex" flexDirection="column">
+    <Box 
+      h={{ base: "calc(100vh - 150px)", md: "calc(100vh - 200px)" }} 
+      display="flex" 
+      flexDirection="column"
+      px={{ base: 2, md: 0 }}
+    >
       {/* Top Section: Map View */}
       <Box 
         flex="1" 
         position="relative" 
-        borderRadius="lg" 
+        borderRadius={{ base: "md", md: "lg" }}
         overflow="hidden"
         border="1px solid"
         borderColor={borderColor}
-        mb={4}
+        mb={{ base: 2, md: 4 }}
       >
         <TripMap
           trip={trip}
@@ -342,59 +347,62 @@ const DriveMode = ({ trip, onComplete, onCancel }) => {
           showControls={false}
         />
 
-        {/* Trip Info Overlay */}
+        {/* Trip Info Overlay - Responsive */}
         <Box
           position="absolute"
-          top={4}
-          left={4}
-          right={4}
+          top={{ base: 2, md: 4 }}
+          left={{ base: 2, md: 4 }}
+          right={{ base: 2, md: 4 }}
           bg={bgColor}
-          p={4}
-          borderRadius="lg"
+          p={{ base: 3, md: 4 }}
+          borderRadius={{ base: "md", md: "lg" }}
           shadow="lg"
           border="1px solid"
           borderColor={borderColor}
+          maxW={{ base: "100%", md: "500px" }}
         >
-          <VStack align="stretch" spacing={2}>
-            <Flex justify="space-between" align="center">
-              <Heading size="md" color="green.600">
+          <VStack align="stretch" spacing={{ base: 1, md: 2 }}>
+            <Flex justify="space-between" align="center" flexWrap="wrap" gap={2}>
+              <Heading size={{ base: "sm", md: "md" }} color="green.600">
                 Active Trip
               </Heading>
-              <Badge colorScheme="green" fontSize="sm" px={3} py={1}>
+              <Badge colorScheme="green" fontSize={{ base: "xs", md: "sm" }} px={{ base: 2, md: 3 }} py={1}>
                 {trip.status?.toUpperCase()}
               </Badge>
             </Flex>
 
-            <HStack spacing={4} fontSize="sm">
-              <HStack>
-                <Box as={UserIcon} w={4} h={4} color="gray.600" />
-                <Text fontWeight="medium">
+            <HStack spacing={{ base: 2, md: 4 }} fontSize={{ base: "xs", md: "sm" }} flexWrap="wrap">
+              <HStack minW={{ base: "auto", md: "150px" }}>
+                <Box as={UserIcon} w={{ base: 3, md: 4 }} h={{ base: 3, md: 4 }} color="gray.600" />
+                <Text fontWeight="medium" noOfLines={1}>
                   {trip.rider?.firstName} {trip.rider?.lastName}
                 </Text>
               </HStack>
               
-              {trip.rider?.phone && (
-                <IconButton
-                  icon={<PhoneIcon />}
-                  size="sm"
-                  colorScheme="blue"
-                  variant="ghost"
-                  onClick={handleCallRider}
-                  aria-label="Call rider"
-                />
-              )}
+              <HStack>
+                {trip.rider?.phone && (
+                  <IconButton
+                    icon={<PhoneIcon />}
+                    size={{ base: "xs", md: "sm" }}
+                    colorScheme="blue"
+                    variant="ghost"
+                    onClick={handleCallRider}
+                    aria-label="Call rider"
+                  />
+                )}
 
-              <IconButton
-                icon={<ArrowRightIcon />}
-                size="sm"
-                colorScheme="green"
-                variant="ghost"
-                onClick={openNavigation}
-                aria-label="Open navigation"
-              />
+                <IconButton
+                  icon={<ArrowRightIcon />}
+                  size={{ base: "xs", md: "sm" }}
+                  colorScheme="green"
+                  variant="ghost"
+                  onClick={openNavigation}
+                  aria-label="Open navigation"
+                />
+              </HStack>
             </HStack>
 
-            <HStack spacing={4} fontSize="sm" color="gray.600">
+            <HStack spacing={{ base: 2, md: 4 }} fontSize={{ base: "xs", md: "sm" }} color="gray.600" display={{ base: "none", md: "flex" }}>
               <HStack>
                 <Box as={ClockIcon} w={4} h={4} />
                 <Text>
@@ -408,67 +416,72 @@ const DriveMode = ({ trip, onComplete, onCancel }) => {
               </HStack>
             </HStack>
 
-            <VStack align="stretch" spacing={1} fontSize="sm">
+            <VStack align="stretch" spacing={1} fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", sm: "flex" }}>
               <HStack>
-                <Box as={MapPinIcon} w={4} h={4} color="green.500" />
+                <Box as={MapPinIcon} w={{ base: 3, md: 4 }} h={{ base: 3, md: 4 }} color="green.500" />
                 <Text fontWeight="medium">Pickup:</Text>
-                <Text color="gray.600">{trip.pickupLocation?.address}</Text>
+                <Text color="gray.600" noOfLines={1}>{trip.pickupLocation?.address}</Text>
               </HStack>
               <HStack>
-                <Box as={MapPinIcon} w={4} h={4} color="red.500" />
+                <Box as={MapPinIcon} w={{ base: 3, md: 4 }} h={{ base: 3, md: 4 }} color="red.500" />
                 <Text fontWeight="medium">Dropoff:</Text>
-                <Text color="gray.600">{trip.dropoffLocation?.address}</Text>
+                <Text color="gray.600" noOfLines={1}>{trip.dropoffLocation?.address}</Text>
               </HStack>
             </VStack>
           </VStack>
         </Box>
       </Box>
 
-      {/* Bottom Section: Action Buttons */}
+      {/* Bottom Section: Action Buttons - Responsive */}
       <Box 
         bg={bgColor} 
-        p={6} 
-        borderRadius="lg" 
+        p={{ base: 3, md: 6 }}
+        borderRadius={{ base: "md", md: "lg" }}
         border="1px solid"
         borderColor={borderColor}
         shadow="md"
       >
-        <HStack spacing={4} justify="center">
+        <Flex 
+          gap={{ base: 2, md: 4 }} 
+          justify="center"
+          direction={{ base: "column", sm: "row" }}
+          align="stretch"
+        >
           <Button
-            leftIcon={<Box as={CheckCircleIcon} w={5} h={5} />}
+            leftIcon={<Box as={CheckCircleIcon} w={{ base: 4, md: 5 }} h={{ base: 4, md: 5 }} />}
             colorScheme="green"
-            size="lg"
-            px={8}
+            size={{ base: "md", md: "lg" }}
+            px={{ base: 4, md: 8 }}
             onClick={handleCompleteTrip}
             isLoading={loading}
             loadingText="Completing..."
             flex={1}
-            maxW="300px"
-            height="60px"
-            fontSize="lg"
+            maxW={{ base: "100%", md: "300px" }}
+            height={{ base: "50px", md: "60px" }}
+            fontSize={{ base: "md", md: "lg" }}
             fontWeight="bold"
           >
             Complete Trip
           </Button>
 
           <Button
-            leftIcon={<Box as={XCircleIcon} w={5} h={5} />}
+            leftIcon={<Box as={XCircleIcon} w={{ base: 4, md: 5 }} h={{ base: 4, md: 5 }} />}
             colorScheme="red"
             variant="outline"
-            size="lg"
-            px={8}
+            size={{ base: "md", md: "lg" }}
+            px={{ base: 4, md: 8 }}
             onClick={handleCancelTrip}
             isLoading={loading}
             loadingText="Cancelling..."
             flex={1}
-            maxW="300px"
-            height="60px"
-            fontSize="lg"
+            maxW={{ base: "100%", md: "300px" }}
+            height={{ base: "50px", md: "60px" }}
+            fontSize={{ base: "md", md: "lg" }}
             fontWeight="bold"
           >
             Cancel Trip
           </Button>
-        </HStack>
+        </Flex>
       </Box>
     </Box>
   );

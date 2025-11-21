@@ -3,40 +3,36 @@ import { Wrapper, Status } from '@googlemaps/react-wrapper';
 import { Box, Spinner, Alert, AlertIcon, AlertTitle, AlertDescription, Text, VStack, HStack } from '@chakra-ui/react';
 import GoogleMapsError from '../shared/GoogleMapsError';
 
+// Custom render function with better error handling
 const render = (status) => {
   switch (status) {
     case Status.LOADING:
       return (
         <Box display="flex" justifyContent="center" alignItems="center" h="400px">
-          <Spinner size="xl" />
+          <Spinner size="xl" color="brand.500" />
           <Text ml={3}>Loading Google Maps...</Text>
         </Box>
       );
     case Status.FAILURE:
       return (
-        <Alert status="error" flexDirection="column" alignItems="start">
+        <Alert status="error" flexDirection="column" alignItems="start" borderRadius="md">
           <HStack mb={2}>
             <AlertIcon />
             <AlertTitle>Error loading Google Maps</AlertTitle>
           </HStack>
           <AlertDescription>
             <VStack align="start" spacing={2} fontSize="sm">
-              <Text>Possible causes:</Text>
-              <Text>• Invalid or expired API key</Text>
-              <Text>• API key has domain restrictions (check allowed referrers)</Text>
-              <Text>• Maps JavaScript API not enabled in Google Cloud Console</Text>
-              <Text>• Billing not enabled on Google Cloud project</Text>
-              <Text fontWeight="bold" mt={2}>
-                Current API Key: {import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.substring(0, 20)}...
-              </Text>
-              <Text mt={2}>
-                To fix: Visit <a href="https://console.cloud.google.com/google/maps-apis" target="_blank" rel="noopener noreferrer" style={{color: 'blue', textDecoration: 'underline'}}>Google Maps Platform</a>
-              </Text>
+              <Text>Please refresh the page. If the problem persists, check:</Text>
+              <Text>• Google Maps JavaScript API is enabled</Text>
+              <Text>• API key has proper domain restrictions</Text>
+              <Text>• Billing is enabled on Google Cloud project</Text>
             </VStack>
           </AlertDescription>
         </Alert>
       );
     case Status.SUCCESS:
+      return null;
+    default:
       return null;
   }
 };
@@ -172,14 +168,12 @@ const GoogleMap = (props) => {
 
   return (
     <Wrapper 
-      apiKey={apiKey} 
-      render={(status) => {
-        if (status === Status.FAILURE) {
-          return <GoogleMapsError apiKey={apiKey} />;
-        }
-        return render(status);
-      }}
-      libraries={['places', 'geometry', 'directions']}
+      apiKey={apiKey}
+      libraries={['places', 'geometry', 'drawing']}
+      version="weekly"
+      render={render}
+      // Use id to prevent duplicate script loading
+      id="google-maps-script"
     >
       <MapComponent {...props} />
     </Wrapper>

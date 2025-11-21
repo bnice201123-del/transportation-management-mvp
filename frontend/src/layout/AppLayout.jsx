@@ -19,8 +19,26 @@ import {
   Spacer,
   Show,
   Hide,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Avatar,
+  Badge,
+  Divider,
 } from "@chakra-ui/react";
-import { FiMenu, FiHome, FiMapPin, FiUsers, FiSettings } from "react-icons/fi";
+import { 
+  FiMenu, 
+  FiHome, 
+  FiMapPin, 
+  FiUsers, 
+  FiSettings,
+  FiPlus,
+  FiCalendar,
+  FiBell,
+  FiSearch,
+  FiMoreVertical,
+} from "react-icons/fi";
 
 // ---------- Sidebar ----------
 const Sidebar = ({ current, onNavigate }) => {
@@ -82,9 +100,11 @@ const Sidebar = ({ current, onNavigate }) => {
 };
 
 // ---------- Navbar ----------
-const Navbar = ({ title, onOpenSidebar }) => {
+const Navbar = ({ title, onOpenSidebar, notificationCount = 3 }) => {
   const bg = useColorModeValue("white", "neutral.900");
   const borderColor = useColorModeValue("border.subtle", "border.subtle");
+  const iconColor = useColorModeValue("gray.600", "gray.300");
+  const hoverBg = useColorModeValue("gray.100", "neutral.700");
 
   return (
     <Flex
@@ -93,45 +113,166 @@ const Navbar = ({ title, onOpenSidebar }) => {
       bg={bg}
       borderBottomWidth="1px"
       borderColor={borderColor}
-      px={{ base: 3, md: 5, lg: 6 }}
+      px={{ base: 2, sm: 3, md: 5, lg: 6 }}
       py={{ base: 2, md: 3 }}
       position="sticky"
       top={0}
       zIndex={20}
       minH={{ base: "56px", md: "64px" }}
+      gap={{ base: 2, md: 3 }}
     >
-      {/* Hamburger for phones only (iPhone, small devices) */}
-      <Hide above="md">
-        <IconButton
-          mr={2}
-          aria-label="Open menu"
-          icon={<FiMenu />}
-          variant="ghost"
-          onClick={onOpenSidebar}
-          fontSize="xl"
-        />
-      </Hide>
+      {/* Left Section: Menu + Title */}
+      <Flex align="center" gap={{ base: 2, md: 3 }} flex="1" minW={0}>
+        {/* Hamburger for mobile only */}
+        <Hide above="md">
+          <IconButton
+            aria-label="Open menu"
+            icon={<FiMenu />}
+            variant="ghost"
+            size={{ base: "sm", sm: "md" }}
+            color={iconColor}
+            onClick={onOpenSidebar}
+            _hover={{ bg: hoverBg }}
+            _active={{ bg: hoverBg }}
+          />
+        </Hide>
 
-      <Text
-        fontWeight="semibold"
-        fontSize={{ base: "lg", md: "xl" }}
-        noOfLines={1}
-      >
-        {title}
-      </Text>
+        {/* Title - Truncated on small screens */}
+        <Text
+          fontWeight="semibold"
+          fontSize={{ base: "md", sm: "lg", md: "xl" }}
+          noOfLines={1}
+          flex="1"
+          minW={0}
+        >
+          {title}
+        </Text>
+      </Flex>
 
-      <Spacer />
+      {/* Right Section: Actions */}
+      <HStack spacing={{ base: 1, sm: 2, md: 3 }} flexShrink={0}>
+        {/* Search - Hidden on small mobile */}
+        <Show above="sm">
+          <IconButton
+            aria-label="Search"
+            icon={<FiSearch />}
+            variant="ghost"
+            size={{ base: "sm", md: "md" }}
+            color={iconColor}
+            _hover={{ bg: hoverBg }}
+            display={{ base: "none", sm: "flex", md: "flex" }}
+          />
+        </Show>
 
-      {/* Right-side actions – hide some on small screens */}
-      <HStack spacing={3}>
+        {/* Notifications - Icon with badge */}
+        <Box position="relative">
+          <IconButton
+            aria-label="Notifications"
+            icon={<FiBell />}
+            variant="ghost"
+            size={{ base: "sm", md: "md" }}
+            color={iconColor}
+            _hover={{ bg: hoverBg }}
+          />
+          {notificationCount > 0 && (
+            <Badge
+              position="absolute"
+              top="-1"
+              right="-1"
+              colorScheme="red"
+              borderRadius="full"
+              fontSize="xs"
+              minW="18px"
+              h="18px"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              {notificationCount > 9 ? '9+' : notificationCount}
+            </Badge>
+          )}
+        </Box>
+
+        {/* Quick Actions - Desktop and Tablet */}
         <Show above="md">
-          <Button size="sm" variant="outline">
-            Schedule Trip
+          <Button
+            leftIcon={<FiCalendar />}
+            size="sm"
+            variant="outline"
+            colorScheme="brand"
+          >
+            Schedule
           </Button>
         </Show>
-        <Button size={{ base: "sm", md: "md" }} colorScheme="blue">
-          New Trip
-        </Button>
+
+        {/* New Trip Button - All screens */}
+        <Hide below="sm">
+          <Button
+            leftIcon={<FiPlus />}
+            size={{ base: "sm", md: "md" }}
+            variant="solid"
+            colorScheme="brand"
+          >
+            <Show above="sm">New Trip</Show>
+            <Hide above="sm">New</Hide>
+          </Button>
+        </Hide>
+
+        {/* Mobile: Compact Plus Button */}
+        <Show below="sm">
+          <IconButton
+            aria-label="New Trip"
+            icon={<FiPlus />}
+            size="sm"
+            variant="solid"
+            colorScheme="brand"
+            borderRadius="full"
+          />
+        </Show>
+
+        {/* More Menu - Mobile only */}
+        <Show below="md">
+          <Menu>
+            <MenuButton
+              as={IconButton}
+              aria-label="More options"
+              icon={<FiMoreVertical />}
+              variant="ghost"
+              size={{ base: "sm", sm: "md" }}
+              color={iconColor}
+              _hover={{ bg: hoverBg }}
+            />
+            <MenuList>
+              <MenuItem icon={<FiSearch />}>Search</MenuItem>
+              <MenuItem icon={<FiCalendar />}>Schedule Trip</MenuItem>
+              <MenuItem icon={<FiMapPin />}>View All Trips</MenuItem>
+              <Divider />
+              <MenuItem icon={<FiSettings />}>Settings</MenuItem>
+            </MenuList>
+          </Menu>
+        </Show>
+
+        {/* User Avatar - Desktop only */}
+        <Show above="lg">
+          <Menu>
+            <MenuButton>
+              <Avatar
+                size="sm"
+                name="User"
+                bg="brand.500"
+                color="white"
+                cursor="pointer"
+                _hover={{ opacity: 0.8 }}
+              />
+            </MenuButton>
+            <MenuList>
+              <MenuItem>Profile</MenuItem>
+              <MenuItem>Settings</MenuItem>
+              <Divider />
+              <MenuItem color="red.500">Logout</MenuItem>
+            </MenuList>
+          </Menu>
+        </Show>
       </HStack>
     </Flex>
   );

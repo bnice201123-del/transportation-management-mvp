@@ -23,61 +23,73 @@ export const loadGoogleMapsAPI = () => {
   isLoading = true;
 
   loadPromise = new Promise((resolve, reject) => {
-    // Check if script is already added
+    // Check if script is already added (by Wrapper or other components)
     const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
     
     if (existingScript) {
       // Script exists, wait for it to load
+      let attempts = 0;
+      const maxAttempts = 100; // 10 seconds total
+      
       const checkInterval = setInterval(() => {
+        attempts++;
+        
         if (window.google && window.google.maps && window.google.maps.places) {
           clearInterval(checkInterval);
           isLoaded = true;
           isLoading = false;
+          loadPromise = null;
           resolve();
-        }
-      }, 100);
-
-      // Timeout after 10 seconds
-      setTimeout(() => {
-        clearInterval(checkInterval);
-        if (!isLoaded) {
+        } else if (attempts >= maxAttempts) {
+          clearInterval(checkInterval);
           isLoading = false;
+          loadPromise = null;
           reject(new Error('Google Maps API failed to load within timeout'));
         }
-      }, 10000);
+      }, 100);
+      
       return;
     }
 
-    // Create and add script
+    // Create and add script ONLY if no script exists
     const script = document.createElement('script');
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
     
     if (!apiKey) {
       isLoading = false;
+      loadPromise = null;
       reject(new Error('Google Maps API key not found in environment variables'));
       return;
     }
 
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
-    script.async = true;
-    script.defer = true;
-
-    script.onload = () => {
-      // Additional check to ensure places library is loaded
-      const checkPlaces = () => {
+    // Use callback method to avoid retry issues
+    const callbackName = 'initGoogleMaps';
+    window[callbackName] = () => {
+      // Wait a bit for places library to be fully ready
+      setTimeout(() => {
         if (window.google && window.google.maps && window.google.maps.places) {
           isLoaded = true;
           isLoading = false;
+          loadPromise = null;
+          delete window[callbackName];
           resolve();
         } else {
-          setTimeout(checkPlaces, 50);
+          isLoading = false;
+          loadPromise = null;
+          delete window[callbackName];
+          reject(new Error('Google Maps places library not available'));
         }
-      };
-      checkPlaces();
+      }, 100);
     };
+
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry,drawing&callback=${callbackName}`;
+    script.async = true;
+    script.defer = true;
 
     script.onerror = () => {
       isLoading = false;
+      loadPromise = null;
+      delete window[callbackName];
       reject(new Error('Failed to load Google Maps API script'));
     };
 

@@ -20,8 +20,7 @@ import {
   IconButton,
   Tooltip
 } from '@chakra-ui/react';
-import { FaRoute, FaClock, FaMapMarkerAlt, FaNavigation, FaCar } from 'react-icons/fa';
-import { ExternalLinkIcon } from '@chakra-ui/icons';
+import { FaRoute, FaClock, FaMapMarkerAlt, FaCar } from 'react-icons/fa';
 
 const RouteOptimizer = ({ pickup, dropoff, onRouteUpdate }) => {
   const [routeData, setRouteData] = useState(null);
@@ -97,15 +96,6 @@ const RouteOptimizer = ({ pickup, dropoff, onRouteUpdate }) => {
       calculateRoute();
     }
   }, [pickup?.coordinates, dropoff?.coordinates, calculateRoute]);
-
-  const openInGoogleMaps = () => {
-    if (pickup?.address && dropoff?.address) {
-      const pickupEncoded = encodeURIComponent(pickup.address);
-      const dropoffEncoded = encodeURIComponent(dropoff.address);
-      const url = `https://www.google.com/maps/dir/${pickupEncoded}/${dropoffEncoded}`;
-      window.open(url, '_blank');
-    }
-  };
 
   const getEstimatedFare = (distanceValue, durationValue) => {
     // Simple fare calculation: base fare + distance + time
@@ -189,25 +179,6 @@ const RouteOptimizer = ({ pickup, dropoff, onRouteUpdate }) => {
             <HStack>
               <FaRoute color="blue" />
               <Text fontWeight="bold">Route Analysis</Text>
-            </HStack>
-            <HStack>
-              <Tooltip label="Open in Google Maps">
-                <IconButton
-                  icon={<ExternalLinkIcon />}
-                  size="sm"
-                  variant="outline"
-                  onClick={openInGoogleMaps}
-                  aria-label="Open in Google Maps"
-                />
-              </Tooltip>
-              <Button
-                size="sm"
-                leftIcon={<FaNavigation />}
-                colorScheme="blue"
-                onClick={openInGoogleMaps}
-              >
-                Navigate
-              </Button>
             </HStack>
           </HStack>
 

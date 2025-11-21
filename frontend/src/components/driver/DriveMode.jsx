@@ -20,7 +20,6 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   PhoneIcon,
-  ArrowRightIcon,
   UserIcon,
   ClockIcon,
   MapPinIcon
@@ -208,107 +207,6 @@ const DriveMode = ({ trip, onComplete, onCancel }) => {
     }
   };
 
-  // Calculate distance between two coordinates (in miles)
-  const getDistanceFromLatLng = (lat1, lng1, lat2, lng2) => {
-    const R = 3959; // Earth's radius in miles
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLng / 2) * Math.sin(dLng / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distance in miles
-  };
-
-  const openNavigation = () => {
-    // Get pickup location coordinates
-    let pickupLat, pickupLng;
-    if (trip?.pickupLocation?.coordinates) {
-      [pickupLng, pickupLat] = trip.pickupLocation.coordinates;
-    } else if (trip?.pickupLocation?.lat && trip?.pickupLocation?.lng) {
-      pickupLat = trip.pickupLocation.lat;
-      pickupLng = trip.pickupLocation.lng;
-    }
-
-    // Get dropoff location coordinates
-    let dropoffLat, dropoffLng;
-    if (trip?.dropoffLocation?.coordinates) {
-      [dropoffLng, dropoffLat] = trip.dropoffLocation.coordinates;
-    } else if (trip?.dropoffLocation?.lat && trip?.dropoffLocation?.lng) {
-      dropoffLat = trip.dropoffLocation.lat;
-      dropoffLng = trip.dropoffLocation.lng;
-    }
-
-    if (!pickupLat || !pickupLng || !dropoffLat || !dropoffLng) {
-      toast({
-        title: 'Navigation Error',
-        description: 'Trip location coordinates not available',
-        status: 'warning',
-        duration: 2000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    // Check if we have current location
-    if (currentLocation) {
-      // Calculate distance from current location to pickup
-      const distanceToPickup = getDistanceFromLatLng(
-        currentLocation.lat,
-        currentLocation.lng,
-        pickupLat,
-        pickupLng
-      );
-
-      console.log(`Distance to pickup: ${distanceToPickup.toFixed(2)} miles`);
-
-      // Create chained route based on distance
-      let url;
-      
-      if (distanceToPickup > 0.25) {
-        // Three-point chain: Current Location -> Pickup -> Dropoff
-        // Format: origin=currentLat,currentLng&destination=dropoffLat,dropoffLng&waypoints=pickupLat,pickupLng
-        url = `https://www.google.com/maps/dir/?api=1&origin=${currentLocation.lat},${currentLocation.lng}&destination=${dropoffLat},${dropoffLng}&waypoints=${pickupLat},${pickupLng}`;
-        
-        toast({
-          title: 'Navigation Started',
-          description: `Route: Current Location → Pickup (${distanceToPickup.toFixed(2)} mi) → Dropoff`,
-          status: 'info',
-          duration: 4000,
-          isClosable: true,
-        });
-      } else {
-        // Two-point chain: Pickup/Current Location -> Dropoff
-        // Driver is within 1/4 mile of pickup, start from pickup location
-        url = `https://www.google.com/maps/dir/?api=1&origin=${pickupLat},${pickupLng}&destination=${dropoffLat},${dropoffLng}`;
-        
-        toast({
-          title: 'Navigation Started',
-          description: `Route: Pickup → Dropoff (You're ${distanceToPickup.toFixed(2)} mi from pickup)`,
-          status: 'info',
-          duration: 4000,
-          isClosable: true,
-        });
-      }
-
-      window.open(url, '_blank');
-    } else {
-      // No current location available, default to pickup -> dropoff
-      const url = `https://www.google.com/maps/dir/?api=1&origin=${pickupLat},${pickupLng}&destination=${dropoffLat},${dropoffLng}`;
-      
-      toast({
-        title: 'Navigation Started',
-        description: 'Route: Pickup → Dropoff (Enable location for optimized routing)',
-        status: 'info',
-        duration: 4000,
-        isClosable: true,
-      });
-      
-      window.open(url, '_blank');
-    }
-  };
-
   if (!trip) {
     return (
       <Box p={6}>
@@ -390,16 +288,6 @@ const DriveMode = ({ trip, onComplete, onCancel }) => {
                     aria-label="Call rider"
                   />
                 )}
-
-                <IconButton
-                  icon={<ArrowRightIcon />}
-                  size={{ base: "sm", md: "md" }}
-                  colorScheme="green"
-                  variant="solid"
-                  onClick={openNavigation}
-                  aria-label="Open navigation to Google Maps"
-                  title="Navigate in Google Maps"
-                />
               </HStack>
             </HStack>
 

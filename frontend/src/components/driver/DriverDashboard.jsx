@@ -80,7 +80,6 @@ import {
   UserGroupIcon as UserGroupIconSolid,
   BellIcon as BellIconSolid
 } from '@heroicons/react/24/solid';
-import { FaNavigation } from 'react-icons/fa';
 import axios from 'axios';
 import { useAuth } from "../../contexts/AuthContext";
 import Navbar from '../shared/Navbar';
@@ -96,7 +95,6 @@ const DriverDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
-  const [navigationModal, setNavigationModal] = useState({ isOpen: false, address: '', coordinates: null });
   const [activeDriveTrip, setActiveDriveTrip] = useState(null);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const { user } = useAuth();
@@ -274,10 +272,6 @@ const DriverDashboard = () => {
       clearInterval(tripsInterval);
     };
   }, [fetchTrips, fetchAssignedVehicle, isAvailable, user._id, getCurrentLocation]);
-
-  const openGoogleMaps = (address, coordinates = null) => {
-    setNavigationModal({ isOpen: true, address, coordinates });
-  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -605,20 +599,6 @@ const DriverDashboard = () => {
                                   </Text>
                                   <HStack spacing={2}>
                                     <Button
-                                      leftIcon={<FaNavigation />}
-                                      size="sm"
-                                      colorScheme="green"
-                                      onClick={() => openGoogleMaps(
-                                        trip.pickupLocation.address,
-                                        trip.pickupLocation.coordinates ? {
-                                          lat: trip.pickupLocation.coordinates[1],
-                                          lng: trip.pickupLocation.coordinates[0]
-                                        } : null
-                                      )}
-                                    >
-                                      Navigate
-                                    </Button>
-                                    <Button
                                       leftIcon={<PhoneIcon />}
                                       size="sm"
                                       variant="outline"
@@ -641,20 +621,6 @@ const DriverDashboard = () => {
                                   <Text fontSize="sm" mb={3} color="gray.700">
                                     {trip.dropoffLocation.address}
                                   </Text>
-                                  <Button
-                                    leftIcon={<FaNavigation />}
-                                    size="sm"
-                                    colorScheme="red"
-                                    onClick={() => openGoogleMaps(
-                                      trip.dropoffLocation.address,
-                                      trip.dropoffLocation.coordinates ? {
-                                        lat: trip.dropoffLocation.coordinates[1],
-                                        lng: trip.dropoffLocation.coordinates[0]
-                                      } : null
-                                    )}
-                                  >
-                                    Full Route
-                                  </Button>
                                 </Box>
                               </Grid>
 
@@ -863,51 +829,6 @@ const DriverDashboard = () => {
         </Tabs>
         </Container>
       </Box>
-
-      {/* Navigation Modal */}
-      <Modal 
-        isOpen={navigationModal.isOpen} 
-        onClose={() => setNavigationModal({ isOpen: false, address: '', coordinates: null })}
-        size="6xl"
-        isCentered
-      >
-        <ModalOverlay />
-        <ModalContent maxW="90vw" maxH="90vh">
-          <ModalHeader>Navigate to {navigationModal.address}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody p={0}>
-            <GoogleMap
-              center={navigationModal.coordinates || { lat: 40.7589, lng: -73.9851 }}
-              zoom={15}
-              markers={navigationModal.coordinates ? [{
-                position: navigationModal.coordinates,
-                title: navigationModal.address
-              }] : []}
-              height="70vh"
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button 
-              colorScheme="blue" 
-              mr={3} 
-              onClick={() => {
-                // Open in external Google Maps as fallback
-                const encodedAddress = encodeURIComponent(navigationModal.address);
-                const url = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-                window.open(url, '_blank');
-              }}
-            >
-              Open in Google Maps
-            </Button>
-            <Button 
-              variant="ghost" 
-              onClick={() => setNavigationModal({ isOpen: false, address: '', coordinates: null })}
-            >
-              Close
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </Box>
   );
 };

@@ -83,7 +83,6 @@ import {
   ChevronDownIcon,
   TruckIcon,
   MapPinIcon,
-  ArrowRightIcon,
   MapIcon,
   UserIcon,
   ChartBarIcon,
@@ -126,7 +125,6 @@ const ComprehensiveDriverDashboard = () => {
   const toast = useToast();
   const { isOpen: isReportOpen, onOpen: onReportOpen, onClose: onReportClose } = useDisclosure();
   const { isOpen: isRiderInfoOpen, onOpen: onRiderInfoOpen, onClose: onRiderInfoClose } = useDisclosure();
-  const [navigationModal, setNavigationModal] = useState({ isOpen: false, address: '', coordinates: null });
 
   // Color scheme
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -297,57 +295,6 @@ const ComprehensiveDriverDashboard = () => {
     e.stopPropagation();
     setSelectedRider({ id: riderId, name: riderName });
     onRiderInfoOpen();
-  };
-
-  // Navigation function to open destination in maps app
-  const navigateToDestination = (trip) => {
-    const dropoffLocation = trip.dropoffLocation;
-    
-    // Extract destination address or coordinates
-    let destination = '';
-    let coordinates = null;
-    
-    if (dropoffLocation?.address) {
-      destination = dropoffLocation.address;
-    } else if (dropoffLocation?.lat && dropoffLocation?.lng) {
-      destination = `${dropoffLocation.lat},${dropoffLocation.lng}`;
-    } else if (typeof dropoffLocation === 'string') {
-      destination = dropoffLocation;
-    }
-    
-    // Extract coordinates if available
-    if (dropoffLocation?.coordinates && Array.isArray(dropoffLocation.coordinates)) {
-      coordinates = {
-        lat: dropoffLocation.coordinates[1],
-        lng: dropoffLocation.coordinates[0]
-      };
-    } else if (dropoffLocation?.lat && dropoffLocation?.lng) {
-      coordinates = {
-        lat: dropoffLocation.lat,
-        lng: dropoffLocation.lng
-      };
-    }
-    
-    if (destination) {
-      // Open navigation modal instead of external Google Maps
-      setNavigationModal({ isOpen: true, address: destination, coordinates });
-      
-      toast({
-        title: 'Opening Navigation',
-        description: `Opening route to ${destination.length > 50 ? destination.substring(0, 50) + '...' : destination}`,
-        status: 'info',
-        duration: 2000,
-        isClosable: true,
-      });
-    } else {
-      toast({
-        title: 'Navigation Error',
-        description: 'Destination address not available',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-    }
   };
 
   const getCurrentLocation = () => {
@@ -756,14 +703,6 @@ const ComprehensiveDriverDashboard = () => {
                                                   Call
                                                 </Button>
                                               )}
-                                              <Button
-                                                size="sm"
-                                                colorScheme="blue"
-                                                leftIcon={<Box as={TruckIconSolid} w={4} h={4} />}
-                                                onClick={() => navigateToDestination(trip)}
-                                              >
-                                                Navigate
-                                              </Button>
                                             </HStack>
                                           </VStack>
                                         </Grid>
@@ -798,7 +737,7 @@ const ComprehensiveDriverDashboard = () => {
                           <CardBody>
                             <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={4}>
                               <Button
-                                leftIcon={<Box as={ArrowRightIcon} w={4} h={4} />}
+                                leftIcon={<Box as={MapPinIcon} w={4} h={4} />}
                                 colorScheme="teal"
                                 variant="outline"
                                 onClick={getCurrentLocation}
@@ -945,14 +884,6 @@ const ComprehensiveDriverDashboard = () => {
                                           aria-label="Call rider"
                                         />
                                       )}
-                                      <IconButton
-                                        size="sm"
-                                        icon={<Box as={TruckIconSolid} w={4} h={4} />}
-                                        colorScheme="blue"
-                                        variant="outline"
-                                        onClick={() => navigateToDestination(trip)}
-                                        aria-label="Navigate to destination"
-                                      />
                                       <IconButton
                                         size="sm"
                                         icon={<EyeIcon />}
@@ -1187,7 +1118,7 @@ const ComprehensiveDriverDashboard = () => {
                                   </Text>
                                 </VStack>
                                 <Button
-                                  leftIcon={<Box as={ArrowRightIcon} w={4} h={4} />}
+                                  leftIcon={<Box as={MapPinIcon} w={4} h={4} />}
                                   colorScheme="teal"
                                   onClick={getCurrentLocation}
                                   size="sm"
@@ -1456,51 +1387,6 @@ const ComprehensiveDriverDashboard = () => {
             </Button>
             <Button variant="ghost" onClick={onReportClose}>
               Cancel
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      {/* Navigation Modal - In-App Navigation */}
-      <Modal 
-        isOpen={navigationModal.isOpen} 
-        onClose={() => setNavigationModal({ isOpen: false, address: '', coordinates: null })} 
-        size="6xl"
-        isCentered
-      >
-        <ModalOverlay />
-        <ModalContent maxW="90vw" maxH="90vh">
-          <ModalHeader>Navigate to {navigationModal.address}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody p={0}>
-            <GoogleMap
-              center={navigationModal.coordinates || { lat: 40.7589, lng: -73.9851 }}
-              zoom={15}
-              markers={navigationModal.coordinates ? [{
-                position: navigationModal.coordinates,
-                title: navigationModal.address
-              }] : []}
-              height="70vh"
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button 
-              colorScheme="blue" 
-              mr={3} 
-              onClick={() => {
-                // Open in external Google Maps as fallback
-                const encodedAddress = encodeURIComponent(navigationModal.address);
-                const url = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-                window.open(url, '_blank');
-              }}
-            >
-              Open in Google Maps
-            </Button>
-            <Button 
-              variant="ghost" 
-              onClick={() => setNavigationModal({ isOpen: false, address: '', coordinates: null })}
-            >
-              Close
             </Button>
           </ModalFooter>
         </ModalContent>

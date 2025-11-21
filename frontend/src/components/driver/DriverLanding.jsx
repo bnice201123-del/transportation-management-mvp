@@ -237,12 +237,6 @@ const DriverLanding = () => {
     }
   }, [toast, updateDriverLocation]);
 
-  const openGoogleMaps = (address) => {
-    const encodedAddress = encodeURIComponent(address);
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-    window.open(url, '_blank');
-  };
-
   const submitReport = async () => {
     if (!reportType || !reportDescription) {
       toast({
@@ -501,14 +495,6 @@ const DriverLanding = () => {
                                       <Text fontSize="sm" mb={2}>
                                         {trip.pickupLocation.address}
                                       </Text>
-                                      <Button
-                                        leftIcon={<SearchIcon />}
-                                        size="sm"
-                                        colorScheme="green"
-                                        onClick={() => openGoogleMaps(trip.pickupLocation.address)}
-                                      >
-                                        Navigate
-                                      </Button>
                                     </Box>
 
                                     <Box>
@@ -518,14 +504,6 @@ const DriverLanding = () => {
                                       <Text fontSize="sm" mb={2}>
                                         {trip.dropoffLocation.address}
                                       </Text>
-                                      <Button
-                                        leftIcon={<SearchIcon />}
-                                        size="sm"
-                                        colorScheme="red"
-                                        onClick={() => openGoogleMaps(trip.dropoffLocation.address)}
-                                      >
-                                        Navigate
-                                      </Button>
                                     </Box>
                                   </Grid>
 

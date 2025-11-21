@@ -95,7 +95,7 @@ import {
   FaFileExport
 } from 'react-icons/fa';
 import axios from 'axios';
-import AppLayout from '../../layout/AppLayout';
+import Navbar from '../shared/Navbar';
 import TripManagementModal from '../scheduler/TripManagementModal';
 
 const AdminDashboard = () => {
@@ -320,27 +320,36 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <AppLayout title="Admin Dashboard">
-        <Center h="60vh">
-          <VStack spacing={4}>
-            <Spinner size="xl" color="blue.500" thickness="4px" />
-            <Text>Loading dashboard data...</Text>
-          </VStack>
-        </Center>
-      </AppLayout>
+      <Box bg="gray.50">
+        <Navbar title="Transportation Management - Admin Dashboard" />
+        <Box pt={{ base: 4, md: 0 }}>
+          <Container maxW="container.xl" py={8}>
+            <Center h="60vh">
+              <VStack spacing={4}>
+                <Spinner size="xl" color="blue.500" thickness="4px" />
+                <Text>Loading dashboard data...</Text>
+              </VStack>
+            </Center>
+          </Container>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <AppLayout title="Admin Dashboard">
-      {analytics && (
-        <>
-          {/* Overview Statistics - Responsive Grid with Enhanced Cards */}
-          <SimpleGrid 
-            columns={{ base: 1, sm: 2, xl: 4 }}
-            spacing={{ base: 4, md: 6 }} 
-            mb={{ base: 6, md: 8 }}
-          >
+    <Box bg="gray.50">
+      <Navbar title="Transportation Management - Admin Dashboard" />
+      
+      <Box pt={{ base: 4, md: 0 }}>
+        <Container maxW="container.xl" py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>
+        {analytics && (
+          <>
+            {/* Overview Statistics - Responsive Grid with Enhanced Cards */}
+            <SimpleGrid 
+              columns={{ base: 1, sm: 2, xl: 4 }}
+              spacing={{ base: 4, md: 6 }} 
+              mb={{ base: 6, md: 8 }}
+            >
               <Card 
                 borderRadius="xl" 
                 boxShadow="sm"
@@ -632,19 +641,21 @@ const AdminDashboard = () => {
                       </VStack>
                     </CardBody>
                   </Card>
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-        </>
-      )}
+                </TabPanel>
+              </TabPanels>
+            </Tabs>
+          </>
+        )}
 
-      {/* Trip Management Modal */}
-      <TripManagementModal
-        isOpen={isTripManagementOpen}
-        onClose={onTripManagementClose}
-        onTripUpdate={() => fetchAnalytics(false)}
-      />
-    </AppLayout>
+        {/* Trip Management Modal */}
+        <TripManagementModal
+          isOpen={isTripManagementOpen}
+          onClose={onTripManagementClose}
+          onTripUpdate={() => fetchAnalytics(false)}
+        />
+        </Container>
+      </Box>
+    </Box>
   );
 };
 

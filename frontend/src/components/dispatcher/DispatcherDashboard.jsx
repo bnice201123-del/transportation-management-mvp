@@ -113,7 +113,7 @@ import {
   XCircleIcon as XCircleIconSolid
 } from '@heroicons/react/24/solid';
 import axios from 'axios';
-import Navbar from '../shared/Navbar';
+import AppLayout from '../../layout/AppLayout';
 import TripManagementModal from '../scheduler/TripManagementModal';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 import RiderInfoModal from '../shared/RiderInfoModal';
@@ -615,39 +615,33 @@ const DispatcherDashboard = () => {
 
   if (loading) {
     return (
-      <Box>
-        <Navbar title="Dispatcher Dashboard" />
+      <AppLayout title="Dispatcher Dashboard">
         <Center h="50vh">
           <Spinner size="xl" />
         </Center>
-      </Box>
+      </AppLayout>
     );
   }
 
 
 
   return (
-    <Box minH="100vh" bg="gray.50">
-      <Navbar title="Dispatch Control Center" />
-      
-      <Box ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} pt={{ base: 4, md: 0 }}>
-        <Container maxW="container.xl" py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>
-          
-          {/* Enhanced Header Section - Mobile-First Design */}
-          <Box mb={{ base: 6, md: 8 }}>
-            <VStack align="start" spacing={3}>
-              <Heading 
-                size={{ base: "lg", md: "xl" }} 
-                color="blue.700"
-                fontWeight="bold"
-              >
-                Dispatch Control Center
-              </Heading>
-              <Text 
-                color="gray.600" 
-                fontSize={{ base: "sm", md: "md" }}
-                maxW="2xl"
-              >
+    <AppLayout title="Dispatch Control Center">
+      {/* Enhanced Header Section - Mobile-First Design */}
+      <Box mb={{ base: 6, md: 8 }}>
+        <VStack align="start" spacing={3}>
+          <Heading 
+            size={{ base: "lg", md: "xl" }} 
+            color="blue.700"
+            fontWeight="bold"
+          >
+            Dispatch Control Center
+          </Heading>
+          <Text 
+            color="gray.600" 
+            fontSize={{ base: "sm", md: "md" }}
+            maxW="2xl"
+          >
                 Manage active trips, assign drivers, monitor real-time status, and coordinate transportation operations
               </Text>
             </VStack>
@@ -2583,14 +2577,12 @@ const DispatcherDashboard = () => {
         />
 
         {/* Trip Details Modal */}
-        <TripDetailsModal
-          isOpen={!!viewTripDetails}
-          onClose={() => setViewTripDetails(null)}
-          trip={viewTripDetails}
-        />
-        </Container>
-      </Box>
-    </Box>
+      <TripDetailsModal
+        isOpen={!!viewTripDetails}
+        onClose={() => setViewTripDetails(null)}
+        trip={viewTripDetails}
+      />
+    </AppLayout>
   );
 };
 

@@ -2061,38 +2061,6 @@ const DispatcherDashboard = () => {
                   flexWrap="wrap"
                   justify={{ base: "center", sm: "flex-start" }}
                 >
-                  <Button 
-                    leftIcon={<Box as={PlusIcon} w={4} h={4} />} 
-                    colorScheme="blue" 
-                    onClick={onOpen}
-                    size={{ base: "md", md: "md" }}
-                    flex={{ base: "1", sm: "initial" }}
-                    minW={{ base: "140px", sm: "auto" }}
-                  >
-                    Create Trip
-                  </Button>
-                  <Button
-                    leftIcon={<Box as={MagnifyingGlassIcon} w={4} h={4} />}
-                    colorScheme="green"
-                    variant="outline"
-                    onClick={onTripManagementOpen}
-                    size={{ base: "md", md: "md" }}
-                    flex={{ base: "1", sm: "initial" }}
-                    minW={{ base: "140px", sm: "auto" }}
-                  >
-                    Manage Trips
-                  </Button>
-                  <Button
-                    leftIcon={<Box as={ArrowPathIcon} w={4} h={4} />}
-                    onClick={handleRefresh}
-                    isLoading={refreshing}
-                    loadingText="Refreshing..."
-                    size={{ base: "md", md: "md" }}
-                    width={{ base: "full", sm: "auto" }}
-                    minW={{ base: "140px", sm: "auto" }}
-                  >
-                    Refresh Data
-                  </Button>
                 </HStack>
               </Flex>
             </CardBody>

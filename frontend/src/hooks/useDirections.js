@@ -8,33 +8,67 @@ export const useDirections = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (window.google && window.google.maps) {
-      const service = new window.google.maps.DirectionsService();
-      const renderer = new window.google.maps.DirectionsRenderer({
-        draggable: true,
-        panel: null,
-        suppressMarkers: false,
-        polylineOptions: {
-          strokeColor: '#4F8EF7',
-          strokeOpacity: 1.0,
-          strokeWeight: 4
+    let retryCount = 0;
+    const maxRetries = 10;
+    const retryDelay = 500;
+
+    const initializeDirections = () => {
+      if (
+        window.google &&
+        window.google.maps &&
+        typeof window.google.maps.DirectionsService === 'function' &&
+        typeof window.google.maps.DirectionsRenderer === 'function' &&
+        typeof window.google.maps.TravelMode !== 'undefined'
+      ) {
+        try {
+          const service = new window.google.maps.DirectionsService();
+          const renderer = new window.google.maps.DirectionsRenderer({
+            draggable: true,
+            panel: null,
+            suppressMarkers: false,
+            polylineOptions: {
+              strokeColor: '#4F8EF7',
+              strokeOpacity: 1.0,
+              strokeWeight: 4
+            }
+          });
+
+          setDirectionsService(service);
+          setDirectionsRenderer(renderer);
+
+          // Listen for route changes when user drags the route
+          renderer.addListener('directions_changed', () => {
+            const directions = renderer.getDirections();
+            setRoute(directions);
+          });
+          
+          setError(null);
+        } catch (err) {
+          console.error('Error initializing directions:', err);
+          setError('Failed to initialize Google Maps directions');
         }
-      });
+      } else if (retryCount < maxRetries) {
+        // Retry after delay
+        retryCount++;
+        setTimeout(initializeDirections, retryDelay);
+      } else {
+        setError('Google Maps DirectionsService or DirectionsRenderer is not available after retries.');
+      }
+    };
 
-      setDirectionsService(service);
-      setDirectionsRenderer(renderer);
-
-      // Listen for route changes when user drags the route
-      renderer.addListener('directions_changed', () => {
-        const directions = renderer.getDirections();
-        setRoute(directions);
-      });
-    }
+    // Start initialization
+    initializeDirections();
   }, []);
 
   const calculateRoute = async (origin, destination, waypoints = [], travelMode = 'DRIVING') => {
     if (!directionsService) {
       setError('Directions service not initialized');
+      return;
+    }
+
+    // Check if Google Maps is fully loaded
+    if (!window.google || !window.google.maps || !window.google.maps.TravelMode) {
+      setError('Google Maps API not fully loaded');
       return;
     }
 
@@ -46,7 +80,7 @@ export const useDirections = () => {
         origin,
         destination,
         waypoints: waypoints.map(wp => ({ location: wp, stopover: true })),
-        travelMode: window.google.maps.TravelMode[travelMode],
+        travelMode: window.google.maps.TravelMode[travelMode] || window.google.maps.TravelMode.DRIVING,
         unitSystem: window.google.maps.UnitSystem.IMPERIAL,
         avoidHighways: false,
         avoidTolls: false

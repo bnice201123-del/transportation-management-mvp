@@ -120,6 +120,23 @@ const tripSchema = new mongoose.Schema({
     lastUpdated: Date
   },
   
+  // Trip metrics (collected during drive mode)
+  tripMetrics: {
+    completionTime: Date,
+    startTime: Date,
+    durationMinutes: Number,
+    distanceTraveled: Number, // in miles
+    averageSpeed: Number, // mph
+    finalLocation: {
+      latitude: Number,
+      longitude: Number,
+      accuracy: Number,
+      timestamp: Date
+    },
+    finalHeading: Number,
+    cancellationReason: String
+  },
+  
   // Rating and feedback
   rating: {
     type: Number,

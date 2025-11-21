@@ -11,7 +11,11 @@ router.get('/', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatc
     const { role, isActive = true, page = 1, limit = 10, search } = req.query;
     
     let filter = { isActive };
-    if (role) filter.role = role;
+    
+    // If role is specified, check the roles array instead of the role field
+    if (role) {
+      filter.roles = role; // MongoDB will match if role is in the array
+    }
 
     // Add search functionality
     if (search) {
@@ -51,8 +55,9 @@ router.get('/', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatc
 // Get all drivers
 router.get('/drivers', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'admin'), async (req, res) => {
   try {
+    // Find users who have 'driver' in their roles array
     const drivers = await User.find({
-      role: 'driver',
+      roles: 'driver', // MongoDB will match if 'driver' is in the array
       isActive: true
     }).select('firstName lastName phone email vehicleInfo');
 
@@ -66,8 +71,9 @@ router.get('/drivers', authenticateToken, authorizeRoles('scheduler', 'dispatche
 // Get available drivers
 router.get('/drivers/available', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'admin'), async (req, res) => {
   try {
+    // Find users who have 'driver' in their roles array
     const drivers = await User.find({
-      role: 'driver',
+      roles: 'driver', // MongoDB will match if 'driver' is in the array
       isActive: true,
       isAvailable: true
     }).select('firstName lastName phone vehicleInfo currentLocation');

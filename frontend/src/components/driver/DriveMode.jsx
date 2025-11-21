@@ -20,7 +20,7 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   PhoneIcon,
-  NavigationIcon,
+  ArrowRightIcon,
   UserIcon,
   ClockIcon,
   MapPinIcon
@@ -29,21 +29,44 @@ import TripMap from '../maps/TripMap';
 
 const DriveMode = ({ trip, onComplete, onCancel }) => {
   const [loading, setLoading] = useState(false);
-  const [_currentLocation, _setCurrentLocation] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [tripStartTime] = useState(new Date());
+  const [distanceTraveled, setDistanceTraveled] = useState(0);
   const toast = useToast();
   
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
 
-  // Get current location (for future use with live tracking)
+  // Track location and calculate distance traveled
   useEffect(() => {
     if (navigator.geolocation) {
+      let lastPosition = null;
+
       const watchId = navigator.geolocation.watchPosition(
         (position) => {
-          _setCurrentLocation({
+          const newLocation = {
             lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
+            lng: position.coords.longitude,
+            timestamp: new Date(),
+            accuracy: position.coords.accuracy,
+            speed: position.coords.speed,
+            heading: position.coords.heading
+          };
+          
+          setCurrentLocation(newLocation);
+
+          // Calculate distance from last position
+          if (lastPosition) {
+            const distance = calculateDistance(
+              lastPosition.lat,
+              lastPosition.lng,
+              newLocation.lat,
+              newLocation.lng
+            );
+            setDistanceTraveled(prev => prev + distance);
+          }
+
+          lastPosition = newLocation;
         },
         (error) => {
           console.error('Error getting location:', error);
@@ -62,21 +85,72 @@ const DriveMode = ({ trip, onComplete, onCancel }) => {
     }
   }, [toast]);
 
+  // Calculate distance between two coordinates using Haversine formula
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 3959; // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in miles
+  };
+
+  // Collect comprehensive trip data
+  const collectTripData = () => {
+    const tripEndTime = new Date();
+    const durationMs = tripEndTime - tripStartTime;
+    const durationMinutes = Math.round(durationMs / 60000);
+
+    return {
+      completionTime: tripEndTime.toISOString(),
+      startTime: tripStartTime.toISOString(),
+      durationMinutes,
+      currentLocation: currentLocation ? {
+        latitude: currentLocation.lat,
+        longitude: currentLocation.lng,
+        accuracy: currentLocation.accuracy,
+        timestamp: currentLocation.timestamp.toISOString()
+      } : null,
+      distanceTraveled: parseFloat(distanceTraveled.toFixed(2)), // miles
+      averageSpeed: currentLocation?.speed || null,
+      finalHeading: currentLocation?.heading || null,
+      tripMetrics: {
+        pickupLocation: trip.pickupLocation,
+        dropoffLocation: trip.dropoffLocation,
+        scheduledTime: trip.scheduledTime,
+        tripType: trip.tripType,
+        riderInfo: {
+          riderId: trip.rider?._id,
+          riderName: `${trip.rider?.firstName} ${trip.rider?.lastName}`
+        }
+      }
+    };
+  };
+
   const handleCompleteTrip = async () => {
     setLoading(true);
     try {
-      await onComplete();
+      const tripData = collectTripData();
+      
+      console.log('Completing trip with data:', tripData);
+      
+      await onComplete(tripData);
+      
       toast({
         title: 'Trip Completed',
-        description: 'The trip has been marked as completed successfully.',
+        description: `Trip completed successfully. Duration: ${tripData.durationMinutes} min, Distance: ${tripData.distanceTraveled} mi`,
         status: 'success',
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
     } catch (error) {
+      console.error('Error completing trip:', error);
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to complete trip',
+        description: error.response?.data?.message || error.message || 'Failed to complete trip',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -89,18 +163,28 @@ const DriveMode = ({ trip, onComplete, onCancel }) => {
   const handleCancelTrip = async () => {
     setLoading(true);
     try {
-      await onCancel();
+      const tripData = collectTripData();
+      
+      console.log('Cancelling trip with data:', tripData);
+      
+      await onCancel({
+        ...tripData,
+        cancellationReason: 'Driver cancelled',
+        status: 'cancelled'
+      });
+      
       toast({
         title: 'Trip Cancelled',
-        description: 'The trip has been cancelled.',
+        description: `Trip cancelled. Duration: ${tripData.durationMinutes} min, Distance: ${tripData.distanceTraveled} mi`,
         status: 'info',
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
     } catch (error) {
+      console.error('Error cancelling trip:', error);
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to cancel trip',
+        description: error.response?.data?.message || error.message || 'Failed to cancel trip',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -124,19 +208,104 @@ const DriveMode = ({ trip, onComplete, onCancel }) => {
     }
   };
 
+  // Calculate distance between two coordinates (in miles)
+  const getDistanceFromLatLng = (lat1, lng1, lat2, lng2) => {
+    const R = 3959; // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in miles
+  };
+
   const openNavigation = () => {
+    // Get pickup location coordinates
+    let pickupLat, pickupLng;
     if (trip?.pickupLocation?.coordinates) {
-      const [lng, lat] = trip.pickupLocation.coordinates;
-      const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-      window.open(url, '_blank');
-    } else {
+      [pickupLng, pickupLat] = trip.pickupLocation.coordinates;
+    } else if (trip?.pickupLocation?.lat && trip?.pickupLocation?.lng) {
+      pickupLat = trip.pickupLocation.lat;
+      pickupLng = trip.pickupLocation.lng;
+    }
+
+    // Get dropoff location coordinates
+    let dropoffLat, dropoffLng;
+    if (trip?.dropoffLocation?.coordinates) {
+      [dropoffLng, dropoffLat] = trip.dropoffLocation.coordinates;
+    } else if (trip?.dropoffLocation?.lat && trip?.dropoffLocation?.lng) {
+      dropoffLat = trip.dropoffLocation.lat;
+      dropoffLng = trip.dropoffLocation.lng;
+    }
+
+    if (!pickupLat || !pickupLng || !dropoffLat || !dropoffLng) {
       toast({
         title: 'Navigation Error',
-        description: 'Pickup location coordinates not available',
+        description: 'Trip location coordinates not available',
         status: 'warning',
         duration: 2000,
         isClosable: true,
       });
+      return;
+    }
+
+    // Check if we have current location
+    if (currentLocation) {
+      // Calculate distance from current location to pickup
+      const distanceToPickup = getDistanceFromLatLng(
+        currentLocation.lat,
+        currentLocation.lng,
+        pickupLat,
+        pickupLng
+      );
+
+      console.log(`Distance to pickup: ${distanceToPickup.toFixed(2)} miles`);
+
+      // Create chained route based on distance
+      let url;
+      
+      if (distanceToPickup > 0.25) {
+        // Three-point chain: Current Location -> Pickup -> Dropoff
+        // Format: origin=currentLat,currentLng&destination=dropoffLat,dropoffLng&waypoints=pickupLat,pickupLng
+        url = `https://www.google.com/maps/dir/?api=1&origin=${currentLocation.lat},${currentLocation.lng}&destination=${dropoffLat},${dropoffLng}&waypoints=${pickupLat},${pickupLng}`;
+        
+        toast({
+          title: 'Navigation Started',
+          description: `Route: Current Location → Pickup (${distanceToPickup.toFixed(2)} mi) → Dropoff`,
+          status: 'info',
+          duration: 4000,
+          isClosable: true,
+        });
+      } else {
+        // Two-point chain: Pickup/Current Location -> Dropoff
+        // Driver is within 1/4 mile of pickup, start from pickup location
+        url = `https://www.google.com/maps/dir/?api=1&origin=${pickupLat},${pickupLng}&destination=${dropoffLat},${dropoffLng}`;
+        
+        toast({
+          title: 'Navigation Started',
+          description: `Route: Pickup → Dropoff (You're ${distanceToPickup.toFixed(2)} mi from pickup)`,
+          status: 'info',
+          duration: 4000,
+          isClosable: true,
+        });
+      }
+
+      window.open(url, '_blank');
+    } else {
+      // No current location available, default to pickup -> dropoff
+      const url = `https://www.google.com/maps/dir/?api=1&origin=${pickupLat},${pickupLng}&destination=${dropoffLat},${dropoffLng}`;
+      
+      toast({
+        title: 'Navigation Started',
+        description: 'Route: Pickup → Dropoff (Enable location for optimized routing)',
+        status: 'info',
+        duration: 4000,
+        isClosable: true,
+      });
+      
+      window.open(url, '_blank');
     }
   };
 
@@ -216,7 +385,7 @@ const DriveMode = ({ trip, onComplete, onCancel }) => {
               )}
 
               <IconButton
-                icon={<NavigationIcon />}
+                icon={<ArrowRightIcon />}
                 size="sm"
                 colorScheme="green"
                 variant="ghost"

@@ -237,6 +237,61 @@ const ComprehensiveDriverDashboard = () => {
     }
   };
 
+  // Update trip status with enhanced metrics
+  const updateTripStatus = async (tripId, status, tripData = null) => {
+    try {
+      console.log('updateTripStatus called with:', { tripId, status, tripData });
+      
+      const payload = { 
+        status,
+        location: currentLocation
+      };
+
+      // If trip data is provided (from Drive Mode), include it
+      if (tripData) {
+        payload.tripMetrics = {
+          completionTime: tripData.completionTime,
+          startTime: tripData.startTime,
+          durationMinutes: tripData.durationMinutes,
+          distanceTraveled: tripData.distanceTraveled,
+          averageSpeed: tripData.averageSpeed,
+          finalLocation: tripData.currentLocation,
+          finalHeading: tripData.finalHeading,
+          cancellationReason: tripData.cancellationReason || null
+        };
+      }
+
+      console.log('Sending payload to backend:', payload);
+      
+      const response = await axios.patch(`/api/trips/${tripId}/status`, payload);
+      
+      console.log('Backend response:', response.data);
+      
+      toast({
+        title: 'Success',
+        description: tripData 
+          ? `Trip ${status}: ${tripData.durationMinutes} min, ${tripData.distanceTraveled} mi`
+          : `Trip status updated to ${status.replace('_', ' ')}`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      
+      fetchData(); // Refresh trips
+    } catch (error) {
+      console.error('Error in updateTripStatus:', error);
+      console.error('Error response:', error.response?.data);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || error.message || 'Failed to update trip status',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      throw error; // Re-throw so DriveMode can catch it
+    }
+  };
+
   // Handle rider name click
   const handleRiderClick = (e, riderId, riderName) => {
     e.stopPropagation();
@@ -1329,16 +1384,16 @@ const ComprehensiveDriverDashboard = () => {
                     <TabPanel px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
                       <DriveMode
                         trip={selectedTrip}
-                        onComplete={async () => {
+                        onComplete={async (tripData) => {
                           if (selectedTrip) {
-                            await updateTripStatus(selectedTrip._id, 'completed');
+                            await updateTripStatus(selectedTrip._id, 'completed', tripData);
                             setSelectedTrip(null);
                             setActiveTab(0); // Return to dashboard
                           }
                         }}
-                        onCancel={async () => {
+                        onCancel={async (tripData) => {
                           if (selectedTrip) {
-                            await updateTripStatus(selectedTrip._id, 'cancelled');
+                            await updateTripStatus(selectedTrip._id, 'cancelled', tripData);
                             setSelectedTrip(null);
                             setActiveTab(0); // Return to dashboard
                           }

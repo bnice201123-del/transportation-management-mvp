@@ -167,16 +167,40 @@ const DriverDashboard = () => {
     }
   };
 
-  const updateTripStatus = async (tripId, status) => {
+  const updateTripStatus = async (tripId, status, tripData = null) => {
     try {
-      await axios.patch(`/trips/${tripId}/status`, { 
+      console.log('updateTripStatus called with:', { tripId, status, tripData });
+      
+      const payload = { 
         status,
-        location: currentLocation 
-      });
+        location: currentLocation
+      };
+
+      // If trip data is provided (from Drive Mode), include it
+      if (tripData) {
+        payload.tripMetrics = {
+          completionTime: tripData.completionTime,
+          startTime: tripData.startTime,
+          durationMinutes: tripData.durationMinutes,
+          distanceTraveled: tripData.distanceTraveled,
+          averageSpeed: tripData.averageSpeed,
+          finalLocation: tripData.currentLocation,
+          finalHeading: tripData.finalHeading,
+          cancellationReason: tripData.cancellationReason || null
+        };
+      }
+
+      console.log('Sending payload to backend:', payload);
+      
+      const response = await axios.patch(`/trips/${tripId}/status`, payload);
+      
+      console.log('Backend response:', response.data);
       
       toast({
         title: 'Success',
-        description: `Trip status updated to ${status.replace('_', ' ')}`,
+        description: tripData 
+          ? `Trip ${status}: ${tripData.durationMinutes} min, ${tripData.distanceTraveled} mi`
+          : `Trip status updated to ${status.replace('_', ' ')}`,
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -184,13 +208,16 @@ const DriverDashboard = () => {
       
       fetchTrips();
     } catch (error) {
+      console.error('Error in updateTripStatus:', error);
+      console.error('Error response:', error.response?.data);
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update trip status',
+        description: error.response?.data?.message || error.message || 'Failed to update trip status',
         status: 'error',
         duration: 3000,
         isClosable: true,
       });
+      throw error; // Re-throw so DriveMode can catch it
     }
   };
 
@@ -724,9 +751,9 @@ const DriverDashboard = () => {
             <TabPanel px={0}>
               <DriveMode 
                 trip={activeDriveTrip}
-                onComplete={async () => {
+                onComplete={async (tripData) => {
                   if (activeDriveTrip) {
-                    await updateTripStatus(activeDriveTrip._id, 'completed');
+                    await updateTripStatus(activeDriveTrip._id, 'completed', tripData);
                     setActiveDriveTrip(null);
                     // Add delay before tab switch to prevent navigation flooding
                     setTimeout(() => {
@@ -734,9 +761,9 @@ const DriverDashboard = () => {
                     }, 100);
                   }
                 }}
-                onCancel={async () => {
+                onCancel={async (tripData) => {
                   if (activeDriveTrip) {
-                    await updateTripStatus(activeDriveTrip._id, 'cancelled');
+                    await updateTripStatus(activeDriveTrip._id, 'cancelled', tripData);
                     setActiveDriveTrip(null);
                     // Add delay before tab switch to prevent navigation flooding
                     setTimeout(() => {

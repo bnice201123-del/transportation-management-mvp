@@ -565,8 +565,14 @@ router.post('/:id/assign', authenticateToken, authorizeRoles('scheduler', 'dispa
     }
 
     const driver = await User.findById(driverId);
-    if (!driver || driver.role !== 'driver') {
-      return res.status(400).json({ message: 'Invalid driver' });
+    if (!driver) {
+      return res.status(400).json({ message: 'Driver not found' });
+    }
+
+    // Check if user has driver role in their roles array
+    const hasDriverRole = driver.roles && driver.roles.includes('driver');
+    if (!hasDriverRole) {
+      return res.status(400).json({ message: 'User does not have driver role' });
     }
 
     trip.assignedDriver = driverId;
@@ -599,7 +605,7 @@ router.post('/:id/assign', authenticateToken, authorizeRoles('scheduler', 'dispa
 // Update trip status
 router.patch('/:id/status', authenticateToken, async (req, res) => {
   try {
-    const { status, location } = req.body;
+    const { status, location, tripMetrics } = req.body;
     
     const trip = await Trip.findById(req.params.id);
     if (!trip) {
@@ -630,14 +636,36 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       };
     }
 
+    // Store trip metrics if provided (from Drive Mode)
+    if (tripMetrics) {
+      trip.tripMetrics = {
+        completionTime: tripMetrics.completionTime ? new Date(tripMetrics.completionTime) : undefined,
+        startTime: tripMetrics.startTime ? new Date(tripMetrics.startTime) : undefined,
+        durationMinutes: tripMetrics.durationMinutes,
+        distanceTraveled: tripMetrics.distanceTraveled,
+        averageSpeed: tripMetrics.averageSpeed,
+        finalLocation: tripMetrics.finalLocation,
+        finalHeading: tripMetrics.finalHeading,
+        cancellationReason: tripMetrics.cancellationReason
+      };
+    }
+
     await trip.save();
 
-    // Log activity
+    // Log activity with metrics info
+    const activityDetails = { oldStatus, newStatus: status, location };
+    if (tripMetrics) {
+      activityDetails.metrics = {
+        duration: tripMetrics.durationMinutes,
+        distance: tripMetrics.distanceTraveled
+      };
+    }
+
     await logActivity(
       req.user._id,
       'status_updated',
       `Changed trip ${trip.tripId} status from ${oldStatus} to ${status}`,
-      { oldStatus, newStatus: status, location },
+      activityDetails,
       trip._id
     );
 

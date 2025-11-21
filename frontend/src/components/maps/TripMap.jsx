@@ -87,6 +87,11 @@ const TripMap = ({
 
   // Calculate route when markers are set and showRoute is true
   useEffect(() => {
+    // Only calculate route if directionsRenderer is initialized
+    if (!directionsRenderer) {
+      return;
+    }
+
     if (showRoute && markers.length === 2 && trip?.pickupLocation?.coordinates && trip?.dropoffLocation?.coordinates) {
       const [pickupLng, pickupLat] = trip.pickupLocation.coordinates;
       const [dropoffLng, dropoffLat] = trip.dropoffLocation.coordinates;
@@ -98,7 +103,7 @@ const TripMap = ({
     } else {
       clearRoute();
     }
-  }, [markers, showRoute, trip, calculateRoute, clearRoute]);
+  }, [markers, showRoute, trip, calculateRoute, clearRoute, directionsRenderer]);
 
   // Notify parent when route is calculated
   useEffect(() => {
@@ -116,6 +121,11 @@ const TripMap = ({
   };
 
   const handleToggleRoute = () => {
+    // Don't toggle if directions service isn't ready
+    if (!directionsRenderer) {
+      return;
+    }
+
     if (route) {
       clearRoute();
     } else if (markers.length === 2) {
@@ -138,6 +148,33 @@ const TripMap = ({
           <Text color="gray.500" textAlign="center">
             Select a trip to view on map
           </Text>
+        </CardBody>
+      </Card>
+    );
+  }
+
+  // Show loading state while Google Maps is initializing
+  if (!directionsRenderer && routeError) {
+    return (
+      <Card>
+        <CardBody>
+          <Alert status="error">
+            <AlertIcon />
+            {routeError}
+          </Alert>
+        </CardBody>
+      </Card>
+    );
+  }
+
+  if (!directionsRenderer) {
+    return (
+      <Card>
+        <CardBody>
+          <Box display="flex" alignItems="center" justifyContent="center" py={4}>
+            <Spinner size="md" mr={3} />
+            <Text>Initializing Google Maps...</Text>
+          </Box>
         </CardBody>
       </Card>
     );

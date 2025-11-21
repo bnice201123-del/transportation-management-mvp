@@ -344,77 +344,104 @@ const AdminDashboard = () => {
         <Container maxW="container.xl" py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>
         {analytics && (
           <>
-            {/* Overview Statistics - Responsive Grid */}
-            <Grid 
-              templateColumns={{ 
-                base: "1fr", 
-                sm: "repeat(2, 1fr)", 
-                lg: "repeat(3, 1fr)",
-                xl: "repeat(4, 1fr)"
-              }} 
-              gap={{ base: 4, md: 6 }} 
+            {/* Overview Statistics - Responsive Grid with Enhanced Cards */}
+            <SimpleGrid 
+              columns={{ base: 1, sm: 2, xl: 4 }}
+              spacing={{ base: 4, md: 6 }} 
               mb={{ base: 6, md: 8 }}
             >
-              <Card>
-                <CardBody>
+              <Card 
+                borderRadius="xl" 
+                boxShadow="sm"
+                _hover={{ boxShadow: "md", transform: "translateY(-2px)" }}
+                transition="all 0.2s"
+              >
+                <CardBody p={{ base: 4, md: 5 }}>
                   <Stat>
-                    <StatLabel>Total Trips</StatLabel>
-                    <StatNumber>{analytics.tripStats.total}</StatNumber>
-                    <StatHelpText>
+                    <StatLabel fontSize={{ base: "sm", md: "md" }}>Total Trips</StatLabel>
+                    <StatNumber fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold">
+                      {analytics.tripStats.total}
+                    </StatNumber>
+                    <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
                       {analytics.tripStats.today} today
                     </StatHelpText>
                   </Stat>
                 </CardBody>
               </Card>
 
-              <Card>
-                <CardBody>
+              <Card 
+                borderRadius="xl" 
+                boxShadow="sm"
+                _hover={{ boxShadow: "md", transform: "translateY(-2px)" }}
+                transition="all 0.2s"
+              >
+                <CardBody p={{ base: 4, md: 5 }}>
                   <Stat>
-                    <StatLabel>Completed Trips</StatLabel>
-                    <StatNumber>{analytics.tripStats.completed}</StatNumber>
-                    <StatHelpText>
+                    <StatLabel fontSize={{ base: "sm", md: "md" }}>Completed Trips</StatLabel>
+                    <StatNumber fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold" color="green.500">
+                      {analytics.tripStats.completed}
+                    </StatNumber>
+                    <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
                       <StatArrow type="increase" />
-                      Success rate: {analytics.tripStats.total > 0 ? 
-                        Math.round((analytics.tripStats.completed / analytics.tripStats.total) * 100) : 0}%
+                      {analytics.tripStats.total > 0 ? 
+                        Math.round((analytics.tripStats.completed / analytics.tripStats.total) * 100) : 0}% success rate
                     </StatHelpText>
                   </Stat>
                 </CardBody>
               </Card>
 
-              <Card>
-                <CardBody>
+              <Card 
+                borderRadius="xl" 
+                boxShadow="sm"
+                _hover={{ boxShadow: "md", transform: "translateY(-2px)" }}
+                transition="all 0.2s"
+              >
+                <CardBody p={{ base: 4, md: 5 }}>
                   <Stat>
-                    <StatLabel>Active Trips</StatLabel>
-                    <StatNumber>
+                    <StatLabel fontSize={{ base: "sm", md: "md" }}>Active Trips</StatLabel>
+                    <StatNumber fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold" color="blue.500">
                       {analytics.tripStats.pending + analytics.tripStats.inProgress}
                     </StatNumber>
-                    <StatHelpText>
+                    <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
                       {analytics.tripStats.pending} pending, {analytics.tripStats.inProgress} in progress
                     </StatHelpText>
                   </Stat>
                 </CardBody>
               </Card>
 
-              <Card>
-                <CardBody>
+              <Card 
+                borderRadius="xl" 
+                boxShadow="sm"
+                _hover={{ boxShadow: "md", transform: "translateY(-2px)" }}
+                transition="all 0.2s"
+              >
+                <CardBody p={{ base: 4, md: 5 }}>
                   <Stat>
-                    <StatLabel>Total Drivers</StatLabel>
-                    <StatNumber>{analytics.driverStats.total}</StatNumber>
-                    <StatHelpText>
+                    <StatLabel fontSize={{ base: "sm", md: "md" }}>Total Drivers</StatLabel>
+                    <StatNumber fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold" color="purple.500">
+                      {analytics.driverStats.total}
+                    </StatNumber>
+                    <StatHelpText fontSize={{ base: "xs", md: "sm" }}>
                       {analytics.driverStats.available} available, {analytics.driverStats.active} active
                     </StatHelpText>
                   </Stat>
                 </CardBody>
               </Card>
-            </Grid>
+            </SimpleGrid>
 
-            {/* Quick Actions */}
-            <HStack spacing={4} mb={6}>
+            {/* Quick Actions - Responsive */}
+            <Flex 
+              direction={{ base: "column", sm: "row" }}
+              gap={{ base: 3, md: 4 }}
+              mb={{ base: 6, md: 8 }}
+              flexWrap="wrap"
+            >
               <Button
                 leftIcon={<SearchIcon />}
                 colorScheme="blue"
                 onClick={onTripManagementOpen}
-                size="md"
+                size={{ base: "sm", md: "md" }}
+                flex={{ base: "1", sm: "0" }}
               >
                 Manage Trips
               </Button>
@@ -423,11 +450,18 @@ const AdminDashboard = () => {
                 variant="outline"
                 onClick={() => fetchAnalytics(true)}
                 isLoading={refreshing}
-                size="md"
+                size={{ base: "sm", md: "md" }}
+                flex={{ base: "1", sm: "0" }}
               >
                 Refresh Data
               </Button>
-            </HStack>
+              <Spacer display={{ base: "none", sm: "block" }} />
+              <HStack spacing={3} display={{ base: "none", md: "flex" }}>
+                <Button size="sm" variant="outline" leftIcon={<DownloadIcon />}>
+                  Export
+                </Button>
+              </HStack>
+            </Flex>
 
             <Tabs>
               <TabList>
@@ -510,16 +544,16 @@ const AdminDashboard = () => {
                       <Heading size="md">Driver Performance Metrics</Heading>
                     </CardHeader>
                     <CardBody>
-                      <TableContainer>
-                        <Table variant="simple">
+                      <TableContainer overflowX="auto">
+                        <Table variant="simple" size={{ base: "sm", md: "md" }}>
                           <Thead>
                             <Tr>
                               <Th>Driver</Th>
-                              <Th>Total Trips</Th>
-                              <Th>Completed</Th>
-                              <Th>Completion Rate</Th>
-                              <Th>Vehicle</Th>
-                              <Th>Rating</Th>
+                              <Th isNumeric>Total Trips</Th>
+                              <Th isNumeric display={{ base: "none", md: "table-cell" }}>Completed</Th>
+                              <Th display={{ base: "none", lg: "table-cell" }}>Completion Rate</Th>
+                              <Th display={{ base: "none", lg: "table-cell" }}>Vehicle</Th>
+                              <Th display={{ base: "none", md: "table-cell" }}>Rating</Th>
                             </Tr>
                           </Thead>
                           <Tbody>
@@ -527,17 +561,19 @@ const AdminDashboard = () => {
                               <Tr key={driver._id}>
                                 <Td>
                                   <VStack align="start" spacing={0}>
-                                    <Text fontWeight="bold">
+                                    <Text fontWeight="bold" fontSize={{ base: "sm", md: "md" }}>
                                       {driver.driver.firstName} {driver.driver.lastName}
                                     </Text>
-                                    <Text fontSize="sm" color="gray.500">
-                                      {driver.driver.phone}
+                                    <Text fontSize="xs" color="gray.500" display={{ base: "block", sm: "none" }}>
+                                      {driver.completedTrips}/{driver.totalTrips} trips
                                     </Text>
                                   </VStack>
                                 </Td>
-                                <Td>{driver.totalTrips}</Td>
-                                <Td>{driver.completedTrips}</Td>
-                                <Td>
+                                <Td isNumeric>{driver.totalTrips}</Td>
+                                <Td isNumeric display={{ base: "none", md: "table-cell" }}>
+                                  {driver.completedTrips}
+                                </Td>
+                                <Td display={{ base: "none", lg: "table-cell" }}>
                                   <HStack>
                                     <Text>{Math.round(driver.completionRate)}%</Text>
                                     <Progress
@@ -549,12 +585,12 @@ const AdminDashboard = () => {
                                     />
                                   </HStack>
                                 </Td>
-                                <Td>
+                                <Td display={{ base: "none", lg: "table-cell" }}>
                                   <Text fontSize="sm">
                                     {driver.driver.vehicleInfo?.make} {driver.driver.vehicleInfo?.model}
                                   </Text>
                                 </Td>
-                                <Td>
+                                <Td display={{ base: "none", md: "table-cell" }}>
                                   {driver.averageRating ? (
                                     <Badge colorScheme="yellow">
                                       ⭐ {driver.averageRating}

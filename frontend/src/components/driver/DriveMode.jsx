@@ -22,9 +22,9 @@ import {
   PhoneIcon,
   UserIcon,
   ClockIcon,
-  MapPinIcon
+  MapPinIcon,
+  ArrowTopRightOnSquareIcon
 } from '@heroicons/react/24/outline';
-import TripMap from '../maps/TripMap';
 
 const DriveMode = ({ trip, onComplete, onCancel }) => {
   const [loading, setLoading] = useState(false);
@@ -159,6 +159,124 @@ const DriveMode = ({ trip, onComplete, onCancel }) => {
     }
   };
 
+  const openGoogleMapsNavigation = () => {
+    if (!trip?.pickupLocation || !trip?.dropoffLocation) {
+      toast({
+        title: 'Error',
+        description: 'Trip locations not available',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Helper function to get coordinates from location object
+    const getCoordinates = (location) => {
+      if (location.coordinates && Array.isArray(location.coordinates)) {
+        return { lat: location.coordinates[1], lng: location.coordinates[0] };
+      } else if (location.lat && location.lng) {
+        return { lat: location.lat, lng: location.lng };
+      }
+      return null;
+    };
+
+    // Helper function to format location for Google Maps URL
+    const formatLocationForURL = (location) => {
+      const coords = getCoordinates(location);
+      if (coords) {
+        return `${coords.lat},${coords.lng}`;
+      }
+      if (location.address) {
+        return encodeURIComponent(location.address);
+      }
+      return null;
+    };
+
+    const pickupCoords = getCoordinates(trip.pickupLocation);
+    const dropoffCoords = getCoordinates(trip.dropoffLocation);
+
+    if (!pickupCoords || !dropoffCoords) {
+      toast({
+        title: 'Error',
+        description: 'Could not determine trip coordinates',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Calculate distance from current location to pickup location
+    let distanceToPickup = null;
+    let useThreeTripChain = false;
+
+    if (currentLocation) {
+      distanceToPickup = calculateDistance(
+        currentLocation.lat,
+        currentLocation.lng,
+        pickupCoords.lat,
+        pickupCoords.lng
+      );
+      
+      // If driver is more than 0.25 miles away, use 3-trip chain
+      useThreeTripChain = distanceToPickup > 0.25;
+    }
+
+    let url;
+    let tripChainDescription;
+
+    if (useThreeTripChain) {
+      // 3-Trip Chain: Current Location → Pickup → Dropoff
+      const pickup = formatLocationForURL(trip.pickupLocation);
+      const dropoff = formatLocationForURL(trip.dropoffLocation);
+      
+      url = `https://www.google.com/maps/dir/?api=1&origin=current+location&destination=${dropoff}&waypoints=${pickup}&travelmode=driving`;
+      
+      tripChainDescription = `3-stop route: Current Location (${distanceToPickup.toFixed(2)} mi away) → Pickup → Dropoff`;
+      
+      toast({
+        title: 'Opening Navigation',
+        description: tripChainDescription,
+        status: 'info',
+        duration: 4000,
+        isClosable: true,
+      });
+    } else {
+      // 2-Trip Chain: Pickup → Dropoff (driver is close to or at pickup)
+      const pickup = formatLocationForURL(trip.pickupLocation);
+      const dropoff = formatLocationForURL(trip.dropoffLocation);
+      
+      url = `https://www.google.com/maps/dir/?api=1&origin=${pickup}&destination=${dropoff}&travelmode=driving`;
+      
+      if (distanceToPickup !== null) {
+        tripChainDescription = `2-stop route: Pickup (${distanceToPickup.toFixed(2)} mi away) → Dropoff`;
+      } else {
+        tripChainDescription = '2-stop route: Pickup → Dropoff';
+      }
+      
+      toast({
+        title: 'Opening Navigation',
+        description: tripChainDescription,
+        status: 'info',
+        duration: 4000,
+        isClosable: true,
+      });
+    }
+
+    // Open Google Maps in new tab
+    window.open(url, '_blank');
+    
+    console.log('Navigation Details:', {
+      tripChainType: useThreeTripChain ? '3-Trip Chain' : '2-Trip Chain',
+      distanceToPickup: distanceToPickup ? `${distanceToPickup.toFixed(2)} miles` : 'Unknown',
+      currentLocation: currentLocation,
+      pickupLocation: pickupCoords,
+      dropoffLocation: dropoffCoords,
+      url: url
+    });
+  };
+
   const handleCancelTrip = async () => {
     setLoading(true);
     try {
@@ -228,97 +346,88 @@ const DriveMode = ({ trip, onComplete, onCancel }) => {
       flexDirection="column"
       px={{ base: 2, md: 0 }}
     >
-      {/* Top Section: Map View */}
-      <Box 
-        flex="1" 
-        position="relative" 
+      {/* Trip Info Card */}
+      <Box
+        bg={bgColor}
+        p={{ base: 3, md: 4 }}
         borderRadius={{ base: "md", md: "lg" }}
-        overflow="hidden"
+        shadow="lg"
         border="1px solid"
         borderColor={borderColor}
         mb={{ base: 2, md: 4 }}
       >
-        <TripMap
-          trip={trip}
-          height="100%"
-          showRoute={true}
-          showControls={false}
-        />
+        <VStack align="stretch" spacing={{ base: 1, md: 2 }}>
+          <Flex justify="space-between" align="center" flexWrap="wrap" gap={2}>
+            <Heading size={{ base: "sm", md: "md" }} color="green.600">
+              Active Trip
+            </Heading>
+            <Badge colorScheme="green" fontSize={{ base: "xs", md: "sm" }} px={{ base: 2, md: 3 }} py={1}>
+              {trip.status?.toUpperCase()}
+            </Badge>
+          </Flex>
 
-        {/* Trip Info Overlay - Responsive */}
-        <Box
-          position="absolute"
-          top={{ base: 2, md: 4 }}
-          left={{ base: 2, md: 4 }}
-          right={{ base: 2, md: 4 }}
-          bg={bgColor}
-          p={{ base: 3, md: 4 }}
-          borderRadius={{ base: "md", md: "lg" }}
-          shadow="lg"
-          border="1px solid"
-          borderColor={borderColor}
-          maxW={{ base: "100%", md: "500px" }}
-        >
-          <VStack align="stretch" spacing={{ base: 1, md: 2 }}>
-            <Flex justify="space-between" align="center" flexWrap="wrap" gap={2}>
-              <Heading size={{ base: "sm", md: "md" }} color="green.600">
-                Active Trip
-              </Heading>
-              <Badge colorScheme="green" fontSize={{ base: "xs", md: "sm" }} px={{ base: 2, md: 3 }} py={1}>
-                {trip.status?.toUpperCase()}
-              </Badge>
-            </Flex>
-
-            <HStack spacing={{ base: 2, md: 4 }} fontSize={{ base: "xs", md: "sm" }} flexWrap="wrap">
-              <HStack minW={{ base: "auto", md: "150px" }}>
-                <Box as={UserIcon} w={{ base: 3, md: 4 }} h={{ base: 3, md: 4 }} color="gray.600" />
-                <Text fontWeight="medium" noOfLines={1}>
-                  {trip.rider?.firstName} {trip.rider?.lastName}
-                </Text>
-              </HStack>
-              
-              <HStack>
-                {trip.rider?.phone && (
-                  <IconButton
-                    icon={<PhoneIcon />}
-                    size={{ base: "xs", md: "sm" }}
-                    colorScheme="blue"
-                    variant="ghost"
-                    onClick={handleCallRider}
-                    aria-label="Call rider"
-                  />
-                )}
-              </HStack>
+          <HStack spacing={{ base: 2, md: 4 }} fontSize={{ base: "xs", md: "sm" }} flexWrap="wrap">
+            <HStack minW={{ base: "auto", md: "150px" }}>
+              <Box as={UserIcon} w={{ base: 3, md: 4 }} h={{ base: 3, md: 4 }} color="gray.600" />
+              <Text fontWeight="medium" noOfLines={1}>
+                {trip.rider?.firstName} {trip.rider?.lastName}
+              </Text>
             </HStack>
-
-            <HStack spacing={{ base: 2, md: 4 }} fontSize={{ base: "xs", md: "sm" }} color="gray.600" display={{ base: "none", md: "flex" }}>
-              <HStack>
-                <Box as={ClockIcon} w={4} h={4} />
-                <Text>
-                  {new Date(trip.scheduledTime).toLocaleString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit'
-                  })}
-                </Text>
-              </HStack>
+            
+            <HStack>
+              {trip.rider?.phone && (
+                <IconButton
+                  icon={<PhoneIcon />}
+                  size={{ base: "xs", md: "sm" }}
+                  colorScheme="blue"
+                  variant="ghost"
+                  onClick={handleCallRider}
+                  aria-label="Call rider"
+                />
+              )}
+              <IconButton
+                icon={<Box as={ArrowTopRightOnSquareIcon} w={{ base: 4, md: 5 }} h={{ base: 4, md: 5 }} />}
+                size={{ base: "xs", md: "sm" }}
+                colorScheme="green"
+                variant="solid"
+                onClick={openGoogleMapsNavigation}
+                aria-label="Open Google Maps Navigation"
+                _hover={{
+                  bg: 'green.600',
+                  transform: 'scale(1.1)'
+                }}
+                transition="all 0.2s"
+              />
             </HStack>
+          </HStack>
 
-            <VStack align="stretch" spacing={1} fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", sm: "flex" }}>
-              <HStack>
-                <Box as={MapPinIcon} w={{ base: 3, md: 4 }} h={{ base: 3, md: 4 }} color="green.500" />
-                <Text fontWeight="medium">Pickup:</Text>
-                <Text color="gray.600" noOfLines={1}>{trip.pickupLocation?.address}</Text>
-              </HStack>
-              <HStack>
-                <Box as={MapPinIcon} w={{ base: 3, md: 4 }} h={{ base: 3, md: 4 }} color="red.500" />
-                <Text fontWeight="medium">Dropoff:</Text>
-                <Text color="gray.600" noOfLines={1}>{trip.dropoffLocation?.address}</Text>
-              </HStack>
-            </VStack>
+          <HStack spacing={{ base: 2, md: 4 }} fontSize={{ base: "xs", md: "sm" }} color="gray.600" display={{ base: "none", md: "flex" }}>
+            <HStack>
+              <Box as={ClockIcon} w={4} h={4} />
+              <Text>
+                {new Date(trip.scheduledTime).toLocaleString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit'
+                })}
+              </Text>
+            </HStack>
+          </HStack>
+
+          <VStack align="stretch" spacing={1} fontSize={{ base: "xs", md: "sm" }} display={{ base: "none", sm: "flex" }}>
+            <HStack>
+              <Box as={MapPinIcon} w={{ base: 3, md: 4 }} h={{ base: 3, md: 4 }} color="green.500" />
+              <Text fontWeight="medium">Pickup:</Text>
+              <Text color="gray.600" noOfLines={1}>{trip.pickupLocation?.address}</Text>
+            </HStack>
+            <HStack>
+              <Box as={MapPinIcon} w={{ base: 3, md: 4 }} h={{ base: 3, md: 4 }} color="red.500" />
+              <Text fontWeight="medium">Dropoff:</Text>
+              <Text color="gray.600" noOfLines={1}>{trip.dropoffLocation?.address}</Text>
+            </HStack>
           </VStack>
-        </Box>
+        </VStack>
       </Box>
 
       {/* Bottom Section: Action Buttons - Responsive */}

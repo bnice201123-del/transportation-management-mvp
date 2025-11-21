@@ -69,7 +69,8 @@ import {
   BellIcon,
   HomeIcon,
   Cog6ToothIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import {
   CheckCircleIcon as CheckCircleIconSolid,
@@ -553,14 +554,34 @@ const DriverDashboard = () => {
                                 <Heading size="md">{trip.tripId}</Heading>
                                 <Text color="gray.600">{trip.riderName}</Text>
                               </VStack>
-                              <VStack align="end" spacing={1}>
-                                <Badge colorScheme={getStatusColor(trip.status)} fontSize="sm" p={1}>
-                                  {trip.status.replace('_', ' ').toUpperCase()}
-                                </Badge>
-                                <Text fontSize="sm" color="gray.600">
-                                  {formatDate(trip.scheduledDate)}
-                                </Text>
-                              </VStack>
+                              <HStack spacing={2}>
+                                <VStack align="end" spacing={1}>
+                                  <Badge colorScheme={getStatusColor(trip.status)} fontSize="sm" p={1}>
+                                    {trip.status.replace('_', ' ').toUpperCase()}
+                                  </Badge>
+                                  <Text fontSize="sm" color="gray.600">
+                                    {formatDate(trip.scheduledDate)}
+                                  </Text>
+                                </VStack>
+                                <IconButton
+                                  icon={<Box as={ChevronRightIcon} w={7} h={7} />}
+                                  colorScheme="green"
+                                  variant="solid"
+                                  size="lg"
+                                  aria-label="Enter Drive Mode"
+                                  onClick={() => {
+                                    setActiveDriveTrip(trip);
+                                    setActiveTabIndex(1);
+                                  }}
+                                  _hover={{
+                                    bg: 'green.600',
+                                    transform: 'translateX(3px) scale(1.05)',
+                                    boxShadow: 'lg'
+                                  }}
+                                  transition="all 0.2s"
+                                  boxShadow="md"
+                                />
+                              </HStack>
                             </Flex>
                           </CardHeader>
                           
@@ -570,17 +591,10 @@ const DriverDashboard = () => {
                               {trip.pickupLocation?.coordinates && trip.dropoffLocation?.coordinates && (
                                 <Box borderRadius="md" overflow="hidden" border="1px" borderColor="gray.200">
                                   <TripMap
-                                    pickup={{
-                                      lat: trip.pickupLocation.coordinates[1],
-                                      lng: trip.pickupLocation.coordinates[0],
-                                      address: trip.pickupLocation.address
-                                    }}
-                                    dropoff={{
-                                      lat: trip.dropoffLocation.coordinates[1],
-                                      lng: trip.dropoffLocation.coordinates[0],
-                                      address: trip.dropoffLocation.address
-                                    }}
+                                    trip={trip}
                                     height="200px"
+                                    showRoute={true}
+                                    showControls={false}
                                   />
                                 </Box>
                               )}

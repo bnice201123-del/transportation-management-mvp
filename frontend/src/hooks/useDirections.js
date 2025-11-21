@@ -62,13 +62,19 @@ export const useDirections = () => {
 
   const calculateRoute = async (origin, destination, waypoints = [], travelMode = 'DRIVING') => {
     if (!directionsService) {
-      setError('Directions service not initialized');
+      console.warn('Directions service not initialized');
       return;
     }
 
     // Check if Google Maps is fully loaded
     if (!window.google || !window.google.maps || !window.google.maps.TravelMode) {
-      setError('Google Maps API not fully loaded');
+      console.warn('Google Maps API not fully loaded, skipping route calculation');
+      return;
+    }
+
+    // Validate origin and destination
+    if (!origin || !destination || !origin.lat || !origin.lng || !destination.lat || !destination.lng) {
+      console.warn('Invalid origin or destination coordinates');
       return;
     }
 
@@ -111,8 +117,12 @@ export const useDirections = () => {
   };
 
   const clearRoute = () => {
-    if (directionsRenderer) {
-      directionsRenderer.setDirections({ routes: [] });
+    if (directionsRenderer && typeof directionsRenderer.setDirections === 'function') {
+      try {
+        directionsRenderer.setDirections({ routes: [] });
+      } catch (err) {
+        console.warn('Error clearing route:', err);
+      }
     }
     setRoute(null);
     setError(null);

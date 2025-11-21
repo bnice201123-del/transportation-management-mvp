@@ -92,17 +92,32 @@ const TripMap = ({
       return;
     }
 
-    if (showRoute && markers.length === 2 && trip?.pickupLocation?.coordinates && trip?.dropoffLocation?.coordinates) {
-      const [pickupLng, pickupLat] = trip.pickupLocation.coordinates;
-      const [dropoffLng, dropoffLat] = trip.dropoffLocation.coordinates;
-      
-      calculateRoute(
-        { lat: pickupLat, lng: pickupLng },
-        { lat: dropoffLat, lng: dropoffLng }
-      );
-    } else {
+    // Validate we have the required data
+    if (!showRoute || markers.length !== 2 || !trip?.pickupLocation?.coordinates || !trip?.dropoffLocation?.coordinates) {
       clearRoute();
+      return;
     }
+
+    // Check if Google Maps API is fully loaded
+    if (!window.google || !window.google.maps || !window.google.maps.TravelMode) {
+      console.warn('Google Maps API not fully loaded, skipping route calculation');
+      return;
+    }
+
+    const [pickupLng, pickupLat] = trip.pickupLocation.coordinates;
+    const [dropoffLng, dropoffLat] = trip.dropoffLocation.coordinates;
+    
+    // Validate coordinates are numbers
+    if (typeof pickupLat !== 'number' || typeof pickupLng !== 'number' || 
+        typeof dropoffLat !== 'number' || typeof dropoffLng !== 'number') {
+      console.warn('Invalid coordinates:', { pickupLat, pickupLng, dropoffLat, dropoffLng });
+      return;
+    }
+    
+    calculateRoute(
+      { lat: pickupLat, lng: pickupLng },
+      { lat: dropoffLat, lng: dropoffLng }
+    );
   }, [markers, showRoute, trip, calculateRoute, clearRoute, directionsRenderer]);
 
   // Notify parent when route is calculated
@@ -126,11 +141,24 @@ const TripMap = ({
       return;
     }
 
+    // Check if Google Maps API is fully loaded
+    if (!window.google || !window.google.maps || !window.google.maps.TravelMode) {
+      console.warn('Google Maps API not fully loaded');
+      return;
+    }
+
     if (route) {
       clearRoute();
-    } else if (markers.length === 2) {
+    } else if (markers.length === 2 && trip?.pickupLocation?.coordinates && trip?.dropoffLocation?.coordinates) {
       const [pickupLng, pickupLat] = trip.pickupLocation.coordinates;
       const [dropoffLng, dropoffLat] = trip.dropoffLocation.coordinates;
+      
+      // Validate coordinates
+      if (typeof pickupLat !== 'number' || typeof pickupLng !== 'number' || 
+          typeof dropoffLat !== 'number' || typeof dropoffLng !== 'number') {
+        console.warn('Invalid coordinates for route calculation');
+        return;
+      }
       
       calculateRoute(
         { lat: pickupLat, lng: pickupLng },

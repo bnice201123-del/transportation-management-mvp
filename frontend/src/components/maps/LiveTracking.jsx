@@ -125,12 +125,15 @@ const LiveTracking = () => {
       
       // Merge vehicle data with real driver locations
       const enhancedVehicles = vehiclesData.map(vehicle => {
-        const driverLocation = activeLocations.find(loc => 
-          vehicle.driver && (
-            loc.name.toLowerCase().includes(vehicle.driver.name.toLowerCase()) ||
+        const driverLocation = activeLocations.find(loc => {
+          if (!vehicle.driver) return false;
+          
+          const driverFullName = `${vehicle.driver.firstName || ''} ${vehicle.driver.lastName || ''}`.trim();
+          return (
+            loc.name.toLowerCase().includes(driverFullName.toLowerCase()) ||
             loc.phone === vehicle.driver.phone
-          )
-        );
+          );
+        });
         
         if (driverLocation) {
           return {
@@ -746,9 +749,9 @@ const LiveTracking = () => {
                             
                             {vehicle.driver && (
                               <HStack spacing={2}>
-                                <Avatar size="xs" name={vehicle.driver.name} />
+                                <Avatar size="xs" name={`${vehicle.driver.firstName || ''} ${vehicle.driver.lastName || ''}`} />
                                 <Text fontSize={{ base: "2xs", md: "xs" }} color="gray.700" noOfLines={1}>
-                                  {vehicle.driver.name}
+                                  {vehicle.driver.firstName} {vehicle.driver.lastName}
                                 </Text>
                               </HStack>
                             )}
@@ -866,8 +869,8 @@ const LiveTracking = () => {
                               Driver
                             </Text>
                             <HStack>
-                              <Avatar size="xs" name={selectedVehicle.driver.name} />
-                              <Text fontSize={{ base: "xs", md: "sm" }} noOfLines={1}>{selectedVehicle.driver.name}</Text>
+                              <Avatar size="xs" name={`${selectedVehicle.driver.firstName || ''} ${selectedVehicle.driver.lastName || ''}`} />
+                              <Text fontSize={{ base: "xs", md: "sm" }} noOfLines={1}>{selectedVehicle.driver.firstName} {selectedVehicle.driver.lastName}</Text>
                             </HStack>
                             {selectedVehicle.driver.phone && (
                               <HStack spacing={1}>
@@ -936,9 +939,11 @@ const LiveTracking = () => {
                         Driver
                       </Text>
                       <HStack>
-                        <Avatar size="sm" name={selectedVehicle.driver.name} />
+                        <Avatar size="sm" name={`${selectedVehicle.driver.firstName || ''} ${selectedVehicle.driver.lastName || ''}`} />
                         <VStack align="start" spacing={0}>
-                          <Text fontSize="sm">{selectedVehicle.driver.name}</Text>
+                          <Text fontSize="sm">
+                            {selectedVehicle.driver.firstName} {selectedVehicle.driver.lastName}
+                          </Text>
                           {selectedVehicle.driver.phone && (
                             <HStack spacing={1}>
                               <PhoneIcon color="gray.500" w={3} h={3} />

@@ -87,6 +87,7 @@ import Navbar from '../shared/Navbar';
 import GoogleMap from '../maps/GoogleMap';
 import TripMap from '../maps/TripMap';
 import DriveMode from './DriveMode';
+import VehicleQuickView from '../shared/VehicleQuickView';
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
@@ -430,10 +431,13 @@ const DriverDashboard = () => {
               <Stat>
                 <StatLabel>Assigned Vehicle</StatLabel>
                 <StatNumber fontSize="sm" color={assignedVehicle ? 'green.500' : 'gray.500'}>
-                  {assignedVehicle 
-                    ? `${assignedVehicle.year} ${assignedVehicle.make} ${assignedVehicle.model}`
-                    : 'Not Assigned'
-                  }
+                  {assignedVehicle ? (
+                    <VehicleQuickView vehicle={assignedVehicle}>
+                      {`${assignedVehicle.year} ${assignedVehicle.make} ${assignedVehicle.model}`}
+                    </VehicleQuickView>
+                  ) : (
+                    'Not Assigned'
+                  )}
                 </StatNumber>
                 <StatHelpText>
                   {assignedVehicle ? (

@@ -58,6 +58,7 @@ import {
 import { FaCar, FaUser, FaRoute } from 'react-icons/fa';
 import axios from 'axios';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
+import VehicleQuickView from '../shared/VehicleQuickView';
 
 const AdvancedSearchModal = ({ isOpen, onClose }) => {
   const [searchCriteria, setSearchCriteria] = useState({

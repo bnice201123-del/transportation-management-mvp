@@ -99,6 +99,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios'; // Now using real API
 import Navbar from '../shared/Navbar';
+import VehicleQuickView from '../shared/VehicleQuickView';
 
 const ComprehensiveVehicleDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -712,9 +713,11 @@ const ComprehensiveVehicleDashboard = () => {
                                         <Text fontSize="sm" fontWeight="bold">
                                           {vehicle.licensePlate}
                                         </Text>
-                                        <Text fontSize="xs" color="gray.500">
-                                          {vehicle.make} {vehicle.model}
-                                        </Text>
+                                        <VehicleQuickView vehicle={vehicle}>
+                                          <Text fontSize="xs" color="gray.500">
+                                            {vehicle.make} {vehicle.model}
+                                          </Text>
+                                        </VehicleQuickView>
                                       </VStack>
                                     </HStack>
                                     <Badge colorScheme={getStatusColor(vehicle.status || 'inactive')}>
@@ -865,15 +868,11 @@ const ComprehensiveVehicleDashboard = () => {
                                             <Text fontWeight="bold" fontSize="sm">
                                               {vehicle.licensePlate}
                                             </Text>
-                                            <Text 
-                                              fontSize="xs" 
-                                              color="orange.500"
-                                              cursor="pointer"
-                                              _hover={{ textDecoration: 'underline', color: 'orange.600' }}
-                                              onClick={() => navigate(`/vehicles/${vehicle._id}`)}
-                                            >
-                                              {vehicle.year} {vehicle.make} {vehicle.model}
-                                            </Text>
+                                            <VehicleQuickView vehicle={vehicle}>
+                                              <Text fontSize="xs" color="orange.500">
+                                                {vehicle.year} {vehicle.make} {vehicle.model}
+                                              </Text>
+                                            </VehicleQuickView>
                                             <Text fontSize="xs" color="gray.400">
                                               {vehicle.mileage?.toLocaleString()} miles
                                             </Text>

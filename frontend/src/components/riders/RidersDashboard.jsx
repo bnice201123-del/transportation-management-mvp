@@ -346,7 +346,7 @@ const RidersDashboard = () => {
                     <Input placeholder="Enter full name" />
                   </FormControl>
                   <FormControl>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Email (Optional)</FormLabel>
                     <Input placeholder="Enter email address" type="email" />
                   </FormControl>
                 </HStack>

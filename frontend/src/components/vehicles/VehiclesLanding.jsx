@@ -50,6 +50,7 @@ import {
 } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import VehicleQuickView from '../shared/VehicleQuickView';
 
 const VehiclesLanding = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -341,10 +342,11 @@ const VehiclesLanding = () => {
                         <Tr key={vehicle._id}>
                           <Td>
                             <VStack align="start" spacing={1}>
-                              <Text fontWeight="bold" cursor="pointer" color="blue.500"
-                                    onClick={() => handleViewProfile(vehicle._id)}>
-                                {vehicle.year} {vehicle.make} {vehicle.model}
-                              </Text>
+                              <VehicleQuickView vehicle={vehicle}>
+                                <Text fontWeight="bold">
+                                  {vehicle.year} {vehicle.make} {vehicle.model}
+                                </Text>
+                              </VehicleQuickView>
                               <Text fontSize="sm" color="gray.600">
                                 VIN: {vehicle.vin || 'N/A'}
                               </Text>
@@ -394,9 +396,11 @@ const VehiclesLanding = () => {
                           <Flex justify="space-between" align="start" mb={3}>
                             <VStack align="start" spacing={1} flex={1}>
                               <Text fontWeight="bold" fontSize="lg">{vehicle.licensePlate}</Text>
-                              <Text fontSize="sm" color="gray.600">
-                                {vehicle.year} {vehicle.make} {vehicle.model}
-                              </Text>
+                              <VehicleQuickView vehicle={vehicle}>
+                                <Text fontSize="sm" color="gray.600">
+                                  {vehicle.year} {vehicle.make} {vehicle.model}
+                                </Text>
+                              </VehicleQuickView>
                               {getStatusBadge(vehicle.status)}
                             </VStack>
                             <HStack spacing={2}>

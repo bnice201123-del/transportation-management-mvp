@@ -140,11 +140,11 @@ const NewRider = () => {
 
     console.log('Form data before validation:', formData);
 
-    // Validation
-    if (!formData.firstName || !formData.lastName || !formData.dateOfBirth || !formData.email || !formData.password) {
+    // Validation - Email is now optional
+    if (!formData.firstName || !formData.lastName || !formData.dateOfBirth || !formData.password) {
       toast({
         title: 'Validation Error',
-        description: 'Please fill in all required fields (First Name, Last Name, Date of Birth, Email, Password)',
+        description: 'Please fill in all required fields (First Name, Last Name, Date of Birth, Password)',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -361,8 +361,8 @@ const NewRider = () => {
 
                 {/* Email and Password */}
                 <HStack spacing={4} w="full">
-                  <FormControl isRequired>
-                    <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <FormLabel>Email (Optional)</FormLabel>
                     <Input
                       type="email"
                       value={formData.email}

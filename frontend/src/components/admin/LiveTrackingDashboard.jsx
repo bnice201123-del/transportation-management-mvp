@@ -35,6 +35,7 @@ import { FaMapMarkedAlt, FaRoute, FaCar, FaClock } from 'react-icons/fa';
 import axios from 'axios';
 import Navbar from '../shared/Navbar';
 import GoogleMap from '../maps/GoogleMap';
+import VehicleQuickView from '../shared/VehicleQuickView';
 
 const LiveTrackingDashboard = () => {
   const [trips, setTrips] = useState([]);

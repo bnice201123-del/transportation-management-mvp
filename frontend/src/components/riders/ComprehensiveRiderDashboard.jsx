@@ -1537,6 +1537,16 @@ const ComprehensiveRiderDashboard = () => {
                     />
                   </FormControl>
 
+                  <FormControl>
+                    <FormLabel fontSize="sm">Email (Optional)</FormLabel>
+                    <Input
+                      type="email"
+                      placeholder="rider@example.com"
+                      value={newRider.email}
+                      onChange={(e) => setNewRider({...newRider, email: e.target.value})}
+                    />
+                  </FormControl>
+
                   <FormControl isRequired>
                     <FormLabel fontSize="sm">Date of Birth</FormLabel>
                     <Input

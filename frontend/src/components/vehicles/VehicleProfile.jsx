@@ -60,6 +60,7 @@ import {
 } from '@chakra-ui/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import VehicleQuickView from '../shared/VehicleQuickView';
 
 const VehicleProfile = () => {
   const [vehicle, setVehicle] = useState(null);

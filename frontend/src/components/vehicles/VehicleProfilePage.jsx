@@ -134,7 +134,7 @@ const VehicleProfilePage = () => {
       setTrips(vehicleTrips);
 
       // Set maintenance history from vehicle data
-      if (vehicleResponse.data.vehicle.maintenanceHistory) {
+      if (vehicleResponse.data?.vehicle?.maintenanceHistory) {
         setMaintenanceHistory(vehicleResponse.data.vehicle.maintenanceHistory);
       }
 

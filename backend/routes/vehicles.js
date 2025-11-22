@@ -89,6 +89,34 @@ router.get('/:id', authenticateToken, authorizeRoles('admin', 'scheduler', 'disp
 // Create new vehicle
 router.post('/', authenticateToken, authorizeRoles('admin', 'scheduler'), async (req, res) => {
   try {
+    // Check for duplicate license plate
+    if (req.body.licensePlate) {
+      const existingPlate = await Vehicle.findOne({ 
+        licensePlate: req.body.licensePlate,
+        isActive: true 
+      });
+      if (existingPlate) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'A vehicle with this license plate already exists' 
+        });
+      }
+    }
+
+    // Check for duplicate VIN
+    if (req.body.vin) {
+      const existingVin = await Vehicle.findOne({ 
+        vin: req.body.vin,
+        isActive: true 
+      });
+      if (existingVin) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'A vehicle with this VIN already exists' 
+        });
+      }
+    }
+
     const vehicleData = {
       ...req.body,
       createdBy: req.user.id
@@ -108,10 +136,18 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'scheduler'), async 
     console.error('Create vehicle error:', error);
 
     if (error.code === 11000) {
-      return res.status(400).json({ message: 'License plate already exists' });
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({ 
+        success: false,
+        message: `A vehicle with this ${field} already exists` 
+      });
     }
 
-    res.status(500).json({ message: 'Server error creating vehicle', error: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error creating vehicle', 
+      error: error.message 
+    });
   }
 });
 
@@ -120,6 +156,36 @@ router.put('/:id', authenticateToken, authorizeRoles('admin', 'scheduler'), asyn
   try {
     const { id } = req.params;
     const updates = req.body;
+
+    // Check for duplicate license plate (excluding current vehicle)
+    if (updates.licensePlate) {
+      const existingPlate = await Vehicle.findOne({ 
+        licensePlate: updates.licensePlate,
+        _id: { $ne: id },
+        isActive: true 
+      });
+      if (existingPlate) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'A vehicle with this license plate already exists' 
+        });
+      }
+    }
+
+    // Check for duplicate VIN (excluding current vehicle)
+    if (updates.vin) {
+      const existingVin = await Vehicle.findOne({ 
+        vin: updates.vin,
+        _id: { $ne: id },
+        isActive: true 
+      });
+      if (existingVin) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'A vehicle with this VIN already exists' 
+        });
+      }
+    }
 
     // Remove fields that shouldn't be updated directly
     delete updates._id;

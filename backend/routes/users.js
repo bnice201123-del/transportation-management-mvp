@@ -172,6 +172,49 @@ router.put('/:id', authenticateToken, async (req, res) => {
     delete updateData.password; // Password updates should use separate endpoint
     delete updateData.role; // Role updates should be restricted to admin
 
+    // Check for duplicate email (excluding current user)
+    if (updateData.email) {
+      const existingEmail = await User.findOne({ 
+        email: updateData.email,
+        _id: { $ne: req.params.id }
+      });
+      if (existingEmail) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'A user with this email already exists' 
+        });
+      }
+    }
+
+    // Check for duplicate phone (excluding current user)
+    if (updateData.phone) {
+      const existingPhone = await User.findOne({ 
+        phone: updateData.phone,
+        _id: { $ne: req.params.id }
+      });
+      if (existingPhone) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'A user with this phone number already exists' 
+        });
+      }
+    }
+
+    // Check for duplicate license number for drivers (excluding current user)
+    if (updateData.licenseNumber) {
+      const existingLicense = await User.findOne({ 
+        licenseNumber: updateData.licenseNumber,
+        role: 'driver',
+        _id: { $ne: req.params.id }
+      });
+      if (existingLicense) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'A driver with this license number already exists' 
+        });
+      }
+    }
+
     const user = await User.findByIdAndUpdate(
       req.params.id,
       updateData,

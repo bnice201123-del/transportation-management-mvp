@@ -39,7 +39,32 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'dispatcher'), async
     // Check if rider already exists with same riderId
     const existingRider = await Rider.findOne({ riderId });
     if (existingRider) {
-      return res.status(400).json({ message: 'Rider with this ID already exists' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'A rider with this ID already exists' 
+      });
+    }
+
+    // Check for duplicate email
+    if (email) {
+      const existingEmail = await Rider.findOne({ email });
+      if (existingEmail) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'A rider with this email already exists' 
+        });
+      }
+    }
+
+    // Check for duplicate phone
+    if (phone) {
+      const existingPhone = await Rider.findOne({ phone });
+      if (existingPhone) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'A rider with this phone number already exists' 
+        });
+      }
     }
 
     // Validate required fields
@@ -82,6 +107,48 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'dispatcher'), async
 // Update rider
 router.put('/:id', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
   try {
+    // Check for duplicate riderId (excluding current rider)
+    if (req.body.riderId) {
+      const existingRiderId = await Rider.findOne({ 
+        riderId: req.body.riderId,
+        _id: { $ne: req.params.id }
+      });
+      if (existingRiderId) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'A rider with this ID already exists' 
+        });
+      }
+    }
+
+    // Check for duplicate email (excluding current rider)
+    if (req.body.email) {
+      const existingEmail = await Rider.findOne({ 
+        email: req.body.email,
+        _id: { $ne: req.params.id }
+      });
+      if (existingEmail) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'A rider with this email already exists' 
+        });
+      }
+    }
+
+    // Check for duplicate phone (excluding current rider)
+    if (req.body.phone) {
+      const existingPhone = await Rider.findOne({ 
+        phone: req.body.phone,
+        _id: { $ne: req.params.id }
+      });
+      if (existingPhone) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'A rider with this phone number already exists' 
+        });
+      }
+    }
+
     const rider = await Rider.findByIdAndUpdate(
       req.params.id,
       { $set: req.body },

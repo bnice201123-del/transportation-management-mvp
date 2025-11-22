@@ -19,7 +19,35 @@ router.post('/register', authenticateToken, authorizeRoles('admin'), async (req,
     if (email) {
       const existingUser = await User.findOne({ email });
       if (existingUser) {
-        return res.status(400).json({ message: 'User already exists with this email' });
+        return res.status(400).json({ 
+          success: false,
+          message: 'A user with this email already exists' 
+        });
+      }
+    }
+
+    // Check for duplicate phone number
+    if (phone) {
+      const existingPhone = await User.findOne({ phone });
+      if (existingPhone) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'A user with this phone number already exists' 
+        });
+      }
+    }
+
+    // Check for duplicate license number for drivers
+    if (role === 'driver' && licenseNumber) {
+      const existingLicense = await User.findOne({ 
+        licenseNumber,
+        role: 'driver' 
+      });
+      if (existingLicense) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'A driver with this license number already exists' 
+        });
       }
     }
 

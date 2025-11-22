@@ -112,13 +112,22 @@ const DriverDashboard = () => {
 
   const fetchAssignedVehicle = useCallback(async () => {
     try {
-      const response = await axios.get('/api/vehicles');
-      const vehicles = response.data.vehicles || [];
-      // Find vehicle where currentDriver matches the logged-in user
-      const myVehicle = vehicles.find(v => v.currentDriver?._id === user._id || v.currentDriver === user._id);
-      setAssignedVehicle(myVehicle || null);
+      // Use dedicated endpoint for driver's assigned vehicle
+      const response = await axios.get('/api/vehicles/driver/assigned', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      setAssignedVehicle(response.data.vehicle || null);
     } catch (error) {
       console.error('Error fetching assigned vehicle:', error);
+      // Fallback to old method if new endpoint fails
+      try {
+        const fallbackResponse = await axios.get('/api/vehicles');
+        const vehicles = fallbackResponse.data.vehicles || [];
+        const myVehicle = vehicles.find(v => v.currentDriver?._id === user._id || v.currentDriver === user._id);
+        setAssignedVehicle(myVehicle || null);
+      } catch (fallbackError) {
+        console.error('Fallback vehicle fetch also failed:', fallbackError);
+      }
     }
   }, [user._id]);
 

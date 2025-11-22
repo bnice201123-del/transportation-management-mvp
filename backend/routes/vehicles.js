@@ -65,6 +65,38 @@ router.get('/', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatc
   }
 });
 
+// Get driver's assigned vehicle
+router.get('/driver/assigned', authenticateToken, authorizeRoles('driver'), async (req, res) => {
+  try {
+    const driverId = req.user._id || req.user.userId;
+    
+    const vehicle = await Vehicle.findOne({ 
+      currentDriver: driverId,
+      isActive: true 
+    }).populate('currentDriver', 'firstName lastName email phone');
+
+    if (!vehicle) {
+      return res.json({ 
+        success: true,
+        vehicle: null,
+        message: 'No vehicle assigned to this driver' 
+      });
+    }
+
+    res.json({
+      success: true,
+      vehicle
+    });
+  } catch (error) {
+    console.error('Get driver assigned vehicle error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error fetching assigned vehicle', 
+      error: error.message 
+    });
+  }
+});
+
 // Get vehicle by ID
 router.get('/:id', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatcher', 'driver'), async (req, res) => {
   try {

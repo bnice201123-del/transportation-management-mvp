@@ -1,6 +1,7 @@
 import express from 'express';
 import Trip from '../models/Trip.js';
 import User from '../models/User.js';
+import Vehicle from '../models/Vehicle.js';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import { logActivity } from '../utils/logger.js';
 import RecurringTripService from '../services/recurringTripService.js';
@@ -114,6 +115,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const trips = await Trip.find(filter)
       .populate('rider', 'firstName lastName email phone')
       .populate('assignedDriver', 'firstName lastName email phone vehicleInfo')
+      .populate('vehicle', 'make model year licensePlate vin status')
       .populate('createdBy', 'firstName lastName email')
       .sort(sortObj)
       .skip(skip)
@@ -505,6 +507,17 @@ router.post('/', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'a
       tripData.assignedDriver = null;
     }
 
+    // If a driver is assigned, automatically assign their vehicle
+    if (tripData.assignedDriver) {
+      const assignedVehicle = await Vehicle.findOne({ 
+        currentDriver: tripData.assignedDriver,
+        isActive: true 
+      });
+      if (assignedVehicle) {
+        tripData.vehicle = assignedVehicle._id;
+      }
+    }
+
     const trip = new Trip(tripData);
     await trip.save();
 
@@ -520,6 +533,7 @@ router.post('/', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'a
     const populatedTrip = await Trip.findById(trip._id)
       .populate('rider', 'firstName lastName phone email')
       .populate('assignedDriver', 'firstName lastName phone vehicleInfo')
+      .populate('vehicle', 'make model year licensePlate vin')
       .populate('createdBy', 'firstName lastName');
 
     res.status(201).json({
@@ -560,6 +574,18 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const updateData = { ...req.body };
     if (updateData.assignedDriver === '' || updateData.assignedDriver === 'null' || updateData.assignedDriver === 'undefined') {
       updateData.assignedDriver = null;
+      updateData.vehicle = null; // Clear vehicle if driver is unassigned
+    }
+
+    // If driver is being assigned or changed, auto-assign their vehicle
+    if (updateData.assignedDriver && updateData.assignedDriver !== trip.assignedDriver?.toString()) {
+      const assignedVehicle = await Vehicle.findOne({ 
+        currentDriver: updateData.assignedDriver,
+        isActive: true 
+      });
+      if (assignedVehicle) {
+        updateData.vehicle = assignedVehicle._id;
+      }
     }
 
     // Update trip
@@ -578,6 +604,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const updatedTrip = await Trip.findById(trip._id)
       .populate('rider', 'firstName lastName email phone')
       .populate('assignedDriver', 'firstName lastName phone vehicleInfo')
+      .populate('vehicle', 'make model year licensePlate vin status')
       .populate('createdBy', 'firstName lastName');
 
     // Emit real-time update

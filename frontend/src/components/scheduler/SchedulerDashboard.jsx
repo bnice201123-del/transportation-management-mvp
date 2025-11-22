@@ -137,6 +137,7 @@ const SchedulerDashboard = ({ view }) => {
   const [loading, setLoading] = useState(true);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [formData, setFormData] = useState({
+    rider: '',
     riderName: '',
     riderPhone: '',
     pickupLocation: { address: '', lat: 0, lng: 0, placeId: '' },
@@ -148,6 +149,11 @@ const SchedulerDashboard = ({ view }) => {
   });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Rider selection state
+  const [riders, setRiders] = useState([]);
+  const [ridersLoading, setRidersLoading] = useState(false);
+  const [riderSearchTerm, setRiderSearchTerm] = useState('');
 
   // Enhanced filtering and display state
   const [activeTab, setActiveTab] = useState(0);
@@ -243,15 +249,48 @@ const SchedulerDashboard = ({ view }) => {
     }
   }, []);
 
+  const fetchRiders = useCallback(async () => {
+    setRidersLoading(true);
+    try {
+      const response = await axios.get('/api/users/riders');
+      setRiders(response.data.data || response.data || []);
+    } catch (error) {
+      console.error('Error fetching riders:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch riders',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setRidersLoading(false);
+    }
+  }, [toast]);
+
+  // Filter riders based on search term
+  const filteredRiders = useMemo(() => {
+    if (!riderSearchTerm) return riders;
+    
+    const searchLower = riderSearchTerm.toLowerCase();
+    return riders.filter(rider => 
+      rider.firstName?.toLowerCase().includes(searchLower) ||
+      rider.lastName?.toLowerCase().includes(searchLower) ||
+      rider.email?.toLowerCase().includes(searchLower) ||
+      rider._id?.toLowerCase().includes(searchLower)
+    );
+  }, [riders, riderSearchTerm]);
+
 
 
   useEffect(() => {
     const loadData = async () => {
       await fetchTrips();
       await fetchDispatchers();
+      await fetchRiders();
     };
     loadData();
-  }, [fetchTrips, fetchDispatchers]);
+  }, [fetchTrips, fetchDispatchers, fetchRiders]);
 
   // Enhanced statistics calculations with memoization
   const schedulerStats = useMemo(() => {
@@ -600,7 +639,14 @@ const SchedulerDashboard = ({ view }) => {
       fetchTrips();
       handleCloseModal();
     } catch (error) {
-      setError(error.response?.data?.message || 'Error saving trip');
+      const errorMessage = error.response?.data?.message || 'Error saving trip';
+      const errorCode = error.response?.data?.error;
+      
+      if (errorCode === 'RIDER_NOT_FOUND') {
+        setError('Rider not found. Please select a valid registered rider from the system.');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -611,6 +657,7 @@ const SchedulerDashboard = ({ view }) => {
   const handleCloseModal = () => {
     setSelectedTrip(null);
     setFormData({
+      rider: '',
       riderName: '',
       riderPhone: '',
       pickupLocation: { address: '', lat: 0, lng: 0, placeId: '' },
@@ -628,6 +675,7 @@ const SchedulerDashboard = ({ view }) => {
     setSelectedTrip(trip);
     const scheduledDate = new Date(trip.scheduledDate);
     setFormData({
+      rider: trip.rider?._id || trip.rider || '',
       riderName: trip.riderName,
       riderPhone: trip.riderPhone,
       pickupLocation: trip.pickupLocation,
@@ -1786,72 +1834,89 @@ const SchedulerDashboard = ({ view }) => {
               )}
               
               <VStack spacing={4}>
+                <FormControl isRequired>
+                  <FormLabel>Select Rider</FormLabel>
+                  <Select
+                    placeholder={ridersLoading ? "Loading riders..." : "Select a rider"}
+                    value={formData.rider}
+                    onChange={(e) => {
+                      const selectedRider = riders.find(r => r._id === e.target.value);
+                      setFormData(prev => ({
+                        ...prev,
+                        rider: e.target.value,
+                        riderName: selectedRider ? `${selectedRider.firstName} ${selectedRider.lastName}` : '',
+                        riderPhone: selectedRider?.phone || ''
+                      }));
+                    }}
+                    isDisabled={ridersLoading}
+                  >
+                    {filteredRiders.map((rider) => (
+                      <option key={rider._id} value={rider._id}>
+                        {rider.firstName} {rider.lastName} ({rider.email})
+                      </option>
+                    ))}
+                  </Select>
+                  <Input
+                    placeholder="Filter by name or email..."
+                    value={riderSearchTerm}
+                    onChange={(e) => setRiderSearchTerm(e.target.value)}
+                    mt={2}
+                    size="sm"
+                  />
+                  <Text fontSize="xs" color="gray.500" mt={1}>
+                    {filteredRiders.length} rider{filteredRiders.length !== 1 ? 's' : ''} available
+                  </Text>
+                </FormControl>
+                
                 <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} width="100%">
                   <GridItem>
                     <FormControl isRequired>
-                      <FormLabel>Rider Name</FormLabel>
-                      <Input
-                        value={formData.riderName}
-                        onChange={(e) => setFormData(prev => ({ ...prev, riderName: e.target.value }))}
-                        placeholder="Enter rider name"
+                      <FormLabel>Pickup Location</FormLabel>
+                      <PlacesAutocomplete
+                        value={formData.pickupLocation.address}
+                        onChange={(address) => setFormData(prev => ({ 
+                          ...prev, 
+                          pickupLocation: { ...prev.pickupLocation, address }
+                        }))}
+                        onPlaceSelected={(place) => setFormData(prev => ({ 
+                          ...prev, 
+                          pickupLocation: { 
+                            address: place.address,
+                            lat: place.location.lat,
+                            lng: place.location.lng,
+                            placeId: place.placeId
+                          }
+                        }))}
+                        placeholder="Enter pickup address"
+                        isRequired
                       />
                     </FormControl>
                   </GridItem>
+
                   <GridItem>
-                    <FormControl>
-                      <FormLabel>Rider Phone</FormLabel>
-                      <Input
-                        value={formData.riderPhone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, riderPhone: e.target.value }))}
-                        placeholder="Enter phone number"
+                    <FormControl isRequired>
+                      <FormLabel>Dropoff Location</FormLabel>
+                      <PlacesAutocomplete
+                        value={formData.dropoffLocation.address}
+                        onChange={(address) => setFormData(prev => ({ 
+                          ...prev, 
+                          dropoffLocation: { ...prev.dropoffLocation, address }
+                        }))}
+                        onPlaceSelected={(place) => setFormData(prev => ({ 
+                          ...prev, 
+                          dropoffLocation: { 
+                            address: place.address,
+                            lat: place.location.lat,
+                            lng: place.location.lng,
+                            placeId: place.placeId
+                          }
+                        }))}
+                        placeholder="Enter dropoff address"
+                        isRequired
                       />
                     </FormControl>
                   </GridItem>
                 </Grid>
-
-                <FormControl isRequired>
-                  <FormLabel>Pickup Location</FormLabel>
-                  <PlacesAutocomplete
-                    value={formData.pickupLocation.address}
-                    onChange={(address) => setFormData(prev => ({ 
-                      ...prev, 
-                      pickupLocation: { ...prev.pickupLocation, address }
-                    }))}
-                    onPlaceSelected={(place) => setFormData(prev => ({ 
-                      ...prev, 
-                      pickupLocation: { 
-                        address: place.address,
-                        lat: place.location.lat,
-                        lng: place.location.lng,
-                        placeId: place.placeId
-                      }
-                    }))}
-                    placeholder="Enter pickup address"
-                    isRequired
-                  />
-                </FormControl>
-
-                <FormControl isRequired>
-                  <FormLabel>Dropoff Location</FormLabel>
-                  <PlacesAutocomplete
-                    value={formData.dropoffLocation.address}
-                    onChange={(address) => setFormData(prev => ({ 
-                      ...prev, 
-                      dropoffLocation: { ...prev.dropoffLocation, address }
-                    }))}
-                    onPlaceSelected={(place) => setFormData(prev => ({ 
-                      ...prev, 
-                      dropoffLocation: { 
-                        address: place.address,
-                        lat: place.location.lat,
-                        lng: place.location.lng,
-                        placeId: place.placeId
-                      }
-                    }))}
-                    placeholder="Enter dropoff address"
-                    isRequired
-                  />
-                </FormControl>
 
                 <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} width="100%">
                   <GridItem>

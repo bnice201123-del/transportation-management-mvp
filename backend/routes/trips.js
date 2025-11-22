@@ -112,6 +112,7 @@ router.get('/', authenticateToken, async (req, res) => {
     if (sortBy !== 'createdAt') sortObj.createdAt = -1;
     
     const trips = await Trip.find(filter)
+      .populate('rider', 'firstName lastName email phone')
       .populate('assignedDriver', 'firstName lastName email phone vehicleInfo')
       .populate('createdBy', 'firstName lastName email')
       .sort(sortObj)
@@ -145,6 +146,7 @@ router.get('/recent', authenticateToken, async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     
     const trips = await Trip.find()
+      .populate('rider', 'firstName lastName email phone')
       .populate('assignedDriver', 'firstName lastName')
       .populate('vehicleId', 'make model licensePlate')
       .sort({ createdAt: -1 })
@@ -335,6 +337,7 @@ router.get('/recurring', authenticateToken, async (req, res) => {
     }
 
     const recurringTrips = await Trip.find(filter)
+      .populate('rider', 'firstName lastName email phone')
       .populate('assignedDriver', 'firstName lastName email phone')
       .populate('createdBy', 'firstName lastName email')
       .sort({ createdAt: -1 });
@@ -441,6 +444,7 @@ router.get('/recurring/pattern-description', authenticateToken, async (req, res)
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const trip = await Trip.findById(req.params.id)
+      .populate('rider', 'firstName lastName email phone')
       .populate('assignedDriver', 'firstName lastName phone vehicleInfo currentLocation')
       .populate('createdBy', 'firstName lastName');
 
@@ -469,6 +473,33 @@ router.post('/', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'a
       createdBy: req.user._id
     };
 
+    // Validate rider exists in the system
+    if (!tripData.rider) {
+      return res.status(400).json({ 
+        message: 'Rider ID is required',
+        error: 'RIDER_ID_REQUIRED'
+      });
+    }
+
+    const rider = await User.findOne({ 
+      _id: tripData.rider, 
+      $or: [{ role: 'rider' }, { roles: 'rider' }],
+      isActive: true 
+    });
+
+    if (!rider) {
+      return res.status(404).json({ 
+        message: 'Rider not found. The rider must be registered in the system before creating a trip.',
+        error: 'RIDER_NOT_FOUND',
+        riderId: tripData.rider
+      });
+    }
+
+    // Populate rider information from the registered user
+    tripData.riderName = `${rider.firstName} ${rider.lastName}`;
+    tripData.riderPhone = rider.phone || tripData.riderPhone;
+    tripData.riderEmail = rider.email;
+
     // Sanitize ObjectId fields - convert empty strings to null
     if (tripData.assignedDriver === '' || tripData.assignedDriver === 'null' || tripData.assignedDriver === 'undefined') {
       tripData.assignedDriver = null;
@@ -487,6 +518,7 @@ router.post('/', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'a
     );
 
     const populatedTrip = await Trip.findById(trip._id)
+      .populate('rider', 'firstName lastName phone email')
       .populate('assignedDriver', 'firstName lastName phone vehicleInfo')
       .populate('createdBy', 'firstName lastName');
 
@@ -496,6 +528,15 @@ router.post('/', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'a
     });
   } catch (error) {
     console.error('Create trip error:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: 'Validation error', 
+        errors: Object.values(error.errors).map(e => e.message)
+      });
+    }
+    
     res.status(500).json({ message: 'Server error creating trip' });
   }
 });
@@ -535,6 +576,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     );
 
     const updatedTrip = await Trip.findById(trip._id)
+      .populate('rider', 'firstName lastName email phone')
       .populate('assignedDriver', 'firstName lastName phone vehicleInfo')
       .populate('createdBy', 'firstName lastName');
 
@@ -589,6 +631,7 @@ router.post('/:id/assign', authenticateToken, authorizeRoles('scheduler', 'dispa
     );
 
     const updatedTrip = await Trip.findById(trip._id)
+      .populate('rider', 'firstName lastName email phone')
       .populate('assignedDriver', 'firstName lastName phone vehicleInfo')
       .populate('createdBy', 'firstName lastName');
 
@@ -670,6 +713,7 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     );
 
     const updatedTrip = await Trip.findById(trip._id)
+      .populate('rider', 'firstName lastName email phone')
       .populate('assignedDriver', 'firstName lastName phone vehicleInfo')
       .populate('createdBy', 'firstName lastName');
 

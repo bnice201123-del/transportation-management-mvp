@@ -100,6 +100,45 @@ router.get('/dispatchers/available', authenticateToken, authorizeRoles('schedule
   }
 });
 
+// Get all active riders (for trip creation)
+router.get('/riders', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'admin'), async (req, res) => {
+  try {
+    const { search, limit = 100 } = req.query;
+    
+    let filter = {
+      role: 'rider',
+      isActive: true
+    };
+
+    // Add search functionality
+    if (search) {
+      filter.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { _id: search } // Allow searching by ID
+      ];
+    }
+
+    const riders = await User.find(filter)
+      .select('firstName lastName email phone')
+      .sort({ firstName: 1, lastName: 1 })
+      .limit(parseInt(limit));
+
+    res.json({
+      success: true,
+      data: riders,
+      count: riders.length
+    });
+  } catch (error) {
+    console.error('Get riders error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error fetching riders' 
+    });
+  }
+});
+
 // Get single user by ID
 router.get('/:id', authenticateToken, async (req, res) => {
   try {

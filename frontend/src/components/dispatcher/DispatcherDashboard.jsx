@@ -2247,7 +2247,13 @@ const getLocationText = (location) => {
                       <FormLabel>Rider Phone</FormLabel>
                       <Input
                         value={formData.riderPhone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, riderPhone: e.target.value }))}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Only allow numbers, spaces, parentheses, hyphens, and plus signs
+                          if (!value || /^[\d\s()+-]*$/.test(value)) {
+                            setFormData(prev => ({ ...prev, riderPhone: value }));
+                          }
+                        }}
                         placeholder="Enter phone number"
                       />
                     </FormControl>

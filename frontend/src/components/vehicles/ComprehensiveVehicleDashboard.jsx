@@ -1201,7 +1201,13 @@ const ComprehensiveVehicleDashboard = () => {
                                     type="tel"
                                     placeholder="+1 (555) 123-4567"
                                     value={newVehicle.trackingPhone}
-                                    onChange={(e) => setNewVehicle({...newVehicle, trackingPhone: e.target.value})}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      // Only allow numbers, spaces, parentheses, hyphens, and plus signs
+                                      if (!value || /^[\d\s()+-]*$/.test(value)) {
+                                        setNewVehicle({...newVehicle, trackingPhone: value});
+                                      }
+                                    }}
                                   />
                                 </FormControl>
 
@@ -1682,7 +1688,13 @@ const ComprehensiveVehicleDashboard = () => {
                     type="tel"
                     placeholder="+1 (555) 123-4567"
                     value={newVehicle.trackingPhone}
-                    onChange={(e) => setNewVehicle({...newVehicle, trackingPhone: e.target.value})}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Only allow numbers, spaces, parentheses, hyphens, and plus signs
+                      if (!value || /^[\d\s()+-]*$/.test(value)) {
+                        setNewVehicle({...newVehicle, trackingPhone: value});
+                      }
+                    }}
                   />
                   {formErrors.trackingPhone && <Text color="red.500" fontSize="sm">{formErrors.trackingPhone}</Text>}
                 </FormControl>

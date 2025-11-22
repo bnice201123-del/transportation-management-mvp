@@ -749,14 +749,26 @@ const RiderProfile = () => {
                   <FormLabel>First Name</FormLabel>
                   <Input
                     value={editForm.firstName}
-                    onChange={(e) => setEditForm({...editForm, firstName: e.target.value})}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Only allow letters, spaces, hyphens, and apostrophes
+                      if (!value || /^[a-zA-Z\s'-]*$/.test(value)) {
+                        setEditForm({...editForm, firstName: value});
+                      }
+                    }}
                   />
                 </FormControl>
                 <FormControl>
                   <FormLabel>Last Name</FormLabel>
                   <Input
                     value={editForm.lastName}
-                    onChange={(e) => setEditForm({...editForm, lastName: e.target.value})}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Only allow letters, spaces, hyphens, and apostrophes
+                      if (!value || /^[a-zA-Z\s'-]*$/.test(value)) {
+                        setEditForm({...editForm, lastName: value});
+                      }
+                    }}
                   />
                 </FormControl>
               </SimpleGrid>
@@ -784,7 +796,13 @@ const RiderProfile = () => {
                 <FormLabel>Phone</FormLabel>
                 <Input
                   value={editForm.phone}
-                  onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Only allow numbers, spaces, parentheses, hyphens, and plus signs
+                    if (!value || /^[\d\s()+-]*$/.test(value)) {
+                      setEditForm({...editForm, phone: value});
+                    }
+                  }}
                 />
               </FormControl>
 

@@ -745,7 +745,7 @@ const RecurringTrips = () => {
                 
                 <HStack spacing={2}>
                   <Button
-                    leftIcon={<FaFileExport />}
+                    leftIcon={<ArrowDownTrayIcon style={{ width: '16px', height: '16px' }} />}
                     variant="outline"
                     colorScheme="green"
                     onClick={exportRecurringTrips}
@@ -756,7 +756,7 @@ const RecurringTrips = () => {
                   </Button>
                   
                   <Button
-                    leftIcon={<FaSync />}
+                    leftIcon={<ArrowPathIcon style={{ width: '16px', height: '16px' }} />}
                     variant="outline"
                     onClick={fetchRecurringTrips}
                     size="sm"
@@ -826,7 +826,7 @@ const RecurringTrips = () => {
                     variant={viewMode === 'grid' ? 'solid' : 'ghost'}
                     colorScheme="purple"
                     onClick={() => setViewMode('grid')}
-                    leftIcon={<FaTh />}
+                    leftIcon={<Bars3Icon style={{ width: '16px', height: '16px' }} />}
                   >
                     Grid
                   </Button>
@@ -835,7 +835,7 @@ const RecurringTrips = () => {
                     variant={viewMode === 'table' ? 'solid' : 'ghost'}
                     colorScheme="purple"
                     onClick={() => setViewMode('table')}
-                    leftIcon={<FaTable />}
+                    leftIcon={<TableCellsIcon style={{ width: '16px', height: '16px' }} />}
                   >
                     Table
                   </Button>
@@ -970,7 +970,7 @@ const RecurringTrips = () => {
                           <Tooltip label="View Details">
                             <IconButton
                               size="sm"
-                              icon={<ViewIcon />}
+                              icon={<EyeIcon style={{ width: '16px', height: '16px' }} />}
                               variant="ghost"
                               colorScheme="blue"
                               onClick={() => handleView(trip)}
@@ -979,7 +979,7 @@ const RecurringTrips = () => {
                           <Tooltip label="Edit Pattern">
                             <IconButton
                               size="sm"
-                              icon={<EditIcon />}
+                              icon={<PencilIcon style={{ width: '16px', height: '16px' }} />}
                               variant="ghost"
                               colorScheme="orange"
                               onClick={() => handleEdit(trip)}
@@ -988,7 +988,7 @@ const RecurringTrips = () => {
                           <Tooltip label="Preview Generated Trips">
                             <IconButton
                               size="sm"
-                              icon={<FaCalendarWeek />}
+                              icon={<CalendarDaysIcon style={{ width: '16px', height: '16px' }} />}
                               variant="ghost"
                               colorScheme="green"
                               onClick={() => handlePreview(trip)}
@@ -997,7 +997,7 @@ const RecurringTrips = () => {
                           <Tooltip label="Delete Pattern">
                             <IconButton
                               size="sm"
-                              icon={<DeleteIcon />}
+                              icon={<TrashIcon style={{ width: '16px', height: '16px' }} />}
                               variant="ghost"
                               colorScheme="red"
                               onClick={() => handleDelete(trip)}
@@ -1012,7 +1012,7 @@ const RecurringTrips = () => {
                     <Td colSpan={6}>
                       <Center py={8}>
                         <VStack>
-                          <RepeatIcon size={40} color="gray.300" />
+                          <ArrowPathIcon style={{ width: '40px', height: '40px', color: 'gray' }} />
                           <Text color="gray.500">
                             {searchTerm || statusFilter !== 'all' || frequencyFilter !== 'all'
                               ? 'No recurring trips match your current filters'
@@ -1083,7 +1083,7 @@ const RecurringTrips = () => {
           <form onSubmit={handleSubmit}>
             <ModalHeader>
               <HStack>
-                <RepeatIcon color="purple" />
+                <ArrowPathIcon style={{ width: '20px', height: '20px', color: 'purple' }} />
                 <Text>{selectedTrip ? 'Edit Recurring Trip' : 'Create New Recurring Trip'}</Text>
               </HStack>
             </ModalHeader>
@@ -1135,7 +1135,7 @@ const RecurringTrips = () => {
                     <FormControl isRequired>
                       <FormLabel>Pickup Location</FormLabel>
                       <PlacesAutocomplete
-                        onPlaceSelect={(location) => 
+                        onPlaceSelected={(location) => 
                           setFormData({ ...formData, pickupLocation: location })
                         }
                         placeholder="Enter pickup address"
@@ -1146,7 +1146,7 @@ const RecurringTrips = () => {
                     <FormControl isRequired>
                       <FormLabel>Dropoff Location</FormLabel>
                       <PlacesAutocomplete
-                        onPlaceSelect={(location) => 
+                        onPlaceSelected={(location) => 
                           setFormData({ ...formData, dropoffLocation: location })
                         }
                         placeholder="Enter dropoff address"
@@ -1418,7 +1418,7 @@ const RecurringTrips = () => {
         <ModalContent>
           <ModalHeader>
             <HStack>
-              <ViewIcon color="blue" />
+              <EyeIcon style={{ width: '20px', height: '20px', color: 'blue' }} />
               <Text>Recurring Trip Details</Text>
             </HStack>
           </ModalHeader>

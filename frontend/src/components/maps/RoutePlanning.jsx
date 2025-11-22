@@ -1547,7 +1547,13 @@ const RoutePlanning = () => {
                   <FormLabel>Contact Phone</FormLabel>
                   <Input
                     value={newStop.contactPhone}
-                    onChange={(e) => setNewStop(prev => ({ ...prev, contactPhone: e.target.value }))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Only allow numbers, spaces, parentheses, hyphens, and plus signs
+                      if (!value || /^[\d\s()+-]*$/.test(value)) {
+                        setNewStop(prev => ({ ...prev, contactPhone: value }));
+                      }
+                    }}
                     placeholder="Phone number"
                   />
                 </FormControl>

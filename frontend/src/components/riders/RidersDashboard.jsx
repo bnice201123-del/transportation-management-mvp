@@ -60,6 +60,7 @@ import {
   ChevronDownIcon
 } from '@chakra-ui/icons';
 import Navbar from '../shared/Navbar';
+import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 
 const mockRiders = [
   {
@@ -104,6 +105,7 @@ const RidersDashboard = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedRider, setSelectedRider] = useState(null);
   const [rideHistory, setRideHistory] = useState([]);
+  const [newRiderAddress, setNewRiderAddress] = useState('');
   
   const { isOpen: isAddOpen, onOpen: onAddOpen, onClose: onAddClose } = useDisclosure();
   const { isOpen: isHistoryOpen, onOpen: onHistoryOpen, onClose: onHistoryClose } = useDisclosure();
@@ -362,6 +364,17 @@ const RidersDashboard = () => {
                     </Select>
                   </FormControl>
                 </HStack>
+                
+                <FormControl isRequired>
+                  <FormLabel>Address</FormLabel>
+                  <PlacesAutocomplete
+                    placeholder="Enter full address"
+                    value={newRiderAddress}
+                    onChange={(address) => setNewRiderAddress(address)}
+                    onPlaceSelected={(place) => setNewRiderAddress(place.address)}
+                    isRequired
+                  />
+                </FormControl>
                 
                 <FormControl>
                   <FormLabel>Emergency Contact</FormLabel>

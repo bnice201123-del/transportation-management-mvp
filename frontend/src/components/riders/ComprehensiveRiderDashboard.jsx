@@ -1496,7 +1496,13 @@ const ComprehensiveRiderDashboard = () => {
                       <Input
                         placeholder="First name"
                         value={newRider.firstName}
-                        onChange={(e) => setNewRider({...newRider, firstName: e.target.value})}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Only allow letters, spaces, hyphens, and apostrophes
+                          if (!value || /^[a-zA-Z\s'-]*$/.test(value)) {
+                            setNewRider({...newRider, firstName: value});
+                          }
+                        }}
                       />
                     </FormControl>
                     
@@ -1505,7 +1511,13 @@ const ComprehensiveRiderDashboard = () => {
                       <Input
                         placeholder="Last name"
                         value={newRider.lastName}
-                        onChange={(e) => setNewRider({...newRider, lastName: e.target.value})}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Only allow letters, spaces, hyphens, and apostrophes
+                          if (!value || /^[a-zA-Z\s'-]*$/.test(value)) {
+                            setNewRider({...newRider, lastName: value});
+                          }
+                        }}
                       />
                     </FormControl>
                   </SimpleGrid>
@@ -1515,7 +1527,13 @@ const ComprehensiveRiderDashboard = () => {
                     <Input
                       placeholder="Phone number"
                       value={newRider.phone}
-                      onChange={(e) => setNewRider({...newRider, phone: e.target.value})}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Only allow numbers, spaces, parentheses, hyphens, and plus signs
+                        if (!value || /^[\d\s()+-]*$/.test(value)) {
+                          setNewRider({...newRider, phone: value});
+                        }
+                      }}
                     />
                   </FormControl>
 
@@ -1542,13 +1560,14 @@ const ComprehensiveRiderDashboard = () => {
                     </Box>
                   )}
 
-                  <FormControl>
+                  <FormControl isRequired>
                     <FormLabel fontSize="sm">Address</FormLabel>
                     <PlacesAutocomplete
-                      placeholder="Home address (optional)"
+                      placeholder="Enter home address"
                       value={newRider.address}
                       onChange={(address) => setNewRider({...newRider, address: address})}
-                      onSelect={(place) => setNewRider({...newRider, address: place.address})}
+                      onPlaceSelected={(place) => setNewRider({...newRider, address: place.address})}
+                      isRequired
                     />
                   </FormControl>
                 </VStack>

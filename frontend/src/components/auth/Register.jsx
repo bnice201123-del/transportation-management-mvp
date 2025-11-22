@@ -38,6 +38,21 @@ const Register = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Validation for name fields - only allow letters, spaces, hyphens, and apostrophes
+    if ((name === 'firstName' || name === 'lastName') && value) {
+      if (!/^[a-zA-Z\s'-]*$/.test(value)) {
+        return; // Don't update if invalid characters
+      }
+    }
+    
+    // Validation for phone field - only allow numbers, spaces, parentheses, hyphens, and plus signs
+    if (name === 'phone' && value) {
+      if (!/^[\d\s()+-]*$/.test(value)) {
+        return; // Don't update if invalid characters
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value

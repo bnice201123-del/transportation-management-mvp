@@ -106,6 +106,20 @@ const NewRider = () => {
   };
 
   const handleInputChange = (field, value) => {
+    // Validation for name fields - only allow letters, spaces, hyphens, and apostrophes
+    if ((field === 'firstName' || field === 'lastName') && value) {
+      if (!/^[a-zA-Z\s'-]*$/.test(value)) {
+        return; // Don't update if invalid characters
+      }
+    }
+    
+    // Validation for phone field - only allow numbers, spaces, parentheses, hyphens, and plus signs
+    if (field === 'phone' && value) {
+      if (!/^[\d\s()+-]*$/.test(value)) {
+        return; // Don't update if invalid characters
+      }
+    }
+    
     const newFormData = { ...formData, [field]: value };
     setFormData(newFormData);
 
@@ -378,13 +392,14 @@ const NewRider = () => {
                 </FormControl>
 
                 {/* Address */}
-                <FormControl>
+                <FormControl isRequired>
                   <FormLabel>Current Address</FormLabel>
                   <PlacesAutocomplete
                     value={formData.address}
                     onChange={(address) => handleInputChange('address', address)}
                     onPlaceSelected={(place) => handleInputChange('address', place.address)}
                     placeholder="Enter full address"
+                    isRequired
                   />
                 </FormControl>
 

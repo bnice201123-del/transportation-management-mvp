@@ -250,6 +250,20 @@ const AdminRegistration = () => {
     const { name, value, type, checked } = e.target;
     const newValue = type === 'checkbox' ? checked : value;
     
+    // Validation for name fields - only allow letters, spaces, hyphens, and apostrophes
+    if ((name === 'firstName' || name === 'lastName') && newValue) {
+      if (!/^[a-zA-Z\s'-]*$/.test(newValue)) {
+        return; // Don't update if invalid characters
+      }
+    }
+    
+    // Validation for phone field - only allow numbers, spaces, parentheses, hyphens, and plus signs
+    if (name === 'phone' && newValue) {
+      if (!/^[\d\s()+-]*$/.test(newValue)) {
+        return; // Don't update if invalid characters
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: newValue

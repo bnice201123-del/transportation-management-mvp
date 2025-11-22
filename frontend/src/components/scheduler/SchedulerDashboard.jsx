@@ -1835,7 +1835,13 @@ const SchedulerDashboard = ({ view }) => {
               
               <VStack spacing={4}>
                 <FormControl isRequired>
-                  <FormLabel>Select Rider</FormLabel>
+                  <FormLabel>Search and Select Rider</FormLabel>
+                  <Input
+                    placeholder="Search by name, email, or ID..."
+                    value={riderSearchTerm}
+                    onChange={(e) => setRiderSearchTerm(e.target.value)}
+                    mb={2}
+                  />
                   <Select
                     placeholder={ridersLoading ? "Loading riders..." : "Select a rider"}
                     value={formData.rider}
@@ -1856,17 +1862,34 @@ const SchedulerDashboard = ({ view }) => {
                       </option>
                     ))}
                   </Select>
-                  <Input
-                    placeholder="Filter by name or email..."
-                    value={riderSearchTerm}
-                    onChange={(e) => setRiderSearchTerm(e.target.value)}
-                    mt={2}
-                    size="sm"
-                  />
                   <Text fontSize="xs" color="gray.500" mt={1}>
-                    {filteredRiders.length} rider{filteredRiders.length !== 1 ? 's' : ''} available
+                    {filteredRiders.length} rider{filteredRiders.length !== 1 ? 's' : ''} found
                   </Text>
                 </FormControl>
+
+                {formData.rider && (
+                  <Button
+                    colorScheme="purple"
+                    width="100%"
+                    onClick={() => {
+                      const selectedRider = riders.find(r => r._id === formData.rider);
+                      if (selectedRider) {
+                        navigate('/scheduler/recurring', {
+                          state: {
+                            riderId: selectedRider._id,
+                            riderName: `${selectedRider.firstName} ${selectedRider.lastName}`,
+                            riderEmail: selectedRider.email,
+                            riderPhone: selectedRider.phone,
+                            fromCreateTrip: true
+                          }
+                        });
+                        handleCloseModal();
+                      }
+                    }}
+                  >
+                    Create Recurring Trip Instead
+                  </Button>
+                )}
                 
                 <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} width="100%">
                   <GridItem>

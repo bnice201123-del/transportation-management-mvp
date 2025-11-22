@@ -12,19 +12,37 @@ router.get('/', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatc
     
     let filter = { isActive };
     
-    // If role is specified, check the roles array instead of the role field
+    // If role is specified, match either the primary role field or roles array
     if (role) {
-      filter.roles = role; // MongoDB will match if role is in the array
+      filter.$or = [
+        { role: role },
+        { roles: role }
+      ];
     }
 
     // Add search functionality
     if (search) {
-      filter.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } }
-      ];
+      const searchFilter = {
+        $or: [
+          { firstName: { $regex: search, $options: 'i' } },
+          { lastName: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+          { phone: { $regex: search, $options: 'i' } }
+        ]
+      };
+      
+      // Combine role filter with search filter
+      if (filter.$or) {
+        filter = {
+          isActive,
+          $and: [
+            { $or: filter.$or },
+            { $or: searchFilter.$or }
+          ]
+        };
+      } else {
+        filter = { ...filter, ...searchFilter };
+      }
     }
 
     const skip = (page - 1) * limit;

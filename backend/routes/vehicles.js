@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import Vehicle from '../models/Vehicle.js';
+import User from '../models/User.js';
 
 const router = express.Router();
 
@@ -276,9 +277,35 @@ router.post('/:id/assign-driver', authenticateToken, authorizeRoles('admin', 'sc
     const { id } = req.params;
     const { driverId } = req.body;
 
+    if (!driverId) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Driver ID is required' 
+      });
+    }
+
     const vehicle = await Vehicle.findById(id);
     if (!vehicle) {
-      return res.status(404).json({ message: 'Vehicle not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Vehicle not found' 
+      });
+    }
+
+    // Verify driver exists and has driver role
+    const driver = await User.findById(driverId);
+    if (!driver) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Driver not found' 
+      });
+    }
+
+    if (driver.role !== 'driver') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Selected user is not a driver' 
+      });
     }
 
     await vehicle.assignDriver(driverId);
@@ -291,7 +318,11 @@ router.post('/:id/assign-driver', authenticateToken, authorizeRoles('admin', 'sc
     });
   } catch (error) {
     console.error('Assign driver error:', error);
-    res.status(500).json({ message: 'Server error assigning driver', error: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error assigning driver', 
+      error: error.message 
+    });
   }
 });
 

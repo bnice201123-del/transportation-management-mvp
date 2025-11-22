@@ -48,7 +48,7 @@ const VehicleQuickView = ({ vehicle, children, displayText }) => {
   }
 
   return (
-    <Popover placement="auto" trigger="hover">
+    <Popover placement="auto" trigger="click">
       <PopoverTrigger>
         <Text
           as="span"

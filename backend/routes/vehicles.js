@@ -67,8 +67,17 @@ router.get('/', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatc
 });
 
 // Get driver's assigned vehicle
-router.get('/driver/assigned', authenticateToken, authorizeRoles('driver'), async (req, res) => {
+router.get('/driver/assigned', authenticateToken, async (req, res) => {
   try {
+    // Check if user has driver role
+    const hasDriverRole = req.user.role === 'driver' || (req.user.roles && req.user.roles.includes('driver'));
+    if (!hasDriverRole) {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Access denied. Driver role required.' 
+      });
+    }
+
     const driverId = req.user._id || req.user.userId;
     
     const vehicle = await Vehicle.findOne({ 
@@ -301,7 +310,9 @@ router.post('/:id/assign-driver', authenticateToken, authorizeRoles('admin', 'sc
       });
     }
 
-    if (driver.role !== 'driver') {
+    // Check if user has driver role (either as primary role or in roles array)
+    const hasDriverRole = driver.role === 'driver' || (driver.roles && driver.roles.includes('driver'));
+    if (!hasDriverRole) {
       return res.status(400).json({ 
         success: false,
         message: 'Selected user is not a driver' 

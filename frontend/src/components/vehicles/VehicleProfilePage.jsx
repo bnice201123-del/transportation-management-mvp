@@ -116,8 +116,10 @@ const VehicleProfilePage = () => {
       const vehicleResponse = await axios.get(`/api/vehicles/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setVehicle(vehicleResponse.data.vehicle);
-      setEditedVehicle(vehicleResponse.data.vehicle);
+      // Backend returns vehicle directly in data, not nested
+      const vehicleData = vehicleResponse.data.vehicle || vehicleResponse.data;
+      setVehicle(vehicleData);
+      setEditedVehicle(vehicleData);
 
       // Fetch trips for this vehicle
       const tripsResponse = await axios.get('/api/trips', {
@@ -134,8 +136,8 @@ const VehicleProfilePage = () => {
       setTrips(vehicleTrips);
 
       // Set maintenance history from vehicle data
-      if (vehicleResponse.data?.vehicle?.maintenanceHistory) {
-        setMaintenanceHistory(vehicleResponse.data.vehicle.maintenanceHistory);
+      if (vehicleData?.maintenanceHistory) {
+        setMaintenanceHistory(vehicleData.maintenanceHistory);
       }
 
     } catch (err) {

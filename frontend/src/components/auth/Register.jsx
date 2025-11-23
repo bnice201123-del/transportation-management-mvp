@@ -21,6 +21,13 @@ import {
 } from '@chakra-ui/react';
 import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from "../../contexts/AuthContext";
+import { 
+  formatPhoneNumber, 
+  getRawPhoneNumber,
+  formatNameInput,
+  isValidPhoneNumber,
+  isValidEmail
+} from '../../utils/inputValidation';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -40,17 +47,21 @@ const Register = () => {
     const { name, value } = e.target;
     
     // Validation for name fields - only allow letters, spaces, hyphens, and apostrophes
-    if ((name === 'firstName' || name === 'lastName') && value) {
-      if (!/^[a-zA-Z\s'-]*$/.test(value)) {
-        return; // Don't update if invalid characters
-      }
+    if (name === 'firstName' || name === 'lastName') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: formatNameInput(value)
+      }));
+      return;
     }
     
-    // Validation for phone field - only allow numbers, spaces, parentheses, hyphens, and plus signs
-    if (name === 'phone' && value) {
-      if (!/^[\d\s()+-]*$/.test(value)) {
-        return; // Don't update if invalid characters
-      }
+    // Validation for phone field - format as (XXX) XXX-XXXX
+    if (name === 'phone') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: formatPhoneNumber(value)
+      }));
+      return;
     }
     
     setFormData(prev => ({
@@ -66,6 +77,16 @@ const Register = () => {
     // Validation
     if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
       setError('Please fill in all required fields');
+      return;
+    }
+
+    if (!isValidEmail(formData.email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (formData.phone && !isValidPhoneNumber(formData.phone)) {
+      setError('Please enter a valid 10-digit phone number');
       return;
     }
 
@@ -85,7 +106,7 @@ const Register = () => {
       password: formData.password,
       firstName: formData.firstName,
       lastName: formData.lastName,
-      phone: formData.phone,
+      phone: getRawPhoneNumber(formData.phone), // Store raw phone number
       role: formData.role
     };
 
@@ -171,8 +192,14 @@ const Register = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      placeholder="Phone number"
+                      placeholder="(555) 123-4567"
+                      maxLength={14}
                     />
+                    {formData.phone && !isValidPhoneNumber(formData.phone) && (
+                      <Text fontSize="xs" color="red.500" mt={1}>
+                        Please enter a valid 10-digit phone number
+                      </Text>
+                    )}
                   </FormControl>
 
                   <FormControl isRequired>

@@ -11,15 +11,19 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  /* Brand Colors */
+  --brand-primary: #3674B5;
+  --brand-secondary: #3E7B27;
 }
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: #3674B5;
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: #2c5d91;
 }
 
 html, body {

@@ -433,7 +433,12 @@ const RidersDashboard = () => {
                             <Text fontSize="sm">To: {ride.to}</Text>
                           </VStack>
                         </Td>
-                        <Td>{ride.driver}</Td>
+                        <Td>
+                          {typeof ride.driver === 'object' && ride.driver 
+                            ? `${ride.driver.firstName || ''} ${ride.driver.lastName || ''}`.trim() || ride.driver.email || 'Unknown Driver'
+                            : ride.driver || 'Not Assigned'
+                          }
+                        </Td>
                         <Td>
                           <Badge 
                             colorScheme={ride.status === 'completed' ? 'green' : 'red'}

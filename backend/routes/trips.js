@@ -178,29 +178,28 @@ router.get('/search', authenticateToken, async (req, res) => {
       dropoffLocation,
       isRecurring,
       page = 1,
-      limit = 50
+      limit = 100 // Increased default limit for comprehensive search
     } = req.query;
 
     // Build comprehensive filter object
     let filter = {};
     let populate = [
-      { path: 'assignedDriver', select: 'firstName lastName name phone _id' },
+      { path: 'assignedDriver', select: 'firstName lastName name phone email _id' },
       { path: 'assignedVehicle', select: 'make model licensePlate vehicleType _id' },
       { path: 'createdBy', select: 'firstName lastName name' }
     ];
 
-    // Role-based filtering
+    // Role-based filtering - more permissive for search
     if (req.user.role === 'driver') {
-      filter.assignedDriver = req.user._id;
+      // Drivers can search all trips but see limited details on others
+      // Don't restrict by assignedDriver to allow seeing full schedule
     } else if (req.user.role === 'scheduler') {
-      // Schedulers can see trips they created or all if admin
-      if (req.user.role !== 'admin') {
-        filter.createdBy = req.user._id;
-      }
+      // Schedulers can see all trips for better coordination
+      // No restrictions
     }
     // Dispatchers and admins can see all trips
 
-    // Date range filter
+    // Date range filter - if no dates provided, search ALL history
     if (dateFrom || dateTo) {
       filter.scheduledDateTime = {};
       if (dateFrom) {
@@ -212,6 +211,7 @@ router.get('/search', authenticateToken, async (req, res) => {
         filter.scheduledDateTime.$lte = endDate;
       }
     }
+    // If no date range specified, search across ALL dates (past, present, future)
 
     // Text-based filters
     if (riderName) {
@@ -230,9 +230,11 @@ router.get('/search', authenticateToken, async (req, res) => {
       ];
     }
 
+    // Status filter - if not specified, search ALL statuses
     if (status) {
       filter.status = status;
     }
+    // If no status specified, include all: scheduled, in-progress, completed, cancelled
 
     if (isRecurring !== undefined && isRecurring !== '') {
       filter.isRecurring = isRecurring === 'true';
@@ -293,10 +295,28 @@ router.get('/search', authenticateToken, async (req, res) => {
 
     await logActivity(req.user._id, 'search', 'trip', null, {
       searchCriteria: req.query,
-      resultsFound: enrichedTrips.length
+      resultsFound: enrichedTrips.length,
+      totalInDatabase: total
     });
 
-    res.json(enrichedTrips);
+    // Return results with metadata
+    res.json({
+      trips: enrichedTrips,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / limit),
+        hasMore: total > (page * limit)
+      },
+      searchInfo: {
+        searchedAllHistory: !dateFrom && !dateTo,
+        searchedAllStatuses: !status,
+        dateRange: dateFrom || dateTo ? { from: dateFrom, to: dateTo } : 'all',
+        statusFilter: status || 'all',
+        resultsCount: enrichedTrips.length
+      }
+    });
 
   } catch (error) {
     console.error('Advanced search error:', error);

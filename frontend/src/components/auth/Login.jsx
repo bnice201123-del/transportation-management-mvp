@@ -68,7 +68,7 @@ const Login = () => {
           <VStack spacing={{ base: 4, md: 6 }}>
             <Heading 
               textAlign="center" 
-              color="blue.600" 
+              color="brand.600" 
               size={{ base: "md", md: "lg" }}
             >
               Transportation System
@@ -112,7 +112,7 @@ const Login = () => {
 
                   <Button
                     type="submit"
-                    colorScheme="blue"
+                    colorScheme="brand"
                     width="100%"
                     isLoading={loading}
                     loadingText="Signing in..."

@@ -6,31 +6,31 @@ const config = {
   useSystemColorMode: false,
 };
 
-// Brand color palette
+// Brand color palette - Custom Theme Colors
 const colors = {
   brand: {
-    50:  "#e5f0ff",
-    100: "#c2d7ff",
-    200: "#9dbdff",
-    300: "#78a2ff",
-    400: "#4f86ff",
-    500: "#2563eb", // main brand blue
-    600: "#1d4ec0",
-    700: "#163a8f",
-    800: "#0f275f",
-    900: "#08152f",
+    50:  "#e6f2fb",
+    100: "#c2dcf3",
+    200: "#9dc6eb",
+    300: "#77afe3",
+    400: "#529adb",
+    500: "#3674B5", // main brand blue
+    600: "#2c5d91",
+    700: "#22466d",
+    800: "#182f49",
+    900: "#0e1825",
   },
   secondary: {
-    50:  "#e4fbf7",
-    100: "#c0f4e8",
-    200: "#98ebd8",
-    300: "#6fe2c8",
-    400: "#45d8b7",
-    500: "#14b8a6", // main secondary teal
-    600: "#0f9183",
-    700: "#0a6b5f",
-    800: "#06453b",
-    900: "#021f19",
+    50:  "#eef6ea",
+    100: "#d4e7cb",
+    200: "#b9d8ab",
+    300: "#9eca8c",
+    400: "#84bb6c",
+    500: "#3E7B27", // main secondary green
+    600: "#326220",
+    700: "#254918",
+    800: "#193110",
+    900: "#0c1808",
   },
   neutral: {
     50:  "#f9fafb",

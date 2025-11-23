@@ -167,9 +167,9 @@ const Navbar = ({ title }) => {
       case 'dispatcher':
         return 'purple';
       case 'scheduler':
-        return 'green';
+        return 'secondary'; // green
       case 'driver':
-        return 'blue';
+        return 'brand'; // blue
       default:
         return 'gray';
     }
@@ -184,9 +184,9 @@ const Navbar = ({ title }) => {
       />
       
       <Box
-        bg="green.50"
+        bg="brand.50"
         borderBottom="2px"
-        borderColor="green.200"
+        borderColor="brand.200"
         position="sticky"
         top={0}
         zIndex={1000}
@@ -211,7 +211,7 @@ const Navbar = ({ title }) => {
                   aria-label="Open menu"
                   onClick={onMobileMenuOpen}
                   variant="ghost"
-                  colorScheme="green"
+                  colorScheme="brand"
                 />
               </Box>
 
@@ -224,10 +224,10 @@ const Navbar = ({ title }) => {
                 onClick={navigateToDashboard}
               >
                 <VStack spacing={0}>
-                  <Text fontSize="md" fontWeight="bold" color="green.600" lineHeight="1.2">
+                  <Text fontSize="md" fontWeight="bold" color="brand.600" lineHeight="1.2">
                     TransportHub
                   </Text>
-                  <Text fontSize="xx-small" color="green.500" lineHeight="1">
+                  <Text fontSize="xx-small" color="secondary.600" lineHeight="1">
                     Transportation Management
                   </Text>
                 </VStack>
@@ -265,10 +265,10 @@ const Navbar = ({ title }) => {
                 cursor="pointer"
                 onClick={navigateToDashboard}
               >
-                <Text fontSize={{ base: "lg", md: "2xl" }} fontWeight="bold" color="green.600">
+                <Text fontSize={{ base: "lg", md: "2xl" }} fontWeight="bold" color="brand.600">
                   TransportHub
                 </Text>
-                <Text fontSize="xs" color="green.500" mt="-1">
+                <Text fontSize="xs" color="secondary.600" mt="-1">
                   Transportation Management
                 </Text>
               </Box>
@@ -348,15 +348,15 @@ const Navbar = ({ title }) => {
                     leftIcon={<SettingsIcon />}
                     rightIcon={<ChevronDownIcon />}
                     variant="outline"
-                    colorScheme="green"
+                    colorScheme="brand"
                     size="md"
-                    bg="green.100"
-                    _hover={{ bg: "green.200" }}
-                    _active={{ bg: "green.300" }}
+                    bg="brand.100"
+                    _hover={{ bg: "brand.200" }}
+                    _active={{ bg: "brand.300" }}
                   >
                     Account Settings
                   </MenuButton>
-                  <MenuList border="1px" borderColor="green.200" shadow="lg">
+                  <MenuList border="1px" borderColor="brand.200" shadow="lg">
                     <MenuItem 
                       icon={<Avatar size="xs" name={user ? `${user.firstName} ${user.lastName}` : 'User'} />}
                       _hover={{ bg: "green.50" }}

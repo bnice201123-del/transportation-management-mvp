@@ -349,9 +349,13 @@ const VehicleProfile = () => {
                 <VStack align="start" spacing={3}>
                   <HStack>
                     <InfoIcon />
-                    <Text fontWeight="bold">{vehicle.currentDriver.name}</Text>
+                    <Text fontWeight="bold">
+                      {typeof vehicle.currentDriver === 'object'
+                        ? `${vehicle.currentDriver.firstName || ''} ${vehicle.currentDriver.lastName || ''}`.trim() || vehicle.currentDriver.email || 'Unknown'
+                        : vehicle.currentDriver}
+                    </Text>
                   </HStack>
-                  <Text>Driver ID: {vehicle.currentDriver.id}</Text>
+                  <Text>Driver ID: {vehicle.currentDriver._id || vehicle.currentDriver.id || vehicle.currentDriver}</Text>
                   <Text>Assigned: {formatDate(vehicle.assignedDate)}</Text>
                 </VStack>
               ) : (

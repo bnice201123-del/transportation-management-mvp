@@ -59,6 +59,11 @@ import { FaCar, FaUser, FaRoute } from 'react-icons/fa';
 import axios from 'axios';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 import VehicleQuickView from '../shared/VehicleQuickView';
+import { 
+  formatNameInput, 
+  formatAlphanumeric,
+  validationPatterns 
+} from '../../utils/inputValidation';
 
 const AdvancedSearchModal = ({ isOpen, onClose }) => {
   const [searchCriteria, setSearchCriteria] = useState({
@@ -83,7 +88,14 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
   const [hasSearched, setHasSearched] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [selectedTrip, setSelectedTrip] = useState(null);
-  const [savedSearches, setSavedSearches] = useState([
+  const [savedSearches] = useState([
+    {
+      id: 'all',
+      name: 'All Trips',
+      criteria: {
+        // Empty criteria = search all history
+      }
+    },
     {
       id: 'today',
       name: 'Today\'s Trips',
@@ -101,10 +113,25 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
       }
     },
     {
+      id: 'upcoming',
+      name: 'Upcoming Trips',
+      criteria: {
+        dateFrom: new Date().toISOString().split('T')[0],
+        status: 'scheduled'
+      }
+    },
+    {
       id: 'completed',
       name: 'Completed Trips',
       criteria: {
         status: 'completed'
+      }
+    },
+    {
+      id: 'inprogress',
+      name: 'In Progress',
+      criteria: {
+        status: 'in-progress'
       }
     }
   ]);
@@ -154,8 +181,27 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
         }
       });
 
-      const response = await axios.get(`/trips/search?${queryParams.toString()}`);
-      setSearchResults(response.data || []);
+      const response = await axios.get(`/api/trips/search?${queryParams.toString()}`);
+      
+      // Handle both old format (array) and new format (object with trips array)
+      const results = Array.isArray(response.data) 
+        ? response.data 
+        : (response.data.trips || []);
+      
+      setSearchResults(results);
+      
+      // Show search info if available
+      if (response.data.searchInfo) {
+        const info = response.data.searchInfo;
+        toast({
+          title: 'Search Complete',
+          description: `Found ${info.resultsCount} result(s). ${info.searchedAllHistory ? 'Searched entire history.' : `Searched from ${info.dateRange.from || 'beginning'} to ${info.dateRange.to || 'now'}.`}`,
+          status: 'success',
+          duration: 4000,
+          isClosable: true,
+        });
+      }
+      
       setActiveTab(1); // Switch to results tab
     } catch (error) {
       console.error('Search error:', error);
@@ -349,6 +395,18 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
               {/* Search Criteria Tab */}
               <TabPanel>
                 <VStack spacing={6} align="stretch">
+                  {/* Search Info Alert */}
+                  <Alert status="info" borderRadius="md">
+                    <AlertIcon />
+                    <Box>
+                      <Text fontWeight="bold" fontSize="sm">Comprehensive Search</Text>
+                      <Text fontSize="xs">
+                        Search across entire ride history including past, active, and scheduled (future) trips. 
+                        Leave filters empty to search all records.
+                      </Text>
+                    </Box>
+                  </Alert>
+
                   {/* Quick Searches */}
                   <Card bg="gray.50">
                     <CardBody>
@@ -422,8 +480,9 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                             value={searchCriteria.tripId}
                             onChange={(e) => setSearchCriteria({
                               ...searchCriteria,
-                              tripId: e.target.value
+                              tripId: formatAlphanumeric(e.target.value)
                             })}
+                            pattern={validationPatterns.alphanumeric}
                           />
                         </FormControl>
                         <FormControl>
@@ -460,8 +519,9 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                             value={searchCriteria.riderName}
                             onChange={(e) => setSearchCriteria({
                               ...searchCriteria,
-                              riderName: e.target.value
+                              riderName: formatNameInput(e.target.value)
                             })}
+                            pattern={validationPatterns.letters}
                           />
                         </FormControl>
                         <FormControl>
@@ -488,8 +548,9 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                             value={searchCriteria.userId}
                             onChange={(e) => setSearchCriteria({
                               ...searchCriteria,
-                              userId: e.target.value
+                              userId: formatAlphanumeric(e.target.value)
                             })}
+                            pattern={validationPatterns.alphanumeric}
                           />
                         </FormControl>
                       </Grid>

@@ -358,8 +358,17 @@ const VehiclesLanding = () => {
                           <Td>
                             {vehicle.currentDriver ? (
                               <HStack>
-                                <Avatar size="sm" name={vehicle.currentDriver.name} />
-                                <Text>{vehicle.currentDriver.name}</Text>
+                                <Avatar 
+                                  size="sm" 
+                                  name={typeof vehicle.currentDriver === 'object' 
+                                    ? `${vehicle.currentDriver.firstName || ''} ${vehicle.currentDriver.lastName || ''}`.trim() 
+                                    : vehicle.currentDriver} 
+                                />
+                                <Text>
+                                  {typeof vehicle.currentDriver === 'object'
+                                    ? `${vehicle.currentDriver.firstName || ''} ${vehicle.currentDriver.lastName || ''}`.trim() || vehicle.currentDriver.email || 'Unknown'
+                                    : vehicle.currentDriver}
+                                </Text>
                               </HStack>
                             ) : (
                               <Text color="gray.500">Unassigned</Text>
@@ -431,7 +440,11 @@ const VehiclesLanding = () => {
                             <VStack align="start" spacing={1}>
                               <Text color="gray.500">Driver</Text>
                               <Text fontWeight="medium">
-                                {vehicle.currentDriver?.name || 'Unassigned'}
+                                {vehicle.currentDriver 
+                                  ? (typeof vehicle.currentDriver === 'object'
+                                    ? `${vehicle.currentDriver.firstName || ''} ${vehicle.currentDriver.lastName || ''}`.trim() || vehicle.currentDriver.email || 'Unknown'
+                                    : vehicle.currentDriver)
+                                  : 'Unassigned'}
                               </Text>
                             </VStack>
                             <VStack align="start" spacing={1}>

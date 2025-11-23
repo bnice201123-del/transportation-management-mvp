@@ -58,6 +58,13 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
+import { 
+  formatPhoneNumber, 
+  getRawPhoneNumber,
+  formatNameInput,
+  isValidPhoneNumber,
+  isValidEmail
+} from '../../utils/inputValidation';
 
 const NewRider = () => {
   const [formData, setFormData] = useState({
@@ -152,6 +159,30 @@ const NewRider = () => {
       return;
     }
 
+    // Phone validation
+    if (formData.phone && !isValidPhoneNumber(formData.phone)) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please enter a valid 10-digit phone number',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Email validation
+    if (formData.email && !isValidEmail(formData.email)) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please enter a valid email address',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
     // Contract validation
     if (formData.isContractBased) {
       if (!formData.contractStartDate || !formData.contractEndDate) {
@@ -182,6 +213,7 @@ const NewRider = () => {
 
       const riderData = {
         ...formData,
+        phone: getRawPhoneNumber(formData.phone), // Store raw phone number
         riderId: generatedId,
         role: 'rider',
         isActive: true,
@@ -345,7 +377,7 @@ const NewRider = () => {
                     <FormLabel>First Name</FormLabel>
                     <Input
                       value={formData.firstName}
-                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      onChange={(e) => handleInputChange('firstName', formatNameInput(e.target.value))}
                       placeholder="Enter first name"
                     />
                   </FormControl>
@@ -353,7 +385,7 @@ const NewRider = () => {
                     <FormLabel>Last Name</FormLabel>
                     <Input
                       value={formData.lastName}
-                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      onChange={(e) => handleInputChange('lastName', formatNameInput(e.target.value))}
                       placeholder="Enter last name"
                     />
                   </FormControl>
@@ -361,7 +393,7 @@ const NewRider = () => {
 
                 {/* Email and Password */}
                 <HStack spacing={4} w="full">
-                  <FormControl>
+                  <FormControl isInvalid={formData.email && !isValidEmail(formData.email)}>
                     <FormLabel>Email (Optional)</FormLabel>
                     <Input
                       type="email"
@@ -369,6 +401,11 @@ const NewRider = () => {
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       placeholder="Enter email address"
                     />
+                    {formData.email && !isValidEmail(formData.email) && (
+                      <Text fontSize="xs" color="red.500" mt={1}>
+                        Please enter a valid email address
+                      </Text>
+                    )}
                   </FormControl>
                   <FormControl isRequired>
                     <FormLabel>Password</FormLabel>
@@ -404,14 +441,20 @@ const NewRider = () => {
                 </FormControl>
 
                 {/* Phone */}
-                <FormControl>
+                <FormControl isInvalid={formData.phone && !isValidPhoneNumber(formData.phone)}>
                   <FormLabel>Phone Number</FormLabel>
                   <Input
                     value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    placeholder="Enter phone number"
+                    onChange={(e) => handleInputChange('phone', formatPhoneNumber(e.target.value))}
+                    placeholder="(555) 123-4567"
                     type="tel"
+                    maxLength={14}
                   />
+                  {formData.phone && !isValidPhoneNumber(formData.phone) && (
+                    <Text fontSize="xs" color="red.500" mt={1}>
+                      Please enter a valid 10-digit phone number
+                    </Text>
+                  )}
                 </FormControl>
 
                 {/* Preferred Vehicle Type */}

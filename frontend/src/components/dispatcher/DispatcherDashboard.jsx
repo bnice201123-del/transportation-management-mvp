@@ -102,7 +102,9 @@ import {
   Cog6ToothIcon,
   ChatBubbleLeftRightIcon,
   ChevronDownIcon,
-  HomeIcon
+  HomeIcon,
+  UserIcon,
+  CalendarIcon
 } from '@heroicons/react/24/outline';
 import {
   ClockIcon as ClockIconSolid,
@@ -118,6 +120,9 @@ import TripManagementModal from '../scheduler/TripManagementModal';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 import RiderInfoModal from '../shared/RiderInfoModal';
 import TripDetailsModal from '../scheduler/TripDetailsModal';
+import DispatcherProfile from './DispatcherProfile';
+import DispatcherSchedule from './DispatcherSchedule';
+import DispatcherSearch from './DispatcherSearch';
 
 const DispatcherDashboard = () => {
   // Navigation
@@ -1056,6 +1061,57 @@ const getLocationText = (location) => {
                   >
                     <Box as={MapPinIcon} w={4} h={4} />
                     <Text display={{ base: "none", md: "inline" }}>Tracking</Text>
+                  </Tab>
+                  <Tab 
+                    flex={{ base: "1", sm: "initial" }}
+                    fontSize={{ base: "sm", md: "md" }}
+                    py={{ base: 3, md: 4 }}
+                    px={{ base: 3, md: 6 }}
+                    _selected={{ 
+                      color: primaryColor, 
+                      borderColor: "blue.500",
+                      bg: cardBg
+                    }}
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
+                  >
+                    <Box as={UserIcon} w={4} h={4} />
+                    <Text display={{ base: "none", md: "inline" }}>Profile</Text>
+                  </Tab>
+                  <Tab 
+                    flex={{ base: "1", sm: "initial" }}
+                    fontSize={{ base: "sm", md: "md" }}
+                    py={{ base: 3, md: 4 }}
+                    px={{ base: 3, md: 6 }}
+                    _selected={{ 
+                      color: primaryColor, 
+                      borderColor: "blue.500",
+                      bg: cardBg
+                    }}
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
+                  >
+                    <Box as={CalendarIcon} w={4} h={4} />
+                    <Text display={{ base: "none", md: "inline" }}>Schedule</Text>
+                  </Tab>
+                  <Tab 
+                    flex={{ base: "1", sm: "initial" }}
+                    fontSize={{ base: "sm", md: "md" }}
+                    py={{ base: 3, md: 4 }}
+                    px={{ base: 3, md: 6 }}
+                    _selected={{ 
+                      color: primaryColor, 
+                      borderColor: "blue.500",
+                      bg: cardBg
+                    }}
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
+                  >
+                    <Box as={MagnifyingGlassIcon} w={4} h={4} />
+                    <Text display={{ base: "none", md: "inline" }}>Search</Text>
                   </Tab>
                 </TabList>
 
@@ -2042,6 +2098,32 @@ const getLocationText = (location) => {
                   </VStack>
                 </CardBody>
               </Card>
+            </TabPanel>
+
+            {/* Profile Tab */}
+            <TabPanel px={0}>
+              <DispatcherProfile />
+            </TabPanel>
+
+            {/* Schedule Tab */}
+            <TabPanel px={0}>
+              <DispatcherSchedule 
+                onViewTrip={(trip) => {
+                  setSelectedTrip(trip);
+                  setViewTripDetails(trip);
+                  onViewOpen();
+                }}
+                onAssignDriver={(trip) => {
+                  setSelectedTrip(trip);
+                  setTripToAssign(trip);
+                  onAssignOpen();
+                }}
+              />
+            </TabPanel>
+
+            {/* Search Tab */}
+            <TabPanel px={0}>
+              <DispatcherSearch />
             </TabPanel>
               </TabPanels>
             </Tabs>

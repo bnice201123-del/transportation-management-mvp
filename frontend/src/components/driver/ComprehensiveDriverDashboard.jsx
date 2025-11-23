@@ -336,7 +336,7 @@ const ComprehensiveDriverDashboard = () => {
       <Box minH="100vh" bg={bgColor}>
         <Navbar title="Driver Dashboard" />
         <Center h="50vh">
-          <Spinner size="xl" color="teal.500" />
+          <Spinner size="xl" color="brand.500" />
         </Center>
       </Box>
     );
@@ -353,7 +353,7 @@ const ComprehensiveDriverDashboard = () => {
             <Box textAlign="center" py={{ base: 4, md: 6 }}>
               <Heading 
                 size={{ base: "lg", md: "xl" }} 
-                color="teal.600" 
+                color="brand.600" 
                 mb={2}
               >
                 Welcome back, {user?.firstName}!
@@ -486,14 +486,14 @@ const ComprehensiveDriverDashboard = () => {
                       <AccordionPanel pb={4} px={4} bg="white">
                         <VStack spacing={4} align="stretch">
                         {/* Driver Status Control */}
-                        <Card bg="teal.50" borderColor="teal.200" borderWidth="1px">
+                        <Card bg="brand.50" bordercolor="brand.200" borderWidth="1px">
                           <CardBody>
                             <HStack justify="space-between" align="center">
                               <VStack align="start" spacing={1}>
-                                <Text fontWeight="bold" color="teal.700">
+                                <Text fontWeight="bold" color="brand.700">
                                   Driver Availability
                                 </Text>
-                                <Text fontSize="sm" color="teal.600">
+                                <Text fontSize="sm" color="brand.600">
                                   Toggle to {isAvailable ? 'go offline' : 'go online'}
                                 </Text>
                               </VStack>
@@ -503,7 +503,7 @@ const ComprehensiveDriverDashboard = () => {
                                   isChecked={isAvailable}
                                   onChange={(e) => updateAvailability(e.target.checked)}
                                   isDisabled={updating}
-                                  colorScheme="teal"
+                                  colorScheme="brand"
                                 />
                               </FormControl>
                             </HStack>
@@ -514,10 +514,10 @@ const ComprehensiveDriverDashboard = () => {
                         <Card>
                           <CardHeader>
                             <HStack justify="space-between" align="center">
-                              <Heading size="md" color="teal.600">
+                              <Heading size="md" color="brand.600">
                                 Active Trips ({activeTrips.length})
                               </Heading>
-                              <Badge colorScheme="teal" px={2} py={1}>
+                              <Badge colorScheme="brand" px={2} py={1}>
                                 In Progress
                               </Badge>
                             </HStack>
@@ -545,12 +545,12 @@ const ComprehensiveDriverDashboard = () => {
                             ) : (
                               <VStack spacing={4} align="stretch">
                                 {activeTrips.map((trip) => (
-                                  <Card key={trip._id} variant="outline" borderColor="teal.200">
+                                  <Card key={trip._id} variant="outline" bordercolor="brand.200">
                                     <CardBody>
                                       <VStack spacing={3} align="stretch">
                                         <HStack justify="space-between">
                                           <VStack align="start" spacing={0}>
-                                            <Text fontWeight="bold" color="teal.600">
+                                            <Text fontWeight="bold" color="brand.600">
                                               Trip ID: {trip.tripId}
                                             </Text>
                                             <HStack>
@@ -607,7 +607,7 @@ const ComprehensiveDriverDashboard = () => {
                                               {trip.phone && (
                                                 <Button
                                                   size="sm"
-                                                  colorScheme="teal"
+                                                  colorScheme="brand"
                                                   leftIcon={<PhoneIcon />}
                                                   as="a"
                                                   href={`tel:${trip.phone}`}
@@ -644,13 +644,13 @@ const ComprehensiveDriverDashboard = () => {
                         {/* Quick Actions */}
                         <Card>
                           <CardHeader>
-                            <Heading size="md" color="teal.600">Quick Actions</Heading>
+                            <Heading size="md" color="brand.600">Quick Actions</Heading>
                           </CardHeader>
                           <CardBody>
                             <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={4}>
                               <Button
                                 leftIcon={<Box as={MapPinIcon} w={4} h={4} />}
-                                colorScheme="teal"
+                                colorScheme="brand"
                                 variant="outline"
                                 onClick={getCurrentLocation}
                                 size="md"
@@ -697,7 +697,7 @@ const ComprehensiveDriverDashboard = () => {
                       <AccordionPanel pb={4} px={4} bg="white">
                         <VStack spacing={4} align="stretch">
                           <HStack justify="space-between" align="center" flexWrap="wrap" spacing={4}>
-                            <Heading size="md" color="teal.600">
+                            <Heading size="md" color="brand.600">
                               My Trip History ({myTrips.length} trips)
                             </Heading>
                           </HStack>
@@ -713,7 +713,7 @@ const ComprehensiveDriverDashboard = () => {
                                   <CardBody>
                                     <VStack spacing={3} align="stretch">
                                       <HStack justify="space-between">
-                                        <Text fontWeight="bold" color="teal.600">
+                                        <Text fontWeight="bold" color="brand.600">
                                           {trip.tripId}
                                         </Text>
                                         <Badge colorScheme={getStatusColor(trip.status)}>
@@ -744,7 +744,7 @@ const ComprehensiveDriverDashboard = () => {
                       </h2>
                       <AccordionPanel pb={4} px={4} bg="white">
                         <VStack spacing={4} align="stretch">
-                          <Heading size="md" color="teal.600">Trip Reports</Heading>
+                          <Heading size="md" color="brand.600">Trip Reports</Heading>
                           <SimpleGrid columns={2} spacing={4}>
                             <Stat>
                               <StatLabel>Total Trips</StatLabel>
@@ -782,7 +782,7 @@ const ComprehensiveDriverDashboard = () => {
                             <Card>
                               <CardBody>
                                 <VStack align="start" spacing={2}>
-                                  <Heading size="md" color="teal.600">
+                                  <Heading size="md" color="brand.600">
                                     {vehicles[0].year} {vehicles[0].make} {vehicles[0].model}
                                   </Heading>
                                   <Text fontSize="sm">License: {vehicles[0].licensePlate}</Text>
@@ -812,7 +812,7 @@ const ComprehensiveDriverDashboard = () => {
                       <AccordionPanel pb={4} px={4} bg="white">
                         <VStack spacing={4} align="stretch">
                           <Button
-                            colorScheme="teal"
+                            colorScheme="brand"
                             leftIcon={<Box as={MapPinIcon} w={4} h={4} />}
                             onClick={getCurrentLocation}
                             size="md"
@@ -845,7 +845,7 @@ const ComprehensiveDriverDashboard = () => {
                       </h2>
                       <AccordionPanel pb={4} px={4} bg="white">
                         <VStack spacing={4} align="stretch">
-                          <Heading size="md" color="teal.600">Driver Settings</Heading>
+                          <Heading size="md" color="brand.600">Driver Settings</Heading>
                           <Text fontSize="sm" color="gray.600">
                             Switch to desktop view for full settings options
                           </Text>
@@ -856,7 +856,7 @@ const ComprehensiveDriverDashboard = () => {
                                 <Switch
                                   isChecked={isAvailable}
                                   onChange={(e) => updateAvailability(e.target.checked)}
-                                  colorScheme="teal"
+                                  colorScheme="brand"
                                 />
                               </FormControl>
                             </CardBody>
@@ -889,7 +889,7 @@ const ComprehensiveDriverDashboard = () => {
                                 <Divider />
                                 <HStack>
                                   <Text fontSize="sm" fontWeight="bold">Role:</Text>
-                                  <Badge colorScheme="teal">{user?.role}</Badge>
+                                  <Badge colorScheme="brand">{user?.role}</Badge>
                                 </HStack>
                                 <HStack>
                                   <Text fontSize="sm" fontWeight="bold">Phone:</Text>
@@ -915,7 +915,7 @@ const ComprehensiveDriverDashboard = () => {
                         <VStack spacing={4} align="stretch">
                           {activeTrips.length > 0 ? (
                             <>
-                              <Heading size="md" color="teal.600">Active Trips</Heading>
+                              <Heading size="md" color="brand.600">Active Trips</Heading>
                               <Text fontSize="sm" color="gray.600">
                                 Click "Drive" button on Dashboard to start Drive Mode for a trip
                               </Text>
@@ -964,7 +964,7 @@ const ComprehensiveDriverDashboard = () => {
                   index={activeTab} 
                   onChange={setActiveTab} 
                   variant="enclosed" 
-                  colorScheme="teal"
+                  colorScheme="brand"
                 >
                   <TabList 
                     flexWrap="wrap"
@@ -1075,14 +1075,14 @@ const ComprehensiveDriverDashboard = () => {
                     <TabPanel px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
                       <VStack spacing={{ base: 4, md: 6 }} align="stretch">
                         {/* Driver Status Control */}
-                        <Card bg="teal.50" borderColor="teal.200" borderWidth="1px">
+                        <Card bg="brand.50" bordercolor="brand.200" borderWidth="1px">
                           <CardBody>
                             <HStack justify="space-between" align="center">
                               <VStack align="start" spacing={1}>
-                                <Text fontWeight="bold" color="teal.700">
+                                <Text fontWeight="bold" color="brand.700">
                                   Driver Availability
                                 </Text>
-                                <Text fontSize="sm" color="teal.600">
+                                <Text fontSize="sm" color="brand.600">
                                   Toggle to {isAvailable ? 'go offline' : 'go online'}
                                 </Text>
                               </VStack>
@@ -1092,7 +1092,7 @@ const ComprehensiveDriverDashboard = () => {
                                   isChecked={isAvailable}
                                   onChange={(e) => updateAvailability(e.target.checked)}
                                   isDisabled={updating}
-                                  colorScheme="teal"
+                                  colorScheme="brand"
                                 />
                               </FormControl>
                             </HStack>
@@ -1103,10 +1103,10 @@ const ComprehensiveDriverDashboard = () => {
                         <Card>
                           <CardHeader>
                             <HStack justify="space-between" align="center">
-                              <Heading size="md" color="teal.600">
+                              <Heading size="md" color="brand.600">
                                 Active Trips ({activeTrips.length})
                               </Heading>
-                              <Badge colorScheme="teal" px={2} py={1}>
+                              <Badge colorScheme="brand" px={2} py={1}>
                                 In Progress
                               </Badge>
                             </HStack>
@@ -1134,12 +1134,12 @@ const ComprehensiveDriverDashboard = () => {
                             ) : (
                               <VStack spacing={4} align="stretch">
                                 {activeTrips.map((trip) => (
-                                  <Card key={trip._id} variant="outline" borderColor="teal.200">
+                                  <Card key={trip._id} variant="outline" bordercolor="brand.200">
                                     <CardBody>
                                       <VStack spacing={3} align="stretch">
                                         <HStack justify="space-between">
                                           <VStack align="start" spacing={0}>
-                                            <Text fontWeight="bold" color="teal.600">
+                                            <Text fontWeight="bold" color="brand.600">
                                               Trip ID: {trip.tripId}
                                             </Text>
                                             <HStack>
@@ -1196,7 +1196,7 @@ const ComprehensiveDriverDashboard = () => {
                                               {trip.phone && (
                                                 <Button
                                                   size="sm"
-                                                  colorScheme="teal"
+                                                  colorScheme="brand"
                                                   leftIcon={<PhoneIcon />}
                                                   as="a"
                                                   href={`tel:${trip.phone}`}
@@ -1233,13 +1233,13 @@ const ComprehensiveDriverDashboard = () => {
                         {/* Quick Actions */}
                         <Card>
                           <CardHeader>
-                            <Heading size="md" color="teal.600">Quick Actions</Heading>
+                            <Heading size="md" color="brand.600">Quick Actions</Heading>
                           </CardHeader>
                           <CardBody>
                             <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={4}>
                               <Button
                                 leftIcon={<Box as={MapPinIcon} w={4} h={4} />}
-                                colorScheme="teal"
+                                colorScheme="brand"
                                 variant="outline"
                                 onClick={getCurrentLocation}
                                 size={{ base: "md", md: "lg" }}
@@ -1277,7 +1277,7 @@ const ComprehensiveDriverDashboard = () => {
                     <TabPanel px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
                       <VStack spacing={{ base: 4, md: 6 }} align="stretch">
                         <HStack justify="space-between" align="center" flexWrap="wrap" spacing={4}>
-                          <Heading size="md" color="teal.600">
+                          <Heading size="md" color="brand.600">
                             My Trip History ({myTrips.length} trips)
                           </Heading>
                           <HStack spacing={2}>
@@ -1321,7 +1321,7 @@ const ComprehensiveDriverDashboard = () => {
                                   >
                                     <VStack align="start" spacing={2}>
                                       <HStack spacing={3}>
-                                        <Text fontWeight="bold" color="teal.600">
+                                        <Text fontWeight="bold" color="brand.600">
                                           {trip.tripId}
                                         </Text>
                                         <Badge colorScheme={getStatusColor(trip.status)} px={2} py={1}>
@@ -1378,7 +1378,7 @@ const ComprehensiveDriverDashboard = () => {
                                         <IconButton
                                           size="sm"
                                           icon={<PhoneIcon />}
-                                          colorScheme="teal"
+                                          colorScheme="brand"
                                           variant="outline"
                                           as="a"
                                           href={`tel:${trip.phone}`}
@@ -1406,12 +1406,12 @@ const ComprehensiveDriverDashboard = () => {
                     <TabPanel px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
                       <VStack spacing={{ base: 4, md: 6 }} align="stretch">
                         <HStack justify="space-between" align="center" flexWrap="wrap">
-                          <Heading size="md" color="teal.600">
+                          <Heading size="md" color="brand.600">
                             Performance Reports
                           </Heading>
                           <Button
                             leftIcon={<Box as={FunnelIcon} w={4} h={4} />}
-                            colorScheme="teal"
+                            colorScheme="brand"
                             variant="outline"
                             size="sm"
                             onClick={onReportOpen}
@@ -1514,7 +1514,7 @@ const ComprehensiveDriverDashboard = () => {
                     {/* Vehicle Tab */}
                     <TabPanel px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
                       <VStack spacing={{ base: 4, md: 6 }} align="stretch">
-                        <Heading size="md" color="teal.600">
+                        <Heading size="md" color="brand.600">
                           Assigned Vehicles
                         </Heading>
 
@@ -1542,7 +1542,7 @@ const ComprehensiveDriverDashboard = () => {
                                   >
                                     <VStack align="start" spacing={2}>
                                       <HStack spacing={3}>
-                                        <Text fontWeight="bold" color="teal.600" fontSize="lg">
+                                        <Text fontWeight="bold" color="brand.600" fontSize="lg">
                                           {vehicle.make} {vehicle.model}
                                         </Text>
                                         <Badge 
@@ -1584,7 +1584,7 @@ const ComprehensiveDriverDashboard = () => {
                                         Next Service: {vehicle.nextService || 'TBD'}
                                       </Text>
                                       <HStack spacing={2}>
-                                        <Button size="sm" colorScheme="teal" variant="outline">
+                                        <Button size="sm" colorScheme="brand" variant="outline">
                                           Report Issue
                                         </Button>
                                       </HStack>
@@ -1601,7 +1601,7 @@ const ComprehensiveDriverDashboard = () => {
                     {/* Location Tab */}
                     <TabPanel px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
                       <VStack spacing={{ base: 4, md: 6 }} align="stretch">
-                        <Heading size="md" color="teal.600">
+                        <Heading size="md" color="brand.600">
                           Location Tracking
                         </Heading>
 
@@ -1620,7 +1620,7 @@ const ComprehensiveDriverDashboard = () => {
                                 </VStack>
                                 <Button
                                   leftIcon={<Box as={MapPinIcon} w={4} h={4} />}
-                                  colorScheme="teal"
+                                  colorScheme="brand"
                                   onClick={getCurrentLocation}
                                   size="sm"
                                 >
@@ -1643,14 +1643,14 @@ const ComprehensiveDriverDashboard = () => {
                                   <FormLabel htmlFor="auto-location" mb="0" flex="1">
                                     Auto-update location while on duty
                                   </FormLabel>
-                                  <Switch id="auto-location" colorScheme="teal" />
+                                  <Switch id="auto-location" colorScheme="brand" />
                                 </FormControl>
 
                                 <FormControl display="flex" alignItems="center" justify="space-between">
                                   <FormLabel htmlFor="share-location" mb="0" flex="1">
                                     Share location with dispatch
                                   </FormLabel>
-                                  <Switch id="share-location" colorScheme="teal" defaultChecked />
+                                  <Switch id="share-location" colorScheme="brand" defaultChecked />
                                 </FormControl>
 
                                 <Alert status="info" rounded="md" fontSize="sm">
@@ -1667,7 +1667,7 @@ const ComprehensiveDriverDashboard = () => {
                     {/* Settings Tab */}
                     <TabPanel px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
                       <VStack spacing={{ base: 4, md: 6 }} align="stretch">
-                        <Heading size="md" color="teal.600">
+                        <Heading size="md" color="brand.600">
                           Driver Settings
                         </Heading>
 
@@ -1682,21 +1682,21 @@ const ComprehensiveDriverDashboard = () => {
                                   <FormLabel mb="0" flex="1">
                                     New trip notifications
                                   </FormLabel>
-                                  <Switch colorScheme="teal" defaultChecked />
+                                  <Switch colorScheme="brand" defaultChecked />
                                 </FormControl>
 
                                 <FormControl display="flex" alignItems="center" justify="space-between">
                                   <FormLabel mb="0" flex="1">
                                     Trip updates via SMS
                                   </FormLabel>
-                                  <Switch colorScheme="teal" defaultChecked />
+                                  <Switch colorScheme="brand" defaultChecked />
                                 </FormControl>
 
                                 <FormControl display="flex" alignItems="center" justify="space-between">
                                   <FormLabel mb="0" flex="1">
                                     Weekly performance reports
                                   </FormLabel>
-                                  <Switch colorScheme="teal" />
+                                  <Switch colorScheme="brand" />
                                 </FormControl>
                               </VStack>
                             </CardBody>
@@ -1746,7 +1746,7 @@ const ComprehensiveDriverDashboard = () => {
                     {/* Profile Tab */}
                     <TabPanel px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
                       <VStack spacing={{ base: 4, md: 6 }} align="stretch">
-                        <Heading size="md" color="teal.600">
+                        <Heading size="md" color="brand.600">
                           Driver Profile
                         </Heading>
 
@@ -1757,14 +1757,14 @@ const ComprehensiveDriverDashboard = () => {
                                 <Avatar 
                                   size="xl" 
                                   name={`${user?.firstName} ${user?.lastName}`}
-                                  bg="teal.500"
+                                  bg="brand.500"
                                 />
                                 <VStack align="start" spacing={1} flex="1">
                                   <Text fontSize="2xl" fontWeight="bold">
                                     {user?.firstName} {user?.lastName}
                                   </Text>
                                   <Text color="gray.600">Professional Driver</Text>
-                                  <Badge colorScheme="teal" px={3} py={1}>
+                                  <Badge colorScheme="brand" px={3} py={1}>
                                     Active Status
                                   </Badge>
                                 </VStack>
@@ -1774,7 +1774,7 @@ const ComprehensiveDriverDashboard = () => {
 
                               <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={6}>
                                 <VStack align="start" spacing={3}>
-                                  <Text fontWeight="bold" color="teal.600">Contact Information</Text>
+                                  <Text fontWeight="bold" color="brand.600">Contact Information</Text>
                                   <VStack align="start" spacing={2}>
                                     <HStack>
                                       <Box as={EnvelopeIcon} w={4} h={4} color="gray.500" />
@@ -1788,7 +1788,7 @@ const ComprehensiveDriverDashboard = () => {
                                 </VStack>
 
                                 <VStack align="start" spacing={3}>
-                                  <Text fontWeight="bold" color="teal.600">Driver Statistics</Text>
+                                  <Text fontWeight="bold" color="brand.600">Driver Statistics</Text>
                                   <VStack align="start" spacing={2}>
                                     <Text fontSize="sm">
                                       <strong>Total Trips:</strong> {myTrips.length}
@@ -1803,7 +1803,7 @@ const ComprehensiveDriverDashboard = () => {
                                 </VStack>
                               </Grid>
 
-                              <Button leftIcon={<Box as={PencilIcon} w={4} h={4} />} colorScheme="teal" variant="outline">
+                              <Button leftIcon={<Box as={PencilIcon} w={4} h={4} />} colorScheme="brand" variant="outline">
                                 Edit Profile
                               </Button>
                             </VStack>
@@ -1884,7 +1884,7 @@ const ComprehensiveDriverDashboard = () => {
           </ModalBody>
 
           <ModalFooter>
-            <Button colorScheme="teal" mr={3} onClick={onReportClose}>
+            <Button colorScheme="brand" mr={3} onClick={onReportClose}>
               Apply Filters
             </Button>
             <Button variant="ghost" onClick={onReportClose}>

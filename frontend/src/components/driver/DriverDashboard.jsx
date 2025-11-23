@@ -112,19 +112,40 @@ const DriverDashboard = () => {
 
   const fetchAssignedVehicle = useCallback(async () => {
     try {
+      console.log('Fetching assigned vehicle for driver:', user._id);
       // Use dedicated endpoint for driver's assigned vehicle
       const response = await axios.get('/api/vehicles/driver/assigned', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
+      console.log('Assigned vehicle response:', response.data);
       setAssignedVehicle(response.data.vehicle || null);
+      if (response.data.vehicle) {
+        console.log('Vehicle assigned successfully:', response.data.vehicle);
+      } else {
+        console.log('No vehicle assigned to this driver');
+      }
     } catch (error) {
       console.error('Error fetching assigned vehicle:', error);
+      console.error('Error details:', error.response?.data);
       // Fallback to old method if new endpoint fails
       try {
-        const fallbackResponse = await axios.get('/api/vehicles');
+        console.log('Trying fallback method to fetch vehicles');
+        const fallbackResponse = await axios.get('/api/vehicles', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
         const vehicles = fallbackResponse.data.vehicles || [];
-        const myVehicle = vehicles.find(v => v.currentDriver?._id === user._id || v.currentDriver === user._id);
+        console.log('All vehicles:', vehicles);
+        const myVehicle = vehicles.find(v => {
+          const isMatch = v.currentDriver?._id === user._id || v.currentDriver === user._id;
+          if (isMatch) console.log('Found matching vehicle:', v);
+          return isMatch;
+        });
         setAssignedVehicle(myVehicle || null);
+        if (myVehicle) {
+          console.log('Vehicle found via fallback:', myVehicle);
+        } else {
+          console.log('No matching vehicle found in fallback');
+        }
       } catch (fallbackError) {
         console.error('Fallback vehicle fetch also failed:', fallbackError);
       }
@@ -385,6 +406,27 @@ const DriverDashboard = () => {
 
             {/* Enhanced Statistics Dashboard */}
             <CardBody>
+            
+            {/* DEBUG INFO - Remove after testing */}
+            <Alert status="info" mb={4} fontSize="xs">
+              <AlertIcon />
+              <VStack align="start" spacing={1} flex="1">
+                <Text fontWeight="bold">Debug Info:</Text>
+                <Text>User ID: {user?._id}</Text>
+                <Text>User Email: {user?.email}</Text>
+                <Text>User Role: {user?.role}</Text>
+                <Text>User Roles: {user?.roles?.join(', ') || 'none'}</Text>
+                <Text>Assigned Vehicle: {assignedVehicle ? `${assignedVehicle.licensePlate} - ${assignedVehicle.make} ${assignedVehicle.model}` : 'NULL'}</Text>
+                <Button size="xs" colorScheme="blue" onClick={() => {
+                  console.log('=== MANUAL FETCH ===');
+                  console.log('User:', user);
+                  fetchAssignedVehicle();
+                }}>
+                  Refetch Vehicle
+                </Button>
+              </VStack>
+            </Alert>
+            
             <SimpleGrid columns={{ base: 2, md: 5 }} spacing={6}>
               <Stat>
                 <StatLabel>Status</StatLabel>

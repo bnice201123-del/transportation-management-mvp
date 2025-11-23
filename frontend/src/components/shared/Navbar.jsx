@@ -189,37 +189,75 @@ const Navbar = ({ title }) => {
         borderColor="green.200"
         position="sticky"
         top={0}
-        zIndex={10}
-        shadow="sm"
+        zIndex={1000}
+        shadow="md"
         ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} // Responsive left margin for sidebar
       >
         <Container maxW="container.xl" py={{ base: 2, md: 3 }} px={{ base: 4, md: 6 }}>
           <Flex alignItems="center" minH={{ base: "50px", md: "60px" }}>
             
-            {/* Mobile: Logo + Menu Button */}
-            <Box display={{ base: "flex", md: "none" }} alignItems="center" flex="1">
-              <HStack spacing={3}>
+            {/* Mobile: Three Column Layout - Hamburger | Logo | User Profile */}
+            <Flex 
+              display={{ base: "flex", md: "none" }} 
+              width="100%" 
+              alignItems="center" 
+              justifyContent="space-between"
+            >
+              {/* Column 1: Hamburger Menu */}
+              <Box flex="0 0 auto">
                 <IconButton
-                  size={{ base: "sm", md: "md" }}
+                  size="sm"
                   icon={<HamburgerIcon />}
                   aria-label="Open menu"
                   onClick={onMobileMenuOpen}
                   variant="ghost"
                   colorScheme="green"
                 />
-                <Box 
-                  cursor="pointer"
-                  onClick={navigateToDashboard}
-                >
-                  <Text fontSize={{ base: "lg", md: "2xl" }} fontWeight="bold" color="green.600">
+              </Box>
+
+              {/* Column 2: Company Logo/Name (Centered) */}
+              <Box 
+                flex="1" 
+                display="flex" 
+                justifyContent="center"
+                cursor="pointer"
+                onClick={navigateToDashboard}
+              >
+                <VStack spacing={0}>
+                  <Text fontSize="md" fontWeight="bold" color="green.600" lineHeight="1.2">
                     TransportHub
                   </Text>
-                  <Text fontSize="xs" color="green.500" mt="-1" display={{ base: "none", sm: "block" }}>
+                  <Text fontSize="xx-small" color="green.500" lineHeight="1">
                     Transportation Management
                   </Text>
-                </Box>
-              </HStack>
-            </Box>
+                </VStack>
+              </Box>
+
+              {/* Column 3: User Profile */}
+              <Box flex="0 0 auto">
+                <HStack spacing={1}>
+                  <VStack spacing={0} align="end">
+                    <Text fontSize="xs" fontWeight="medium" color="gray.700" lineHeight="1.2">
+                      {user ? `${user.firstName}` : 'User'}
+                    </Text>
+                    <Badge 
+                      colorScheme={getRoleBadgeColor(activeRole || user?.role)} 
+                      variant="subtle"
+                      fontSize="xx-small"
+                      px={1}
+                      py={0}
+                    >
+                      {user ? getRoleDisplayName(activeRole || user.role).toUpperCase() : 'ROLE'}
+                    </Badge>
+                  </VStack>
+                  <Avatar
+                    size="sm"
+                    name={user ? `${user.firstName} ${user.lastName}` : 'User'}
+                    bg={`${getRoleBadgeColor(activeRole || user?.role)}.500`}
+                  />
+                </HStack>
+              </Box>
+            </Flex>
 
             {/* Desktop: Logo Section */}
             <Box flex="1" display={{ base: "none", md: "block" }}>
@@ -301,8 +339,8 @@ const Navbar = ({ title }) => {
               </VStack>
             </Box>
 
-            {/* Right: Account Settings */}
-            <Box flex="1">
+            {/* Right: Account Settings (Desktop Only) */}
+            <Box flex="1" display={{ base: "none", md: "block" }}>
               <Flex justify="flex-end">
                 <Menu>
                   <MenuButton
@@ -311,14 +349,12 @@ const Navbar = ({ title }) => {
                     rightIcon={<ChevronDownIcon />}
                     variant="outline"
                     colorScheme="green"
-                    size={{ base: "sm", md: "md" }}
+                    size="md"
                     bg="green.100"
                     _hover={{ bg: "green.200" }}
                     _active={{ bg: "green.300" }}
                   >
-                    <Text display={{ base: 'none', md: 'block' }}>
-                      Account Settings
-                    </Text>
+                    Account Settings
                   </MenuButton>
                   <MenuList border="1px" borderColor="green.200" shadow="lg">
                     <MenuItem 
@@ -355,37 +391,6 @@ const Navbar = ({ title }) => {
                   </MenuList>
                 </Menu>
               </Flex>
-            </Box>
-
-            {/* Mobile: User Info + Menu */}
-            <Box display={{ base: "flex", md: "none" }} alignItems="center" ml="auto">
-              <HStack spacing={2}>
-                <VStack spacing={0} align="end">
-                  <Text fontSize="xs" fontWeight="medium" color="gray.700">
-                    {user ? `${user.firstName} ${user.lastName}` : 'User'}
-                  </Text>
-                  <Badge 
-                    colorScheme={getRoleBadgeColor(user?.role)} 
-                    variant="subtle"
-                    fontSize="xs"
-                  >
-                    {user ? getRoleDisplayName(user.role) : 'Role'}
-                  </Badge>
-                </VStack>
-                <Avatar
-                  size="sm"
-                  name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-                  bg={`${getRoleBadgeColor(user?.role)}.500`}
-                />
-                <IconButton
-                  size="sm"
-                  icon={<SettingsIcon />}
-                  aria-label="Account Settings"
-                  variant="ghost"
-                  colorScheme="green"
-                  onClick={handleLogout}
-                />
-              </HStack>
             </Box>
 
           </Flex>

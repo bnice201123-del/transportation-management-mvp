@@ -69,9 +69,18 @@ router.get('/', authenticateToken, authorizeRoles('admin', 'scheduler', 'dispatc
 // Get driver's assigned vehicle
 router.get('/driver/assigned', authenticateToken, async (req, res) => {
   try {
+    console.log('\n=== Driver Assigned Vehicle Request ===');
+    console.log('User ID:', req.user._id);
+    console.log('User ID Type:', typeof req.user._id);
+    console.log('User Role:', req.user.role);
+    console.log('User Roles Array:', req.user.roles);
+    
     // Check if user has driver role
     const hasDriverRole = req.user.role === 'driver' || (req.user.roles && req.user.roles.includes('driver'));
+    console.log('Has Driver Role:', hasDriverRole);
+    
     if (!hasDriverRole) {
+      console.log('Access denied - no driver role');
       return res.status(403).json({ 
         success: false,
         message: 'Access denied. Driver role required.' 
@@ -79,11 +88,31 @@ router.get('/driver/assigned', authenticateToken, async (req, res) => {
     }
 
     const driverId = req.user._id || req.user.userId;
+    console.log('Searching for vehicle with currentDriver:', driverId);
+    console.log('Driver ID as string:', driverId.toString());
     
+    // Try to find vehicle
     const vehicle = await Vehicle.findOne({ 
       currentDriver: driverId,
       isActive: true 
     }).populate('currentDriver', 'firstName lastName email phone');
+
+    console.log('Vehicle query result:', vehicle ? 'FOUND' : 'NOT FOUND');
+    
+    if (vehicle) {
+      console.log('✅ Vehicle ID:', vehicle._id);
+      console.log('✅ Vehicle details:', vehicle.year, vehicle.make, vehicle.model, vehicle.licensePlate);
+      console.log('✅ Assigned to driver:', vehicle.currentDriver?.firstName, vehicle.currentDriver?.lastName);
+    } else {
+      console.log('❌ No vehicle found for driver:', driverId.toString());
+      
+      // Debug: Check all vehicles in database
+      const allVehicles = await Vehicle.find({ isActive: true }).select('licensePlate currentDriver');
+      console.log('\n📋 All active vehicles in database:');
+      allVehicles.forEach(v => {
+        console.log(`  - ${v.licensePlate}: currentDriver = ${v.currentDriver || 'null'}`);
+      });
+    }
 
     if (!vehicle) {
       return res.json({ 
@@ -93,12 +122,13 @@ router.get('/driver/assigned', authenticateToken, async (req, res) => {
       });
     }
 
+    console.log('✅ Sending vehicle response\n');
     res.json({
       success: true,
       vehicle
     });
   } catch (error) {
-    console.error('Get driver assigned vehicle error:', error);
+    console.error('❌ Get driver assigned vehicle error:', error);
     res.status(500).json({ 
       success: false,
       message: 'Server error fetching assigned vehicle', 

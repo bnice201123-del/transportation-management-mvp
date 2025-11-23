@@ -17,7 +17,8 @@ import {
   DrawerCloseButton,
   IconButton,
   Collapse,
-  useBreakpointValue
+  useBreakpointValue,
+  Avatar
 } from '@chakra-ui/react';
 import {
   CalendarIcon,
@@ -60,7 +61,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import AdvancedSearchModal from '../search/AdvancedSearchModal';
 
 const Sidebar = ({ isMobileOpen, onMobileClose }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { isOpen: isSearchOpen, onOpen: onSearchOpen, onClose: onSearchClose } = useDisclosure();
@@ -225,7 +226,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       bgGradient={bgColor}
       borderRight="1px"
       borderColor={borderColor}
-      zIndex={999}
+      zIndex={900}
       shadow="xl"
       py={4}
       display={{ base: "none", md: "block" }}
@@ -483,6 +484,122 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                 )}
               </Box>
             ))}
+            
+            {/* Account Settings Section (Mobile Only) */}
+            <Box pt={4} mt={4} borderTop="1px" borderColor={borderColor}>
+              <Text fontSize="xs" fontWeight="bold" color="gray.500" px={3} mb={2}>
+                ACCOUNT
+              </Text>
+              
+              {/* User Profile Info */}
+              <Flex
+                align="center"
+                p={3}
+                minH="56px"
+                bg={menuBg}
+                borderRadius="md"
+                mb={2}
+              >
+                <Avatar
+                  size="sm"
+                  name={user ? `${user.firstName} ${user.lastName}` : 'User'}
+                  mr={3}
+                />
+                <VStack align="start" spacing={0} flex="1">
+                  <Text fontSize="sm" fontWeight="medium">
+                    {user ? `${user.firstName} ${user.lastName}` : 'User'}
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    {user?.email}
+                  </Text>
+                </VStack>
+              </Flex>
+
+              {/* Account Settings Options */}
+              <VStack spacing={1} align="stretch">
+                <Flex
+                  align="center"
+                  p={3}
+                  minH="44px"
+                  cursor="pointer"
+                  _hover={{ bg: hoverBg }}
+                  _active={{ bg: activeBg, transform: "scale(0.96)" }}
+                  transition="all 0.1s"
+                  borderRadius="md"
+                  onClick={() => {
+                    navigate('/settings/profile');
+                    onMobileClose();
+                  }}
+                >
+                  <Icon as={SettingsIcon} boxSize={5} color="gray.600" />
+                  <Text ml={3} fontSize="sm" fontWeight="medium">
+                    Profile Settings
+                  </Text>
+                </Flex>
+
+                <Flex
+                  align="center"
+                  p={3}
+                  minH="44px"
+                  cursor="pointer"
+                  _hover={{ bg: hoverBg }}
+                  _active={{ bg: activeBg, transform: "scale(0.96)" }}
+                  transition="all 0.1s"
+                  borderRadius="md"
+                  onClick={() => {
+                    navigate('/settings/preferences');
+                    onMobileClose();
+                  }}
+                >
+                  <Icon as={SettingsIcon} boxSize={5} color="gray.600" />
+                  <Text ml={3} fontSize="sm" fontWeight="medium">
+                    Account Preferences
+                  </Text>
+                </Flex>
+
+                <Flex
+                  align="center"
+                  p={3}
+                  minH="44px"
+                  cursor="pointer"
+                  _hover={{ bg: hoverBg }}
+                  _active={{ bg: activeBg, transform: "scale(0.96)" }}
+                  transition="all 0.1s"
+                  borderRadius="md"
+                  onClick={() => {
+                    navigate('/settings/notifications');
+                    onMobileClose();
+                  }}
+                >
+                  <Icon as={EmailIcon} boxSize={5} color="gray.600" />
+                  <Text ml={3} fontSize="sm" fontWeight="medium">
+                    Notification Settings
+                  </Text>
+                </Flex>
+
+                {/* Sign Out */}
+                <Flex
+                  align="center"
+                  p={3}
+                  minH="44px"
+                  cursor="pointer"
+                  _hover={{ bg: "red.50", color: "red.600" }}
+                  _active={{ bg: "red.100", transform: "scale(0.96)" }}
+                  transition="all 0.1s"
+                  borderRadius="md"
+                  color="red.500"
+                  onClick={() => {
+                    logout();
+                    onMobileClose();
+                  }}
+                >
+                  <Icon as={UnlockIcon} boxSize={5} />
+                  <Text ml={3} fontSize="sm" fontWeight="medium">
+                    Sign Out
+                  </Text>
+                </Flex>
+              </VStack>
+            </Box>
           </VStack>
         </DrawerBody>
       </DrawerContent>

@@ -110,6 +110,7 @@ import DriveMode from './DriveMode';
 
 const ComprehensiveDriverDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
+  const [accordionIndex, setAccordionIndex] = useState(0); // For mobile accordion
   const [trips, setTrips] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [isAvailable, setIsAvailable] = useState(true);
@@ -143,12 +144,15 @@ const ComprehensiveDriverDashboard = () => {
       );
       setTrips(userTrips);
 
-      // Fetch vehicles assigned to driver
-      const vehiclesResponse = await axios.get('/api/vehicles');
-      const assignedVehicles = (vehiclesResponse.data.data?.vehicles || []).filter(vehicle =>
-        vehicle.assignedDriver && vehicle.assignedDriver.includes(user.firstName + ' ' + user.lastName)
-      );
-      setVehicles(assignedVehicles);
+      // Fetch vehicles assigned to driver using dedicated endpoint
+      try {
+        const vehiclesResponse = await axios.get('/api/vehicles/driver/assigned');
+        const assignedVehicle = vehiclesResponse.data.vehicle;
+        setVehicles(assignedVehicle ? [assignedVehicle] : []);
+      } catch (error) {
+        console.error('Error fetching assigned vehicle:', error);
+        setVehicles([]);
+      }
 
       // Fetch driver status (in a real app, this would be from a driver status endpoint)
       // For now, we'll simulate this
@@ -456,9 +460,506 @@ const ComprehensiveDriverDashboard = () => {
               </Card>
             </Grid>
 
-            {/* Enhanced Tabbed Interface - Mobile-First Design */}
+            {/* Enhanced Interface - Accordion on Mobile, Tabs on Desktop */}
             <Card bg={cardBg} shadow="lg" mb={{ base: 6, md: 8 }}>
               <CardBody p={0}>
+                
+                {/* Mobile: Accordion View */}
+                <Box display={{ base: "block", md: "none" }}>
+                  <Accordion 
+                    index={accordionIndex} 
+                    onChange={(index) => {
+                      setAccordionIndex(index);
+                      setActiveTab(index >= 0 ? index : 0);
+                    }}
+                    allowToggle
+                  >
+                    <AccordionItem>
+                      <h2>
+                        <AccordionButton py={4} _expanded={{ bg: "teal.50", color: "teal.600", fontWeight: "bold" }}>
+                          <Box flex="1" textAlign="left" fontSize="md">
+                            🏠 Dashboard
+                          </Box>
+                          <AccordionIcon />
+                        </AccordionButton>
+                      </h2>
+                      <AccordionPanel pb={4} px={4} bg="white">
+                        <VStack spacing={4} align="stretch">
+                        {/* Driver Status Control */}
+                        <Card bg="teal.50" borderColor="teal.200" borderWidth="1px">
+                          <CardBody>
+                            <HStack justify="space-between" align="center">
+                              <VStack align="start" spacing={1}>
+                                <Text fontWeight="bold" color="teal.700">
+                                  Driver Availability
+                                </Text>
+                                <Text fontSize="sm" color="teal.600">
+                                  Toggle to {isAvailable ? 'go offline' : 'go online'}
+                                </Text>
+                              </VStack>
+                              <FormControl display="flex" alignItems="center" w="auto">
+                                <Switch
+                                  size="lg"
+                                  isChecked={isAvailable}
+                                  onChange={(e) => updateAvailability(e.target.checked)}
+                                  isDisabled={updating}
+                                  colorScheme="teal"
+                                />
+                              </FormControl>
+                            </HStack>
+                          </CardBody>
+                        </Card>
+
+                        {/* Active Trips Section */}
+                        <Card>
+                          <CardHeader>
+                            <HStack justify="space-between" align="center">
+                              <Heading size="md" color="teal.600">
+                                Active Trips ({activeTrips.length})
+                              </Heading>
+                              <Badge colorScheme="teal" px={2} py={1}>
+                                In Progress
+                              </Badge>
+                            </HStack>
+                          </CardHeader>
+                          <CardBody>
+                            {activeTrips.length === 0 ? (
+                              <Center py={8}>
+                                <VStack spacing={4}>
+                                  <Text color="gray.500" fontSize="lg">
+                                    No active trips assigned
+                                  </Text>
+                                  {!isAvailable && (
+                                    <Alert status="info" rounded="md" maxW="md">
+                                      <AlertIcon />
+                                      <VStack align="start" spacing={1}>
+                                        <Text fontWeight="bold">Go Online to Receive Trips</Text>
+                                        <Text fontSize="sm">
+                                          Set your status to available to receive trip assignments
+                                        </Text>
+                                      </VStack>
+                                    </Alert>
+                                  )}
+                                </VStack>
+                              </Center>
+                            ) : (
+                              <VStack spacing={4} align="stretch">
+                                {activeTrips.map((trip) => (
+                                  <Card key={trip._id} variant="outline" borderColor="teal.200">
+                                    <CardBody>
+                                      <VStack spacing={3} align="stretch">
+                                        <HStack justify="space-between">
+                                          <VStack align="start" spacing={0}>
+                                            <Text fontWeight="bold" color="teal.600">
+                                              Trip ID: {trip.tripId}
+                                            </Text>
+                                            <HStack>
+                                              <Text fontSize="sm" color="gray.600">
+                                                Rider:
+                                              </Text>
+                                              <Text 
+                                                fontSize="sm" 
+                                                color="blue.600"
+                                                fontWeight="medium"
+                                                cursor="pointer"
+                                                _hover={{ textDecoration: 'underline', color: 'blue.700' }}
+                                                onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, trip.riderName)}
+                                              >
+                                                {trip.riderName}
+                                              </Text>
+                                            </HStack>
+                                          </VStack>
+                                          <Badge 
+                                            colorScheme={getStatusColor(trip.status)} 
+                                            px={3} 
+                                            py={1}
+                                            fontSize="xs"
+                                          >
+                                            {trip.status.replace('_', ' ').toUpperCase()}
+                                          </Badge>
+                                        </HStack>
+
+                                        <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
+                                          <VStack align="start" spacing={2}>
+                                            <Text fontSize="sm" fontWeight="bold" color="green.600">
+                                              📍 Pickup: {trip.pickupLocation?.address || trip.pickupLocation}
+                                            </Text>
+                                            <Text fontSize="sm" fontWeight="bold" color="red.600">
+                                              🏁 Dropoff: {trip.dropoffLocation?.address || trip.dropoffLocation}
+                                            </Text>
+                                          </VStack>
+                                          <VStack align={{ base: "start", md: "end" }} spacing={2}>
+                                            <Text fontSize="sm">
+                                              🕐 {formatDate(trip.scheduledDate)}
+                                            </Text>
+                                            <HStack spacing={2}>
+                                              <Button
+                                                size="sm"
+                                                colorScheme="green"
+                                                leftIcon={<Box as={PlayIcon} w={4} h={4} />}
+                                                onClick={() => {
+                                                  setSelectedTrip(trip);
+                                                  setAccordionIndex(7); // Drive Mode accordion
+                                                }}
+                                              >
+                                                Drive
+                                              </Button>
+                                              {trip.phone && (
+                                                <Button
+                                                  size="sm"
+                                                  colorScheme="teal"
+                                                  leftIcon={<PhoneIcon />}
+                                                  as="a"
+                                                  href={`tel:${trip.phone}`}
+                                                >
+                                                  Call
+                                                </Button>
+                                              )}
+                                            </HStack>
+                                          </VStack>
+                                        </Grid>
+
+                                        {trip.notes && (
+                                          <Box 
+                                            p={3} 
+                                            bg="yellow.50" 
+                                            rounded="md" 
+                                            border="1px solid" 
+                                            borderColor="yellow.200"
+                                          >
+                                            <Text fontSize="sm">
+                                              <strong>Notes:</strong> {trip.notes}
+                                            </Text>
+                                          </Box>
+                                        )}
+                                      </VStack>
+                                    </CardBody>
+                                  </Card>
+                                ))}
+                              </VStack>
+                            )}
+                          </CardBody>
+                        </Card>
+
+                        {/* Quick Actions */}
+                        <Card>
+                          <CardHeader>
+                            <Heading size="md" color="teal.600">Quick Actions</Heading>
+                          </CardHeader>
+                          <CardBody>
+                            <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={4}>
+                              <Button
+                                leftIcon={<Box as={MapPinIcon} w={4} h={4} />}
+                                colorScheme="teal"
+                                variant="outline"
+                                onClick={getCurrentLocation}
+                                size="md"
+                                py={6}
+                              >
+                                Update Location
+                              </Button>
+                              <Button
+                                leftIcon={<Box as={ClockIconSolid} w={4} h={4} />}
+                                colorScheme="blue"
+                                variant="outline"
+                                onClick={() => setAccordionIndex(2)}
+                                size="md"
+                                py={6}
+                              >
+                                View Reports
+                              </Button>
+                              <Button
+                                leftIcon={<Box as={TruckIconSolid} w={4} h={4} />}
+                                colorScheme="purple"
+                                variant="outline"
+                                onClick={() => setAccordionIndex(3)}
+                                size="md"
+                                py={6}
+                              >
+                                Vehicle Status
+                              </Button>
+                            </Grid>
+                          </CardBody>
+                        </Card>
+                      </VStack>
+                      </AccordionPanel>
+                    </AccordionItem>
+
+                    <AccordionItem>
+                      <h2>
+                        <AccordionButton py={4} _expanded={{ bg: "teal.50", color: "teal.600", fontWeight: "bold" }}>
+                          <Box flex="1" textAlign="left" fontSize="md">
+                            🚗 My Trips
+                          </Box>
+                          <AccordionIcon />
+                        </AccordionButton>
+                      </h2>
+                      <AccordionPanel pb={4} px={4} bg="white">
+                        <VStack spacing={4} align="stretch">
+                          <HStack justify="space-between" align="center" flexWrap="wrap" spacing={4}>
+                            <Heading size="md" color="teal.600">
+                              My Trip History ({myTrips.length} trips)
+                            </Heading>
+                          </HStack>
+
+                          {myTrips.length === 0 ? (
+                            <Center py={8}>
+                              <Text color="gray.500" fontSize="lg">No trips found</Text>
+                            </Center>
+                          ) : (
+                            <VStack spacing={4} align="stretch">
+                              {myTrips.map((trip) => (
+                                <Card key={trip._id} variant="outline">
+                                  <CardBody>
+                                    <VStack spacing={3} align="stretch">
+                                      <HStack justify="space-between">
+                                        <Text fontWeight="bold" color="teal.600">
+                                          {trip.tripId}
+                                        </Text>
+                                        <Badge colorScheme={getStatusColor(trip.status)}>
+                                          {trip.status}
+                                        </Badge>
+                                      </HStack>
+                                      <Text fontSize="sm">📍 {trip.pickupLocation?.address || trip.pickupLocation}</Text>
+                                      <Text fontSize="sm">🏁 {trip.dropoffLocation?.address || trip.dropoffLocation}</Text>
+                                      <Text fontSize="sm">🕐 {formatDate(trip.scheduledDate)}</Text>
+                                    </VStack>
+                                  </CardBody>
+                                </Card>
+                              ))}
+                            </VStack>
+                          )}
+                        </VStack>
+                      </AccordionPanel>
+                    </AccordionItem>
+
+                    <AccordionItem>
+                      <h2>
+                        <AccordionButton py={4} _expanded={{ bg: "teal.50", color: "teal.600", fontWeight: "bold" }}>
+                          <Box flex="1" textAlign="left" fontSize="md">
+                            📊 Reports
+                          </Box>
+                          <AccordionIcon />
+                        </AccordionButton>
+                      </h2>
+                      <AccordionPanel pb={4} px={4} bg="white">
+                        <VStack spacing={4} align="stretch">
+                          <Heading size="md" color="teal.600">Trip Reports</Heading>
+                          <SimpleGrid columns={2} spacing={4}>
+                            <Stat>
+                              <StatLabel>Total Trips</StatLabel>
+                              <StatNumber>{myTrips.length}</StatNumber>
+                            </Stat>
+                            <Stat>
+                              <StatLabel>Completed</StatLabel>
+                              <StatNumber>{completedTrips.length}</StatNumber>
+                            </Stat>
+                            <Stat>
+                              <StatLabel>Active</StatLabel>
+                              <StatNumber>{activeTrips.length}</StatNumber>
+                            </Stat>
+                            <Stat>
+                              <StatLabel>Today</StatLabel>
+                              <StatNumber>{todayTrips.length}</StatNumber>
+                            </Stat>
+                          </SimpleGrid>
+                        </VStack>
+                      </AccordionPanel>
+                    </AccordionItem>
+
+                    <AccordionItem>
+                      <h2>
+                        <AccordionButton py={4} _expanded={{ bg: "teal.50", color: "teal.600", fontWeight: "bold" }}>
+                          <Box flex="1" textAlign="left" fontSize="md">
+                            🚙 Vehicle
+                          </Box>
+                          <AccordionIcon />
+                        </AccordionButton>
+                      </h2>
+                      <AccordionPanel pb={4} px={4} bg="white">
+                        <VStack spacing={4} align="stretch">
+                          {vehicles.length > 0 ? (
+                            <Card>
+                              <CardBody>
+                                <VStack align="start" spacing={2}>
+                                  <Heading size="md" color="teal.600">
+                                    {vehicles[0].year} {vehicles[0].make} {vehicles[0].model}
+                                  </Heading>
+                                  <Text fontSize="sm">License: {vehicles[0].licensePlate}</Text>
+                                  <Text fontSize="sm">Status: <Badge colorScheme={vehicles[0].status === 'active' ? 'green' : 'gray'}>{vehicles[0].status}</Badge></Text>
+                                  <Text fontSize="sm">Capacity: {vehicles[0].capacity} passengers</Text>
+                                </VStack>
+                              </CardBody>
+                            </Card>
+                          ) : (
+                            <Center py={8}>
+                              <Text color="gray.500">No vehicle assigned</Text>
+                            </Center>
+                          )}
+                        </VStack>
+                      </AccordionPanel>
+                    </AccordionItem>
+
+                    <AccordionItem>
+                      <h2>
+                        <AccordionButton py={4} _expanded={{ bg: "teal.50", color: "teal.600", fontWeight: "bold" }}>
+                          <Box flex="1" textAlign="left" fontSize="md">
+                            📍 Location
+                          </Box>
+                          <AccordionIcon />
+                        </AccordionButton>
+                      </h2>
+                      <AccordionPanel pb={4} px={4} bg="white">
+                        <VStack spacing={4} align="stretch">
+                          <Button
+                            colorScheme="teal"
+                            leftIcon={<Box as={MapPinIcon} w={4} h={4} />}
+                            onClick={getCurrentLocation}
+                            size="md"
+                          >
+                            Update Current Location
+                          </Button>
+                          {currentLocation && (
+                            <Card>
+                              <CardBody>
+                                <VStack align="start" spacing={1}>
+                                  <Text fontSize="sm" fontWeight="bold">Current Location:</Text>
+                                  <Text fontSize="sm">Lat: {currentLocation.lat?.toFixed(6)}</Text>
+                                  <Text fontSize="sm">Lng: {currentLocation.lng?.toFixed(6)}</Text>
+                                </VStack>
+                              </CardBody>
+                            </Card>
+                          )}
+                        </VStack>
+                      </AccordionPanel>
+                    </AccordionItem>
+
+                    <AccordionItem>
+                      <h2>
+                        <AccordionButton py={4} _expanded={{ bg: "teal.50", color: "teal.600", fontWeight: "bold" }}>
+                          <Box flex="1" textAlign="left" fontSize="md">
+                            ⚙️ Settings
+                          </Box>
+                          <AccordionIcon />
+                        </AccordionButton>
+                      </h2>
+                      <AccordionPanel pb={4} px={4} bg="white">
+                        <VStack spacing={4} align="stretch">
+                          <Heading size="md" color="teal.600">Driver Settings</Heading>
+                          <Text fontSize="sm" color="gray.600">
+                            Switch to desktop view for full settings options
+                          </Text>
+                          <Card>
+                            <CardBody>
+                              <FormControl display="flex" alignItems="center" justifyContent="space-between">
+                                <FormLabel mb={0}>Available for trips</FormLabel>
+                                <Switch
+                                  isChecked={isAvailable}
+                                  onChange={(e) => updateAvailability(e.target.checked)}
+                                  colorScheme="teal"
+                                />
+                              </FormControl>
+                            </CardBody>
+                          </Card>
+                        </VStack>
+                      </AccordionPanel>
+                    </AccordionItem>
+
+                    <AccordionItem>
+                      <h2>
+                        <AccordionButton py={4} _expanded={{ bg: "teal.50", color: "teal.600", fontWeight: "bold" }}>
+                          <Box flex="1" textAlign="left" fontSize="md">
+                            👤 Profile
+                          </Box>
+                          <AccordionIcon />
+                        </AccordionButton>
+                      </h2>
+                      <AccordionPanel pb={4} px={4} bg="white">
+                        <VStack spacing={4} align="stretch">
+                          <Card>
+                            <CardBody>
+                              <VStack align="start" spacing={3}>
+                                <HStack spacing={3}>
+                                  <Avatar name={`${user?.firstName} ${user?.lastName}`} size="lg" />
+                                  <VStack align="start" spacing={0}>
+                                    <Heading size="md">{user?.firstName} {user?.lastName}</Heading>
+                                    <Text fontSize="sm" color="gray.600">{user?.email}</Text>
+                                  </VStack>
+                                </HStack>
+                                <Divider />
+                                <HStack>
+                                  <Text fontSize="sm" fontWeight="bold">Role:</Text>
+                                  <Badge colorScheme="teal">{user?.role}</Badge>
+                                </HStack>
+                                <HStack>
+                                  <Text fontSize="sm" fontWeight="bold">Phone:</Text>
+                                  <Text fontSize="sm">{user?.phone || 'Not provided'}</Text>
+                                </HStack>
+                              </VStack>
+                            </CardBody>
+                          </Card>
+                        </VStack>
+                      </AccordionPanel>
+                    </AccordionItem>
+
+                    <AccordionItem>
+                      <h2>
+                        <AccordionButton py={4} _expanded={{ bg: "teal.50", color: "teal.600", fontWeight: "bold" }}>
+                          <Box flex="1" textAlign="left" fontSize="md">
+                            🚗 Drive Mode
+                          </Box>
+                          <AccordionIcon />
+                        </AccordionButton>
+                      </h2>
+                      <AccordionPanel pb={4} px={4} bg="white">
+                        <VStack spacing={4} align="stretch">
+                          {activeTrips.length > 0 ? (
+                            <>
+                              <Heading size="md" color="teal.600">Active Trips</Heading>
+                              <Text fontSize="sm" color="gray.600">
+                                Click "Drive" button on Dashboard to start Drive Mode for a trip
+                              </Text>
+                              <VStack spacing={2} align="stretch">
+                                {activeTrips.map((trip) => (
+                                  <Card key={trip._id} variant="outline">
+                                    <CardBody>
+                                      <HStack justify="space-between">
+                                        <VStack align="start" spacing={0}>
+                                          <Text fontWeight="bold" fontSize="sm">{trip.tripId}</Text>
+                                          <Text fontSize="xs" color="gray.600">{trip.riderName}</Text>
+                                        </VStack>
+                                        <Button
+                                          size="sm"
+                                          colorScheme="green"
+                                          onClick={() => {
+                                            setSelectedTrip(trip);
+                                            setAccordionIndex(7);
+                                          }}
+                                        >
+                                          Start
+                                        </Button>
+                                      </HStack>
+                                    </CardBody>
+                                  </Card>
+                                ))}
+                              </VStack>
+                            </>
+                          ) : (
+                            <Center py={8}>
+                              <VStack spacing={2}>
+                                <Text color="gray.500">No active trips</Text>
+                                <Text fontSize="sm" color="gray.400">Go online to receive trip assignments</Text>
+                              </VStack>
+                            </Center>
+                          )}
+                        </VStack>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  </Accordion>
+                </Box>
+
+                {/* Desktop: Tabs View */}
+                <Box display={{ base: "none", md: "block" }}>
                 <Tabs 
                   index={activeTab} 
                   onChange={setActiveTab} 
@@ -1333,6 +1834,7 @@ const ComprehensiveDriverDashboard = () => {
                     </TabPanel>
                   </TabPanels>
                 </Tabs>
+                </Box> {/* Close desktop Box */}
               </CardBody>
             </Card>
           </VStack>

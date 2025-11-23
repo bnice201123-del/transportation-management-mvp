@@ -209,9 +209,25 @@ vehicleSchema.statics.findAvailable = function() {
 
 // Instance method to assign driver
 vehicleSchema.methods.assignDriver = function(driverId) {
+  console.log('=== Vehicle.assignDriver called ===');
+  console.log('Vehicle ID:', this._id);
+  console.log('Vehicle:', this.make, this.model, this.licensePlate);
+  console.log('Assigning driver ID:', driverId);
+  console.log('Previous driver:', this.currentDriver);
+  
   this.currentDriver = driverId;
   this.assignedDate = new Date();
-  return this.save();
+  
+  console.log('New driver assigned:', this.currentDriver);
+  console.log('Assignment date:', this.assignedDate);
+  
+  return this.save().then(saved => {
+    console.log('Vehicle saved successfully with driver:', saved.currentDriver);
+    return saved;
+  }).catch(err => {
+    console.error('Error saving vehicle:', err);
+    throw err;
+  });
 };
 
 // Instance method to unassign driver

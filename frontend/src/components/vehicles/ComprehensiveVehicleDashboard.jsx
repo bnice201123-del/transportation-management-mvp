@@ -764,7 +764,7 @@ const ComprehensiveVehicleDashboard = () => {
                             <Heading size="md" color="orange.600">Quick Actions</Heading>
                           </CardHeader>
                           <CardBody>
-                            <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={4}>
+                            <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={4}>
                               <Button
                                 leftIcon={<FaCar />}
                                 colorScheme="orange"
@@ -774,6 +774,16 @@ const ComprehensiveVehicleDashboard = () => {
                                 py={{ base: 6, md: 8 }}
                               >
                                 View All Vehicles
+                              </Button>
+                              <Button
+                                leftIcon={<FaUserTie />}
+                                colorScheme="blue"
+                                variant="outline"
+                                onClick={() => navigate('/vehicles/assignment')}
+                                size={{ base: "md", md: "lg" }}
+                                py={{ base: 6, md: 8 }}
+                              >
+                                Assign Vehicle
                               </Button>
                               <Button
                                 leftIcon={<FaWrench />}

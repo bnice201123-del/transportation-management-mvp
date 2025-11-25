@@ -165,6 +165,7 @@ router.get('/recent', authenticateToken, async (req, res) => {
 router.get('/search', authenticateToken, async (req, res) => {
   try {
     const {
+      keyword, // New: Full-system keyword search
       dateFrom,
       dateTo,
       riderName,
@@ -185,7 +186,7 @@ router.get('/search', authenticateToken, async (req, res) => {
     let filter = {};
     let populate = [
       { path: 'assignedDriver', select: 'firstName lastName name phone email _id' },
-      { path: 'assignedVehicle', select: 'make model licensePlate vehicleType _id' },
+      { path: 'vehicle', select: 'make model licensePlate vehicleType _id' },
       { path: 'createdBy', select: 'firstName lastName name' }
     ];
 
@@ -199,35 +200,67 @@ router.get('/search', authenticateToken, async (req, res) => {
     }
     // Dispatchers and admins can see all trips
 
+    // Keyword search - search across all fields
+    if (keyword && keyword.trim() !== '') {
+      const keywordRegex = { $regex: keyword, $options: 'i' };
+      filter.$or = [
+        { tripId: keywordRegex },
+        { riderName: keywordRegex },
+        { riderPhone: keywordRegex },
+        { riderEmail: keywordRegex },
+        { 'pickupLocation.address': keywordRegex },
+        { 'dropoffLocation.address': keywordRegex },
+        { driverNotes: keywordRegex },
+        { specialInstructions: keywordRegex },
+        { status: keywordRegex },
+        { tripType: keywordRegex }
+      ];
+      
+      // Note: Driver name and vehicle searches require populated data,
+      // so we'll filter those after the query in post-processing
+    }
+
     // Date range filter - if no dates provided, search ALL history
     if (dateFrom || dateTo) {
-      filter.scheduledDateTime = {};
+      filter.scheduledDate = {};
       if (dateFrom) {
-        filter.scheduledDateTime.$gte = new Date(dateFrom);
+        filter.scheduledDate.$gte = new Date(dateFrom);
       }
       if (dateTo) {
         const endDate = new Date(dateTo);
         endDate.setHours(23, 59, 59, 999); // End of day
-        filter.scheduledDateTime.$lte = endDate;
+        filter.scheduledDate.$lte = endDate;
       }
     }
     // If no date range specified, search across ALL dates (past, present, future)
 
-    // Text-based filters
-    if (riderName) {
-      filter.riderName = { $regex: riderName, $options: 'i' };
-    }
+    // Text-based filters (only apply if keyword is not used)
+    if (!keyword) {
+      if (riderName) {
+        filter.riderName = { $regex: riderName, $options: 'i' };
+      }
 
-    if (tripId) {
-      filter._id = { $regex: tripId, $options: 'i' };
-    }
+      if (tripId) {
+        // Search by the tripId field (string like "T-2025-001234"), not _id
+        filter.tripId = { $regex: tripId, $options: 'i' };
+      }
 
-    if (userId) {
-      // Search in both rider and driver user IDs
-      filter.$or = [
-        { riderId: userId },
-        { assignedDriver: userId }
-      ];
+      if (userId) {
+        // Search in both rider and driver user IDs
+        filter.$or = [
+          { rider: userId },
+          { assignedDriver: userId }
+        ];
+      }
+
+      // Location filters
+      if (pickupLocation) {
+        filter['pickupLocation.address'] = { $regex: pickupLocation, $options: 'i' };
+      }
+
+      if (dropoffLocation) {
+        filter['dropoffLocation.address'] = { $regex: dropoffLocation, $options: 'i' };
+      }
     }
 
     // Status filter - if not specified, search ALL statuses
@@ -240,18 +273,9 @@ router.get('/search', authenticateToken, async (req, res) => {
       filter.isRecurring = isRecurring === 'true';
     }
 
-    // Location filters
-    if (pickupLocation) {
-      filter['pickupLocation.address'] = { $regex: pickupLocation, $options: 'i' };
-    }
-
-    if (dropoffLocation) {
-      filter['dropoffLocation.address'] = { $regex: dropoffLocation, $options: 'i' };
-    }
-
     // Vehicle-related filters
     if (vehicleId) {
-      filter.assignedVehicle = vehicleId;
+      filter.vehicle = vehicleId;
     }
 
     // Execute query with population
@@ -260,7 +284,7 @@ router.get('/search', authenticateToken, async (req, res) => {
 
     const skip = (page - 1) * limit;
     const trips = await query
-      .sort({ scheduledDateTime: -1, createdAt: -1 })
+      .sort({ scheduledDate: -1, createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
       .exec();
@@ -268,6 +292,30 @@ router.get('/search', authenticateToken, async (req, res) => {
     // Post-process filtering for populated fields
     let filteredTrips = trips;
 
+    // Keyword search post-processing for driver name and vehicle
+    if (keyword && keyword.trim() !== '') {
+      const keywordLower = keyword.toLowerCase();
+      filteredTrips = filteredTrips.filter(trip => {
+        // Check driver name
+        const driver = trip.assignedDriver;
+        if (driver) {
+          const fullName = `${driver.firstName || ''} ${driver.lastName || ''}`.trim() || driver.name || '';
+          if (fullName.toLowerCase().includes(keywordLower)) return true;
+        }
+        
+        // Check vehicle information
+        const vehicle = trip.vehicle;
+        if (vehicle) {
+          const vehicleInfo = `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.licensePlate || ''} ${vehicle.vehicleType || ''}`;
+          if (vehicleInfo.toLowerCase().includes(keywordLower)) return true;
+        }
+        
+        // If already matched in database query, keep it
+        return true;
+      });
+    }
+
+    // Regular filter processing (when not using keyword search)
     if (driverName) {
       filteredTrips = filteredTrips.filter(trip => {
         const driver = trip.assignedDriver;
@@ -279,7 +327,7 @@ router.get('/search', authenticateToken, async (req, res) => {
 
     if (vehicleType) {
       filteredTrips = filteredTrips.filter(trip => {
-        return trip.assignedVehicle?.vehicleType === vehicleType;
+        return trip.vehicle?.vehicleType === vehicleType;
       });
     }
 

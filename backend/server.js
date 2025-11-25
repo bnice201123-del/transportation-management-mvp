@@ -15,6 +15,7 @@ import vehiclesRoutes from './routes/vehicles.js';
 import locationRoutes from './routes/locations.js';
 import activitiesRoutes from './routes/activities.js';
 import ridersRoutes from './routes/riders.js';
+import gpsTrackingRoutes from './routes/gpsTracking.js';
 
 // Load environment variables
 dotenv.config();
@@ -65,6 +66,7 @@ app.use('/api/vehicles', vehiclesRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/activities', activitiesRoutes);
 app.use('/api/riders', ridersRoutes);
+app.use('/api/gps', gpsTrackingRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

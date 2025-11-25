@@ -146,6 +146,79 @@ const tripSchema = new mongoose.Schema({
     cancellationReason: String
   },
   
+  // GPS Route Tracking - Actual path taken by driver
+  routeTracking: {
+    isEnabled: {
+      type: Boolean,
+      default: true
+    },
+    routePoints: [{
+      latitude: {
+        type: Number,
+        required: true
+      },
+      longitude: {
+        type: Number,
+        required: true
+      },
+      timestamp: {
+        type: Date,
+        required: true,
+        default: Date.now
+      },
+      accuracy: Number, // in meters
+      altitude: Number, // in meters
+      speed: Number, // in m/s
+      heading: Number, // in degrees (0-360)
+      batteryLevel: Number, // percentage (0-100)
+      isSignificant: {
+        type: Boolean,
+        default: false // marks important waypoints
+      }
+    }],
+    routeSummary: {
+      totalPoints: {
+        type: Number,
+        default: 0
+      },
+      totalDistance: {
+        type: Number,
+        default: 0 // in kilometers
+      },
+      actualDuration: {
+        type: Number,
+        default: 0 // in minutes
+      },
+      startTime: Date,
+      endTime: Date,
+      averageSpeed: Number, // km/h
+      maxSpeed: Number, // km/h
+      idleTime: Number, // in minutes
+      movingTime: Number // in minutes
+    },
+    deviations: [{
+      timestamp: Date,
+      location: {
+        latitude: Number,
+        longitude: Number
+      },
+      distanceFromPlanned: Number, // in meters
+      reason: String,
+      duration: Number // how long the deviation lasted in minutes
+    }],
+    geofenceEvents: [{
+      eventType: {
+        type: String,
+        enum: ['pickup_zone_entered', 'pickup_zone_exited', 'dropoff_zone_entered', 'dropoff_zone_exited', 'route_boundary_exceeded']
+      },
+      timestamp: Date,
+      location: {
+        latitude: Number,
+        longitude: Number
+      }
+    }]
+  },
+  
   // Rating and feedback
   rating: {
     type: Number,

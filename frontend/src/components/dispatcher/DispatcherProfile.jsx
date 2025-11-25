@@ -84,7 +84,8 @@ const DispatcherProfile = () => {
     try {
       // Fetch trip stats for the dispatcher
       const tripsResponse = await axios.get('/api/trips');
-      const trips = tripsResponse.data?.trips || tripsResponse.data || [];
+      const tripsData = tripsResponse.data?.trips || tripsResponse.data || [];
+      const trips = Array.isArray(tripsData) ? tripsData : [];
       
       const today = new Date().toISOString().split('T')[0];
       const completedToday = trips.filter(t => 

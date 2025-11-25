@@ -63,11 +63,6 @@ const DispatcherSchedule = ({ onViewTrip, onAssignDriver }) => {
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const textColor = useColorModeValue('gray.600', 'gray.400');
 
-  useEffect(() => {
-    fetchSchedule();
-    fetchDrivers();
-  }, [filters, fetchSchedule, fetchDrivers]);
-
   const fetchSchedule = useCallback(async () => {
     setLoading(true);
     try {
@@ -102,6 +97,11 @@ const DispatcherSchedule = ({ onViewTrip, onAssignDriver }) => {
       setDrivers([]);
     }
   }, []);
+
+  useEffect(() => {
+    fetchSchedule();
+    fetchDrivers();
+  }, [fetchSchedule, fetchDrivers]);
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }));
@@ -139,7 +139,7 @@ const DispatcherSchedule = ({ onViewTrip, onAssignDriver }) => {
   };
 
   // Group trips by driver
-  const tripsByDriver = trips.reduce((acc, trip) => {
+  const tripsByDriver = Array.isArray(trips) ? trips.reduce((acc, trip) => {
     const driverId = trip.assignedDriver?._id || 'unassigned';
     if (!acc[driverId]) {
       acc[driverId] = {
@@ -149,7 +149,7 @@ const DispatcherSchedule = ({ onViewTrip, onAssignDriver }) => {
     }
     acc[driverId].trips.push(trip);
     return acc;
-  }, {});
+  }, {}) : {};
 
   return (
     <VStack spacing={6} align="stretch">
@@ -279,14 +279,14 @@ const DispatcherSchedule = ({ onViewTrip, onAssignDriver }) => {
             <Card bg={cardBg} borderWidth={1} borderColor={borderColor}>
               <CardBody>
                 <Text fontSize="sm" color={textColor}>Total Trips</Text>
-                <Text fontSize="2xl" fontWeight="bold">{trips.length}</Text>
+                <Text fontSize="2xl" fontWeight="bold">{Array.isArray(trips) ? trips.length : 0}</Text>
               </CardBody>
             </Card>
             <Card bg={cardBg} borderWidth={1} borderColor={borderColor}>
               <CardBody>
                 <Text fontSize="sm" color={textColor}>Assigned</Text>
                 <Text fontSize="2xl" fontWeight="bold" color="green.500">
-                  {trips.filter(t => t.assignedDriver).length}
+                  {Array.isArray(trips) ? trips.filter(t => t.assignedDriver).length : 0}
                 </Text>
               </CardBody>
             </Card>
@@ -294,7 +294,7 @@ const DispatcherSchedule = ({ onViewTrip, onAssignDriver }) => {
               <CardBody>
                 <Text fontSize="sm" color={textColor}>Unassigned</Text>
                 <Text fontSize="2xl" fontWeight="bold" color="orange.500">
-                  {trips.filter(t => !t.assignedDriver).length}
+                  {Array.isArray(trips) ? trips.filter(t => !t.assignedDriver).length : 0}
                 </Text>
               </CardBody>
             </Card>
@@ -302,7 +302,7 @@ const DispatcherSchedule = ({ onViewTrip, onAssignDriver }) => {
               <CardBody>
                 <Text fontSize="sm" color={textColor}>In Progress</Text>
                 <Text fontSize="2xl" fontWeight="bold" color="blue.500">
-                  {trips.filter(t => t.status === 'in-progress').length}
+                  {Array.isArray(trips) ? trips.filter(t => t.status === 'in-progress').length : 0}
                 </Text>
               </CardBody>
             </Card>

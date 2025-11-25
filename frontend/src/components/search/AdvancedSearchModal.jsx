@@ -67,6 +67,7 @@ import {
 
 const AdvancedSearchModal = ({ isOpen, onClose }) => {
   const [searchCriteria, setSearchCriteria] = useState({
+    keyword: '', // New: Full-system keyword search
     dateFrom: '',
     dateTo: '',
     riderName: '',
@@ -93,7 +94,7 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
       id: 'all',
       name: 'All Trips',
       criteria: {
-        // Empty criteria = search all history
+        status: 'completed' // Only completed trips
       }
     },
     {
@@ -102,36 +103,29 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
       criteria: {
         dateFrom: new Date().toISOString().split('T')[0],
         dateTo: new Date().toISOString().split('T')[0]
-      }
-    },
-    {
-      id: 'week',
-      name: 'This Week',
-      criteria: {
-        dateFrom: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        dateTo: new Date().toISOString().split('T')[0]
+        // No status filter - show all trips scheduled for today
       }
     },
     {
       id: 'upcoming',
       name: 'Upcoming Trips',
       criteria: {
-        dateFrom: new Date().toISOString().split('T')[0],
-        status: 'scheduled'
+        dateFrom: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Tomorrow onwards
+        // No status filter - show all future-dated trips
       }
     },
     {
-      id: 'completed',
-      name: 'Completed Trips',
+      id: 'cancelled',
+      name: 'Canceled Trips',
       criteria: {
-        status: 'completed'
+        status: 'cancelled'
       }
     },
     {
       id: 'inprogress',
       name: 'In Progress',
       criteria: {
-        status: 'in-progress'
+        status: 'in_progress'
       }
     }
   ]);
@@ -184,9 +178,32 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
       const response = await axios.get(`/api/trips/search?${queryParams.toString()}`);
       
       // Handle both old format (array) and new format (object with trips array)
-      const results = Array.isArray(response.data) 
+      let results = Array.isArray(response.data) 
         ? response.data 
         : (response.data.trips || []);
+      
+      // Sort all results by most recent first (descending order)
+      results = results.sort((a, b) => {
+        let dateA, dateB;
+        
+        // For completed trips, use actualDropoffTime
+        if (searchCriteria.status === 'completed') {
+          dateA = new Date(a.actualDropoffTime || a.scheduledDate);
+          dateB = new Date(b.actualDropoffTime || b.scheduledDate);
+        }
+        // For in-progress trips, use actualPickupTime
+        else if (searchCriteria.status === 'in_progress') {
+          dateA = new Date(a.actualPickupTime || a.scheduledDate);
+          dateB = new Date(b.actualPickupTime || b.scheduledDate);
+        }
+        // For all other trips (upcoming, today's, cancelled), use scheduledDate
+        else {
+          dateA = new Date(a.scheduledDate);
+          dateB = new Date(b.scheduledDate);
+        }
+        
+        return dateB - dateA; // Descending order (most recent first)
+      });
       
       setSearchResults(results);
       
@@ -219,6 +236,7 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
 
   const handleClearSearch = () => {
     setSearchCriteria({
+      keyword: '',
       dateFrom: '',
       dateTo: '',
       riderName: '',
@@ -330,11 +348,14 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
     });
   };
 
-  const handleLoadSavedSearch = (savedSearch) => {
-    setSearchCriteria({
+  const handleLoadSavedSearch = async (savedSearch) => {
+    const newCriteria = {
       ...searchCriteria,
       ...savedSearch.criteria
-    });
+    };
+    
+    setSearchCriteria(newCriteria);
+    
     toast({
       title: 'Search Loaded',
       description: `Loaded "${savedSearch.name}" search criteria`,
@@ -342,6 +363,82 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
       duration: 2000,
       isClosable: true,
     });
+    
+    // Auto-execute search for all quick searches
+    setIsLoading(true);
+    setHasSearched(true);
+    
+    try {
+      // Build query parameters from the saved search criteria
+      const queryParams = new URLSearchParams();
+      
+      Object.entries(newCriteria).forEach(([key, value]) => {
+        if (value && value.trim() !== '') {
+          queryParams.append(key, value);
+        }
+      });
+
+      const response = await axios.get(`/api/trips/search?${queryParams.toString()}`);
+      
+      // Handle both old format (array) and new format (object with trips array)
+      let results = Array.isArray(response.data) 
+        ? response.data 
+        : (response.data.trips || []);
+      
+      // Sort results by most recent first (descending order)
+      results = results.sort((a, b) => {
+        let dateA, dateB;
+        
+        // For completed trips, use actualDropoffTime
+        if (savedSearch.id === 'all' || newCriteria.status === 'completed') {
+          dateA = new Date(a.actualDropoffTime || a.scheduledDate);
+          dateB = new Date(b.actualDropoffTime || b.scheduledDate);
+        }
+        // For in-progress trips, use actualPickupTime
+        else if (savedSearch.id === 'inprogress' || newCriteria.status === 'in_progress') {
+          dateA = new Date(a.actualPickupTime || a.scheduledDate);
+          dateB = new Date(b.actualPickupTime || b.scheduledDate);
+        }
+        // For all other trips (upcoming, today's, cancelled), use scheduledDate
+        else {
+          dateA = new Date(a.scheduledDate);
+          dateB = new Date(b.scheduledDate);
+        }
+        
+        return dateB - dateA; // Descending order (most recent first)
+      });
+      
+      setSearchResults(results);
+      setActiveTab(1); // Switch to results tab
+      
+      // Custom toast messages for each search type
+      const toastMessages = {
+        all: `Found ${results.length} completed trip(s), sorted by most recent first`,
+        today: `Found ${results.length} trip(s) scheduled for today, sorted by most recent first`,
+        upcoming: `Found ${results.length} future-dated trip(s), sorted by most recent first`,
+        cancelled: `Found ${results.length} canceled trip(s), sorted by most recent first`,
+        inprogress: `Found ${results.length} trip(s) in progress, sorted by most recent first`
+      };
+      
+      toast({
+        title: savedSearch.name,
+        description: toastMessages[savedSearch.id] || `Found ${results.length} trip(s)`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Search error:', error);
+      toast({
+        title: 'Search Error',
+        description: error.response?.data?.message || 'Failed to perform search',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -406,6 +503,44 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                       </Text>
                     </Box>
                   </Alert>
+
+                  {/* Keyword Search - Full System Match */}
+                  <Card bg="purple.50" borderColor="purple.200" borderWidth="2px">
+                    <CardBody>
+                      <Text fontWeight="bold" mb={3} color="purple.700">
+                        🔍 Quick Keyword Search
+                      </Text>
+                      <Text fontSize="sm" color="gray.600" mb={3}>
+                        Search across all fields: Trip ID, dates, rider name, driver name, vehicle, pickup/drop-off locations
+                      </Text>
+                      <FormControl>
+                        <Input
+                          placeholder="Type any keyword to search across all trips..."
+                          value={searchCriteria.keyword}
+                          onChange={(e) => setSearchCriteria({
+                            ...searchCriteria,
+                            keyword: e.target.value
+                          })}
+                          size="lg"
+                          bg="white"
+                          _focus={{
+                            borderColor: "purple.500",
+                            boxShadow: "0 0 0 1px var(--chakra-colors-purple-500)"
+                          }}
+                        />
+                      </FormControl>
+                      <Button
+                        mt={3}
+                        colorScheme="purple"
+                        width="full"
+                        onClick={handleSearch}
+                        isLoading={isLoading}
+                        leftIcon={<SearchIcon />}
+                      >
+                        Search All Trips
+                      </Button>
+                    </CardBody>
+                  </Card>
 
                   {/* Quick Searches */}
                   <Card bg="gray.50">

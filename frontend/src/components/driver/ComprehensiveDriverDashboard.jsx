@@ -132,6 +132,11 @@ const ComprehensiveDriverDashboard = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
   const textColor = useColorModeValue('gray.600', 'gray.300');
 
+  // Debug: Monitor activeTab changes
+  useEffect(() => {
+    console.log('[Debug] activeTab changed to:', activeTab);
+  }, [activeTab]);
+
   // Fetch all data
   const fetchData = useCallback(async () => {
     try {
@@ -301,34 +306,99 @@ const ComprehensiveDriverDashboard = () => {
     onRiderInfoOpen();
   };
 
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const location = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          };
-          setCurrentLocation(location);
+  const getCurrentLocation = async () => {
+    console.log('[Update Location] Starting...');
+    console.log('[Update Location] Current activeTab:', activeTab);
+    console.log('[Update Location] navigator.geolocation available?', !!navigator.geolocation);
+    
+    if (!navigator.geolocation) {
+      console.log('[Update Location] Geolocation NOT supported');
+      toast({
+        title: 'Location Not Supported',
+        description: 'Geolocation is not supported by your browser',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    console.log('[Update Location] Requesting position from browser...');
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        console.log('[Update Location] SUCCESS - Got position callback:', position);
+        const location = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        console.log('[Update Location] Got coordinates:', location);
+        setCurrentLocation(location);
+        
+        // Save location to backend
+        try {
+          const token = localStorage.getItem('token');
+          const userId = user.id || user._id;
+          console.log('[Update Location] Saving to backend... userId:', userId);
+          console.log('[Update Location] Token present?', !!token);
+          
+          const response = await axios.patch(`http://localhost:5000/api/users/${userId}/location`, {
+            lat: location.lat,
+            lng: location.lng
+          }, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          console.log('[Update Location] Backend response:', response.data);
+          
           toast({
             title: 'Location Updated',
-            description: 'Your location has been updated successfully',
+            description: 'Your location has been saved successfully',
             status: 'success',
             duration: 3000,
             isClosable: true,
           });
-        },
-        () => {
+          
+          // Automatically redirect to Location tab (index 4)
+          console.log('[Update Location] About to redirect to Location tab (index 4)');
+          console.log('[Update Location] Current activeTab before setActiveTab:', activeTab);
+          setActiveTab(4);
+          console.log('[Update Location] Called setActiveTab(4)');
+          
+          // Scroll to top to ensure tab change is visible
+          setTimeout(() => {
+            console.log('[Update Location] After setTimeout - checking if redirect worked');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 100);
+        } catch (error) {
+          console.error('[Update Location] Error saving location:', error);
+          console.error('[Update Location] Error details:', error.response?.data);
           toast({
             title: 'Location Error',
-            description: 'Failed to get your location',
-            status: 'error',
+            description: error.response?.data?.message || 'Location retrieved but failed to save to server',
+            status: 'warning',
             duration: 3000,
             isClosable: true,
           });
         }
-      );
-    }
+      },
+      (error) => {
+        console.error('[Update Location] ERROR - Geolocation failed:', error);
+        console.error('[Update Location] Error code:', error.code);
+        console.error('[Update Location] Error message:', error.message);
+        toast({
+          title: 'Location Error',
+          description: `Failed to get your location: ${error.message}. Please check permissions.`,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 30000,
+        maximumAge: 60000
+      }
+    );
   };
 
   if (loading) {

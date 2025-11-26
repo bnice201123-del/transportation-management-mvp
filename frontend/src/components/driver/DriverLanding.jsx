@@ -222,12 +222,19 @@ const DriverLanding = () => {
           };
           setCurrentLocation(location);
           updateDriverLocation(location);
+          toast({
+            title: 'Location Updated',
+            description: 'Your location has been saved successfully',
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+          });
         },
         (error) => {
           console.error('Error getting location:', error);
           toast({
             title: 'Location Error',
-            description: 'Unable to get your current location',
+            description: 'Unable to get your current location. Please check permissions.',
             status: 'warning',
             duration: 3000,
             isClosable: true,

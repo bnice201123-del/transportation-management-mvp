@@ -204,7 +204,10 @@ const RiderInfoModal = ({ isOpen, onClose, riderId, riderName }) => {
                     <VStack align="start" spacing={0} flex={1}>
                       <Text fontSize="xs" color={textColor}>Address</Text>
                       <Text fontSize="sm" fontWeight="medium">
-                        {riderData.address}
+                        {typeof riderData.address === 'string' 
+                          ? riderData.address 
+                          : `${riderData.address.street || ''} ${riderData.address.city || ''} ${riderData.address.state || ''} ${riderData.address.zip || ''}`.trim() || 'Not available'
+                        }
                       </Text>
                     </VStack>
                   </HStack>

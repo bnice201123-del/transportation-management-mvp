@@ -153,11 +153,13 @@ const TripMaps = () => {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(trip => {
         if (!trip) return false;
+        const riderName = getRiderName(trip).toLowerCase();
+        const driverName = getDriverName(trip).toLowerCase();
         return (
-          trip.riderName?.toLowerCase().includes(searchLower) ||
+          riderName.includes(searchLower) ||
+          driverName.includes(searchLower) ||
           trip.pickupLocation?.address?.toLowerCase().includes(searchLower) ||
-          trip.dropoffLocation?.address?.toLowerCase().includes(searchLower) ||
-          trip.assignedDriver?.toLowerCase().includes(searchLower)
+          trip.dropoffLocation?.address?.toLowerCase().includes(searchLower)
         );
       });
     }
@@ -174,6 +176,48 @@ const TripMaps = () => {
       cancelled: 'red'
     };
     return statusColors[status] || 'gray';
+  };
+
+  // Helper function to safely get rider name (handles both string and object)
+  const getRiderName = (trip) => {
+    if (!trip) return 'Unknown';
+    
+    // If riderName is a string, return it
+    if (typeof trip.riderName === 'string') {
+      return trip.riderName;
+    }
+    
+    // If riderName is an object (populated rider), extract the name
+    if (trip.riderName && typeof trip.riderName === 'object') {
+      const rider = trip.riderName;
+      return `${rider.firstName || ''} ${rider.lastName || ''}`.trim() || rider.email || 'Unknown';
+    }
+    
+    // If rider is populated instead
+    if (trip.rider && typeof trip.rider === 'object') {
+      const rider = trip.rider;
+      return `${rider.firstName || ''} ${rider.lastName || ''}`.trim() || rider.email || 'Unknown';
+    }
+    
+    return 'Unknown';
+  };
+
+  // Helper function to safely get driver name (handles both string and object)
+  const getDriverName = (trip) => {
+    if (!trip || !trip.assignedDriver) return 'Unassigned';
+    
+    // If assignedDriver is a string, return it
+    if (typeof trip.assignedDriver === 'string') {
+      return trip.assignedDriver;
+    }
+    
+    // If assignedDriver is an object (populated driver), extract the name
+    if (typeof trip.assignedDriver === 'object') {
+      const driver = trip.assignedDriver;
+      return `${driver.firstName || ''} ${driver.lastName || ''}`.trim() || driver.email || 'Unassigned';
+    }
+    
+    return 'Unassigned';
   };
 
   const formatTime = (time) => {
@@ -201,15 +245,25 @@ const TripMaps = () => {
     const today = new Date().toISOString().split('T')[0];
     const todayTrips = tripsArray.filter(trip => {
       if (!trip || !trip.scheduledDate) return false;
-      const tripDate = new Date(trip.scheduledDate).toISOString().split('T')[0];
-      return tripDate === today;
+      try {
+        const tripDate = new Date(trip.scheduledDate).toISOString().split('T')[0];
+        return tripDate === today;
+      } catch (error) {
+        console.error('Error parsing date in getTripStats:', error);
+        return false;
+      }
     });
 
     const upcomingTrips = todayTrips.filter(trip => {
       if (!trip || !trip.scheduledDate || !trip.scheduledTime) return false;
-      const now = new Date();
-      const tripDateTime = new Date(`${trip.scheduledDate}T${trip.scheduledTime}`);
-      return tripDateTime > now;
+      try {
+        const now = new Date();
+        const tripDateTime = new Date(`${trip.scheduledDate}T${trip.scheduledTime}`);
+        return tripDateTime > now;
+      } catch (error) {
+        console.error('Error parsing datetime in getTripStats:', error);
+        return false;
+      }
     });
 
     return {
@@ -220,7 +274,13 @@ const TripMaps = () => {
     };
   };
 
-  const stats = getTripStats();
+  let stats;
+  try {
+    stats = getTripStats();
+  } catch (error) {
+    console.error('Error getting trip stats:', error);
+    stats = { total: 0, today: 0, upcoming: 0, completed: 0 };
+  }
 
   if (loading) {
     return (
@@ -509,7 +569,7 @@ const TripMaps = () => {
                                 <HStack>
                                   <FaUser size={12} color="green" />
                                   <Text fontSize="sm" fontWeight="medium">
-                                    {trip.riderName || 'Unknown'}
+                                    {getRiderName(trip)}
                                   </Text>
                                 </HStack>
                                 {trip.riderPhone && (
@@ -543,7 +603,7 @@ const TripMaps = () => {
                               <HStack>
                                 <FaCar size={12} color="blue" />
                                 <Text fontSize="sm">
-                                  {trip.assignedDriver || 'Unassigned'}
+                                  {getDriverName(trip)}
                                 </Text>
                               </HStack>
                             </Td>
@@ -557,21 +617,40 @@ const TripMaps = () => {
                               </Badge>
                             </Td>
                             <Td>
-                              <Tooltip label="View route on map with alternatives">
-                                <Button
-                                  size="sm"
-                                  leftIcon={<FaRoute />}
-                                  colorScheme="blue"
-                                  variant="outline"
-                                  onClick={() => handleViewMap(trip)}
-                                  isDisabled={
-                                    !trip.pickupLocation?.address || 
-                                    !trip.dropoffLocation?.address
-                                  }
-                                >
-                                  View Map
-                                </Button>
-                              </Tooltip>
+                              <HStack spacing={2}>
+                                <Tooltip label="View route on map with turn-by-turn directions">
+                                  <Button
+                                    size="sm"
+                                    leftIcon={<FaRoute />}
+                                    colorScheme="blue"
+                                    variant="outline"
+                                    onClick={() => handleViewMap(trip)}
+                                    isDisabled={
+                                      !trip.pickupLocation?.address || 
+                                      !trip.dropoffLocation?.address
+                                    }
+                                  >
+                                    View Map
+                                  </Button>
+                                </Tooltip>
+                                <Tooltip label="Open directly in Google Maps">
+                                  <IconButton
+                                    size="sm"
+                                    icon={<FaMap />}
+                                    colorScheme="green"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      const origin = encodeURIComponent(trip.pickupLocation?.address || '');
+                                      const destination = encodeURIComponent(trip.dropoffLocation?.address || '');
+                                      window.open(`https://www.google.com/maps/dir/${origin}/${destination}`, '_blank');
+                                    }}
+                                    isDisabled={
+                                      !trip.pickupLocation?.address || 
+                                      !trip.dropoffLocation?.address
+                                    }
+                                  />
+                                </Tooltip>
+                              </HStack>
                             </Td>
                           </Tr>
                         );
@@ -613,13 +692,30 @@ const TripMaps = () => {
                                 >
                                   {trip.status || 'unknown'}
                                 </Badge>
-                                <Tooltip label="View route on map">
+                                <Tooltip label="View route with turn-by-turn directions">
                                   <IconButton
                                     icon={<FaRoute />}
                                     size="sm"
                                     colorScheme="blue"
                                     variant="outline"
                                     onClick={() => handleViewMap(trip)}
+                                    isDisabled={
+                                      !trip.pickupLocation?.address || 
+                                      !trip.dropoffLocation?.address
+                                    }
+                                  />
+                                </Tooltip>
+                                <Tooltip label="Open in Google Maps">
+                                  <IconButton
+                                    icon={<FaMap />}
+                                    size="sm"
+                                    colorScheme="green"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      const origin = encodeURIComponent(trip.pickupLocation?.address || '');
+                                      const destination = encodeURIComponent(trip.dropoffLocation?.address || '');
+                                      window.open(`https://www.google.com/maps/dir/${origin}/${destination}`, '_blank');
+                                    }}
                                     isDisabled={
                                       !trip.pickupLocation?.address || 
                                       !trip.dropoffLocation?.address
@@ -634,7 +730,7 @@ const TripMaps = () => {
                               <HStack mb={1}>
                                 <FaUser size={14} color="green" />
                                 <Text fontSize="sm" fontWeight="medium">
-                                  {trip.riderName || 'Unknown Rider'}
+                                  {getRiderName(trip)}
                                 </Text>
                               </HStack>
                               {trip.riderPhone && (
@@ -671,7 +767,7 @@ const TripMaps = () => {
                               <HStack>
                                 <FaCar size={14} color="blue" />
                                 <Text fontSize="sm">
-                                  Driver: {trip.assignedDriver || 'Unassigned'}
+                                  Driver: {getDriverName(trip)}
                                 </Text>
                               </HStack>
                             </Box>

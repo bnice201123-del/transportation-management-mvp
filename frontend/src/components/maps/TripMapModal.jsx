@@ -61,6 +61,7 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
   const [loading, setLoading] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [routeService, setRouteService] = useState(null);
+  const [directionsRenderer, setDirectionsRenderer] = useState(null);
   const toast = useToast();
 
   // Initialize Google Maps services
@@ -70,6 +71,25 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
         await loadGoogleMapsAPI();
         if (window.google && window.google.maps) {
           setRouteService(new window.google.maps.DirectionsService());
+          
+          // Create a custom DirectionsRenderer with enhanced styling
+          const renderer = new window.google.maps.DirectionsRenderer({
+            suppressMarkers: false,  // Show default markers
+            draggable: false,
+            polylineOptions: {
+              strokeColor: '#2563EB',  // Bold blue color
+              strokeOpacity: 0.95,
+              strokeWeight: 8,  // Extra thick line
+              zIndex: 100,
+              geodesic: true  // Follow Earth's curvature for accuracy
+            },
+            markerOptions: {
+              zIndex: 200,
+              animation: window.google.maps.Animation.DROP
+            }
+          });
+          
+          setDirectionsRenderer(renderer);
           setMapLoaded(true);
         }
       } catch (error) {
@@ -114,6 +134,11 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
           const routeData = result.routes.map((route, index) => ({
             id: index,
             route: route,
+            // Create a complete directions result with just this route
+            directions: {
+              ...result,
+              routes: [route]
+            },
             distance: route.legs[0].distance.text,
             duration: route.legs[0].duration.text,
             durationValue: route.legs[0].duration.value,
@@ -150,6 +175,17 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
     }
   }, [mapLoaded, trip, calculateRoutes]);
 
+  // Update directions renderer when selected route changes
+  useEffect(() => {
+    if (directionsRenderer && routes.length > 0 && routes[selectedRoute]) {
+      const selectedRouteData = routes[selectedRoute];
+      if (selectedRouteData && selectedRouteData.directions) {
+        // Use the complete directions result object from the API
+        directionsRenderer.setDirections(selectedRouteData.directions);
+      }
+    }
+  }, [selectedRoute, routes, directionsRenderer]);
+
   const formatTime = (time) => {
     if (!time) return 'N/A';
     const [hours, minutes] = time.split(':');
@@ -185,6 +221,35 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
     return (baseFare + (durationMinutes * perMinuteRate)).toFixed(2);
   };
 
+  // Helper function to safely get rider name
+  const getRiderName = (trip) => {
+    if (!trip) return 'Unknown';
+    if (typeof trip.riderName === 'string') return trip.riderName;
+    if (trip.riderName && typeof trip.riderName === 'object') {
+      const rider = trip.riderName;
+      return `${rider.firstName || ''} ${rider.lastName || ''}`.trim() || rider.email || 'Unknown';
+    }
+    return 'Unknown';
+  };
+
+  // Helper function to safely get driver name
+  const getDriverName = (trip) => {
+    if (!trip || !trip.assignedDriver) return 'Unassigned';
+    if (typeof trip.assignedDriver === 'string') return trip.assignedDriver;
+    if (typeof trip.assignedDriver === 'object') {
+      const driver = trip.assignedDriver;
+      return `${driver.firstName || ''} ${driver.lastName || ''}`.trim() || driver.email || 'Unassigned';
+    }
+    return 'Unassigned';
+  };
+
+  // Function to open in Google Maps
+  const openInGoogleMaps = () => {
+    const origin = encodeURIComponent(trip.pickupLocation?.address || '');
+    const destination = encodeURIComponent(trip.dropoffLocation?.address || '');
+    window.open(`https://www.google.com/maps/dir/${origin}/${destination}`, '_blank');
+  };
+
   if (!trip) return null;
 
   return (
@@ -192,17 +257,28 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
       <ModalOverlay />
       <ModalContent maxH={{ base: "100vh", lg: "90vh" }} m={{ base: 0, lg: 4 }}>
         <ModalHeader>
-          <HStack>
-            <FaRoute color="blue" />
-            <VStack align="start" spacing={0}>
-              <Text>{trip.riderName}'s Trip Route</Text>
-              <Text fontSize="sm" color="gray.600" fontWeight="normal">
-                {new Date(trip.scheduledDate).toLocaleDateString()} at {formatTime(trip.scheduledTime)}
-              </Text>
-            </VStack>
-            <Badge colorScheme={getStatusColor(trip.status)} ml={2}>
-              {trip.status}
-            </Badge>
+          <HStack justify="space-between" w="full" pr={8}>
+            <HStack>
+              <FaRoute color="blue" />
+              <VStack align="start" spacing={0}>
+                <Text>{getRiderName(trip)}'s Trip Route</Text>
+                <Text fontSize="sm" color="gray.600" fontWeight="normal">
+                  {new Date(trip.scheduledDate).toLocaleDateString()} at {formatTime(trip.scheduledTime)}
+                </Text>
+              </VStack>
+              <Badge colorScheme={getStatusColor(trip.status)} ml={2}>
+                {trip.status}
+              </Badge>
+            </HStack>
+            <Button
+              leftIcon={<ViewIcon />}
+              size="sm"
+              colorScheme="blue"
+              onClick={openInGoogleMaps}
+              display={{ base: 'none', md: 'flex' }}
+            >
+              Open in Google Maps
+            </Button>
           </HStack>
         </ModalHeader>
         <ModalCloseButton />
@@ -235,7 +311,8 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
                     width="100%"
                     origin={trip.pickupLocation.address}
                     destination={trip.dropoffLocation.address}
-                    directionsResult={routes[selectedRoute]?.route}
+                    directionsResult={routes[selectedRoute]?.directions}
+                    directionsRenderer={directionsRenderer}
                     showRouteInfo={false}
                   />
                 ) : (
@@ -255,38 +332,117 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
             <GridItem bg="gray.50" overflowY="auto" display={{ base: routes.length === 0 ? 'none' : 'block', lg: 'block' }}>
               <VStack spacing={4} p={{ base: 3, lg: 4 }} align="stretch">
                 {/* Trip Details */}
-                <Card size="sm">
+                <Card size="sm" borderWidth="2px" borderColor="blue.200">
                   <CardBody>
                     <VStack align="start" spacing={3}>
-                      <HStack>
-                        <FaUser color="blue" />
-                        <Text fontWeight="bold">{trip.riderName}</Text>
+                      <HStack justify="space-between" w="full">
+                        <HStack>
+                          <FaUser color="blue" />
+                          <Text fontWeight="bold">{getRiderName(trip)}</Text>
+                        </HStack>
+                        <Badge colorScheme={getStatusColor(trip.status)} fontSize="xs">
+                          {trip.status}
+                        </Badge>
                       </HStack>
+
+                      {/* Distance Display - Prominent */}
+                      {routes.length > 0 && routes[selectedRoute] && (
+                        <Box 
+                          w="full" 
+                          p={3} 
+                          bg="blue.50" 
+                          borderRadius="md" 
+                          borderWidth="2px" 
+                          borderColor="blue.300"
+                        >
+                          <HStack justify="center" spacing={4}>
+                            <VStack spacing={0}>
+                              <HStack>
+                                <FaRoute color="blue" size={16} />
+                                <Text fontSize="lg" fontWeight="bold" color="blue.700">
+                                  {routes[selectedRoute].distance}
+                                </Text>
+                              </HStack>
+                              <Text fontSize="xs" color="gray.600">
+                                Total Distance
+                              </Text>
+                            </VStack>
+                            <Divider orientation="vertical" h="40px" />
+                            <VStack spacing={0}>
+                              <HStack>
+                                <FaClock color="green" size={16} />
+                                <Text fontSize="lg" fontWeight="bold" color="green.700">
+                                  {routes[selectedRoute].duration}
+                                </Text>
+                              </HStack>
+                              <Text fontSize="xs" color="gray.600">
+                                Est. Time
+                              </Text>
+                            </VStack>
+                          </HStack>
+                        </Box>
+                      )}
                       
+                      <Divider />
+
                       <VStack align="start" spacing={2} w="full">
                         <HStack w="full">
-                          <FaMapMarkerAlt color="green" size={12} />
-                          <Text fontSize="sm" noOfLines={2}>
-                            {trip.pickupLocation?.address}
-                          </Text>
+                          <Box 
+                            w={4} 
+                            h={4} 
+                            bg="green.500" 
+                            borderRadius="full" 
+                            border="3px solid white"
+                            boxShadow="0 0 0 2px green.500"
+                          />
+                          <VStack align="start" spacing={0} flex={1}>
+                            <Text fontSize="xs" color="gray.600" fontWeight="bold">
+                              PICKUP
+                            </Text>
+                            <Text fontSize="sm" noOfLines={2}>
+                              {trip.pickupLocation?.address}
+                            </Text>
+                          </VStack>
                         </HStack>
-                        <Box ml={4} h="20px" w="2px" bg="gray.300" />
+                        
+                        <Box ml={2} h="30px" w="3px" bg="blue.400" borderRadius="full" />
+                        
                         <HStack w="full">
-                          <FaMapMarkerAlt color="red" size={12} />
-                          <Text fontSize="sm" noOfLines={2}>
-                            {trip.dropoffLocation?.address}
-                          </Text>
+                          <Box 
+                            w={4} 
+                            h={4} 
+                            bg="red.500" 
+                            borderRadius="full" 
+                            border="3px solid white"
+                            boxShadow="0 0 0 2px red.500"
+                          />
+                          <VStack align="start" spacing={0} flex={1}>
+                            <Text fontSize="xs" color="gray.600" fontWeight="bold">
+                              DROP-OFF
+                            </Text>
+                            <Text fontSize="sm" noOfLines={2}>
+                              {trip.dropoffLocation?.address}
+                            </Text>
+                          </VStack>
                         </HStack>
                       </VStack>
+
+                      <Divider />
 
                       {trip.assignedDriver && (
                         <HStack>
                           <FaCar color="blue" size={12} />
                           <Text fontSize="sm">
-                            Driver: {typeof trip.assignedDriver === 'object' 
-                              ? (trip.assignedDriver.name || `${trip.assignedDriver.firstName || ''} ${trip.assignedDriver.lastName || ''}`.trim() || trip.assignedDriver.email || 'Unnamed Driver')
-                              : trip.assignedDriver
-                            }
+                            Driver: {getDriverName(trip)}
+                          </Text>
+                        </HStack>
+                      )}
+
+                      {trip.riderPhone && (
+                        <HStack>
+                          <FaClock color="gray" size={12} />
+                          <Text fontSize="sm">
+                            Contact: {trip.riderPhone}
                           </Text>
                         </HStack>
                       )}
@@ -371,6 +527,36 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
                                       </Text>
                                     </Alert>
                                   )}
+
+                                  {/* Turn-by-Turn Directions */}
+                                  {route.route?.legs[0]?.steps && (
+                                    <Box>
+                                      <Divider my={2} />
+                                      <Text fontWeight="bold" fontSize="sm" mb={2}>
+                                        Turn-by-Turn Directions
+                                      </Text>
+                                      <VStack align="start" spacing={2} maxH="200px" overflowY="auto">
+                                        {route.route.legs[0].steps.map((step, idx) => (
+                                          <HStack key={idx} align="start" w="full" p={2} bg="white" borderRadius="md" boxShadow="sm">
+                                            <Badge colorScheme="blue" minW="25px" textAlign="center">
+                                              {idx + 1}
+                                            </Badge>
+                                            <VStack align="start" spacing={0} flex={1}>
+                                              <Text 
+                                                fontSize="xs" 
+                                                dangerouslySetInnerHTML={{ 
+                                                  __html: step.instructions 
+                                                }}
+                                              />
+                                              <Text fontSize="xs" color="gray.600">
+                                                {step.distance.text} • {step.duration.text}
+                                              </Text>
+                                            </VStack>
+                                          </HStack>
+                                        ))}
+                                      </VStack>
+                                    </Box>
+                                  )}
                                 </VStack>
                               </TabPanel>
                             ))}
@@ -428,18 +614,23 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
           </Grid>
         </ModalBody>
 
-        <ModalFooter>
-          <HStack spacing={3}>
-            <Button
-              leftIcon={<ViewIcon />}
-              size="sm"
-              variant="ghost"
-              onClick={() => window.open(`https://maps.google.com/maps/dir/${encodeURIComponent(trip.pickupLocation?.address)}/${encodeURIComponent(trip.dropoffLocation?.address)}`, '_blank')}
-            >
-              Open in Google Maps
-            </Button>
-            <Button onClick={onClose}>Close</Button>
-          </HStack>
+        <ModalFooter flexDirection={{ base: 'column', md: 'row' }} gap={2}>
+          <Button
+            leftIcon={<ViewIcon />}
+            colorScheme="blue"
+            onClick={openInGoogleMaps}
+            w={{ base: 'full', md: 'auto' }}
+            flex={{ base: 1, md: 0 }}
+          >
+            Open in Google Maps
+          </Button>
+          <Button 
+            onClick={onClose}
+            w={{ base: 'full', md: 'auto' }}
+            variant="outline"
+          >
+            Close
+          </Button>
         </ModalFooter>
       </ModalContent>
     </Modal>

@@ -204,6 +204,30 @@ const ComprehensiveDriverDashboard = () => {
            new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Helper function to safely get rider name (handles both string and object)
+  const getRiderName = (trip) => {
+    if (!trip) return 'Unknown';
+    
+    // If riderName is a string, return it
+    if (typeof trip.riderName === 'string') {
+      return trip.riderName;
+    }
+    
+    // If riderName is an object (populated rider), extract the name
+    if (trip.riderName && typeof trip.riderName === 'object') {
+      const rider = trip.riderName;
+      return `${rider.firstName || ''} ${rider.lastName || ''}`.trim() || rider.email || 'Unknown';
+    }
+    
+    // If rider is populated instead
+    if (trip.rider && typeof trip.rider === 'object') {
+      const rider = trip.rider;
+      return `${rider.firstName || ''} ${rider.lastName || ''}`.trim() || rider.email || 'Unknown';
+    }
+    
+    return 'Unknown';
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'completed':
@@ -633,9 +657,9 @@ const ComprehensiveDriverDashboard = () => {
                                                 fontWeight="medium"
                                                 cursor="pointer"
                                                 _hover={{ textDecoration: 'underline', color: 'blue.700' }}
-                                                onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, trip.riderName)}
+                                                onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, getRiderName(trip))}
                                               >
-                                                {trip.riderName}
+                                                {getRiderName(trip)}
                                               </Text>
                                             </HStack>
                                           </VStack>
@@ -996,7 +1020,7 @@ const ComprehensiveDriverDashboard = () => {
                                       <HStack justify="space-between">
                                         <VStack align="start" spacing={0}>
                                           <Text fontWeight="bold" fontSize="sm">{trip.tripId}</Text>
-                                          <Text fontSize="xs" color="gray.600">{trip.riderName}</Text>
+                                          <Text fontSize="xs" color="gray.600">{getRiderName(trip)}</Text>
                                         </VStack>
                                         <Button
                                           size="sm"
@@ -1222,9 +1246,9 @@ const ComprehensiveDriverDashboard = () => {
                                                 fontWeight="medium"
                                                 cursor="pointer"
                                                 _hover={{ textDecoration: 'underline', color: 'blue.700' }}
-                                                onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, trip.riderName)}
+                                                onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, getRiderName(trip))}
                                               >
-                                                {trip.riderName}
+                                                {getRiderName(trip)}
                                               </Text>
                                             </HStack>
                                           </VStack>
@@ -1408,9 +1432,9 @@ const ComprehensiveDriverDashboard = () => {
                                           fontWeight="medium"
                                           cursor="pointer"
                                           _hover={{ textDecoration: 'underline', color: 'blue.700' }}
-                                          onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, trip.riderName)}
+                                          onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, getRiderName(trip))}
                                         >
-                                          {trip.riderName}
+                                          {getRiderName(trip)}
                                         </Text>
                                       </HStack>
                                       <Text fontSize="xs" color="gray.500">
@@ -1563,9 +1587,9 @@ const ComprehensiveDriverDashboard = () => {
                                           fontWeight="medium"
                                           cursor="pointer"
                                           _hover={{ textDecoration: 'underline', color: 'blue.700' }}
-                                          onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, trip.riderName)}
+                                          onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, getRiderName(trip))}
                                         >
-                                          {trip.riderName}
+                                          {getRiderName(trip)}
                                         </Text>
                                       </Td>
                                       <Td fontSize="xs" color="gray.500" display={{ base: "none", md: "table-cell" }}>

@@ -27,9 +27,13 @@ export const useDirections = () => {
             panel: null,
             suppressMarkers: false,
             polylineOptions: {
-              strokeColor: '#4F8EF7',
-              strokeOpacity: 1.0,
-              strokeWeight: 4
+              strokeColor: '#2B6CB0',  // Darker blue for better visibility
+              strokeOpacity: 0.9,
+              strokeWeight: 6,  // Thicker line for better visibility
+              zIndex: 100
+            },
+            markerOptions: {
+              zIndex: 200
             }
           });
 

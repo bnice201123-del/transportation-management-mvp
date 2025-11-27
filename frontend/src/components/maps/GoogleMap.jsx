@@ -44,11 +44,13 @@ const MapComponent = ({
   onMapClick,
   onMarkerClick,
   height = '400px',
-  directionsRenderer = null
+  directionsRenderer = null,
+  directionsResult = null
 }) => {
   const ref = useRef();
   const [map, setMap] = useState();
   const markersRef = useRef([]);
+  const directionsRendererRef = useRef(null);
 
   // Initialize map
   useEffect(() => {
@@ -152,9 +154,38 @@ const MapComponent = ({
   // Handle directions
   useEffect(() => {
     if (map && directionsRenderer) {
+      // Set the map for the directions renderer
       directionsRenderer.setMap(map);
+      directionsRendererRef.current = directionsRenderer;
+      
+      // If we have a directionsResult, display it
+      if (directionsResult) {
+        directionsRenderer.setDirections(directionsResult);
+        
+        // Auto-fit bounds to show the entire route
+        if (directionsResult.routes && directionsResult.routes.length > 0) {
+          const bounds = directionsResult.routes[0].bounds;
+          if (bounds) {
+            map.fitBounds(bounds);
+            // Add some padding to the bounds
+            setTimeout(() => {
+              const currentZoom = map.getZoom();
+              if (currentZoom > 15) {
+                map.setZoom(15); // Max zoom for better overview
+              }
+            }, 100);
+          }
+        }
+      }
+      
+      return () => {
+        // Cleanup: remove renderer from map when component unmounts
+        if (directionsRendererRef.current) {
+          directionsRendererRef.current.setMap(null);
+        }
+      };
     }
-  }, [map, directionsRenderer]);
+  }, [map, directionsRenderer, directionsResult]);
 
   return <div ref={ref} style={{ height }} />;
 };

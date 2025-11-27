@@ -50,7 +50,8 @@ import {
   FaRoad,
   FaDollarSign,
   FaGasPump,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaMapMarkedAlt
 } from 'react-icons/fa';
 import GoogleMap from './GoogleMap';
 import { loadGoogleMapsAPI } from '../../utils/googleMapsLoader';
@@ -271,13 +272,29 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
               </Badge>
             </HStack>
             <Button
-              leftIcon={<ViewIcon />}
-              size="sm"
-              colorScheme="blue"
+              leftIcon={<FaMapMarkedAlt />}
+              size="md"
+              bg="linear-gradient(135deg, #4285F4 0%, #34A853 100%)"
+              color="white"
               onClick={openInGoogleMaps}
               display={{ base: 'none', md: 'flex' }}
+              borderRadius="full"
+              px={6}
+              fontWeight="semibold"
+              fontSize="sm"
+              boxShadow="md"
+              _hover={{
+                bg: 'linear-gradient(135deg, #3367D6 0%, #2D8F47 100%)',
+                transform: 'translateY(-2px)',
+                boxShadow: 'lg'
+              }}
+              _active={{
+                transform: 'translateY(0)',
+                boxShadow: 'md'
+              }}
+              transition="all 0.2s"
             >
-              Open in Google Maps
+              View Route in Google Maps
             </Button>
           </HStack>
         </ModalHeader>
@@ -453,115 +470,146 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
                 {/* Route Options */}
                 {routes.length > 0 && (
                   <Card size="sm">
-                    <CardBody>
+                    <CardBody p={3}>
                       <VStack align="start" spacing={3}>
-                        <HStack>
-                          <FaRoad color="orange" />
-                          <Text fontWeight="bold">Route Options</Text>
-                          <IconButton
-                            icon={<RepeatIcon />}
-                            size="xs"
-                            onClick={calculateRoutes}
-                            title="Recalculate routes"
-                          />
+                        <HStack justify="space-between" w="full">
+                          <HStack spacing={2}>
+                            <FaRoad color="orange" size={14} />
+                            <Text fontWeight="bold" fontSize="sm">Route Options</Text>
+                          </HStack>
+                          <Tooltip label="Recalculate routes">
+                            <IconButton
+                              icon={<RepeatIcon />}
+                              size="xs"
+                              variant="ghost"
+                              onClick={calculateRoutes}
+                              aria-label="Recalculate routes"
+                            />
+                          </Tooltip>
                         </HStack>
 
-                        <Tabs
-                          orientation="vertical"
-                          variant="soft-rounded"
-                          colorScheme="blue"
-                          size="sm"
-                          index={selectedRoute}
-                          onChange={setSelectedRoute}
-                        >
-                          <TabList>
-                            {routes.map((route, index) => (
-                              <Tab key={route.id} justifyContent="start" w="full">
-                                <VStack align="start" spacing={1}>
+                        {/* Compact Route Cards */}
+                        <VStack spacing={2} w="full">
+                          {routes.map((route, index) => (
+                            <Box
+                              key={route.id}
+                              w="full"
+                              p={3}
+                              borderRadius="lg"
+                              borderWidth="2px"
+                              borderColor={selectedRoute === index ? 'blue.400' : 'gray.200'}
+                              bg={selectedRoute === index ? 'blue.50' : 'white'}
+                              cursor="pointer"
+                              onClick={() => setSelectedRoute(index)}
+                              transition="all 0.2s"
+                              _hover={{
+                                borderColor: 'blue.300',
+                                transform: 'translateY(-2px)',
+                                shadow: 'md'
+                              }}
+                            >
+                              <HStack justify="space-between" align="start">
+                                <VStack align="start" spacing={1} flex={1}>
                                   <HStack>
                                     <Badge
                                       colorScheme={getRouteColor(index)}
-                                      size="sm"
+                                      fontSize="xs"
+                                      px={2}
+                                      py={0.5}
+                                      borderRadius="full"
                                     >
                                       {route.type}
                                     </Badge>
+                                    {selectedRoute === index && (
+                                      <Badge colorScheme="blue" variant="solid" fontSize="xs">
+                                        Selected
+                                      </Badge>
+                                    )}
                                   </HStack>
+                                  
+                                  <HStack spacing={3} fontSize="xs" color="gray.700">
+                                    <HStack spacing={1}>
+                                      <FaRoute size={10} color="#4299E1" />
+                                      <Text fontWeight="semibold">{route.distance}</Text>
+                                    </HStack>
+                                    <Text color="gray.400">•</Text>
+                                    <HStack spacing={1}>
+                                      <FaClock size={10} color="#48BB78" />
+                                      <Text fontWeight="semibold">{route.duration}</Text>
+                                    </HStack>
+                                    <Text color="gray.400">•</Text>
+                                    <HStack spacing={1}>
+                                      <FaDollarSign size={10} color="#38A169" />
+                                      <Text fontWeight="semibold">${estimatedFare(route.durationValue / 60)}</Text>
+                                    </HStack>
+                                  </HStack>
+
+                                  {route.summary && (
+                                    <Text fontSize="xs" color="gray.500" noOfLines={1}>
+                                      via {route.summary}
+                                    </Text>
+                                  )}
+                                </VStack>
+                              </HStack>
+
+                              {route.warnings && route.warnings.length > 0 && (
+                                <Alert status="warning" size="xs" mt={2} py={1} borderRadius="md">
+                                  <AlertIcon boxSize={3} />
                                   <Text fontSize="xs">
-                                    {route.distance} • {route.duration}
+                                    {route.warnings[0]}
                                   </Text>
-                                </VStack>
-                              </Tab>
-                            ))}
-                          </TabList>
+                                </Alert>
+                              )}
+                            </Box>
+                          ))}
+                        </VStack>
 
-                          <TabPanels>
-                            {routes.map((route) => (
-                              <TabPanel key={route.id} p={2}>
-                                <VStack align="start" spacing={3}>
-                                  <Grid templateColumns="repeat(2, 1fr)" gap={2} w="full">
-                                    <Stat size="sm">
-                                      <StatLabel fontSize="xs">Distance</StatLabel>
-                                      <StatNumber fontSize="sm">{route.distance}</StatNumber>
-                                    </Stat>
-                                    <Stat size="sm">
-                                      <StatLabel fontSize="xs">Duration</StatLabel>
-                                      <StatNumber fontSize="sm">{route.duration}</StatNumber>
-                                    </Stat>
-                                    <Stat size="sm">
-                                      <StatLabel fontSize="xs">Est. Fare</StatLabel>
-                                      <StatNumber fontSize="sm" color="green.600">
-                                        ${estimatedFare(route.durationValue / 60)}
-                                      </StatNumber>
-                                    </Stat>
-                                    <Stat size="sm">
-                                      <StatLabel fontSize="xs">Route</StatLabel>
-                                      <StatNumber fontSize="xs">{route.summary}</StatNumber>
-                                    </Stat>
-                                  </Grid>
-
-                                  {route.warnings && route.warnings.length > 0 && (
-                                    <Alert status="warning" size="sm">
-                                      <AlertIcon />
-                                      <Text fontSize="xs">
-                                        {route.warnings[0]}
-                                      </Text>
-                                    </Alert>
-                                  )}
-
-                                  {/* Turn-by-Turn Directions */}
-                                  {route.route?.legs[0]?.steps && (
-                                    <Box>
-                                      <Divider my={2} />
-                                      <Text fontWeight="bold" fontSize="sm" mb={2}>
-                                        Turn-by-Turn Directions
-                                      </Text>
-                                      <VStack align="start" spacing={2} maxH="200px" overflowY="auto">
-                                        {route.route.legs[0].steps.map((step, idx) => (
-                                          <HStack key={idx} align="start" w="full" p={2} bg="white" borderRadius="md" boxShadow="sm">
-                                            <Badge colorScheme="blue" minW="25px" textAlign="center">
-                                              {idx + 1}
-                                            </Badge>
-                                            <VStack align="start" spacing={0} flex={1}>
-                                              <Text 
-                                                fontSize="xs" 
-                                                dangerouslySetInnerHTML={{ 
-                                                  __html: step.instructions 
-                                                }}
-                                              />
-                                              <Text fontSize="xs" color="gray.600">
-                                                {step.distance.text} • {step.duration.text}
-                                              </Text>
-                                            </VStack>
-                                          </HStack>
-                                        ))}
-                                      </VStack>
-                                    </Box>
-                                  )}
-                                </VStack>
-                              </TabPanel>
-                            ))}
-                          </TabPanels>
-                        </Tabs>
+                        {/* Detailed info for selected route */}
+                        {routes[selectedRoute]?.route?.legs[0]?.steps && (
+                          <Box w="full" mt={2}>
+                            <Divider mb={3} />
+                            <Text fontWeight="semibold" fontSize="sm" mb={2} color="gray.700">
+                              Turn-by-Turn Directions
+                            </Text>
+                            <VStack align="start" spacing={1.5} maxH="180px" overflowY="auto" pr={1}>
+                              {routes[selectedRoute].route.legs[0].steps.map((step, idx) => (
+                                <HStack 
+                                  key={idx} 
+                                  align="start" 
+                                  w="full" 
+                                  p={2} 
+                                  bg="gray.50" 
+                                  borderRadius="md"
+                                  spacing={2}
+                                >
+                                  <Badge 
+                                    colorScheme="blue" 
+                                    minW="20px" 
+                                    h="20px"
+                                    display="flex"
+                                    alignItems="center"
+                                    justifyContent="center"
+                                    borderRadius="full"
+                                    fontSize="xs"
+                                  >
+                                    {idx + 1}
+                                  </Badge>
+                                  <VStack align="start" spacing={0} flex={1}>
+                                    <Text 
+                                      fontSize="xs" 
+                                      dangerouslySetInnerHTML={{ 
+                                        __html: step.instructions 
+                                      }}
+                                    />
+                                    <Text fontSize="xs" color="gray.500">
+                                      {step.distance.text} • {step.duration.text}
+                                    </Text>
+                                  </VStack>
+                                </HStack>
+                              ))}
+                            </VStack>
+                          </Box>
+                        )}
                       </VStack>
                     </CardBody>
                   </Card>
@@ -614,20 +662,42 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
           </Grid>
         </ModalBody>
 
-        <ModalFooter flexDirection={{ base: 'column', md: 'row' }} gap={2}>
+        <ModalFooter flexDirection={{ base: 'column', md: 'row' }} gap={3} pt={4}>
           <Button
-            leftIcon={<ViewIcon />}
-            colorScheme="blue"
+            leftIcon={<FaMapMarkedAlt />}
+            bg="linear-gradient(135deg, #4285F4 0%, #34A853 100%)"
+            color="white"
             onClick={openInGoogleMaps}
             w={{ base: 'full', md: 'auto' }}
             flex={{ base: 1, md: 0 }}
+            borderRadius="full"
+            px={6}
+            h="48px"
+            fontWeight="semibold"
+            fontSize={{ base: 'md', md: 'sm' }}
+            boxShadow="md"
+            _hover={{
+              bg: 'linear-gradient(135deg, #3367D6 0%, #2D8F47 100%)',
+              transform: 'translateY(-2px)',
+              boxShadow: 'lg'
+            }}
+            _active={{
+              transform: 'translateY(0)',
+              boxShadow: 'md'
+            }}
+            transition="all 0.2s"
           >
-            Open in Google Maps
+            View Route in Google Maps
           </Button>
           <Button 
             onClick={onClose}
             w={{ base: 'full', md: 'auto' }}
             variant="outline"
+            borderRadius="full"
+            h="48px"
+            px={6}
+            fontWeight="semibold"
+            fontSize={{ base: 'md', md: 'sm' }}
           >
             Close
           </Button>

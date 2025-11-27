@@ -46,6 +46,8 @@ import {
 import { 
   FaCar, 
   FaUser, 
+  FaUsers,
+  FaUserTie,
   FaMap, 
   FaRoute, 
   FaCalendarPlus, 
@@ -162,10 +164,10 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
           { label: 'Scheduler', icon: CalendarIcon, action: () => navigate('/scheduler') }
         ] : []),
         ...(user?.role === 'driver' || user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [
-          { label: 'Driver', icon: FaUser, action: () => navigate('/driver') }
+          { label: 'Driver', icon: FaUserTie, action: () => navigate('/driver') }
         ] : []),
         ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [
-          { label: 'Riders', icon: FaUser, action: () => navigate('/riders') }
+          { label: 'Riders', icon: FaUsers, action: () => navigate('/riders') }
         ] : []),
         ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [
           { label: 'Vehicles', icon: FaCar, action: () => navigate('/vehicles') }

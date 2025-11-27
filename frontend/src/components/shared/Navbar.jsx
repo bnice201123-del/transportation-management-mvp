@@ -26,9 +26,11 @@ import {
   Tooltip
 } from '@chakra-ui/react';
 import { HamburgerIcon, ChevronDownIcon, SettingsIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import { BellIcon as BellIconOutline } from '@heroicons/react/24/outline';
 import { useAuth } from "../../contexts/AuthContext";
 import { useSidebar } from "../../contexts/SidebarContext";
 import Sidebar from './Sidebar';
+import axios from '../../config/axios';
 
 const Navbar = ({ title }) => {
   const { user, logout } = useAuth();
@@ -41,6 +43,7 @@ const Navbar = ({ title }) => {
   
   // Active role state for multi-role users
   const [activeRole, setActiveRole] = useState(null);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   // Initialize active role from localStorage or user's primary role
   useEffect(() => {
@@ -146,6 +149,27 @@ const Navbar = ({ title }) => {
     };
   }, []);
 
+  // Fetch unread notification count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      if (user) {
+        try {
+          const response = await axios.get('/api/notifications/unread-count');
+          setUnreadNotifications(response.data.count || 0);
+        } catch (error) {
+          console.error('Error fetching unread notifications:', error);
+        }
+      }
+    };
+
+    fetchUnreadCount();
+    
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    
+    return () => clearInterval(interval);
+  }, [user]);
+
   // Get available roles for the user
   const getAvailableRoles = () => {
     if (!user) return [];
@@ -235,29 +259,61 @@ const Navbar = ({ title }) => {
                 </VStack>
               </Box>
 
-              {/* Column 3: User Profile */}
+              {/* Column 3: Notifications + User Profile */}
               <Box flex="0 0 auto">
-                <HStack spacing={1}>
-                  <VStack spacing={0} align="end">
-                    <Text fontSize="xs" fontWeight="medium" color="gray.700" lineHeight="1.2">
-                      {user ? `${user.firstName}` : 'User'}
-                    </Text>
-                    <Badge 
-                      colorScheme={getRoleBadgeColor(activeRole || user?.role)} 
-                      variant="subtle"
-                      fontSize="xx-small"
-                      px={1}
-                      py={0}
-                    >
-                      {user ? getRoleDisplayName(activeRole || user.role).toUpperCase() : 'ROLE'}
-                    </Badge>
-                  </VStack>
-                  <Avatar
-                    size="sm"
-                    name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-                    src={user?.profileImage}
-                    bg={user?.profileImage ? 'transparent' : `${getRoleBadgeColor(activeRole || user?.role)}.500`}
-                  />
+                <HStack spacing={2}>
+                  {/* Notification Bell Icon */}
+                  <Box position="relative">
+                    <IconButton
+                      icon={<Box as={BellIconOutline} w={5} h={5} />}
+                      aria-label="Notifications"
+                      onClick={() => navigate('/notifications')}
+                      variant="ghost"
+                      size="sm"
+                      position="relative"
+                    />
+                    {unreadNotifications > 0 && (
+                      <Badge
+                        position="absolute"
+                        top="0"
+                        right="0"
+                        colorScheme="red"
+                        borderRadius="full"
+                        fontSize="2xs"
+                        minW="16px"
+                        h="16px"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                      </Badge>
+                    )}
+                  </Box>
+                  
+                  {/* User Profile */}
+                  <HStack spacing={1}>
+                    <VStack spacing={0} align="end">
+                      <Text fontSize="xs" fontWeight="medium" color="gray.700" lineHeight="1.2">
+                        {user ? `${user.firstName}` : 'User'}
+                      </Text>
+                      <Badge 
+                        colorScheme={getRoleBadgeColor(activeRole || user?.role)} 
+                        variant="subtle"
+                        fontSize="xx-small"
+                        px={1}
+                        py={0}
+                      >
+                        {user ? getRoleDisplayName(activeRole || user.role).toUpperCase() : 'ROLE'}
+                      </Badge>
+                    </VStack>
+                    <Avatar
+                      size="sm"
+                      name={user ? `${user.firstName} ${user.lastName}` : 'User'}
+                      src={user?.profileImage}
+                      bg={user?.profileImage ? 'transparent' : `${getRoleBadgeColor(activeRole || user?.role)}.500`}
+                    />
+                  </HStack>
                 </HStack>
               </Box>
             </Flex>
@@ -360,7 +416,40 @@ const Navbar = ({ title }) => {
 
             {/* Right: Account Settings (Desktop Only) */}
             <Box flex="1" display={{ base: "none", md: "block" }}>
-              <Flex justify="flex-end">
+              <Flex justify="flex-end" align="center" gap={3}>
+                {/* Notifications Bell Icon */}
+                <Tooltip label="Notifications" placement="bottom">
+                  <Box position="relative">
+                    <IconButton
+                      icon={<Box as={BellIconOutline} w={6} h={6} />}
+                      aria-label="Notifications"
+                      onClick={() => navigate('/notifications')}
+                      variant="ghost"
+                      colorScheme="brand"
+                      size="md"
+                      position="relative"
+                    />
+                    {unreadNotifications > 0 && (
+                      <Badge
+                        position="absolute"
+                        top="-1"
+                        right="-1"
+                        colorScheme="red"
+                        borderRadius="full"
+                        fontSize="xs"
+                        minW="20px"
+                        h="20px"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                      </Badge>
+                    )}
+                  </Box>
+                </Tooltip>
+
+                {/* Account Settings Menu */}
                 <Menu>
                   <MenuButton
                     as={Button}

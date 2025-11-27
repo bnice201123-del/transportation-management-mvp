@@ -103,9 +103,11 @@ import {
   ExclamationTriangleIcon as ExclamationTriangleIconSolid,
   CalendarDaysIcon as CalendarDaysIconSolid
 } from '@heroicons/react/24/solid';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from '../../config/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
+import Navbar from '../shared/Navbar';
 
 // Modern Recurring Trip Card Component (moved outside main component to avoid hooks issues)
 const RecurringTripCard = ({ trip, onEdit, onToggle, onDelete, onViewDetails }) => {
@@ -249,6 +251,8 @@ const RecurringTripCard = ({ trip, onEdit, onToggle, onDelete, onViewDetails }) 
 const RecurringTrips = () => {
   const { user } = useAuth();
   const toast = useToast();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // Responsive design variables  
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
@@ -275,6 +279,7 @@ const RecurringTrips = () => {
   
   // Form data for creating/editing recurring trips
   const [formData, setFormData] = useState({
+    riderId: '', // ID of the registered rider
     riderName: '',
     riderPhone: '',
     riderEmail: '',
@@ -343,6 +348,35 @@ const RecurringTrips = () => {
     fetchRecurringTrips();
   }, [fetchRecurringTrips]);
 
+  // Handle prepopulation from Create Trip modal
+  useEffect(() => {
+    if (location.state?.fromCreateTrip && location.state?.riderId) {
+      // Prepopulate form with rider data from Create Trip modal
+      setFormData(prev => ({
+        ...prev,
+        riderName: location.state.riderName || '',
+        riderPhone: location.state.riderPhone || '',
+        riderEmail: location.state.riderEmail || '',
+        riderId: location.state.riderId
+      }));
+
+      // Open the add modal automatically
+      onAddOpen();
+
+      // Show success toast
+      toast({
+        title: 'Rider Prepopulated',
+        description: `Creating recurring trip for ${location.state.riderName}`,
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+      });
+
+      // Clear the location state after using it
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, onAddOpen, toast, navigate, location.pathname]);
+
   // Filter recurring trips
   const filteredRecurringTrips = (Array.isArray(recurringTrips) ? recurringTrips : []).filter(trip => {
     const matchesSearch = 
@@ -370,6 +404,11 @@ const RecurringTrips = () => {
 
       if (!formData.pickupLocation.address || !formData.dropoffLocation.address) {
         throw new Error('Please select both pickup and dropoff locations');
+      }
+
+      // Validate that rider is registered (has riderId)
+      if (!formData.riderId) {
+        throw new Error('Recurring trips can only be created for registered riders. Please register this rider first or select them from the Create Trip modal.');
       }
 
       const url = selectedTrip 
@@ -417,6 +456,7 @@ const RecurringTrips = () => {
   // Reset form
   const resetForm = () => {
     setFormData({
+      riderId: '',
       riderName: '',
       riderPhone: '',
       riderEmail: '',
@@ -455,6 +495,7 @@ const RecurringTrips = () => {
   const handleEdit = (trip) => {
     setSelectedTrip(trip);
     setFormData({
+      riderId: trip.riderId || '',
       riderName: trip.riderName || '',
       riderPhone: trip.riderPhone || '',
       riderEmail: trip.riderEmail || '',
@@ -687,8 +728,10 @@ const RecurringTrips = () => {
   }
 
   return (
-    <Box bg={bgColor} minH="100vh">
-      <Container maxW="8xl" py={6}>
+    <>
+      <Navbar />
+      <Box bg={bgColor} minH="100vh" pt={{ base: "60px", md: "70px" }}>
+        <Container maxW="8xl" py={6}>
         {/* Modern Header with Enhanced Actions */}
         <Card bg={cardBg} shadow="lg" borderRadius="xl" mb={6}>
           <CardHeader pb={4}>
@@ -1095,6 +1138,33 @@ const RecurringTrips = () => {
                   <Heading size="sm" mb={4} color="blue.600">
                     👤 Rider Information
                   </Heading>
+                  
+                  {/* Registered Rider Info/Warning */}
+                  {!formData.riderId && (
+                    <Alert status="warning" mb={4} borderRadius="md">
+                      <AlertIcon />
+                      <Box>
+                        <Text fontWeight="bold">Registered Riders Only</Text>
+                        <Text fontSize="sm">
+                          Recurring trips can only be created for registered riders. 
+                          Please select a rider from the "Create Trip" modal or register this rider first.
+                        </Text>
+                      </Box>
+                    </Alert>
+                  )}
+                  
+                  {formData.riderId && (
+                    <Alert status="success" mb={4} borderRadius="md">
+                      <AlertIcon />
+                      <Box>
+                        <Text fontWeight="bold">Registered Rider Selected</Text>
+                        <Text fontSize="sm">
+                          This recurring trip will be created for registered rider: {formData.riderName}
+                        </Text>
+                      </Box>
+                    </Alert>
+                  )}
+                  
                   <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
                     <FormControl isRequired>
                       <FormLabel>Rider Name</FormLabel>
@@ -1102,7 +1172,14 @@ const RecurringTrips = () => {
                         value={formData.riderName}
                         onChange={(e) => setFormData({ ...formData, riderName: e.target.value })}
                         placeholder="Enter rider's full name"
+                        isReadOnly={!!formData.riderId}
+                        bg={formData.riderId ? 'gray.100' : 'white'}
                       />
+                      {formData.riderId && (
+                        <FormHelperText fontSize="xs" color="green.600">
+                          ✓ Prepopulated from registered rider
+                        </FormHelperText>
+                      )}
                     </FormControl>
                     
                     <FormControl>
@@ -1111,6 +1188,8 @@ const RecurringTrips = () => {
                         value={formData.riderPhone}
                         onChange={(e) => setFormData({ ...formData, riderPhone: e.target.value })}
                         placeholder="Enter phone number"
+                        isReadOnly={!!formData.riderId}
+                        bg={formData.riderId ? 'gray.100' : 'white'}
                       />
                     </FormControl>
                     
@@ -1121,6 +1200,8 @@ const RecurringTrips = () => {
                         value={formData.riderEmail}
                         onChange={(e) => setFormData({ ...formData, riderEmail: e.target.value })}
                         placeholder="Enter email address"
+                        isReadOnly={!!formData.riderId}
+                        bg={formData.riderId ? 'gray.100' : 'white'}
                       />
                     </FormControl>
                   </SimpleGrid>
@@ -1404,6 +1485,7 @@ const RecurringTrips = () => {
                 colorScheme="purple" 
                 isLoading={isSubmitting}
                 loadingText="Saving..."
+                isDisabled={!formData.riderId || isSubmitting}
               >
                 {selectedTrip ? 'Update Pattern' : 'Create Pattern'}
               </Button>
@@ -1558,7 +1640,8 @@ const RecurringTrips = () => {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
-    </Box>
+      </Box>
+    </>
   );
 };
 

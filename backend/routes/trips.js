@@ -5,6 +5,13 @@ import Vehicle from '../models/Vehicle.js';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import { logActivity } from '../utils/logger.js';
 import RecurringTripService from '../services/recurringTripService.js';
+import {
+  handleTripAssigned,
+  handleTripCompleted,
+  handleTripCancelled,
+  handleTripStarted,
+  handleDriverLocationUpdate
+} from '../utils/tripLifecycleHooks.js';
 
 const router = express.Router();
 
@@ -660,6 +667,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
     Object.assign(trip, updateData);
     await trip.save();
 
+    // Trigger lifecycle hook if driver was assigned
+    if (updateData.assignedDriver && updateData.assignedDriver !== trip.assignedDriver?.toString()) {
+      await handleTripAssigned(trip._id, updateData.assignedDriver, req.user.userId);
+    }
+
     // Log activity
     await logActivity(
       req.user._id,
@@ -715,6 +727,9 @@ router.post('/:id/assign', authenticateToken, authorizeRoles('scheduler', 'dispa
     trip.assignedDriver = driverId;
     trip.status = 'assigned';
     await trip.save();
+
+    // Trigger lifecycle hook for trip assignment
+    await handleTripAssigned(trip._id, driverId, req.user.userId);
 
     // Log activity
     await logActivity(
@@ -790,6 +805,32 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
 
     await trip.save();
 
+    // Trigger lifecycle hooks based on status changes
+    if (status === 'in_progress' && oldStatus !== 'in_progress' && trip.assignedDriver) {
+      await handleTripStarted(trip._id, trip.assignedDriver);
+    }
+    
+    if (status === 'completed' && oldStatus !== 'completed') {
+      await handleTripCompleted(trip._id, req.user.userId);
+    }
+    
+    if (status === 'cancelled' && oldStatus !== 'cancelled') {
+      const reason = tripMetrics?.cancellationReason || req.body.reason;
+      await handleTripCancelled(trip._id, reason, req.user.userId);
+    }
+    
+    // Update driver location if provided
+    if (location && req.user.role === 'driver' && trip.assignedDriver) {
+      await handleDriverLocationUpdate(
+        trip._id,
+        trip.assignedDriver,
+        location.coordinates?.latitude || location.lat,
+        location.coordinates?.longitude || location.lng,
+        location.speed,
+        location.accuracy
+      );
+    }
+
     // Log activity with metrics info
     const activityDetails = { oldStatus, newStatus: status, location };
     if (tripMetrics) {
@@ -839,6 +880,9 @@ router.delete('/:id', authenticateToken, authorizeRoles('scheduler', 'dispatcher
     trip.cancelledAt = new Date();
     trip.cancellationReason = req.body.reason || 'Trip deleted';
     await trip.save();
+
+    // Trigger lifecycle hook for trip cancellation
+    await handleTripCancelled(trip._id, trip.cancellationReason, req.user.userId);
 
     // Log activity
     await logActivity(

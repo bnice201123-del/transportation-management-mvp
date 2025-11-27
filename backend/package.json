@@ -10,7 +10,11 @@
     "seed:vehicles": "node scripts/seedVehicles.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["transportation", "logistics", "api"],
+  "keywords": [
+    "transportation",
+    "logistics",
+    "api"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -22,6 +26,7 @@
     "firebase-admin": "^13.5.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.2",
+    "node-cron": "^4.2.1",
     "nodemon": "^3.1.10",
     "socket.io": "^4.8.1"
   }

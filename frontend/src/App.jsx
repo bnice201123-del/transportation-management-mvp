@@ -57,6 +57,7 @@ import LiveTracking from './components/maps/LiveTracking';
 import RoutePlanning from './components/maps/RoutePlanning';
 import DriverLocationTracking from './components/driver/DriverLocationTracking';
 import UserProfile from './components/shared/UserProfile';
+import NotificationsPage from './components/shared/NotificationsPage';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { isAuthenticated, user, loading } = useAuth();
@@ -432,6 +433,18 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <ErrorBoundary fallbackMessage="Failed to load User Profile. Please try refreshing the page.">
               <UserProfile />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* Notifications Page - Available to all authenticated users */}
+      <Route 
+        path="/notifications" 
+        element={
+          <ProtectedRoute>
+            <ErrorBoundary fallbackMessage="Failed to load Notifications. Please try refreshing the page.">
+              <NotificationsPage />
             </ErrorBoundary>
           </ProtectedRoute>
         } 

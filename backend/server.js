@@ -16,6 +16,14 @@ import locationRoutes from './routes/locations.js';
 import activitiesRoutes from './routes/activities.js';
 import ridersRoutes from './routes/riders.js';
 import gpsTrackingRoutes from './routes/gpsTracking.js';
+import notificationsRoutes from './routes/notifications.js';
+import departureMonitoringRoutes from './routes/departureMonitoring.js';
+import tripMonitoringRoutes from './routes/tripMonitoring.js';
+
+// Import services
+import departureMonitoringService from './services/departureMonitoringService.js';
+import unassignedTripMonitoringService from './services/unassignedTripMonitoringService.js';
+import driverProgressMonitoringService from './services/driverProgressMonitoringService.js';
 
 // Load environment variables
 dotenv.config();
@@ -67,6 +75,9 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/activities', activitiesRoutes);
 app.use('/api/riders', ridersRoutes);
 app.use('/api/gps', gpsTrackingRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/departure-monitoring', departureMonitoringRoutes);
+app.use('/api/trip-monitoring', tripMonitoringRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -142,6 +153,50 @@ process.on('uncaughtException', (err) => {
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
+  
+  // Start monitoring services
+  try {
+    departureMonitoringService.start();
+    console.log('✓ Departure monitoring service started');
+  } catch (error) {
+    console.error('Failed to start departure monitoring service:', error);
+  }
+  
+  try {
+    unassignedTripMonitoringService.start();
+    console.log('✓ Unassigned trip monitoring service started');
+  } catch (error) {
+    console.error('Failed to start unassigned trip monitoring service:', error);
+  }
+  
+  try {
+    driverProgressMonitoringService.start();
+    console.log('✓ Driver progress monitoring service started');
+  } catch (error) {
+    console.error('Failed to start driver progress monitoring service:', error);
+  }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  departureMonitoringService.stop();
+  unassignedTripMonitoringService.stop();
+  driverProgressMonitoringService.stop();
+  server.close(() => {
+    console.log('HTTP server closed');
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT signal received: closing HTTP server');
+  departureMonitoringService.stop();
+  unassignedTripMonitoringService.stop();
+  driverProgressMonitoringService.stop();
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
 });
 
 export { io };

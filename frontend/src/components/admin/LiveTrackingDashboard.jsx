@@ -150,7 +150,7 @@ const LiveTrackingDashboard = () => {
 
   return (
     <Box>
-      <Navbar />
+      <Navbar title="Live Trip Tracking" />
       <Container maxW="full" py={8}>
         <VStack spacing={6} align="stretch">
           {/* Header */}

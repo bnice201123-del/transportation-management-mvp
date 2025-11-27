@@ -350,7 +350,7 @@ const DriverDashboard = () => {
       <Navbar title="Driver Dashboard" />
       
       {/* Enhanced Driver Dashboard Layout */}
-      <Box ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} pt={{ base: 4, md: 0 }}>
+      <Box pt={{ base: 4, md: 0 }}>
         <Container maxW="full" py={cardSpacing} px={cardSpacing}>
           {/* Enhanced Header with Breadcrumbs */}
           <Card 

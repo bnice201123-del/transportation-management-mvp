@@ -56,6 +56,7 @@ import { SearchIcon, RepeatIcon, ViewIcon, PhoneIcon, EmailIcon, TimeIcon, Chevr
 import { FaCar, FaRoute, FaMapMarkerAlt, FaBatteryHalf, FaSignal } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import GoogleMap from './GoogleMap';
+import Navbar from '../shared/Navbar';
 import axios from 'axios';
 import '../../config/axios';
 import { useAuth } from '../../contexts/AuthContext';
@@ -493,10 +494,12 @@ const LiveTracking = () => {
   }
 
   return (
-    <Box minHeight="100vh" bg={bgColor}>
-      <Container maxWidth="full" py={6}>
-        {/* Header */}
-        <VStack spacing={6} align="stretch">
+    <>
+      <Navbar title="Live Vehicle Tracking" />
+      <Box minHeight="100vh" bg={bgColor}>
+        <Container maxWidth="full" py={6}>
+          {/* Header */}
+          <VStack spacing={6} align="stretch">
           <Flex 
             align={{ base: "flex-start", md: "center" }} 
             justify="space-between"
@@ -975,7 +978,8 @@ const LiveTracking = () => {
           </DrawerBody>
         </DrawerContent>
       </Drawer>
-    </Box>
+      </Box>
+    </>
   );
 };
 

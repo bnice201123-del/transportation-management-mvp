@@ -99,6 +99,9 @@ const MapComponent = ({
       markersRef.current.forEach(marker => marker.setMap(null));
       
       // Add new markers
+      // Note: Using google.maps.Marker (deprecated as of Feb 2024)
+      // TODO: Migrate to google.maps.marker.AdvancedMarkerElement
+      // See: https://developers.google.com/maps/documentation/javascript/advanced-markers/migration
       const newMarkers = markers.map((markerData, index) => {
         // Process icon to ensure proper Google Maps objects
         let iconConfig = markerData.icon;

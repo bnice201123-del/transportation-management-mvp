@@ -22,14 +22,17 @@ import {
   Heading,
   Badge,
   Container,
-  Spacer
+  Spacer,
+  Tooltip
 } from '@chakra-ui/react';
-import { HamburgerIcon, ChevronDownIcon, SettingsIcon } from '@chakra-ui/icons';
+import { HamburgerIcon, ChevronDownIcon, SettingsIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import { useAuth } from "../../contexts/AuthContext";
+import { useSidebar } from "../../contexts/SidebarContext";
 import Sidebar from './Sidebar';
 
 const Navbar = ({ title }) => {
   const { user, logout } = useAuth();
+  const { isSidebarVisible, toggleSidebar } = useSidebar();
   const { isOpen: isMobileMenuOpen, onOpen: onMobileMenuOpen, onClose: onMobileMenuClose } = useDisclosure();
   const navigate = useNavigate();
   const location = useLocation();
@@ -191,9 +194,8 @@ const Navbar = ({ title }) => {
         top={0}
         zIndex={1000}
         shadow="md"
-        ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} // Responsive left margin for sidebar
       >
-        <Container maxW="container.xl" py={{ base: 2, md: 3 }} px={{ base: 4, md: 6 }}>
+        <Container maxW="container.xl" py={{ base: 2, md: 3 }} px={{ base: 4, md: 0 }} pl={{ md: 0 }} pr={{ md: 6 }}>
           <Flex alignItems="center" minH={{ base: "50px", md: "60px" }}>
             
             {/* Mobile: Three Column Layout - Hamburger | Logo | User Profile */}
@@ -253,25 +255,41 @@ const Navbar = ({ title }) => {
                   <Avatar
                     size="sm"
                     name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-                    bg={`${getRoleBadgeColor(activeRole || user?.role)}.500`}
+                    src={user?.profileImage}
+                    bg={user?.profileImage ? 'transparent' : `${getRoleBadgeColor(activeRole || user?.role)}.500`}
                   />
                 </HStack>
               </Box>
             </Flex>
 
-            {/* Desktop: Logo Section */}
+            {/* Desktop: Sidebar Toggle + Logo Section */}
             <Box flex="1" display={{ base: "none", md: "block" }}>
-              <Box 
-                cursor="pointer"
-                onClick={navigateToDashboard}
-              >
-                <Text fontSize={{ base: "lg", md: "2xl" }} fontWeight="bold" color="brand.600">
-                  TransportHub
-                </Text>
-                <Text fontSize="xs" color="secondary.600" mt="-1">
-                  Transportation Management
-                </Text>
-              </Box>
+              <HStack spacing={3}>
+                {/* Sidebar Toggle Button */}
+                <Tooltip label={isSidebarVisible ? "Hide Sidebar" : "Show Sidebar"} placement="bottom">
+                  <IconButton
+                    icon={isSidebarVisible ? <ChevronLeftIcon boxSize={6} /> : <ChevronRightIcon boxSize={6} />}
+                    aria-label={isSidebarVisible ? "Hide sidebar" : "Show sidebar"}
+                    onClick={toggleSidebar}
+                    variant="ghost"
+                    colorScheme="brand"
+                    size="md"
+                  />
+                </Tooltip>
+                
+                {/* Logo */}
+                <Box 
+                  cursor="pointer"
+                  onClick={navigateToDashboard}
+                >
+                  <Text fontSize={{ base: "lg", md: "2xl" }} fontWeight="bold" color="brand.600">
+                    TransportHub
+                  </Text>
+                  <Text fontSize="xs" color="secondary.600" mt="-1">
+                    Transportation Management
+                  </Text>
+                </Box>
+              </HStack>
             </Box>
 
             {/* Center: Page Title (Hidden on mobile) */}
@@ -284,7 +302,8 @@ const Navbar = ({ title }) => {
                   <Avatar
                     size="xs"
                     name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-                    bg={`${getRoleBadgeColor(activeRole || user?.role)}.500`}
+                    src={user?.profileImage}
+                    bg={user?.profileImage ? 'transparent' : `${getRoleBadgeColor(activeRole || user?.role)}.500`}
                   />
                   <Text fontSize="sm" color="gray.600">
                     {user ? `${user.firstName} ${user.lastName}` : 'User'}
@@ -358,7 +377,7 @@ const Navbar = ({ title }) => {
                   </MenuButton>
                   <MenuList border="1px" borderColor="brand.200" shadow="lg">
                     <MenuItem 
-                      icon={<Avatar size="xs" name={user ? `${user.firstName} ${user.lastName}` : 'User'} />}
+                      icon={<Avatar size="xs" name={user ? `${user.firstName} ${user.lastName}` : 'User'} src={user?.profileImage} bg={user?.profileImage ? 'transparent' : 'blue.500'} />}
                       _hover={{ bg: "green.50" }}
                     >
                       <VStack align="start" spacing={0}>
@@ -371,7 +390,7 @@ const Navbar = ({ title }) => {
                       </VStack>
                     </MenuItem>
                     <MenuDivider />
-                    <MenuItem _hover={{ bg: "green.50" }}>
+                    <MenuItem _hover={{ bg: "green.50" }} onClick={() => navigate('/profile')}>
                       Profile Settings
                     </MenuItem>
                     <MenuItem _hover={{ bg: "green.50" }}>

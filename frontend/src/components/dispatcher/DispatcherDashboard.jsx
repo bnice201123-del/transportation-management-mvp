@@ -115,7 +115,7 @@ import {
   XCircleIcon as XCircleIconSolid
 } from '@heroicons/react/24/solid';
 import axios from 'axios';
-import AppLayout from '../../layout/AppLayout';
+import Navbar from '../shared/Navbar';
 import TripManagementModal from '../scheduler/TripManagementModal';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 import RiderInfoModal from '../shared/RiderInfoModal';
@@ -627,18 +627,21 @@ const getLocationText = (location) => {
   return 'Location not specified';
 };  if (loading) {
     return (
-      <AppLayout title="Dispatcher Dashboard">
+      <>
+        <Navbar title="Dispatcher Dashboard" />
         <Center h="50vh">
           <Spinner size="xl" />
         </Center>
-      </AppLayout>
+      </>
     );
   }
 
 
 
   return (
-    <AppLayout title="Dispatch Control Center">
+    <>
+      <Navbar title="Dispatch Control Center" />
+      <Box bg="gray.50" minH="calc(100vh - 80px)" px={{ base: 3, md: 6, lg: 8 }} py={{ base: 3, md: 5 }}>
       {/* Enhanced Header Section - Mobile-First Design */}
       <Box mb={{ base: 6, md: 8 }}>
         <VStack align="start" spacing={3}>
@@ -2295,6 +2298,7 @@ const getLocationText = (location) => {
             </Grid>
           </CardBody>
         </Card>
+      </Box>
 
         {/* Create/Edit Trip Modal */}
         <Modal isOpen={isOpen} onClose={handleCloseModal} size="xl">
@@ -2677,7 +2681,7 @@ const getLocationText = (location) => {
         onClose={() => setViewTripDetails(null)}
         trip={viewTripDetails}
       />
-    </AppLayout>
+    </>
   );
 };
 

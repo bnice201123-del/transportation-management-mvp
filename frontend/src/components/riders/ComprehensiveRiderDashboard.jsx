@@ -103,7 +103,8 @@ import {
   TicketIcon,
   DocumentTextIcon,
   CalendarDaysIcon,
-  CalculatorIcon
+  CalculatorIcon,
+  UserIcon
 } from '@heroicons/react/24/outline';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
@@ -509,7 +510,7 @@ const ComprehensiveRiderDashboard = () => {
     <Box minH="100vh" bg={bgColor}>
       <Navbar title="Rider Management" />
       
-      <Box ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} pt={{ base: 4, md: 0 }}>
+      <Box pt={{ base: 4, md: 0 }}>
         <Container maxW="container.xl" py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>
           <VStack spacing={{ base: 6, md: 8 }} align="stretch">
             {/* Welcome Header */}
@@ -1479,22 +1480,39 @@ const ComprehensiveRiderDashboard = () => {
           mileageBalance: 500,
           pricePerMile: 0.50
         });
-      }} size="2xl">
+      }} size={{ base: "full", md: "2xl" }} scrollBehavior="inside">
         <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>{isEditRiderOpen ? 'Edit Rider' : 'Add New Rider'}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody maxH="70vh" overflowY="auto">
-            <VStack spacing={4} align="stretch">
+        <ModalContent maxH={{ base: "100vh", md: "90vh" }} mx={{ base: 0, md: 4 }}>
+          <ModalHeader 
+            borderBottomWidth="1px" 
+            borderColor="gray.200" 
+            py={{ base: 4, md: 4 }}
+            px={{ base: 4, md: 6 }}
+          >
+            <VStack align="start" spacing={1}>
+              <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold">
+                {isEditRiderOpen ? 'Edit Rider' : 'Add New Rider'}
+              </Text>
+              <Text fontSize="sm" fontWeight="normal" color="gray.600">
+                {isEditRiderOpen ? 'Update rider information and service details' : 'Create a new rider profile with service balance'}
+              </Text>
+            </VStack>
+          </ModalHeader>
+          <ModalCloseButton top={{ base: 3, md: 4 }} right={{ base: 3, md: 4 }} />
+          <ModalBody px={{ base: 4, md: 6 }} py={4}>
+            <VStack spacing={{ base: 5, md: 6 }} align="stretch">
               {/* Basic Information */}
               <Box>
-                <Heading size="sm" mb={3} color="gray.700">Basic Information</Heading>
-                <VStack spacing={3}>
-                  <SimpleGrid columns={2} spacing={4} w="full">
+                <HStack mb={3} spacing={2}>
+                  <Box as={UserIcon} w={5} h={5} color="blue.600" />
+                  <Heading size="sm" color="gray.700">Contact Information</Heading>
+                </HStack>
+                <VStack spacing={4}>
+                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="full">
                     <FormControl isRequired>
-                      <FormLabel fontSize="sm">First Name</FormLabel>
+                      <FormLabel fontSize="sm" fontWeight="semibold">First Name</FormLabel>
                       <Input
-                        placeholder="First name"
+                        placeholder="Enter first name"
                         value={newRider.firstName}
                         onChange={(e) => {
                           const value = e.target.value;
@@ -1503,13 +1521,14 @@ const ComprehensiveRiderDashboard = () => {
                             setNewRider({...newRider, firstName: value});
                           }
                         }}
+                        size={{ base: "md", md: "md" }}
                       />
                     </FormControl>
                     
                     <FormControl isRequired>
-                      <FormLabel fontSize="sm">Last Name</FormLabel>
+                      <FormLabel fontSize="sm" fontWeight="semibold">Last Name</FormLabel>
                       <Input
-                        placeholder="Last name"
+                        placeholder="Enter last name"
                         value={newRider.lastName}
                         onChange={(e) => {
                           const value = e.target.value;
@@ -1518,14 +1537,15 @@ const ComprehensiveRiderDashboard = () => {
                             setNewRider({...newRider, lastName: value});
                           }
                         }}
+                        size={{ base: "md", md: "md" }}
                       />
                     </FormControl>
                   </SimpleGrid>
 
                   <FormControl isRequired>
-                    <FormLabel fontSize="sm">Phone</FormLabel>
+                    <FormLabel fontSize="sm" fontWeight="semibold">Phone Number</FormLabel>
                     <Input
-                      placeholder="Phone number"
+                      placeholder="(555) 123-4567"
                       value={newRider.phone}
                       onChange={(e) => {
                         const value = e.target.value;
@@ -1534,36 +1554,39 @@ const ComprehensiveRiderDashboard = () => {
                           setNewRider({...newRider, phone: value});
                         }
                       }}
+                      size={{ base: "md", md: "md" }}
                     />
                   </FormControl>
 
                   <FormControl>
-                    <FormLabel fontSize="sm">Email (Optional)</FormLabel>
+                    <FormLabel fontSize="sm" fontWeight="semibold">Email <Text as="span" color="gray.500" fontWeight="normal">(Optional)</Text></FormLabel>
                     <Input
                       type="email"
                       placeholder="rider@example.com"
                       value={newRider.email}
                       onChange={(e) => setNewRider({...newRider, email: e.target.value})}
+                      size={{ base: "md", md: "md" }}
                     />
                   </FormControl>
 
                   <FormControl isRequired>
-                    <FormLabel fontSize="sm">Date of Birth</FormLabel>
+                    <FormLabel fontSize="sm" fontWeight="semibold">Date of Birth</FormLabel>
                     <Input
                       type="date"
                       value={newRider.dateOfBirth}
                       onChange={(e) => handleDateOfBirthChange(e.target.value)}
+                      size={{ base: "md", md: "md" }}
                     />
                   </FormControl>
 
                   {/* Display Generated Rider ID */}
                   {newRider.riderId && (
-                    <Box p={3} bg="blue.50" borderRadius="md" borderWidth="1px" borderColor="blue.200">
-                      <HStack>
-                        <Text fontSize="sm" fontWeight="bold" color="blue.700">
+                    <Box p={3} bg="blue.50" borderRadius="lg" borderWidth="1px" borderColor="blue.200">
+                      <HStack justify="space-between" flexWrap="wrap">
+                        <Text fontSize="sm" fontWeight="semibold" color="blue.700">
                           Generated Rider ID:
                         </Text>
-                        <Badge colorScheme="blue" fontSize="md" px={3} py={1}>
+                        <Badge colorScheme="blue" fontSize="md" px={3} py={1} borderRadius="md">
                           {newRider.riderId}
                         </Badge>
                       </HStack>
@@ -1571,9 +1594,9 @@ const ComprehensiveRiderDashboard = () => {
                   )}
 
                   <FormControl isRequired>
-                    <FormLabel fontSize="sm">Address</FormLabel>
+                    <FormLabel fontSize="sm" fontWeight="semibold">Home Address</FormLabel>
                     <PlacesAutocomplete
-                      placeholder="Enter home address"
+                      placeholder="Enter full street address"
                       value={newRider.address}
                       onChange={(address) => setNewRider({...newRider, address: address})}
                       onPlaceSelected={(place) => setNewRider({...newRider, address: place.address})}
@@ -1586,72 +1609,63 @@ const ComprehensiveRiderDashboard = () => {
               <Divider />
 
               {/* Service Balance Section */}
-              <Card bg="blue.50" borderColor="blue.200" size="sm">
+              <Card bg="blue.50" borderColor="blue.200" borderWidth="1px" size="sm">
                 <CardHeader pb={2}>
-                  <HStack>
-                    <Box as={TicketIcon} w={4} h={4} color="blue.600" />
+                  <HStack spacing={2}>
+                    <Box as={TicketIcon} w={5} h={5} color="blue.600" />
                     <Heading size="sm" color="blue.700">Service Balance</Heading>
                   </HStack>
                 </CardHeader>
                 <CardBody pt={0}>
-                  <VStack spacing={3} align="start">
+                  <VStack spacing={4} align="start">
                     <FormControl>
-                      <FormLabel fontSize="sm" mb={2}>Balance Type</FormLabel>
+                      <FormLabel fontSize="sm" fontWeight="semibold" mb={2}>Balance Type</FormLabel>
                       <RadioGroup
                         value={newRider.serviceBalanceType}
                         onChange={(value) => setNewRider({...newRider, serviceBalanceType: value})}
                       >
-                        <Stack direction="row" spacing={4}>
-                          <Radio value="trips" size="sm">Trip Count</Radio>
-                          <Radio value="dollars" size="sm">Dollar Amount</Radio>
+                        <Stack direction={{ base: "column", md: "row" }} spacing={4}>
+                          <Radio value="trips" colorScheme="blue">Trip Count</Radio>
+                          <Radio value="dollars" colorScheme="blue">Dollar Amount</Radio>
                         </Stack>
                       </RadioGroup>
                     </FormControl>
 
                     {newRider.serviceBalanceType === 'trips' ? (
-                      <FormControl>
-                        <FormLabel fontSize="sm">Number of Trips</FormLabel>
-                        <NumberInput
+                      <FormControl w="full">
+                        <FormLabel fontSize="sm" fontWeight="semibold">Number of Trips</FormLabel>
+                        <Input
+                          type="number"
                           value={newRider.tripBalance}
-                          onChange={(valueString, valueNumber) => 
-                            setNewRider({...newRider, tripBalance: valueNumber || 0})
+                          onChange={(e) => 
+                            setNewRider({...newRider, tripBalance: parseInt(e.target.value) || 0})
                           }
                           min={0}
                           max={999}
-                          size="sm"
-                        >
-                          <NumberInputField placeholder="Enter number of trips" />
-                          <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                          </NumberInputStepper>
-                        </NumberInput>
+                          placeholder="Enter number of trips"
+                        />
                       </FormControl>
                     ) : (
-                      <FormControl>
-                        <FormLabel fontSize="sm">Dollar Amount</FormLabel>
-                        <InputGroup size="sm">
+                      <FormControl w="full">
+                        <FormLabel fontSize="sm" fontWeight="semibold">Dollar Amount</FormLabel>
+                        <InputGroup>
                           <InputLeftElement
                             pointerEvents="none"
                             color="gray.500"
                             children="$"
+                            h="full"
                           />
-                          <NumberInput
+                          <Input
+                            type="number"
                             value={newRider.dollarBalance}
-                            onChange={(valueString, valueNumber) => 
-                              setNewRider({...newRider, dollarBalance: valueNumber || 0})
+                            onChange={(e) => 
+                              setNewRider({...newRider, dollarBalance: parseFloat(e.target.value) || 0})
                             }
                             min={0}
-                            precision={2}
                             step={0.01}
-                            w="full"
-                          >
-                            <NumberInputField pl={8} placeholder="Enter dollar amount" />
-                            <NumberInputStepper>
-                              <NumberIncrementStepper />
-                              <NumberDecrementStepper />
-                            </NumberInputStepper>
-                          </NumberInput>
+                            pl={8}
+                            placeholder="Enter dollar amount"
+                          />
                         </InputGroup>
                       </FormControl>
                     )}
@@ -1660,40 +1674,37 @@ const ComprehensiveRiderDashboard = () => {
               </Card>
 
               {/* Contract Management Section */}
-              <Card bg="purple.50" borderColor="purple.200" size="sm">
+              <Card bg="purple.50" borderColor="purple.200" borderWidth="1px" size="sm">
                 <CardHeader pb={2}>
-                  <HStack>
-                    <Box as={DocumentTextIcon} w={4} h={4} color="purple.600" />
+                  <HStack spacing={2}>
+                    <Box as={DocumentTextIcon} w={5} h={5} color="purple.600" />
                     <Heading size="sm" color="purple.700">Contract Management</Heading>
                   </HStack>
                 </CardHeader>
                 <CardBody pt={0}>
-                  <VStack spacing={3} align="start">
+                  <VStack spacing={4} align="start">
                     <Checkbox
                       isChecked={newRider.isContractBased}
                       onChange={(e) => setNewRider({...newRider, isContractBased: e.target.checked})}
                       colorScheme="purple"
-                      size="sm"
                     >
-                      This service is contract-based
+                      <Text fontSize="sm">This service is contract-based</Text>
                     </Checkbox>
 
                     {newRider.isContractBased && (
-                      <SimpleGrid columns={2} spacing={3} w="full" pl={4}>
+                      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="full">
                         <FormControl isRequired>
-                          <FormLabel fontSize="sm">Start Date</FormLabel>
+                          <FormLabel fontSize="sm" fontWeight="semibold">Contract Start Date</FormLabel>
                           <Input
                             type="date"
-                            size="sm"
                             value={newRider.contractStartDate}
                             onChange={(e) => setNewRider({...newRider, contractStartDate: e.target.value})}
                           />
                         </FormControl>
                         <FormControl isRequired>
-                          <FormLabel fontSize="sm">End Date</FormLabel>
+                          <FormLabel fontSize="sm" fontWeight="semibold">Contract End Date</FormLabel>
                           <Input
                             type="date"
-                            size="sm"
                             value={newRider.contractEndDate}
                             onChange={(e) => setNewRider({...newRider, contractEndDate: e.target.value})}
                             min={newRider.contractStartDate}
@@ -1706,87 +1717,74 @@ const ComprehensiveRiderDashboard = () => {
               </Card>
 
               {/* Pricing & Mileage Section */}
-              <Card bg="green.50" borderColor="green.200" size="sm">
+              <Card bg="green.50" borderColor="green.200" borderWidth="1px" size="sm">
                 <CardHeader pb={2}>
-                  <HStack>
-                    <Box as={CalculatorIcon} w={4} h={4} color="green.600" />
+                  <HStack spacing={2}>
+                    <Box as={CalculatorIcon} w={5} h={5} color="green.600" />
                     <Heading size="sm" color="green.700">Pricing & Mileage</Heading>
                   </HStack>
                 </CardHeader>
                 <CardBody pt={0}>
-                  <SimpleGrid columns={3} spacing={3}>
+                  <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
                     <FormControl>
-                      <FormLabel fontSize="sm">Price Per Ride</FormLabel>
-                      <InputGroup size="sm">
+                      <FormLabel fontSize="sm" fontWeight="semibold">Price Per Ride</FormLabel>
+                      <InputGroup>
                         <InputLeftElement
                           pointerEvents="none"
                           color="gray.500"
                           children="$"
+                          h="full"
                         />
-                        <NumberInput
+                        <Input
+                          type="number"
                           value={newRider.pricePerRide}
-                          onChange={(valueString, valueNumber) => 
-                            setNewRider({...newRider, pricePerRide: valueNumber || 0})
+                          onChange={(e) => 
+                            setNewRider({...newRider, pricePerRide: parseFloat(e.target.value) || 0})
                           }
                           min={0}
-                          precision={2}
                           step={0.01}
-                          w="full"
-                        >
-                          <NumberInputField pl={8} placeholder="0.00" />
-                          <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                          </NumberInputStepper>
-                        </NumberInput>
+                          pl={8}
+                          placeholder="0.00"
+                        />
                       </InputGroup>
                     </FormControl>
 
                     <FormControl>
-                      <FormLabel fontSize="sm">Mileage Balance</FormLabel>
-                      <InputGroup size="sm">
-                        <NumberInput
+                      <FormLabel fontSize="sm" fontWeight="semibold">Mileage Balance</FormLabel>
+                      <InputGroup>
+                        <Input
+                          type="number"
                           value={newRider.mileageBalance}
-                          onChange={(valueString, valueNumber) => 
-                            setNewRider({...newRider, mileageBalance: valueNumber || 0})
+                          onChange={(e) => 
+                            setNewRider({...newRider, mileageBalance: parseInt(e.target.value) || 0})
                           }
                           min={0}
-                          w="full"
-                        >
-                          <NumberInputField placeholder="Enter miles" />
-                          <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                          </NumberInputStepper>
-                        </NumberInput>
+                          placeholder="Enter miles"
+                        />
                         <InputRightAddon children="mi" fontSize="xs" />
                       </InputGroup>
                     </FormControl>
 
                     <FormControl>
-                      <FormLabel fontSize="sm">Price Per Mile</FormLabel>
-                      <InputGroup size="sm">
+                      <FormLabel fontSize="sm" fontWeight="semibold">Price Per Mile</FormLabel>
+                      <InputGroup>
                         <InputLeftElement
                           pointerEvents="none"
                           color="gray.500"
                           children="$"
+                          h="full"
                         />
-                        <NumberInput
+                        <Input
+                          type="number"
                           value={newRider.pricePerMile}
-                          onChange={(valueString, valueNumber) => 
-                            setNewRider({...newRider, pricePerMile: valueNumber || 0})
+                          onChange={(e) => 
+                            setNewRider({...newRider, pricePerMile: parseFloat(e.target.value) || 0})
                           }
                           min={0}
-                          precision={2}
                           step={0.01}
-                          w="full"
-                        >
-                          <NumberInputField pl={8} placeholder="0.00" />
-                          <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                          </NumberInputStepper>
-                        </NumberInput>
+                          pl={8}
+                          placeholder="0.00"
+                        />
                       </InputGroup>
                     </FormControl>
                   </SimpleGrid>
@@ -1795,33 +1793,52 @@ const ComprehensiveRiderDashboard = () => {
 
               {/* Notes Section */}
               <FormControl>
-                <FormLabel fontSize="sm">Notes</FormLabel>
+                <FormLabel fontSize="sm" fontWeight="semibold">
+                  Additional Notes <Text as="span" color="gray.500" fontWeight="normal">(Optional)</Text>
+                </FormLabel>
                 <Textarea
-                  placeholder="Additional notes (optional)"
+                  placeholder="Add any special requirements, accessibility needs, or other important information..."
                   value={newRider.notes}
                   onChange={(e) => setNewRider({...newRider, notes: e.target.value})}
-                  size="sm"
-                  rows={3}
+                  rows={4}
+                  resize="vertical"
                 />
               </FormControl>
             </VStack>
           </ModalBody>
 
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={() => {
-              onNewRiderClose();
-              onEditRiderClose();
-              setSelectedRider(null);
-            }}>
-              Cancel
-            </Button>
-            <Button 
-              colorScheme="pink" 
-              onClick={isEditRiderOpen ? handleUpdateRider : handleCreateRider}
-              isDisabled={!newRider.firstName || !newRider.lastName || !newRider.phone || !newRider.dateOfBirth}
-            >
-              {isEditRiderOpen ? 'Update Rider' : 'Create Rider'}
-            </Button>
+          <ModalFooter 
+            borderTopWidth="1px" 
+            borderColor="gray.200" 
+            px={{ base: 4, md: 6 }}
+            py={{ base: 4, md: 4 }}
+            bg="gray.50"
+          >
+            <HStack spacing={3} w="full" justify="flex-end" flexWrap={{ base: "wrap", md: "nowrap" }}>
+              <Button 
+                variant="ghost" 
+                onClick={() => {
+                  onNewRiderClose();
+                  onEditRiderClose();
+                  setSelectedRider(null);
+                }}
+                w={{ base: "full", md: "auto" }}
+                size={{ base: "md", md: "md" }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                colorScheme="pink" 
+                onClick={isEditRiderOpen ? handleUpdateRider : handleCreateRider}
+                isDisabled={!newRider.firstName || !newRider.lastName || !newRider.phone || !newRider.dateOfBirth}
+                leftIcon={isEditRiderOpen ? <EditIcon /> : <AddIcon />}
+                w={{ base: "full", md: "auto" }}
+                size={{ base: "md", md: "md" }}
+                px={8}
+              >
+                {isEditRiderOpen ? 'Update Rider' : 'Save Rider'}
+              </Button>
+            </HStack>
           </ModalFooter>
         </ModalContent>
       </Modal>

@@ -440,7 +440,7 @@ const ComprehensiveDriverDashboard = () => {
     <Box minH="100vh" bg={bgColor}>
       <Navbar title="Driver Dashboard" />
       
-      <Box ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} pt={{ base: 4, md: 0 }}>
+      <Box pt={{ base: 4, md: 0 }}>
         <Container maxW="container.xl" py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>
           <VStack spacing={{ base: 6, md: 8 }} align="stretch">
             {/* Welcome Header */}

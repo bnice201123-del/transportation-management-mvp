@@ -80,18 +80,18 @@ const Layout = ({ children, currentView }) => {
         onViewChange={handleViewChange}
       />
       
-      {/* Main Content Area with left margin for sidebar */}
+      {/* Main Content Area - Pages render their own Navbar */}
       <Flex 
         direction="column"
-        ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} // Responsive margin for sidebar
         minHeight="100vh"
+        transition="margin-left 0.3s ease"
       >
         {/* Main Content - Scrollable Area */}
         <Box 
           flex="1" 
           overflowY="auto"
           overflowX="hidden"
-          maxHeight="calc(100vh - 0px)" // Ensure proper height calculation
+          maxHeight="100vh"
           css={{
             '&::-webkit-scrollbar': {
               width: '8px',

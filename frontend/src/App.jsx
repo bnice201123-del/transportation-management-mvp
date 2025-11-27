@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Box, Spinner, Center } from '@chakra-ui/react';
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { SidebarProvider } from "./contexts/SidebarContext";
 
 // Import components
 import Dashboard from './components/Dashboard';
@@ -55,6 +56,7 @@ import TripMaps from './components/maps/TripMaps';
 import LiveTracking from './components/maps/LiveTracking';
 import RoutePlanning from './components/maps/RoutePlanning';
 import DriverLocationTracking from './components/driver/DriverLocationTracking';
+import UserProfile from './components/shared/UserProfile';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { isAuthenticated, user, loading } = useAuth();
@@ -422,6 +424,19 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+      
+      {/* User Profile Route - Available to all authenticated users */}
+      <Route 
+        path="/profile" 
+        element={
+          <ProtectedRoute>
+            <ErrorBoundary fallbackMessage="Failed to load User Profile. Please try refreshing the page.">
+              <UserProfile />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      
       <Route 
         path="/admin/system" 
         element={
@@ -664,18 +679,20 @@ const AppRoutes = () => {
 function App() {
   return (
     <AuthProvider>
-      <Box 
-        minWidth="320px"
-        minHeight="100vh"
-        width="100%" 
-        bg="gray.50" 
-        position="relative"
-        overflowX="hidden"
-      >
-        <Layout>
-          <AppRoutes />
-        </Layout>
-      </Box>
+      <SidebarProvider>
+        <Box 
+          minWidth="320px"
+          minHeight="100vh"
+          width="100%" 
+          bg="gray.50" 
+          position="relative"
+          overflowX="hidden"
+        >
+          <Layout>
+            <AppRoutes />
+          </Layout>
+        </Box>
+      </SidebarProvider>
     </AuthProvider>
   );
 }

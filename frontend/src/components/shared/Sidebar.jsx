@@ -58,10 +58,12 @@ import {
 } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSidebar } from '../../contexts/SidebarContext';
 import AdvancedSearchModal from '../search/AdvancedSearchModal';
 
 const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   const { user, logout } = useAuth();
+  const { isSidebarVisible, hideSidebar } = useSidebar();
   const navigate = useNavigate();
   const location = useLocation();
   const { isOpen: isSearchOpen, onOpen: onSearchOpen, onClose: onSearchClose } = useDisclosure();
@@ -75,12 +77,12 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   const menuBg = useColorModeValue('white', 'gray.700');
   const menuShadow = useColorModeValue('xl', 'dark-lg');
   
-  // Responsive sidebar width
+  // Responsive sidebar width - returns 0 when hidden
   const sidebarWidth = useBreakpointValue({ 
     base: 0, 
-    md: "60px", 
-    lg: "200px", 
-    xl: "240px" 
+    md: isSidebarVisible ? "60px" : "0", 
+    lg: isSidebarVisible ? "200px" : "0", 
+    xl: isSidebarVisible ? "240px" : "0" 
   });
   
   // Show full sidebar or collapsed version
@@ -195,16 +197,31 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
 
   const handleItemClick = (item) => {
     navigate(item.path || item);
+    hideSidebar(); // Auto-close sidebar on desktop
     if (onMobileClose) {
       onMobileClose(); // Close mobile menu on navigation
     }
   };
 
   const toggleExpanded = (itemId) => {
-    setExpandedItems(prev => ({
-      ...prev,
-      [itemId]: !prev[itemId]
-    }));
+    setExpandedItems(prev => {
+      // If clicking the currently open item, close it
+      if (prev[itemId]) {
+        return {
+          ...prev,
+          [itemId]: false
+        };
+      }
+      
+      // Otherwise, close all other items and open this one (accordion behavior)
+      const newState = {};
+      Object.keys(prev).forEach(key => {
+        newState[key] = false;
+      });
+      newState[itemId] = true;
+      
+      return newState;
+    });
   };
 
   const isActive = (path) => {
@@ -229,8 +246,9 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       zIndex={900}
       shadow="xl"
       py={4}
-      display={{ base: "none", md: "block" }}
+      display={{ base: "none", md: isSidebarVisible ? "block" : "none" }}
       overflowY="auto"
+      transition="all 0.3s ease"
     >
       {isExpanded ? (
         // Expanded sidebar for lg+ screens
@@ -282,6 +300,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                         onClick={(e) => {
                           e.stopPropagation();
                           subItem.action();
+                          hideSidebar(); // Auto-close sidebar when subitem is clicked
                         }}
                       >
                         <Icon as={subItem.icon} boxSize={4} />
@@ -373,6 +392,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                       onClick={(e) => {
                         e.stopPropagation();
                         subItem.action();
+                        hideSidebar(); // Auto-close sidebar when subitem is clicked
                       }}
                     >
                       <Icon as={subItem.icon} boxSize={4} />

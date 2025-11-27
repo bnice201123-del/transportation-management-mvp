@@ -511,20 +511,16 @@ const NewRider = () => {
                         {formData.serviceBalanceType === 'trips' ? (
                           <FormControl>
                             <FormLabel>Number of Trips</FormLabel>
-                            <NumberInput
+                            <Input
+                              type="number"
                               value={formData.tripBalance}
-                              onChange={(valueString, valueNumber) => 
-                                handleInputChange('tripBalance', valueNumber || 0)
+                              onChange={(e) => 
+                                handleInputChange('tripBalance', parseInt(e.target.value) || 0)
                               }
                               min={0}
                               max={999}
-                            >
-                              <NumberInputField placeholder="Enter number of trips" />
-                              <NumberInputStepper>
-                                <NumberIncrementStepper />
-                                <NumberDecrementStepper />
-                              </NumberInputStepper>
-                            </NumberInput>
+                              placeholder="Enter number of trips"
+                            />
                           </FormControl>
                         ) : (
                           <FormControl>
@@ -534,23 +530,19 @@ const NewRider = () => {
                                 pointerEvents="none"
                                 color="gray.500"
                                 children="$"
+                                h="full"
                               />
-                              <NumberInput
+                              <Input
+                                type="number"
                                 value={formData.dollarBalance}
-                                onChange={(valueString, valueNumber) => 
-                                  handleInputChange('dollarBalance', valueNumber || 0)
+                                onChange={(e) => 
+                                  handleInputChange('dollarBalance', parseFloat(e.target.value) || 0)
                                 }
                                 min={0}
-                                precision={2}
                                 step={0.01}
-                                w="full"
-                              >
-                                <NumberInputField pl={8} placeholder="Enter dollar amount" />
-                                <NumberInputStepper>
-                                  <NumberIncrementStepper />
-                                  <NumberDecrementStepper />
-                                </NumberInputStepper>
-                              </NumberInput>
+                                pl={8}
+                                placeholder="Enter dollar amount"
+                              />
                             </InputGroup>
                           </FormControl>
                         )}
@@ -640,43 +632,34 @@ const NewRider = () => {
                             pointerEvents="none"
                             color="gray.500"
                             children="$"
+                            h="full"
                           />
-                          <NumberInput
+                          <Input
+                            type="number"
                             value={formData.pricePerRide}
-                            onChange={(valueString, valueNumber) => 
-                              handleInputChange('pricePerRide', valueNumber || 0)
+                            onChange={(e) => 
+                              handleInputChange('pricePerRide', parseFloat(e.target.value) || 0)
                             }
                             min={0}
-                            precision={2}
                             step={0.01}
-                            w="full"
-                          >
-                            <NumberInputField pl={8} placeholder="0.00" />
-                            <NumberInputStepper>
-                              <NumberIncrementStepper />
-                              <NumberDecrementStepper />
-                            </NumberInputStepper>
-                          </NumberInput>
+                            pl={8}
+                            placeholder="0.00"
+                          />
                         </InputGroup>
                       </FormControl>
 
                       <FormControl>
                         <FormLabel>Mileage Balance</FormLabel>
                         <InputGroup>
-                          <NumberInput
+                          <Input
+                            type="number"
                             value={formData.mileageBalance}
-                            onChange={(valueString, valueNumber) => 
-                              handleInputChange('mileageBalance', valueNumber || 0)
+                            onChange={(e) => 
+                              handleInputChange('mileageBalance', parseInt(e.target.value) || 0)
                             }
                             min={0}
-                            w="full"
-                          >
-                            <NumberInputField placeholder="Enter miles" />
-                            <NumberInputStepper>
-                              <NumberIncrementStepper />
-                              <NumberDecrementStepper />
-                            </NumberInputStepper>
-                          </NumberInput>
+                            placeholder="Enter miles"
+                          />
                           <InputRightAddon children="miles" />
                         </InputGroup>
                       </FormControl>
@@ -688,23 +671,19 @@ const NewRider = () => {
                             pointerEvents="none"
                             color="gray.500"
                             children="$"
+                            h="full"
                           />
-                          <NumberInput
+                          <Input
+                            type="number"
                             value={formData.pricePerMile}
-                            onChange={(valueString, valueNumber) => 
-                              handleInputChange('pricePerMile', valueNumber || 0)
+                            onChange={(e) => 
+                              handleInputChange('pricePerMile', parseFloat(e.target.value) || 0)
                             }
                             min={0}
-                            precision={2}
                             step={0.01}
-                            w="full"
-                          >
-                            <NumberInputField pl={8} placeholder="0.00" />
-                            <NumberInputStepper>
-                              <NumberIncrementStepper />
-                              <NumberDecrementStepper />
-                            </NumberInputStepper>
-                          </NumberInput>
+                            pl={8}
+                            placeholder="0.00"
+                          />
                         </InputGroup>
                       </FormControl>
                     </SimpleGrid>

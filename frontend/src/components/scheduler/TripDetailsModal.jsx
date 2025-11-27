@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -65,7 +65,8 @@ import {
   FaRoad,
   FaGasPump,
   FaClipboardList,
-  FaInfo
+  FaInfo,
+  FaMap
 } from 'react-icons/fa';
 
 const TripDetailsModal = ({ isOpen, onClose, trip }) => {

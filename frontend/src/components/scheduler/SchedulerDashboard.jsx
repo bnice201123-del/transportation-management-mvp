@@ -775,7 +775,7 @@ const SchedulerDashboard = ({ view }) => {
     <Box minH="100vh" bg="green.25">
       <Navbar title="Scheduler Dashboard" />
       
-      <Box ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} pt={{ base: 4, md: 0 }}>
+      <Box pt={{ base: 4, md: 0 }}>
         <Container 
           maxW="container.xl" 
           py={{ base: 4, md: 6 }} 
@@ -864,26 +864,31 @@ const SchedulerDashboard = ({ view }) => {
               transition="all 0.2s"
               borderLeft="4px solid"
               borderLeftColor="green.500"
+              overflow="hidden"
             >
-              <CardBody p={{ base: 4, md: 6 }}>
+              <CardBody p={{ base: 3, md: 4 }}>
                 <Stat>
-                  <HStack justify="space-between" align="center" mb={2}>
-                    <Box as={CalendarDaysIconSolid} w={6} h={6} color="green.500" />
+                  <HStack justify="space-between" align="flex-start" mb={2}>
+                    <Box as={CalendarDaysIconSolid} w={5} h={5} color="green.500" flexShrink={0} />
                     <CircularProgress 
                       value={schedulerStats.todayCompletionRate} 
-                      size="40px" 
+                      size="32px" 
                       color="green.500"
                       trackColor={borderColor}
+                      thickness="8px"
+                      flexShrink={0}
                     >
-                      <CircularProgressLabel fontSize="xs">
+                      <CircularProgressLabel fontSize="2xs" fontWeight="bold">
                         {Math.round(schedulerStats.todayCompletionRate)}%
                       </CircularProgressLabel>
                     </CircularProgress>
                   </HStack>
                   <StatNumber 
-                    fontSize={{ base: "xl", md: "2xl" }} 
+                    fontSize={{ base: "2xl", md: "3xl" }} 
                     fontWeight="bold" 
                     color={primaryColor}
+                    lineHeight="1"
+                    mb={1}
                   >
                     {schedulerStats.todaysTrips}
                   </StatNumber>
@@ -891,10 +896,11 @@ const SchedulerDashboard = ({ view }) => {
                     color={mutedColor}
                     fontSize={{ base: "xs", md: "sm" }}
                     fontWeight="medium"
+                    noOfLines={1}
                   >
                     Today's Trips
                   </StatLabel>
-                  <StatHelpText fontSize="xs" color={mutedColor}>
+                  <StatHelpText fontSize="2xs" color={mutedColor} mb={0}>
                     {schedulerStats.todayCompletionRate}% completed
                   </StatHelpText>
                 </Stat>
@@ -908,21 +914,24 @@ const SchedulerDashboard = ({ view }) => {
               transition="all 0.2s"
               borderLeft="4px solid"
               borderLeftColor="blue.500"
+              overflow="hidden"
             >
-              <CardBody p={{ base: 4, md: 6 }}>
+              <CardBody p={{ base: 3, md: 4 }}>
                 <Stat>
-                  <HStack justify="space-between" align="center" mb={2}>
-                    <Box as={ClockIconSolid} w={6} h={6} color="blue.500" />
+                  <HStack justify="space-between" align="flex-start" mb={2}>
+                    <Box as={ClockIconSolid} w={5} h={5} color="blue.500" flexShrink={0} />
                     {schedulerStats.upcomingTrips > 10 && (
-                      <Badge colorScheme="blue" fontSize="xs">
+                      <Badge colorScheme="blue" fontSize="2xs" flexShrink={0}>
                         Active
                       </Badge>
                     )}
                   </HStack>
                   <StatNumber 
-                    fontSize={{ base: "xl", md: "2xl" }} 
+                    fontSize={{ base: "2xl", md: "3xl" }} 
                     fontWeight="bold" 
                     color="blue.500"
+                    lineHeight="1"
+                    mb={1}
                   >
                     {schedulerStats.upcomingTrips}
                   </StatNumber>
@@ -930,10 +939,11 @@ const SchedulerDashboard = ({ view }) => {
                     color={mutedColor}
                     fontSize={{ base: "xs", md: "sm" }}
                     fontWeight="medium"
+                    noOfLines={1}
                   >
                     Upcoming Trips
                   </StatLabel>
-                  <StatHelpText fontSize="xs" color={mutedColor}>
+                  <StatHelpText fontSize="2xs" color={mutedColor} mb={0}>
                     Scheduled ahead
                   </StatHelpText>
                 </Stat>
@@ -947,26 +957,31 @@ const SchedulerDashboard = ({ view }) => {
               transition="all 0.2s"
               borderLeft="4px solid"
               borderLeftColor="purple.500"
+              overflow="hidden"
             >
-              <CardBody p={{ base: 4, md: 6 }}>
+              <CardBody p={{ base: 3, md: 4 }}>
                 <Stat>
-                  <HStack justify="space-between" align="center" mb={2}>
-                    <Box as={UserGroupIconSolid} w={6} h={6} color="purple.500" />
+                  <HStack justify="space-between" align="flex-start" mb={2}>
+                    <Box as={UserGroupIconSolid} w={5} h={5} color="purple.500" flexShrink={0} />
                     <CircularProgress 
                       value={schedulerStats.assignmentRate} 
-                      size="40px" 
+                      size="32px" 
                       color="purple.500"
                       trackColor={borderColor}
+                      thickness="8px"
+                      flexShrink={0}
                     >
-                      <CircularProgressLabel fontSize="xs">
+                      <CircularProgressLabel fontSize="2xs" fontWeight="bold">
                         {Math.round(schedulerStats.assignmentRate)}%
                       </CircularProgressLabel>
                     </CircularProgress>
                   </HStack>
                   <StatNumber 
-                    fontSize={{ base: "xl", md: "2xl" }} 
+                    fontSize={{ base: "2xl", md: "3xl" }} 
                     fontWeight="bold" 
                     color="purple.500"
+                    lineHeight="1"
+                    mb={1}
                   >
                     {schedulerStats.assignedTrips}
                   </StatNumber>
@@ -974,10 +989,11 @@ const SchedulerDashboard = ({ view }) => {
                     color={mutedColor}
                     fontSize={{ base: "xs", md: "sm" }}
                     fontWeight="medium"
+                    noOfLines={1}
                   >
                     Assigned Trips
                   </StatLabel>
-                  <StatHelpText fontSize="xs" color={mutedColor}>
+                  <StatHelpText fontSize="2xs" color={mutedColor} mb={0}>
                     {schedulerStats.unassignedTrips} unassigned
                   </StatHelpText>
                 </Stat>
@@ -991,19 +1007,22 @@ const SchedulerDashboard = ({ view }) => {
               transition="all 0.2s"
               borderLeft="4px solid"
               borderLeftColor="orange.500"
+              overflow="hidden"
             >
-              <CardBody p={{ base: 4, md: 6 }}>
+              <CardBody p={{ base: 3, md: 4 }}>
                 <Stat>
-                  <HStack justify="space-between" align="center" mb={2}>
-                    <Box as={CheckCircleIconSolid} w={6} h={6} color="orange.500" />
-                    <Badge colorScheme="green" fontSize="xs">
+                  <HStack justify="space-between" align="flex-start" mb={2}>
+                    <Box as={CheckCircleIconSolid} w={5} h={5} color="orange.500" flexShrink={0} />
+                    <Badge colorScheme="green" fontSize="2xs" flexShrink={0}>
                       +{schedulerStats.completedTrips > 50 ? '15%' : '8%'}
                     </Badge>
                   </HStack>
                   <StatNumber 
-                    fontSize={{ base: "xl", md: "2xl" }} 
+                    fontSize={{ base: "2xl", md: "3xl" }} 
                     fontWeight="bold" 
                     color={successColor}
+                    lineHeight="1"
+                    mb={1}
                   >
                     {schedulerStats.completedTrips}
                   </StatNumber>
@@ -1011,10 +1030,11 @@ const SchedulerDashboard = ({ view }) => {
                     color={mutedColor}
                     fontSize={{ base: "xs", md: "sm" }}
                     fontWeight="medium"
+                    noOfLines={1}
                   >
                     Completed Trips
                   </StatLabel>
-                  <StatHelpText fontSize="xs" color="green.500">
+                  <StatHelpText fontSize="2xs" color="green.500" mb={0}>
                     <StatArrow type="increase" />
                     {schedulerStats.completionRate}% success rate
                   </StatHelpText>

@@ -40,6 +40,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  profileImage: {
+    type: String, // Store base64 image data or URL
+    default: null
+  },
   isActive: {
     type: Boolean,
     default: true

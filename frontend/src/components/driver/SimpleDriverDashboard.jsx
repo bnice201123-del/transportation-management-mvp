@@ -85,7 +85,7 @@ const SimpleDriverDashboard = () => {
     <Box minH="100vh" bg="gray.50">
       <Navbar title="Driver Dashboard" />
       
-      <Box ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} pt={{ base: 4, md: 0 }}>
+      <Box pt={{ base: 4, md: 0 }}>
         <Container maxW="container.xl" py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>
         <VStack spacing={6} align="stretch">
           <Heading size="lg">Welcome, {user?.firstName}!</Heading>

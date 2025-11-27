@@ -445,4 +445,122 @@ router.patch('/:id/balance', authenticateToken, authorizeRoles('admin', 'schedul
   }
 });
 
+// Upload profile image
+router.post('/:id/profile-image', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { profileImage } = req.body;
+
+    // Check if user is updating their own profile or is admin
+    const userRoles = req.user.roles || [req.user.role];
+    const isAdmin = userRoles.includes('admin');
+    
+    if (req.user.id !== id && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this profile'
+      });
+    }
+
+    // Validate base64 image format
+    if (!profileImage || !profileImage.startsWith('data:image/')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid image format. Must be a valid base64 image (JPEG or PNG)'
+      });
+    }
+
+    // Check image size (limit to 5MB base64)
+    const sizeInBytes = (profileImage.length * 3) / 4;
+    const sizeInMB = sizeInBytes / (1024 * 1024);
+    if (sizeInMB > 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'Image size must be less than 5MB'
+      });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    user.profileImage = profileImage;
+    await user.save();
+
+    await logActivity(
+      req.user.id,
+      req.user.role,
+      'profile_image_update',
+      `Profile image updated for user: ${user.firstName} ${user.lastName}`,
+      { userId: user._id }
+    );
+
+    res.json({
+      success: true,
+      message: 'Profile image updated successfully',
+      profileImage: user.profileImage
+    });
+  } catch (error) {
+    console.error('Upload profile image error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error uploading profile image',
+      error: error.message
+    });
+  }
+});
+
+// Delete profile image
+router.delete('/:id/profile-image', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user is updating their own profile or is admin
+    const userRoles = req.user.roles || [req.user.role];
+    const isAdmin = userRoles.includes('admin');
+    
+    if (req.user.id !== id && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this profile'
+      });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    user.profileImage = null;
+    await user.save();
+
+    await logActivity(
+      req.user.id,
+      req.user.role,
+      'profile_image_delete',
+      `Profile image deleted for user: ${user.firstName} ${user.lastName}`,
+      { userId: user._id }
+    );
+
+    res.json({
+      success: true,
+      message: 'Profile image deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete profile image error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error deleting profile image',
+      error: error.message
+    });
+  }
+});
+
 export default router;

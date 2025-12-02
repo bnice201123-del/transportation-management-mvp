@@ -30,6 +30,7 @@ import LiveTrackingDashboard from './components/admin/LiveTrackingDashboard';
 import SystemAdministration from './components/admin/SystemAdministration';
 import ManageUsers from './components/admin/ManageUsers';
 import UserRolesPermissions from './components/admin/UserRolesPermissionsSimple';
+import ManageUserRoles from './components/admin/ManageUserRoles';
 import Security from './components/admin/SecuritySimple';
 import BackupRestore from './components/admin/BackupRestore';
 import AdminPlaceholder from './components/admin/AdminPlaceholder';
@@ -486,6 +487,16 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={['admin']}>
             <ErrorBoundary fallbackMessage="Failed to load User Roles & Permissions. Please try refreshing the page.">
               <UserRolesPermissions />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/manage-roles" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load Manage User Roles. Please try refreshing the page.">
+              <ManageUserRoles />
             </ErrorBoundary>
           </ProtectedRoute>
         } 

@@ -353,24 +353,20 @@ const ComprehensiveDriverDashboard = () => {
       async (position) => {
         console.log('[Update Location] SUCCESS - Got position callback:', position);
         const location = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
         };
         console.log('[Update Location] Got coordinates:', location);
         setCurrentLocation(location);
         
         // Save location to backend
         try {
-          const token = localStorage.getItem('token');
           const userId = user.id || user._id;
           console.log('[Update Location] Saving to backend... userId:', userId);
-          console.log('[Update Location] Token present?', !!token);
           
-          const response = await axios.patch(`http://localhost:5000/api/users/${userId}/location`, {
-            lat: location.lat,
-            lng: location.lng
-          }, {
-            headers: { 'Authorization': `Bearer ${token}` }
+          const response = await axios.patch(`/api/users/${userId}/location`, {
+            lat: location.latitude,
+            lng: location.longitude
           });
           console.log('[Update Location] Backend response:', response.data);
           
@@ -1706,7 +1702,7 @@ const ComprehensiveDriverDashboard = () => {
                                 <VStack align="start" spacing={1}>
                                   <Text fontWeight="bold">Current Location</Text>
                                   <Text fontSize="sm" color="gray.600">
-                                    {currentLocation 
+                                    {currentLocation && currentLocation.latitude && currentLocation.longitude
                                       ? `Lat: ${currentLocation.latitude.toFixed(6)}, Lng: ${currentLocation.longitude.toFixed(6)}`
                                       : 'Location not available'
                                     }

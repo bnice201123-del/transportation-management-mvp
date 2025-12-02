@@ -282,31 +282,31 @@ export const start = () => {
   console.log('[Unassigned Trip Monitor] Starting service...');
   
   // Schedule job to check unassigned trips (every minute)
-  const checkUnassignedJob = cron.schedule(CRON_SCHEDULES.unassignedTripCheck, async () => {
+  const checkUnassignedJob = cron.schedule(CRON_SCHEDULES.checkUnassignedTrips, async () => {
     await checkUnassignedTrips();
   });
   cronJobs.push(checkUnassignedJob);
   
   // Schedule job to send initial alerts (every minute)
-  const initialAlertsJob = cron.schedule(CRON_SCHEDULES.unassignedTripCheck, async () => {
+  const initialAlertsJob = cron.schedule(CRON_SCHEDULES.checkUnassignedTrips, async () => {
     await sendInitialAlerts();
   });
   cronJobs.push(initialAlertsJob);
   
   // Schedule job to send follow-up alerts (every minute)
-  const followUpAlertsJob = cron.schedule(CRON_SCHEDULES.unassignedTripCheck, async () => {
+  const followUpAlertsJob = cron.schedule(CRON_SCHEDULES.checkUnassignedTrips, async () => {
     await sendFollowUpAlerts();
   });
   cronJobs.push(followUpAlertsJob);
   
   // Schedule job to resolve assigned trips (every minute)
-  const resolveAssignedJob = cron.schedule(CRON_SCHEDULES.unassignedTripCheck, async () => {
+  const resolveAssignedJob = cron.schedule(CRON_SCHEDULES.checkUnassignedTrips, async () => {
     await resolveAssignedTrips();
   });
   cronJobs.push(resolveAssignedJob);
   
   // Schedule cleanup job (once per day at 2 AM)
-  const cleanupJob = cron.schedule(CRON_SCHEDULES.cleanup, async () => {
+  const cleanupJob = cron.schedule(CRON_SCHEDULES.cleanupOldRecords, async () => {
     await cleanupOldAlerts();
   });
   cronJobs.push(cleanupJob);

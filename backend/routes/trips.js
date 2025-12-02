@@ -39,7 +39,18 @@ router.get('/', authenticateToken, async (req, res) => {
     // Build filter object based on user role
     let filter = {};
     
-    if (req.user.role === 'driver') {
+    // Support both single role (legacy) and multiple roles array
+    const userRoles = req.user.roles && req.user.roles.length > 0 
+      ? req.user.roles 
+      : [req.user.role];
+    
+    // If user ONLY has driver role (not admin/dispatcher/scheduler), filter to their trips
+    const isDriverOnly = userRoles.includes('driver') && 
+                        !userRoles.includes('admin') && 
+                        !userRoles.includes('dispatcher') && 
+                        !userRoles.includes('scheduler');
+    
+    if (isDriverOnly) {
       filter.assignedDriver = req.user._id;
     }
     // Schedulers, dispatchers and admins can see all trips

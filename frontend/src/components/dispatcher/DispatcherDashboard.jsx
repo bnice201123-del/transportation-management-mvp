@@ -659,6 +659,67 @@ const getLocationText = (location) => {
           >
                 Manage active trips, assign drivers, monitor real-time status, and coordinate transportation operations
               </Text>
+              
+              {/* Quick Actions Dropdown - Compact Design */}
+              <Box mt={4}>
+                <Menu>
+                  <Tooltip label="Quick Actions" placement="right">
+                    <MenuButton
+                      as={Button}
+                      rightIcon={<Box as={ChevronDownIcon} w={5} h={5} />}
+                      leftIcon={<Box as={Cog6ToothIcon} w={5} h={5} />}
+                      size="md"
+                      variant="solid"
+                      colorScheme="blue"
+                    >
+                      Quick Actions
+                    </MenuButton>
+                  </Tooltip>
+                  <MenuList>
+                    {/* Primary Actions */}
+                    <MenuItem 
+                      icon={<Box as={PlusIcon} w={5} h={5} />}
+                      onClick={onOpen}
+                    >
+                      Create Trip
+                    </MenuItem>
+                    <MenuItem 
+                      icon={<Box as={MagnifyingGlassIcon} w={5} h={5} />}
+                      onClick={onTripManagementOpen}
+                    >
+                      Manage Trips
+                    </MenuItem>
+                    <MenuItem 
+                      icon={<Box as={MapPinIcon} w={5} h={5} />}
+                      onClick={() => navigate('/dispatcher/live-tracking')}
+                    >
+                      View Map
+                    </MenuItem>
+                    
+                    <MenuDivider />
+                    
+                    {/* Secondary Actions */}
+                    <MenuItem 
+                      icon={<Box as={UserGroupIconSolid} w={5} h={5} />}
+                      onClick={() => navigate('/riders?tab=all-riders')}
+                    >
+                      All Riders
+                    </MenuItem>
+                    <MenuItem 
+                      icon={<Box as={TruckIcon} w={5} h={5} />}
+                      onClick={() => navigate('/dispatcher/drivers')}
+                    >
+                      All Drivers
+                    </MenuItem>
+                    <MenuItem 
+                      icon={<Box as={CalendarIcon} w={5} h={5} />}
+                      onClick={() => navigate('/dispatcher/recurring-trips')}
+                    >
+                      Recurring Trips
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
+              </Box>
             </VStack>
           </Box>
 
@@ -846,88 +907,6 @@ const getLocationText = (location) => {
               </CardBody>
             </Card>
           </SimpleGrid>
-          
-          {/* Quick Actions Section */}
-          <Card mb={{ base: 6, md: 8 }} bg={cardBg}>
-            <CardHeader>
-              <Heading size="md" display="flex" alignItems="center" gap={3}>
-                <Box as={Cog6ToothIcon} w={5} h={5} color="blue.500" />
-                Quick Actions
-              </Heading>
-            </CardHeader>
-            <CardBody pt={0}>
-              <Wrap spacing={4}>
-                <WrapItem>
-                  <Button 
-                    leftIcon={<Box as={PlusIcon} w={4} h={4} />}
-                    colorScheme="blue" 
-                    onClick={onOpen}
-                    size={{ base: "md", md: "md" }}
-                    variant="solid"
-                  >
-                    Create Trip
-                  </Button>
-                </WrapItem>
-                <WrapItem>
-                  <Button
-                    leftIcon={<Box as={MagnifyingGlassIcon} w={4} h={4} />}
-                    colorScheme="green"
-                    variant="outline"
-                    onClick={onTripManagementOpen}
-                    size={{ base: "md", md: "md" }}
-                  >
-                    Manage Trips
-                  </Button>
-                </WrapItem>
-                <WrapItem>
-                  <Button
-                    leftIcon={<Box as={UserGroupIconSolid} w={4} h={4} />}
-                    colorScheme="purple"
-                    variant="outline"
-                    onClick={() => navigate('/riders?tab=all-riders')}
-                    size={{ base: "md", md: "md" }}
-                  >
-                    All Riders
-                  </Button>
-                </WrapItem>
-                <WrapItem>
-                  <Button
-                    leftIcon={<Box as={ArrowPathIcon} w={4} h={4} />}
-                    onClick={handleRefresh}
-                    isLoading={refreshing}
-                    size={{ base: "md", md: "md" }}
-                    variant="outline"
-                  >
-                    Refresh Data
-                  </Button>
-                </WrapItem>
-                <WrapItem>
-                  <Menu>
-                    <MenuButton 
-                      as={Button} 
-                      rightIcon={<Box as={ChevronDownIcon} w={4} h={4} />}
-                      size={{ base: "md", md: "md" }}
-                      variant="outline"
-                    >
-                      Advanced Options
-                    </MenuButton>
-                    <MenuList>
-                      <MenuItem icon={<Box as={ChartBarIcon} w={4} h={4} />}>
-                        View Analytics
-                      </MenuItem>
-                      <MenuItem icon={<Box as={ArrowDownTrayIcon} w={4} h={4} />}>
-                        Export Data
-                      </MenuItem>
-                      <MenuDivider />
-                      <MenuItem icon={<Box as={Cog6ToothIcon} w={4} h={4} />}>
-                        Settings
-                      </MenuItem>
-                    </MenuList>
-                  </Menu>
-                </WrapItem>
-              </Wrap>
-            </CardBody>
-          </Card>
 
           {/* Enhanced Tabbed Interface with Modern Icons */}
           <Card mb={{ base: 6, md: 8 }} bg={cardBg}>

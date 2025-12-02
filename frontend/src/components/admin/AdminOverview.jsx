@@ -628,7 +628,7 @@ const AdminOverview = () => {
             size="sm" 
             variant="ghost" 
             rightIcon={<ExternalLinkIcon />}
-            onClick={() => navigate('/admin/activity-log')}
+            onClick={() => navigate('/admin/activity')}
           >
             View All
           </Button>

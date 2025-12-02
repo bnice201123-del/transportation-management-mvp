@@ -9,15 +9,38 @@ const router = express.Router();
 // Register new user (admin only)
 router.post('/register', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   try {
-    const { email, password, firstName, lastName, role, phone, licenseNumber, vehicleInfo, riderId, dateOfBirth, preferredVehicleType, serviceBalance, contractDetails, pricingDetails, mileageBalance, trips } = req.body;
+    const { username, email, password, firstName, lastName, role, phone, licenseNumber, vehicleInfo, riderId, dateOfBirth, preferredVehicleType, serviceBalance, contractDetails, pricingDetails, mileageBalance, trips, securityQuestions } = req.body;
 
     console.log('Registration request body:', req.body);
-    console.log('Destructured values:', { email, password, firstName, lastName, role, phone });
-    console.log('req.body.password:', req.body.password);
+    console.log('Destructured values:', { username, email, password, firstName, lastName, role, phone });
+
+    // Validate required fields
+    if (!username) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Username is required' 
+      });
+    }
+
+    if (!firstName || !lastName) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'First name and last name are required' 
+      });
+    }
+
+    // Check if username already exists
+    const existingUsername = await User.findOne({ username: username.toLowerCase() });
+    if (existingUsername) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'A user with this username already exists' 
+      });
+    }
 
     // Check if user already exists (only if email is provided)
     if (email) {
-      const existingUser = await User.findOne({ email });
+      const existingUser = await User.findOne({ email: email.toLowerCase() });
       if (existingUser) {
         return res.status(400).json({ 
           success: false,
@@ -41,7 +64,7 @@ router.post('/register', authenticateToken, authorizeRoles('admin'), async (req,
     if (role === 'driver' && licenseNumber) {
       const existingLicense = await User.findOne({ 
         licenseNumber,
-        role: 'driver' 
+        roles: 'driver' 
       });
       if (existingLicense) {
         return res.status(400).json({ 
@@ -51,8 +74,7 @@ router.post('/register', authenticateToken, authorizeRoles('admin'), async (req,
       }
     }
 
-    // Validate required fields
-    // Password is not required for riders - generate a default one if not provided
+    // Password validation
     let userPassword = req.body.password;
     if (!userPassword || userPassword.trim() === '') {
       if (role === 'rider') {
@@ -61,19 +83,28 @@ router.post('/register', authenticateToken, authorizeRoles('admin'), async (req,
         console.log('Generated default password for rider');
       } else {
         console.log('Password validation failed - req.body.password:', req.body.password);
-        return res.status(400).json({ message: 'Password is required' });
+        return res.status(400).json({ 
+          success: false,
+          message: 'Password is required' 
+        });
       }
     }
 
     // Create new user
     const userData = {
-      email: req.body.email || `rider${Date.now()}@placeholder.com`,
+      username: username.toLowerCase(),
+      email: email ? email.toLowerCase() : undefined,
       password: userPassword,
       firstName: req.body.firstName,
       lastName: req.body.lastName,
       role: req.body.role,
       phone: req.body.phone
     };
+
+    // Add security questions if provided
+    if (securityQuestions && Array.isArray(securityQuestions) && securityQuestions.length > 0) {
+      userData.securityQuestions = securityQuestions;
+    }
 
     // Add driver-specific fields if role is driver
     if (role === 'driver') {
@@ -168,13 +199,21 @@ router.post('/register-admin', async (req, res) => {
   }
 });
 
-// Login user
+// Login user (supports both username and email)
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { username, email, password } = req.body;
 
-    // Find user by email
-    const user = await User.findOne({ email });
+    // Support login with either username or email
+    let user;
+    if (username) {
+      user = await User.findOne({ username: username.toLowerCase() });
+    } else if (email) {
+      user = await User.findOne({ email: email.toLowerCase() });
+    } else {
+      return res.status(400).json({ message: 'Username or email is required' });
+    }
+
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -263,6 +302,206 @@ router.post('/fcm-token', async (req, res) => {
   } catch (error) {
     console.error('FCM token update error:', error);
     res.status(500).json({ message: 'Server error updating FCM token' });
+  }
+});
+
+// Password Recovery - Step 1: Get Security Questions
+router.post('/forgot-password/questions', async (req, res) => {
+  try {
+    const { username } = req.body;
+
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required' });
+    }
+
+    const user = await User.findOne({ username: username.toLowerCase() }).select('securityQuestions username');
+    
+    if (!user) {
+      // Don't reveal if user exists or not for security
+      return res.status(404).json({ message: 'User not found or no security questions set' });
+    }
+
+    if (!user.securityQuestions || user.securityQuestions.length === 0) {
+      return res.status(404).json({ 
+        message: 'No security questions found. Please contact an administrator for password reset.' 
+      });
+    }
+
+    // Return questions without answers
+    const questions = user.securityQuestions.map((sq, index) => ({
+      index,
+      question: sq.question
+    }));
+
+    res.json({
+      username: user.username,
+      questions
+    });
+  } catch (error) {
+    console.error('Get security questions error:', error);
+    res.status(500).json({ message: 'Server error retrieving security questions' });
+  }
+});
+
+// Password Recovery - Step 2: Verify Security Answers
+router.post('/forgot-password/verify', async (req, res) => {
+  try {
+    const { username, answers } = req.body;
+
+    if (!username || !answers || !Array.isArray(answers)) {
+      return res.status(400).json({ message: 'Username and answers are required' });
+    }
+
+    const user = await User.findOne({ username: username.toLowerCase() });
+    
+    if (!user || !user.securityQuestions || user.securityQuestions.length === 0) {
+      return res.status(404).json({ message: 'Invalid request' });
+    }
+
+    // Verify all answers
+    let allCorrect = true;
+    for (const answer of answers) {
+      const isCorrect = await user.verifySecurityAnswer(answer.index, answer.answer);
+      if (!isCorrect) {
+        allCorrect = false;
+        break;
+      }
+    }
+
+    if (!allCorrect) {
+      // Log failed attempt
+      await logActivity(
+        user._id,
+        'password_recovery_failed',
+        'Failed security question verification'
+      );
+      
+      return res.status(401).json({ message: 'Incorrect security answers' });
+    }
+
+    // Generate password reset token
+    const resetToken = jwt.sign(
+      { userId: user._id, purpose: 'password_reset' },
+      process.env.JWT_SECRET,
+      { expiresIn: '15m' } // Short-lived token
+    );
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    await user.save();
+
+    // Log successful verification
+    await logActivity(
+      user._id,
+      'password_recovery_verified',
+      'Security questions verified successfully'
+    );
+
+    res.json({
+      message: 'Security questions verified',
+      resetToken
+    });
+  } catch (error) {
+    console.error('Verify security answers error:', error);
+    res.status(500).json({ message: 'Server error verifying security answers' });
+  }
+});
+
+// Password Recovery - Step 3: Reset Password
+router.post('/forgot-password/reset', async (req, res) => {
+  try {
+    const { resetToken, newPassword } = req.body;
+
+    if (!resetToken || !newPassword) {
+      return res.status(400).json({ message: 'Reset token and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
+
+    // Verify reset token
+    let decoded;
+    try {
+      decoded = jwt.verify(resetToken, process.env.JWT_SECRET);
+    } catch (error) {
+      return res.status(401).json({ message: 'Invalid or expired reset token' });
+    }
+
+    if (decoded.purpose !== 'password_reset') {
+      return res.status(401).json({ message: 'Invalid reset token' });
+    }
+
+    const user = await User.findById(decoded.userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if token matches and hasn't expired
+    if (user.resetPasswordToken !== resetToken || 
+        !user.resetPasswordExpires || 
+        user.resetPasswordExpires < new Date()) {
+      return res.status(401).json({ message: 'Invalid or expired reset token' });
+    }
+
+    // Update password
+    user.password = newPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    // Log password reset
+    await logActivity(
+      user._id,
+      'password_reset',
+      'Password reset successfully via security questions'
+    );
+
+    res.json({
+      message: 'Password reset successfully. You can now login with your new password.'
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ message: 'Server error resetting password' });
+  }
+});
+
+// Admin-Initiated Password Reset
+router.post('/admin/reset-password/:userId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+  try {
+    const { newPassword, tempPassword } = req.body;
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Set new password or generate temporary one
+    const passwordToSet = newPassword || tempPassword || `Temp${Date.now()}`;
+    
+    user.password = passwordToSet;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    // Log activity
+    await logActivity(
+      req.user._id,
+      'admin_password_reset',
+      `Admin reset password for user: ${user.username}`,
+      { targetUserId: userId, targetUsername: user.username }
+    );
+
+    res.json({
+      message: 'Password reset successfully by administrator',
+      tempPassword: newPassword ? undefined : passwordToSet // Only return if auto-generated
+    });
+  } catch (error) {
+    console.error('Admin password reset error:', error);
+    res.status(500).json({ message: 'Server error resetting password' });
   }
 });
 

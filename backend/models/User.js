@@ -2,10 +2,20 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
-  email: {
+  username: {
     type: String,
     required: true,
     unique: true,
+    lowercase: true,
+    trim: true,
+    minlength: 3,
+    maxlength: 30
+  },
+  email: {
+    type: String,
+    required: false, // Email is now optional
+    unique: true,
+    sparse: true, // Allow null values to be non-unique
     lowercase: true,
     trim: true
   },
@@ -23,6 +33,24 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true
+  },
+  // Security Questions for Password Recovery
+  securityQuestions: [{
+    question: {
+      type: String,
+      required: false
+    },
+    answer: {
+      type: String,
+      required: false
+    }
+  }],
+  // Password Reset Token (for admin-initiated resets)
+  resetPasswordToken: {
+    type: String
+  },
+  resetPasswordExpires: {
+    type: Date
   },
   role: {
     type: String,
@@ -180,9 +208,37 @@ userSchema.pre('save', async function(next) {
   }
 });
 
+// Hash security question answers before saving
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('securityQuestions')) return next();
+  
+  try {
+    if (this.securityQuestions && this.securityQuestions.length > 0) {
+      for (let sq of this.securityQuestions) {
+        if (sq.answer && !sq.answer.startsWith('$2a$')) { // Check if not already hashed
+          const salt = await bcrypt.genSalt(12);
+          sq.answer = await bcrypt.hash(sq.answer.toLowerCase().trim(), salt);
+        }
+      }
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Method to compare password
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
+};
+
+// Method to verify security question answer
+userSchema.methods.verifySecurityAnswer = async function(questionIndex, candidateAnswer) {
+  if (!this.securityQuestions || !this.securityQuestions[questionIndex]) {
+    return false;
+  }
+  const normalizedAnswer = candidateAnswer.toLowerCase().trim();
+  return bcrypt.compare(normalizedAnswer, this.securityQuestions[questionIndex].answer);
 };
 
 // Method to check if user has a specific role

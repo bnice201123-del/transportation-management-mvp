@@ -261,15 +261,87 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Update user roles (admin only)
+router.patch('/:id/roles', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+  try {
+    const { roles } = req.body;
+
+    // Validate roles array
+    if (!Array.isArray(roles) || roles.length === 0) {
+      return res.status(400).json({ 
+        message: 'Roles must be a non-empty array' 
+      });
+    }
+
+    const validRoles = ['scheduler', 'dispatcher', 'driver', 'admin', 'rider'];
+    const invalidRoles = roles.filter(role => !validRoles.includes(role));
+    
+    if (invalidRoles.length > 0) {
+      return res.status(400).json({ 
+        message: `Invalid roles: ${invalidRoles.join(', ')}. Valid roles are: ${validRoles.join(', ')}` 
+      });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Store old roles for logging
+    const oldRoles = user.roles || [user.role];
+
+    // Update roles
+    user.roles = roles;
+    
+    // Update primary role to the first one in the array
+    user.role = roles[0];
+    
+    await user.save();
+
+    // Log activity
+    await logActivity(
+      req.user._id,
+      'roles_updated',
+      `Updated roles for ${user.firstName} ${user.lastName} from [${oldRoles.join(', ')}] to [${roles.join(', ')}]`,
+      { oldRoles, newRoles: roles, userId: user._id }
+    );
+
+    res.json({
+      message: 'User roles updated successfully',
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        roles: user.roles
+      }
+    });
+  } catch (error) {
+    console.error('Update user roles error:', error);
+    res.status(500).json({ message: 'Server error updating user roles' });
+  }
+});
+
 // Update driver availability
 router.patch('/:id/availability', authenticateToken, async (req, res) => {
   try {
     const { isAvailable } = req.body;
     
-    // Only drivers can update their own availability, or admin can update anyone's
-    if ((req.user.role !== 'admin' && req.params.id !== req.user._id.toString()) ||
-        (req.user.role !== 'driver' && req.user.role !== 'admin')) {
-      return res.status(403).json({ message: 'Access denied' });
+    // Support both single role (legacy) and multiple roles array
+    const userRoles = req.user.roles && req.user.roles.length > 0 
+      ? req.user.roles 
+      : [req.user.role];
+    
+    const isAdmin = userRoles.includes('admin');
+    const hasDriverRole = userRoles.includes('driver');
+    const isSelf = req.params.id === req.user._id.toString();
+    
+    // Admin can update anyone's availability, or drivers can update their own
+    if (!isAdmin && (!hasDriverRole || !isSelf)) {
+      return res.status(403).json({ 
+        message: 'Access denied. Only drivers can update their own availability, or admins can update any driver.' 
+      });
     }
 
     const user = await User.findByIdAndUpdate(
@@ -300,14 +372,89 @@ router.patch('/:id/availability', authenticateToken, async (req, res) => {
   }
 });
 
+// Update security questions
+router.patch('/:id/security-questions', authenticateToken, async (req, res) => {
+  try {
+    const { securityQuestions } = req.body;
+    
+    // Users can only update their own security questions, or admin can update anyone's
+    const userRoles = req.user.roles && req.user.roles.length > 0 
+      ? req.user.roles 
+      : [req.user.role];
+    
+    const isAdmin = userRoles.includes('admin');
+    const isSelf = req.params.id === req.user._id.toString();
+    
+    if (!isAdmin && !isSelf) {
+      return res.status(403).json({ 
+        message: 'Access denied. You can only update your own security questions.' 
+      });
+    }
+
+    // Validate security questions
+    if (!Array.isArray(securityQuestions) || securityQuestions.length < 2) {
+      return res.status(400).json({ 
+        message: 'At least 2 security questions are required' 
+      });
+    }
+
+    for (const sq of securityQuestions) {
+      if (!sq.question || !sq.answer) {
+        return res.status(400).json({ 
+          message: 'Each security question must have a question and answer' 
+        });
+      }
+      if (sq.answer.trim().length < 2) {
+        return res.status(400).json({ 
+          message: 'Security answers must be at least 2 characters long' 
+        });
+      }
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update security questions (will be hashed by pre-save hook)
+    user.securityQuestions = securityQuestions;
+    await user.save();
+
+    // Log activity
+    await logActivity(
+      req.user._id,
+      'security_questions_updated',
+      `Security questions updated for ${user.username}`,
+      { targetUserId: user._id }
+    );
+
+    res.json({
+      message: 'Security questions updated successfully'
+    });
+  } catch (error) {
+    console.error('Update security questions error:', error);
+    res.status(500).json({ message: 'Server error updating availability' });
+  }
+});
+
 // Update driver location
 router.patch('/:id/location', authenticateToken, async (req, res) => {
   try {
     const { lat, lng } = req.body;
     
-    // Only drivers can update their own location
-    if (req.user.role !== 'driver' || req.params.id !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Access denied' });
+    // Support both single role (legacy) and multiple roles array
+    const userRoles = req.user.roles && req.user.roles.length > 0 
+      ? req.user.roles 
+      : [req.user.role];
+    
+    // Only users with driver role can update their own location
+    const hasDriverRole = userRoles.includes('driver');
+    const isSelf = req.params.id === req.user._id.toString();
+    
+    if (!hasDriverRole || !isSelf) {
+      return res.status(403).json({ 
+        message: 'Access denied. Only drivers can update their own location.' 
+      });
     }
 
     const user = await User.findByIdAndUpdate(

@@ -33,9 +33,17 @@ export const authorizeRoles = (...roles) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
-    if (!roles.includes(req.user.role)) {
+    // Support both single role (legacy) and multiple roles array
+    const userRoles = req.user.roles && req.user.roles.length > 0 
+      ? req.user.roles 
+      : [req.user.role];
+
+    // Check if user has at least one of the required roles
+    const hasAccess = roles.some(role => userRoles.includes(role));
+
+    if (!hasAccess) {
       return res.status(403).json({ 
-        message: `Access denied. Required roles: ${roles.join(', ')}` 
+        message: `Access denied. Required roles: ${roles.join(', ')}. User roles: ${userRoles.join(', ')}` 
       });
     }
 

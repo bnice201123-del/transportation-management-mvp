@@ -360,19 +360,19 @@ export const start = () => {
   console.log('[Driver Progress Monitor] Starting service...');
   
   // Schedule job to check lateness (every minute)
-  const latenessJob = cron.schedule(CRON_SCHEDULES.driverProgressCheck, async () => {
+  const latenessJob = cron.schedule(CRON_SCHEDULES.checkDriverProgress, async () => {
     await checkDriverLateness();
   });
   cronJobs.push(latenessJob);
   
   // Schedule job to check stopped drivers (every minute)
-  const stoppedJob = cron.schedule(CRON_SCHEDULES.driverProgressCheck, async () => {
+  const stoppedJob = cron.schedule(CRON_SCHEDULES.checkDriverProgress, async () => {
     await checkStoppedDrivers();
   });
   cronJobs.push(stoppedJob);
   
   // Schedule job to check stale GPS (every minute)
-  const gpsJob = cron.schedule(CRON_SCHEDULES.driverProgressCheck, async () => {
+  const gpsJob = cron.schedule(CRON_SCHEDULES.checkDriverProgress, async () => {
     await checkStaleGPS();
   });
   cronJobs.push(gpsJob);
@@ -384,13 +384,13 @@ export const start = () => {
   cronJobs.push(initJob);
   
   // Schedule job to complete finished trips (every minute)
-  const completeJob = cron.schedule(CRON_SCHEDULES.driverProgressCheck, async () => {
+  const completeJob = cron.schedule(CRON_SCHEDULES.checkDriverProgress, async () => {
     await completeFinishedTrips();
   });
   cronJobs.push(completeJob);
   
   // Schedule cleanup job (once per day at 3 AM)
-  const cleanupJob = cron.schedule(CRON_SCHEDULES.cleanup, async () => {
+  const cleanupJob = cron.schedule(CRON_SCHEDULES.cleanupOldRecords, async () => {
     await cleanupOldTracking();
   });
   cronJobs.push(cleanupJob);

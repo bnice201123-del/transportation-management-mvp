@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Container,
   Grid,
   Card,
   CardBody,
@@ -556,8 +555,7 @@ const AdminAnalytics = () => {
     return (
       <Box display="flex" flexDirection="column" minHeight="100vh" bg={bgColor}>
         <Navbar />
-        <Box flex="1" p={cardPadding}>
-          <Container maxW="7xl">
+        <Box flex="1" p={{ base: 3, md: 4 }} w="100%" overflowX="hidden">
             <VStack align="stretch" spacing={spacing}>
               {/* Header Skeleton */}
               <Card bg={headerBg} borderColor={borderColor} shadow="sm">
@@ -601,7 +599,6 @@ const AdminAnalytics = () => {
                 </CardBody>
               </Card>
             </VStack>
-          </Container>
         </Box>
       </Box>
     );
@@ -610,9 +607,8 @@ const AdminAnalytics = () => {
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh" bg={bgColor}>
       <Navbar />
-      <Box flex="1" p={{ base: 4, md: 6, lg: 8 }}>
-        <Container maxW="7xl">
-          <VStack align="stretch" spacing={{ base: 4, md: 6, lg: 8 }}>
+      <Box flex="1" p={{ base: 3, md: 4 }} w="100%" overflowX="hidden">
+          <VStack align="stretch" spacing={{ base: 4, md: 6 }}>
             {/* Header Card */}
             <Card bg={headerBg} borderColor={borderColor} shadow="md" borderRadius="lg">
               <CardBody p={{ base: 4, md: 6, lg: 8 }}>
@@ -967,7 +963,6 @@ const AdminAnalytics = () => {
             </Tabs>
             </Card>
           </VStack>
-        </Container>
       </Box>
     </Box>
   );

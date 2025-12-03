@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
-  Container,
   Card,
   CardBody,
   CardHeader,
@@ -242,7 +241,7 @@ const AdminStatistics = () => {
     return (
       <Box display="flex" flexDirection="column" minHeight="100vh" bg={bgColor}>
         <Navbar />
-        <Container maxW="7xl" py={6}>
+        <Box p={{ base: 3, md: 4 }} w="100%" overflowX="hidden">
           <Alert status="error" borderRadius="lg">
             <AlertIcon />
             <AlertTitle>Access Denied!</AlertTitle>
@@ -250,7 +249,7 @@ const AdminStatistics = () => {
               You don't have permission to view analytics data.
             </AlertDescription>
           </Alert>
-        </Container>
+        </Box>
       </Box>
     );
   }
@@ -558,6 +557,7 @@ const AdminStatistics = () => {
         ref={scrollRef}
         flex="1"
         overflowY="auto"
+        overflowX="hidden"
         css={{
           '&::-webkit-scrollbar': {
             width: '8px',
@@ -571,8 +571,8 @@ const AdminStatistics = () => {
           },
         }}
       >
-        <Container maxW="7xl" p={{ base: 4, md: 6, lg: 8 }}>
-        <VStack spacing={{ base: 4, md: 6, lg: 8 }} align="stretch">
+        <Box p={{ base: 3, md: 4 }} w="100%">
+        <VStack spacing={{ base: 4, md: 6 }} align="stretch">
           {/* Enhanced Header with Mobile Responsive Design */}
           <Box>
             <Flex 
@@ -1570,7 +1570,7 @@ const AdminStatistics = () => {
               </Button>
             </Box>
           </VStack>
-        </Container>
+        </Box>
       </Box>
     </Box>
   );

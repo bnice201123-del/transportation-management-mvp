@@ -112,7 +112,8 @@ import {
   TruckIcon as TruckIconSolid,
   UserGroupIcon as UserGroupIconSolid,
   CheckCircleIcon as CheckCircleIconSolid,
-  XCircleIcon as XCircleIconSolid
+  XCircleIcon as XCircleIconSolid,
+  CalendarDaysIcon as CalendarDaysIconSolid
 } from '@heroicons/react/24/solid';
 import axios from 'axios';
 import Navbar from '../shared/Navbar';
@@ -641,7 +642,7 @@ const getLocationText = (location) => {
   return (
     <>
       <Navbar title="Dispatch Control Center" />
-      <Box bg="gray.50" minH="calc(100vh - 80px)" px={{ base: 3, md: 6, lg: 8 }} py={{ base: 3, md: 5 }}>
+      <Box bg="gray.50" minH="calc(100vh - 80px)" w="100%" px={{ base: 3, md: 4 }} py={{ base: 3, md: 4 }} overflowX="hidden">
       {/* Enhanced Header Section - Mobile-First Design */}
       <Box mb={{ base: 6, md: 8 }}>
         <VStack align="start" spacing={3}>
@@ -744,166 +745,322 @@ const getLocationText = (location) => {
           >
             <Card 
               bg={cardBg}
-              shadow="md" 
-              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
-              transition="all 0.2s"
-              borderLeft="4px solid"
+              shadow="lg" 
+              _hover={{ 
+                shadow: "2xl", 
+                transform: "translateY(-4px) scale(1.02)",
+                cursor: "pointer",
+                borderLeftColor: "blue.600"
+              }} 
+              transition="all 0.3s ease"
+              borderLeft="6px solid"
               borderLeftColor="blue.500"
+              onClick={() => setActiveTab(0)}
+              role="button"
+              aria-label="View today's trips"
+              tabIndex={0}
             >
-              <CardBody p={{ base: 4, md: 6 }}>
-                <Stat>
-                  <HStack justify="space-between" align="center" mb={2}>
-                    <Box as={CalendarDaysIcon} w={6} h={6} color="blue.500" />
-                    <CircularProgress 
-                      value={dashboardStats.todayCompletionRate} 
-                      size="40px" 
-                      color="blue.500"
-                      trackColor={borderColor}
+              <CardBody p={{ base: 3, md: 4 }}>
+                <VStack align="stretch" spacing={3}>
+                  <HStack justify="space-between" align="start">
+                    <Box 
+                      p={2} 
+                      bg="blue.50" 
+                      borderRadius="lg"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
                     >
-                      <CircularProgressLabel fontSize="xs">
-                        {Math.round(dashboardStats.todayCompletionRate)}%
-                      </CircularProgressLabel>
-                    </CircularProgress>
+                      <Box as={CalendarDaysIconSolid} w={6} h={6} color="blue.600" />
+                    </Box>
+                    <VStack align="end" spacing={0}>
+                      <CircularProgress 
+                        value={dashboardStats.todayCompletionRate} 
+                        size="35px" 
+                        color="blue.500"
+                        trackColor="gray.200"
+                        thickness="6px"
+                      >
+                        <CircularProgressLabel fontSize="2xs" fontWeight="semibold">
+                          {Math.round(dashboardStats.todayCompletionRate)}%
+                        </CircularProgressLabel>
+                      </CircularProgress>
+                    </VStack>
                   </HStack>
-                  <StatNumber 
-                    fontSize={{ base: "xl", md: "2xl" }} 
-                    fontWeight="bold" 
-                    color={primaryColor}
-                  >
-                    {dashboardStats.todaysTrips}
-                  </StatNumber>
-                  <StatLabel 
-                    color={mutedColor}
-                    fontSize={{ base: "xs", md: "sm" }}
-                    fontWeight="medium"
-                  >
-                    Today's Trips
-                  </StatLabel>
-                  <StatHelpText fontSize="xs" color={mutedColor}>
-                    {dashboardStats.todayCompletionRate}% completed
-                  </StatHelpText>
-                </Stat>
+                  
+                  <Stat>
+                    <VStack align="start" spacing={1}>
+                      <StatNumber 
+                        fontSize={{ base: "xl", md: "2xl" }} 
+                        fontWeight="bold" 
+                        color="blue.600"
+                        lineHeight="1"
+                      >
+                        {dashboardStats.todaysTrips}
+                      </StatNumber>
+                      <StatLabel 
+                        color={textColor}
+                        fontSize="xs"
+                        fontWeight="medium"
+                        textTransform="uppercase"
+                        letterSpacing="wide"
+                      >
+                        Today's Trips
+                      </StatLabel>
+                      <Text fontSize="xs" color={mutedColor} fontWeight="medium">
+                        {dashboardStats.todayCompletionRate}% completed • Click to view
+                      </Text>
+                    </VStack>
+                  </Stat>
+                </VStack>
               </CardBody>
             </Card>
             
             <Card 
               bg={cardBg}
-              shadow="md" 
-              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
-              transition="all 0.2s"
-              borderLeft="4px solid"
+              shadow="lg" 
+              _hover={{ 
+                shadow: "2xl", 
+                transform: "translateY(-4px) scale(1.02)",
+                cursor: "pointer",
+                borderLeftColor: "green.600"
+              }} 
+              transition="all 0.3s ease"
+              borderLeft="6px solid"
               borderLeftColor="green.500"
+              onClick={() => setActiveTab(3)}
+              role="button"
+              aria-label="View completed trips"
+              tabIndex={0}
             >
-              <CardBody p={{ base: 4, md: 6 }}>
-                <Stat>
-                  <HStack justify="space-between" align="center" mb={2}>
-                    <Box as={CheckCircleIconSolid} w={6} h={6} color="green.500" />
-                    <Badge colorScheme="green" fontSize="xs">
-                      +{dashboardStats.completedTrips > 10 ? '12%' : '5%'}
+              <CardBody p={{ base: 3, md: 4 }}>
+                <VStack align="stretch" spacing={3}>
+                  <HStack justify="space-between" align="start">
+                    <Box 
+                      p={2} 
+                      bg="green.50" 
+                      borderRadius="lg"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <Box as={CheckCircleIconSolid} w={6} h={6} color="green.600" />
+                    </Box>
+                    <Badge 
+                      colorScheme="green" 
+                      fontSize="xs"
+                      px={2}
+                      py={0.5}
+                      borderRadius="full"
+                      fontWeight="semibold"
+                    >
+                      +{dashboardStats.completedTrips > 10 ? '12' : '5'}%
                     </Badge>
                   </HStack>
-                  <StatNumber 
-                    fontSize={{ base: "xl", md: "2xl" }} 
-                    fontWeight="bold" 
-                    color={successColor}
-                  >
-                    {dashboardStats.completedTrips}
-                  </StatNumber>
-                  <StatLabel 
-                    color={mutedColor}
-                    fontSize={{ base: "xs", md: "sm" }}
-                    fontWeight="medium"
-                  >
-                    Completed
-                  </StatLabel>
-                  <StatHelpText fontSize="xs" color="green.500">
-                    <StatArrow type="increase" />
-                    {dashboardStats.completionRate}% total rate
-                  </StatHelpText>
-                </Stat>
+                  
+                  <Stat>
+                    <VStack align="start" spacing={1}>
+                      <StatNumber 
+                        fontSize={{ base: "xl", md: "2xl" }} 
+                        fontWeight="bold" 
+                        color="green.600"
+                        lineHeight="1"
+                      >
+                        {dashboardStats.completedTrips}
+                      </StatNumber>
+                      <StatLabel 
+                        color={textColor}
+                        fontSize="xs"
+                        fontWeight="medium"
+                        textTransform="uppercase"
+                        letterSpacing="wide"
+                      >
+                        Completed
+                      </StatLabel>
+                      <HStack spacing={1} fontSize="xs">
+                        <StatArrow type="increase" />
+                        <Text color="green.600" fontWeight="semibold">
+                          {dashboardStats.completionRate}% total rate
+                        </Text>
+                      </HStack>
+                    </VStack>
+                  </Stat>
+                </VStack>
               </CardBody>
             </Card>
 
             <Card 
               bg={cardBg}
-              shadow="md" 
-              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
-              transition="all 0.2s"
-              borderLeft="4px solid"
+              shadow="lg" 
+              _hover={{ 
+                shadow: "2xl", 
+                transform: "translateY(-4px) scale(1.02)",
+                cursor: "pointer",
+                borderLeftColor: "orange.600"
+              }} 
+              transition="all 0.3s ease"
+              borderLeft="6px solid"
               borderLeftColor="orange.500"
+              onClick={() => setActiveTab(1)}
+              role="button"
+              aria-label="View active trips"
+              tabIndex={0}
+              position="relative"
+              overflow="hidden"
             >
-              <CardBody p={{ base: 4, md: 6 }}>
-                <Stat>
-                  <HStack justify="space-between" align="center" mb={2}>
-                    <Box as={ClockIconSolid} w={6} h={6} color="orange.500" />
+              {dashboardStats.unassignedTrips > 0 && (
+                <Box
+                  position="absolute"
+                  top={0}
+                  right={0}
+                  w="100%"
+                  h="100%"
+                  bg="orange.50"
+                  opacity={0.3}
+                  animation="pulse 2s ease-in-out infinite"
+                  sx={{
+                    '@keyframes pulse': {
+                      '0%, 100%': { opacity: 0.1 },
+                      '50%': { opacity: 0.3 }
+                    }
+                  }}
+                />
+              )}
+              <CardBody p={{ base: 3, md: 4 }} position="relative">
+                <VStack align="stretch" spacing={3}>
+                  <HStack justify="space-between" align="start">
+                    <Box 
+                      p={2} 
+                      bg="orange.50" 
+                      borderRadius="lg"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <Box as={ClockIconSolid} w={6} h={6} color="orange.600" />
+                    </Box>
                     {dashboardStats.unassignedTrips > 0 && (
-                      <Badge colorScheme="orange" fontSize="xs">
-                        Urgent
+                      <Badge 
+                        colorScheme="orange" 
+                        fontSize="xs"
+                        px={2}
+                        py={0.5}
+                        borderRadius="full"
+                        fontWeight="semibold"
+                        animation="pulse 2s ease-in-out infinite"
+                      >
+                        🚨 Urgent
                       </Badge>
                     )}
                   </HStack>
-                  <StatNumber 
-                    fontSize={{ base: "xl", md: "2xl" }} 
-                    fontWeight="bold" 
-                    color={warningColor}
-                  >
-                    {dashboardStats.activeTrips}
-                  </StatNumber>
-                  <StatLabel 
-                    color={mutedColor}
-                    fontSize={{ base: "xs", md: "sm" }}
-                    fontWeight="medium"
-                  >
-                    Active Trips
-                  </StatLabel>
-                  <StatHelpText fontSize="xs" color={mutedColor}>
-                    {dashboardStats.unassignedTrips} unassigned
-                  </StatHelpText>
-                </Stat>
+                  
+                  <Stat>
+                    <VStack align="start" spacing={1}>
+                      <StatNumber 
+                        fontSize={{ base: "xl", md: "2xl" }} 
+                        fontWeight="bold" 
+                        color="orange.600"
+                        lineHeight="1"
+                      >
+                        {dashboardStats.activeTrips}
+                      </StatNumber>
+                      <StatLabel 
+                        color={textColor}
+                        fontSize="xs"
+                        fontWeight="medium"
+                        textTransform="uppercase"
+                        letterSpacing="wide"
+                      >
+                        Active Trips
+                      </StatLabel>
+                      <Text 
+                        fontSize="xs" 
+                        color={dashboardStats.unassignedTrips > 0 ? "orange.600" : mutedColor}
+                        fontWeight={dashboardStats.unassignedTrips > 0 ? "bold" : "medium"}
+                      >
+                        {dashboardStats.unassignedTrips} unassigned • Click to assign
+                      </Text>
+                    </VStack>
+                  </Stat>
+                </VStack>
               </CardBody>
             </Card>
 
             <Card 
               bg={cardBg}
-              shadow="md" 
-              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
-              transition="all 0.2s"
-              borderLeft="4px solid"
+              shadow="lg" 
+              _hover={{ 
+                shadow: "2xl", 
+                transform: "translateY(-4px) scale(1.02)",
+                cursor: "pointer",
+                borderLeftColor: "purple.600"
+              }} 
+              transition="all 0.3s ease"
+              borderLeft="6px solid"
               borderLeftColor="purple.500"
+              onClick={() => setActiveTab(2)}
+              role="button"
+              aria-label="View available drivers"
+              tabIndex={0}
             >
-              <CardBody p={{ base: 4, md: 6 }}>
-                <Stat>
-                  <HStack justify="space-between" align="center" mb={2}>
-                    <Box as={TruckIconSolid} w={6} h={6} color="purple.500" />
-                    <CircularProgress 
-                      value={parseFloat(dashboardStats.driverUtilization)} 
-                      size="40px" 
-                      color="purple.500"
-                      trackColor={borderColor}
+              <CardBody p={{ base: 3, md: 4 }}>
+                <VStack align="stretch" spacing={3}>
+                  <HStack justify="space-between" align="start">
+                    <Box 
+                      p={2} 
+                      bg="purple.50" 
+                      borderRadius="lg"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
                     >
-                      <CircularProgressLabel fontSize="xs">
-                        {Math.round(parseFloat(dashboardStats.driverUtilization))}%
-                      </CircularProgressLabel>
-                    </CircularProgress>
+                      <Box as={TruckIconSolid} w={6} h={6} color="purple.600" />
+                    </Box>
+                    <VStack align="end" spacing={0}>
+                      <CircularProgress 
+                        value={parseFloat(dashboardStats.driverUtilization)} 
+                        size="35px" 
+                        color={parseFloat(dashboardStats.driverUtilization) > 80 ? "red.500" : "purple.500"}
+                        trackColor="gray.200"
+                        thickness="6px"
+                      >
+                        <CircularProgressLabel fontSize="2xs" fontWeight="semibold">
+                          {Math.round(parseFloat(dashboardStats.driverUtilization))}%
+                        </CircularProgressLabel>
+                      </CircularProgress>
+                    </VStack>
                   </HStack>
-                  <StatNumber 
-                    fontSize={{ base: "xl", md: "2xl" }} 
-                    fontWeight="bold" 
-                    color="purple.500"
-                  >
-                    {dashboardStats.availableDrivers}
-                  </StatNumber>
-                  <StatLabel 
-                    color={mutedColor}
-                    fontSize={{ base: "xs", md: "sm" }}
-                    fontWeight="medium"
-                  >
-                    Available Drivers
-                  </StatLabel>
-                  <StatHelpText fontSize="xs" color={mutedColor}>
-                    {dashboardStats.busyDrivers} busy, {dashboardStats.driverUtilization}% utilization
-                  </StatHelpText>
-                </Stat>
+                  
+                  <Stat>
+                    <VStack align="start" spacing={1}>
+                      <StatNumber 
+                        fontSize={{ base: "xl", md: "2xl" }} 
+                        fontWeight="bold" 
+                        color="purple.600"
+                        lineHeight="1"
+                      >
+                        {dashboardStats.availableDrivers}
+                      </StatNumber>
+                      <StatLabel 
+                        color={textColor}
+                        fontSize="xs"
+                        fontWeight="medium"
+                        textTransform="uppercase"
+                        letterSpacing="wide"
+                      >
+                        Available Drivers
+                      </StatLabel>
+                      <HStack spacing={2} fontSize="xs" flexWrap="wrap">
+                        <Badge colorScheme="purple" borderRadius="full" fontSize="xs">
+                          {dashboardStats.busyDrivers} busy
+                        </Badge>
+                        <Text color={mutedColor} fontWeight="medium">
+                          {dashboardStats.driverUtilization}% utilization
+                        </Text>
+                      </HStack>
+                    </VStack>
+                  </Stat>
+                </VStack>
               </CardBody>
             </Card>
           </SimpleGrid>
@@ -1112,7 +1269,7 @@ const getLocationText = (location) => {
                 <CardBody>
                   <VStack spacing={4} align="stretch">
                     {/* Today's Statistics */}
-                    <Grid templateColumns="repeat(auto-fit, minmax(150px, 1fr))" gap={4}>
+                    <Grid templateColumns="repeat(auto-fit, minmax(150px, 1fr))" gap={4} w="100%">
                       <Card bg="green.50">
                         <CardBody textAlign="center">
                           <Text fontSize="2xl" fontWeight="bold" color="green.600">
@@ -1150,16 +1307,16 @@ const getLocationText = (location) => {
                     {/* Today's Trips Table */}
                     <Card>
                       <CardBody p={0}>
-                        <TableContainer overflowX="auto">
-                          <Table variant="simple" size={{ base: "sm", md: "md" }}>
+                        <TableContainer overflowX="auto" w="100%">
+                          <Table variant="simple" size={{ base: "sm", md: "md" }} w="100%">
                             <Thead>
                               <Tr>
-                                <Th minW="80px">Trip ID</Th>
-                                <Th minW="120px">Rider</Th>
-                                <Th minW="200px" display={{ base: "none", md: "table-cell" }}>Route</Th>
-                                <Th minW="140px" display={{ base: "none", lg: "table-cell" }}>Scheduled</Th>
-                                <Th minW="120px">Driver</Th>
-                                <Th minW="100px">Status</Th>
+                                <Th>Trip ID</Th>
+                                <Th>Rider</Th>
+                                <Th display={{ base: "none", md: "table-cell" }}>Route</Th>
+                                <Th display={{ base: "none", lg: "table-cell" }}>Scheduled</Th>
+                                <Th>Driver</Th>
+                                <Th>Status</Th>
                                 <Th>Actions</Th>
                               </Tr>
                             </Thead>
@@ -1321,16 +1478,16 @@ const getLocationText = (location) => {
                   </HStack>
                 </CardHeader>
                 <CardBody p={0}>
-                  <TableContainer overflowX="auto">
-                    <Table variant="simple" size={{ base: "sm", md: "md" }}>
+                  <TableContainer overflowX="auto" w="100%">
+                    <Table variant="simple" size={{ base: "sm", md: "md" }} w="100%">
                       <Thead>
                         <Tr>
-                          <Th minW="80px">Trip ID</Th>
-                          <Th minW="120px">Rider</Th>
-                          <Th minW="200px" display={{ base: "none", md: "table-cell" }}>Route</Th>
-                          <Th minW="140px" display={{ base: "none", lg: "table-cell" }}>Scheduled</Th>
-                          <Th minW="120px">Driver</Th>
-                          <Th minW="100px">Status</Th>
+                          <Th>Trip ID</Th>
+                          <Th>Rider</Th>
+                          <Th display={{ base: "none", md: "table-cell" }}>Route</Th>
+                          <Th display={{ base: "none", lg: "table-cell" }}>Scheduled</Th>
+                          <Th>Driver</Th>
+                          <Th>Status</Th>
                           <Th>Actions</Th>
                         </Tr>
                       </Thead>
@@ -1489,16 +1646,16 @@ const getLocationText = (location) => {
                   </HStack>
                 </CardHeader>
                 <CardBody p={0}>
-                  <TableContainer overflowX="auto">
-                    <Table variant="simple" size={{ base: "sm", md: "md" }}>
+                  <TableContainer overflowX="auto" w="100%">
+                    <Table variant="simple" size={{ base: "sm", md: "md" }} w="100%">
                       <Thead>
                         <Tr>
-                          <Th minW="80px">Trip ID</Th>
-                          <Th minW="120px">Rider</Th>
-                          <Th minW="200px" display={{ base: "none", md: "table-cell" }}>Route</Th>
-                          <Th minW="140px" display={{ base: "none", lg: "table-cell" }}>Scheduled</Th>
-                          <Th minW="120px">Driver</Th>
-                          <Th minW="100px">Status</Th>
+                          <Th>Trip ID</Th>
+                          <Th>Rider</Th>
+                          <Th display={{ base: "none", md: "table-cell" }}>Route</Th>
+                          <Th display={{ base: "none", lg: "table-cell" }}>Scheduled</Th>
+                          <Th>Driver</Th>
+                          <Th>Status</Th>
                           <Th>Actions</Th>
                         </Tr>
                       </Thead>
@@ -1605,16 +1762,16 @@ const getLocationText = (location) => {
                   </HStack>
                 </CardHeader>
                 <CardBody p={0}>
-                  <TableContainer overflowX="auto">
-                    <Table variant="simple" size={{ base: "sm", md: "md" }}>
+                  <TableContainer overflowX="auto" w="100%">
+                    <Table variant="simple" size={{ base: "sm", md: "md" }} w="100%">
                       <Thead>
                         <Tr>
-                          <Th minW="80px">Trip ID</Th>
-                          <Th minW="120px">Rider</Th>
-                          <Th minW="200px" display={{ base: "none", md: "table-cell" }}>Route</Th>
-                          <Th minW="140px" display={{ base: "none", lg: "table-cell" }}>Scheduled</Th>
-                          <Th minW="120px">Driver</Th>
-                          <Th minW="100px">Status</Th>
+                          <Th>Trip ID</Th>
+                          <Th>Rider</Th>
+                          <Th display={{ base: "none", md: "table-cell" }}>Route</Th>
+                          <Th display={{ base: "none", lg: "table-cell" }}>Scheduled</Th>
+                          <Th>Driver</Th>
+                          <Th>Status</Th>
                           <Th>Actions</Th>
                         </Tr>
                       </Thead>

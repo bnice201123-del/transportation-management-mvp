@@ -494,8 +494,8 @@ const SchedulerDashboard = ({ view }) => {
 
   // Trips Table Component
   const TripsTable = ({ trips, showPattern, onView, onEdit, onDelete, formatDate, getStatusColor }) => (
-    <TableContainer overflowX="auto">
-      <Table variant="simple" size={{ base: "sm", md: "md" }}>
+    <TableContainer w="100%" overflowX="auto">
+      <Table variant="simple" size={{ base: "sm", md: "md" }} w="100%">
         <Thead>
           <Tr>
             <Th>Trip ID</Th>
@@ -772,32 +772,36 @@ const SchedulerDashboard = ({ view }) => {
   const completedTrips = (trips || []).filter(trip => trip.status === 'completed');
 
   return (
-    <Box minH="100vh" bg="green.25">
+    <Box minH="100vh" bg="green.25" overflowX="hidden">
       <Navbar title="Scheduler Dashboard" />
       
-      <Box pt={{ base: 4, md: 0 }}>
+      <Box pt={{ base: 4, md: 0 }} w="100%">
         {/* Conditional rendering for different views */}
         {isManageView ? (
           <Box px={{ base: 3, md: 4, lg: 6 }} py={{ base: 4, md: 6 }}>
             <TripManagement onTripUpdate={fetchTrips} initialTrips={trips} />
           </Box>
         ) : isCalendarView ? (
-          <Container 
-            maxW="container.xl" 
+          <Box 
+            w="100%"
             py={{ base: 4, md: 6 }} 
-            px={{ base: 4, md: 6, lg: 8 }}
+            px={{ base: 3, md: 4, lg: 6 }}
           >
             <CalendarOverview onTripUpdate={fetchTrips} />
-          </Container>
+          </Box>
         ) : (
-          <Container 
-            maxW="container.xl" 
+          <Box 
+            w="100%"
             py={{ base: 4, md: 6 }} 
-            px={{ base: 4, md: 6, lg: 8 }}
+            px={{ base: 3, md: 4, lg: 6 }}
           >
             <>
           {/* Enhanced Breadcrumb Navigation */}
-          <Breadcrumb mb={{ base: 4, md: 6 }} fontSize={{ base: "sm", md: "md" }}>
+          <Breadcrumb 
+            mb={{ base: 4, md: 6 }} 
+            fontSize={{ base: "sm", md: "md" }}
+            maxW="100%"
+          >
             <BreadcrumbItem>
               <BreadcrumbLink display="flex" alignItems="center" gap={2}>
                 <Box as={HomeIcon} w={4} h={4} />
@@ -818,6 +822,8 @@ const SchedulerDashboard = ({ view }) => {
             transition="all 0.3s ease"
             borderLeft="6px solid"
             borderLeftColor="green.500"
+            w="100%"
+            maxW="100%"
           >
             <CardBody p={{ base: 4, md: 6 }}>
               <VStack align="start" spacing={{ base: 3, md: 4 }}>
@@ -948,6 +954,7 @@ const SchedulerDashboard = ({ view }) => {
             columns={{ base: 2, md: 4 }}
             spacing={{ base: 3, md: 4 }} 
             mb={{ base: 6, md: 8 }}
+            w="100%"
           >
             {/* Today's Trips */}
             <Card 
@@ -1038,6 +1045,8 @@ const SchedulerDashboard = ({ view }) => {
             borderRadius="xl"
             border="1px solid"
             borderColor="green.100"
+            w="100%"
+            maxW="100%"
           >
             <CardBody p={{ base: 4, md: 6 }}>
               <Grid 
@@ -1140,6 +1149,9 @@ const SchedulerDashboard = ({ view }) => {
             border="1px solid"
             borderColor="green.200"
             bg="white"
+            w="100%"
+            maxW="100%"
+            overflowX="auto"
           >
             <CardHeader pb={{ base: 2, md: 4 }} bg="green.50" borderTopRadius="xl">
               <VStack spacing={{ base: 3, lg: 4 }} align="stretch">
@@ -1571,7 +1583,7 @@ const SchedulerDashboard = ({ view }) => {
           </CardBody>
         </Card>
             </>
-          </Container>
+          </Box>
         )}
       </Box>
 

@@ -730,10 +730,10 @@ const RecurringTrips = () => {
   return (
     <>
       <Navbar />
-      <Box bg={bgColor} minH="100vh" pt={{ base: "60px", md: "70px" }}>
-        <Container maxW="8xl" py={6}>
+      <Box bg={bgColor} minH="100vh" pt={{ base: "60px", md: "70px" }} overflowX="hidden">
+        <Box w="100%" py={{ base: 4, md: 6 }} px={{ base: 3, md: 4, lg: 6 }}>
         {/* Modern Header with Enhanced Actions */}
-        <Card bg={cardBg} shadow="lg" borderRadius="xl" mb={6}>
+        <Card bg={cardBg} shadow="lg" borderRadius="xl" mb={6} w="100%" maxW="100%">
           <CardHeader pb={4}>
             <Flex direction={{ base: 'column', md: 'row' }} gap={4} align="center">
               <VStack align="start" spacing={2} flex={1}>
@@ -911,7 +911,7 @@ const RecurringTrips = () => {
             ))}
           </SimpleGrid>
         ) : (
-          <Card shadow="sm" bg={cardBg}>
+          <Card shadow="sm" bg={cardBg} w="100%" maxW="100%">
             <CardHeader>
               <Flex justify="space-between" align="center">
                 <Heading size="md" color={textColor}>
@@ -923,8 +923,8 @@ const RecurringTrips = () => {
               </Flex>
             </CardHeader>
             <CardBody p={0}>
-              <TableContainer>
-                <Table variant="simple" size="sm">
+              <TableContainer w="100%" overflowX="auto">
+                <Table variant="simple" size="sm" w="100%">
                   <Thead>
                     <Tr>
                   <Th>Rider</Th>
@@ -1117,7 +1117,7 @@ const RecurringTrips = () => {
             </CardBody>
           </Card>
         )}
-      </Container>
+      </Box>
 
       {/* Add/Edit Modal */}
       <Modal 

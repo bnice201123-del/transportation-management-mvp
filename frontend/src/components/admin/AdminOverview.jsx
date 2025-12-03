@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Container,
   VStack,
   HStack,
   Grid,
@@ -126,8 +125,8 @@ const AdminOverview = () => {
   const mainBg = useColorModeValue('gray.50', 'gray.900');
   
   const columnsCount = useBreakpointValue({ base: 1, sm: 2, md: 2, lg: 4 });
-  const cardSpacing = useBreakpointValue({ base: 4, md: 6 });
-  const containerPadding = useBreakpointValue({ base: 4, md: 6, lg: 8 });
+  const cardSpacing = useBreakpointValue({ base: 3, md: 4 });
+  const containerPadding = useBreakpointValue({ base: 3, md: 4 });
 
   const fetchOverviewData = useCallback(async () => {
     if (!loading) setRefreshing(true);
@@ -421,15 +420,15 @@ const AdminOverview = () => {
       cursor={isClickable ? 'pointer' : 'default'}
       onClick={onClick}
     >
-      <CardBody p={6}>
-        <Flex align="center" justify="space-between" mb={4}>
+      <CardBody p={4}>
+        <Flex align="center" justify="space-between" mb={3}>
           <Box 
             p={3} 
             borderRadius="xl" 
             bg={`${color}.50`}
             color={`${color}.500`}
           >
-            <Icon as={icon} boxSize={6} />
+            <Icon as={icon} boxSize={5} />
           </Box>
           {trend && (
             <HStack spacing={1}>
@@ -449,7 +448,7 @@ const AdminOverview = () => {
           )}
         </Flex>
         
-        <VStack align="start" spacing={2}>
+        <VStack align="start" spacing={1}>
           <Skeleton isLoaded={!cardLoading}>
             <Text fontSize="3xl" fontWeight="bold" color={headingColor}>
               {value}
@@ -492,7 +491,7 @@ const AdminOverview = () => {
           </HStack>
         </CardHeader>
         <CardBody pt={0}>
-          <VStack align="stretch" spacing={4}>
+          <VStack align="stretch" spacing={3}>
             <Alert 
               status={isHealthy ? 'success' : 'warning'} 
               borderRadius="lg"
@@ -509,7 +508,7 @@ const AdminOverview = () => {
               </Box>
             </Alert>
             
-            <VStack spacing={3}>
+            <VStack spacing={2}>
               <Box width="full">
                 <HStack justify="space-between" mb={2}>
                   <Text fontSize="sm" fontWeight="medium">CPU Usage</Text>
@@ -526,7 +525,7 @@ const AdminOverview = () => {
               </Box>
               
               <Box width="full">
-                <HStack justify="space-between" mb={2}>
+                <HStack justify="space-between" mb={1}>
                   <Text fontSize="sm" fontWeight="medium">Memory Usage</Text>
                   <Text fontSize="sm" color={textColor}>
                     {systemHealth?.memory || 0}%
@@ -565,7 +564,7 @@ const AdminOverview = () => {
         </Heading>
       </CardHeader>
       <CardBody pt={0}>
-        <VStack spacing={3}>
+        <VStack spacing={2}>
           <Button 
             size="md" 
             width="full" 
@@ -635,7 +634,7 @@ const AdminOverview = () => {
         </HStack>
       </CardHeader>
       <CardBody pt={0}>
-        <VStack align="stretch" spacing={3} maxH="400px" overflowY="auto">
+        <VStack align="stretch" spacing={2} maxH="400px" overflowY="auto">
           {overviewData?.recentActivity && Array.isArray(overviewData.recentActivity) && overviewData.recentActivity.length > 0 ? (
             overviewData.recentActivity.map((activity, index) => {
               if (!activity || typeof activity !== 'object') return null;
@@ -655,7 +654,7 @@ const AdminOverview = () => {
               return (
                 <Box 
                   key={activity.id || index} 
-                  p={4} 
+                  p={3} 
                   bg={statBg} 
                   rounded="lg" 
                   borderLeft="4px solid" 
@@ -664,7 +663,7 @@ const AdminOverview = () => {
                   transition="background 0.2s"
                 >
                   <HStack justify="space-between" align="start">
-                    <VStack align="start" spacing={2} flex={1}>
+                    <VStack align="start" spacing={1} flex={1}>
                       <HStack>
                         <Avatar 
                           size="xs" 
@@ -685,7 +684,7 @@ const AdminOverview = () => {
                         {activity.description || 'No description available'}
                       </Text>
                     </VStack>
-                    <VStack align="end" spacing={2}>
+                    <VStack align="end" spacing={1}>
                       <Tag 
                         size="sm" 
                         colorScheme={getActivityColor(activity.action)}
@@ -724,7 +723,7 @@ const AdminOverview = () => {
         </Heading>
       </CardHeader>
       <CardBody pt={0}>
-        <VStack spacing={4}>
+        <VStack spacing={2}>
           {overviewData?.usersByRole && typeof overviewData.usersByRole === 'object' ? 
             Object.entries(overviewData.usersByRole).map(([role, count]) => {
               const safeCount = typeof count === 'number' ? count : 0;
@@ -747,7 +746,7 @@ const AdminOverview = () => {
               
               return (
                 <Box key={role} width="full">
-                  <HStack justify="space-between" mb={2}>
+                  <HStack justify="space-between" mb={1}>
                     <HStack>
                       <Box 
                         w={3} 
@@ -831,20 +830,20 @@ const AdminOverview = () => {
           </Heading>
         </CardHeader>
         <CardBody pt={0}>
-          <VStack spacing={4}>
+          <VStack spacing={3}>
             <Box textAlign="center">
               <CircularProgress 
                 value={totalTrips > 0 ? ((overviewData?.completedTrips || 0) / totalTrips) * 100 : 0} 
                 color="green.400"
-                size="120px"
-                thickness="8px"
+                size="100px"
+                thickness="6px"
               >
                 <CircularProgressLabel>
                   <VStack spacing={0}>
-                    <Text fontSize="xl" fontWeight="bold">
+                    <Text fontSize="lg" fontWeight="bold">
                       {totalTrips > 0 ? Math.round(((overviewData?.completedTrips || 0) / totalTrips) * 100) : 0}%
                     </Text>
-                    <Text fontSize="xs" color={textColor}>
+                    <Text fontSize="2xs" color={textColor}>
                       Success Rate
                     </Text>
                   </VStack>
@@ -852,20 +851,20 @@ const AdminOverview = () => {
               </CircularProgress>
             </Box>
             
-            <SimpleGrid columns={2} spacing={3} width="full">
+            <SimpleGrid columns={2} spacing={2} width="full">
               {tripData.map((item) => (
                 <Box 
                   key={item.label}
-                  p={3}
+                  p={2}
                   bg={statBg}
                   borderRadius="lg"
                   textAlign="center"
                 >
-                  <Icon as={item.icon} color={`${item.color}.500`} mb={2} />
-                  <Text fontSize="lg" fontWeight="bold">
+                  <Icon as={item.icon} color={`${item.color}.500`} boxSize={4} mb={1} />
+                  <Text fontSize="md" fontWeight="bold">
                     {item.value}
                   </Text>
-                  <Text fontSize="xs" color={textColor}>
+                  <Text fontSize="2xs" color={textColor} noOfLines={1}>
                     {item.label}
                   </Text>
                 </Box>
@@ -897,7 +896,7 @@ const AdminOverview = () => {
         </HStack>
       </CardHeader>
       <CardBody pt={0}>
-        <VStack spacing={3}>
+        <VStack spacing={2}>
           {overviewData?.recentUsers && overviewData.recentUsers.length > 0 ? (
             overviewData.recentUsers.map((user) => {
               if (!user) return null;
@@ -917,12 +916,12 @@ const AdminOverview = () => {
                 <HStack 
                   key={user._id || user.id} 
                   width="full" 
-                  p={3} 
+                  p={2} 
                   bg={statBg} 
                   borderRadius="lg"
                   justify="space-between"
                 >
-                  <HStack spacing={3}>
+                  <HStack spacing={2}>
                     <Avatar 
                       size="sm" 
                       name={`${user.firstName || ''} ${user.lastName || ''}`}
@@ -964,11 +963,10 @@ const AdminOverview = () => {
     return (
       <Box display="flex" flexDirection="column" minHeight="100vh">
         <Navbar />
-        <Box flex="1" p={containerPadding}>
-          <Container maxW="7xl">
-            <VStack spacing={6}>
+        <Box flex="1" p={{ base: 3, md: 4 }} w="100%" overflowX="hidden">
+            <VStack spacing={4}>
               <Box width="full">
-                <SkeletonText noOfLines={2} spacing={4} skeletonHeight={6} />
+                <SkeletonText noOfLines={2} spacing={3} skeletonHeight={6} />
               </Box>
               <SimpleGrid columns={columnsCount} spacing={cardSpacing} width="full">
                 {[1, 2, 3, 4].map((i) => (
@@ -990,7 +988,6 @@ const AdminOverview = () => {
                 </VStack>
               </Grid>
             </VStack>
-          </Container>
         </Box>
       </Box>
     );
@@ -1000,10 +997,9 @@ const AdminOverview = () => {
     return (
       <Box display="flex" flexDirection="column" minHeight="100vh">
         <Navbar />
-        <Box flex="1" p={containerPadding}>
-          <Container maxW="7xl">
+        <Box flex="1" p={{ base: 3, md: 4 }} w="100%" overflowX="hidden">
             <Center minH="400px">
-              <VStack spacing={6} textAlign="center">
+              <VStack spacing={4} textAlign="center">
                 <Icon as={FaExclamationTriangle} boxSize={16} color="red.400" />
                 <Alert status="error" borderRadius="lg" maxW="md">
                   <AlertIcon />
@@ -1027,7 +1023,6 @@ const AdminOverview = () => {
                 </Button>
               </VStack>
             </Center>
-          </Container>
         </Box>
       </Box>
     );
@@ -1036,12 +1031,11 @@ const AdminOverview = () => {
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh" bg={mainBg}>
       <Navbar />
-      <Box flex="1" p={containerPadding}>
-        <Container maxW="7xl">
-          <VStack align="stretch" spacing={8}>
+      <Box flex="1" p={{ base: 3, md: 4 }} w="100%" overflowX="hidden">
+        <VStack align="stretch" spacing={4}>
             {/* Header Section */}
             <Box>
-              <HStack justify="space-between" mb={4} flexWrap="wrap" gap={4}>
+              <HStack justify="space-between" mb={3} flexWrap="wrap" gap={3}>
                 <VStack align="start" spacing={1}>
                   <Heading size="xl" color={headingColor}>
                     Admin Dashboard
@@ -1050,7 +1044,7 @@ const AdminOverview = () => {
                     System overview and management center
                   </Text>
                 </VStack>
-                <HStack spacing={3}>
+                <HStack spacing={2}>
                   <Tooltip label="Refresh Data">
                     <IconButton
                       icon={<RepeatIcon />}
@@ -1097,7 +1091,7 @@ const AdminOverview = () => {
 
             {/* Filter Status Badge */}
             {filterView !== 'all' && (
-              <Alert status="info" variant="left-accent" mb={4}>
+              <Alert status="info" variant="left-accent" mb={2}>
                 <AlertIcon />
                 <HStack justify="space-between" w="full">
                   <Text>
@@ -1220,7 +1214,6 @@ const AdminOverview = () => {
               />
             </SimpleGrid>
           </VStack>
-        </Container>
       </Box>
     </Box>
   );

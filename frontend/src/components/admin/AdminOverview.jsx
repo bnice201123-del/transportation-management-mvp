@@ -1157,6 +1157,16 @@ const AdminOverview = () => {
             </SimpleGrid>
 
             {/* Dashboard Grid Layout */}
+            <VStack spacing={cardSpacing} display={{ base: 'flex', md: 'none' }}>
+              {/* Mobile Layout - Full Width Cards */}
+              <UserDistributionCard />
+              <TripStatusCard />
+              <SystemHealthCard />
+              <QuickActionsCard />
+              <RecentActivityCard />
+              <RecentUsersCard />
+            </VStack>
+
             <Grid 
               templateColumns={{ 
                 base: "1fr", 
@@ -1164,6 +1174,7 @@ const AdminOverview = () => {
                 lg: "2fr 1fr 1fr" 
               }} 
               gap={cardSpacing}
+              display={{ base: 'none', md: 'grid' }}
             >
               {/* Left Column - Recent Activity */}
               <RecentActivityCard />

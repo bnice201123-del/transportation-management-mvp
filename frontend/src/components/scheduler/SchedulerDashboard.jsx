@@ -783,7 +783,7 @@ const SchedulerDashboard = ({ view }) => {
         >
           {/* Conditional rendering for different views */}
           {isManageView ? (
-            <TripManagement onTripUpdate={fetchTrips} />
+            <TripManagement onTripUpdate={fetchTrips} initialTrips={trips} />
           ) : isCalendarView ? (
             <CalendarOverview onTripUpdate={fetchTrips} />
           ) : (

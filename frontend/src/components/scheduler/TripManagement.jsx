@@ -100,12 +100,12 @@ import {
 import axios from '../../config/axios';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 
-const TripManagement = ({ onTripUpdate }) => {
+const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
   // State Management
-  const [trips, setTrips] = useState([]);
-  const [filteredTrips, setFilteredTrips] = useState([]);
+  const [trips, setTrips] = useState(initialTrips);
+  const [filteredTrips, setFilteredTrips] = useState(initialTrips);
   const [drivers, setDrivers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
@@ -164,94 +164,37 @@ const TripManagement = ({ onTripUpdate }) => {
     try {
       setLoading(true);
       const response = await axios.get('/api/trips');
-      const tripsData = response.data?.trips || [];
+      // Support multiple response formats
+      const tripsData = response.data?.data?.trips || response.data?.trips || [];
       setTrips(tripsData);
       setFilteredTrips(tripsData);
+      
+      // Notify parent component
+      if (onTripUpdate) {
+        onTripUpdate();
+      }
     } catch (error) {
       console.error('Error fetching trips:', error);
-      // Mock data for development
-      const mockTrips = [
-        {
-          _id: '1',
-          riderName: 'John Smith',
-          riderPhone: '(555) 123-4567',
-          riderEmail: 'john.smith@email.com',
-          pickupLocation: '123 Main St, Downtown',
-          dropoffLocation: '456 Oak Ave, Uptown',
-          scheduledDate: '2025-11-04',
-          scheduledTime: '09:00',
-          status: 'scheduled',
-          priority: 'high',
-          assignedDriver: 'Driver A',
-          estimatedDuration: '30 min',
-          estimatedDistance: '5.2 miles',
-          fare: '$15.50',
-          notes: 'Airport pickup',
-          createdAt: new Date().toISOString()
-        },
-        {
-          _id: '2',
-          riderName: 'Sarah Johnson',
-          riderPhone: '(555) 987-6543',
-          riderEmail: 'sarah.j@email.com',
-          pickupLocation: '789 Pine St, Westside',
-          dropoffLocation: '321 Elm Dr, Eastside',
-          scheduledDate: '2025-11-04',
-          scheduledTime: '14:30',
-          status: 'in-progress',
-          priority: 'medium',
-          assignedDriver: 'Driver B',
-          estimatedDuration: '45 min',
-          estimatedDistance: '8.1 miles',
-          fare: '$22.75',
-          notes: 'Medical appointment',
-          createdAt: new Date().toISOString()
-        },
-        {
-          _id: '3',
-          riderName: 'Mike Davis',
-          riderPhone: '(555) 222-3333',
-          riderEmail: 'mike.d@email.com',
-          pickupLocation: '100 Broadway Ave, Downtown',
-          dropoffLocation: '200 Park St, Central',
-          scheduledDate: '2025-11-03',
-          scheduledTime: '11:00',
-          status: 'completed',
-          priority: 'medium',
-          assignedDriver: 'Driver C',
-          estimatedDuration: '25 min',
-          estimatedDistance: '4.5 miles',
-          fare: '$18.00',
-          notes: 'Completed trip - test revert',
-          createdAt: new Date().toISOString(),
-          actualPickupTime: new Date().toISOString()
-        },
-        {
-          _id: '4',
-          riderName: 'Emily Brown',
-          riderPhone: '(555) 444-5555',
-          riderEmail: 'emily.b@email.com',
-          pickupLocation: '500 Market St, Shopping District',
-          dropoffLocation: '600 Riverside Dr, Waterfront',
-          scheduledDate: '2025-11-03',
-          scheduledTime: '16:00',
-          status: 'cancelled',
-          priority: 'low',
-          assignedDriver: 'Driver D',
-          estimatedDuration: '35 min',
-          estimatedDistance: '6.8 miles',
-          fare: '$20.50',
-          notes: 'Cancelled by rider - test revert',
-          cancellationReason: 'Rider cancelled',
-          createdAt: new Date().toISOString()
-        }
-      ];
-      setTrips(mockTrips);
-      setFilteredTrips(mockTrips);
+      toast({
+        title: 'Error loading trips',
+        description: error.response?.data?.message || 'Failed to load trips. Using cached data.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [onTripUpdate, toast]);
+
+  // Update local state when initialTrips prop changes
+  useEffect(() => {
+    if (initialTrips && initialTrips.length > 0) {
+      setTrips(initialTrips);
+      setFilteredTrips(initialTrips);
+      setLoading(false);
+    }
+  }, [initialTrips]);
 
   const fetchDrivers = useCallback(async () => {
     try {

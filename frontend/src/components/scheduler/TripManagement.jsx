@@ -1539,7 +1539,7 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
                     <Box>
                       <Text fontSize="sm" color="gray.600">Time</Text>
                       <HStack>
-                        <TimeIcon boxSize={3} />
+                        <Box as={ClockIcon} w={3} h={3} color="blue.500" />
                         <Text fontWeight="medium">{selectedTrip.scheduledTime}</Text>
                       </HStack>
                     </Box>

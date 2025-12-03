@@ -1466,7 +1466,7 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
                     <Box>
                       <Text fontSize="sm" color="gray.600">Phone</Text>
                       <HStack>
-                        <FaPhone size={12} />
+                        <Box as={PhoneIcon} w={3} h={3} color="blue.500" />
                         <Text fontWeight="medium">{selectedTrip.riderPhone}</Text>
                       </HStack>
                     </Box>
@@ -1474,7 +1474,7 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
                       <Box>
                         <Text fontSize="sm" color="gray.600">Email</Text>
                         <HStack>
-                          <FaEnvelope size={12} />
+                          <Box as={EnvelopeIcon} w={3} h={3} color="blue.500" />
                           <Text fontWeight="medium">{selectedTrip.riderEmail}</Text>
                         </HStack>
                       </Box>
@@ -1547,7 +1547,7 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
                       <Box>
                         <Text fontSize="sm" color="gray.600">Assigned Driver</Text>
                         <HStack>
-                          <FaUser size={12} />
+                          <Box as={UserIcon} w={3} h={3} color="blue.500" />
                           <Text fontWeight="medium">
                             {typeof selectedTrip.assignedDriver === 'object' && selectedTrip.assignedDriver 
                               ? `${selectedTrip.assignedDriver.firstName} ${selectedTrip.assignedDriver.lastName}` 

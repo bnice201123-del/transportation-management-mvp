@@ -573,7 +573,7 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
   }
 
   return (
-    <Box minH="100vh" bg="gray.50" py={{ base: 4, md: 6 }}>
+    <Box minH="100vh" bg="gray.50" w="full">
       {/* Enhanced Header Section with Breadcrumbs and Statistics */}
       <Card 
         mb={cardSpacing} 
@@ -786,40 +786,40 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
       </Card>
 
       {/* Trips Table */}
-      <Card shadow="sm">
-        <CardBody>
-          <TableContainer>
+      <Card shadow="sm" overflow="hidden">
+        <CardBody p={0}>
+          <TableContainer overflowX="auto">
             <Table variant="simple" size="sm">
-              <Thead>
+              <Thead bg="gray.50">
                 <Tr>
-                  <Th>Rider Information</Th>
-                  <Th>Route</Th>
-                  <Th>Schedule</Th>
-                  <Th>Status</Th>
-                  <Th>Driver</Th>
-                  <Th>Details</Th>
-                  <Th>Actions</Th>
+                  <Th minW="180px" maxW="200px">Rider Information</Th>
+                  <Th minW="200px" maxW="250px">Route</Th>
+                  <Th minW="140px" maxW="160px">Schedule</Th>
+                  <Th minW="100px" maxW="120px">Status</Th>
+                  <Th minW="120px" maxW="150px">Driver</Th>
+                  <Th minW="100px" maxW="140px">Details</Th>
+                  <Th minW="160px" maxW="180px" textAlign="center">Actions</Th>
                 </Tr>
               </Thead>
               <Tbody>
                 {(filteredTrips || []).length > 0 ? (
                   (filteredTrips || []).map((trip) => (
                     <Tr key={trip._id} _hover={{ bg: 'gray.50' }}>
-                      <Td>
+                      <Td maxW="200px">
                         <VStack align="start" spacing={1}>
-                          <Text fontWeight="medium" fontSize="sm">
+                          <Text fontWeight="medium" fontSize="sm" noOfLines={1}>
                             {trip.riderName}
                           </Text>
                           <HStack spacing={2}>
-                            <Box as={PhoneIcon} w={3} h={3} color="blue.400" />
-                            <Text fontSize="xs" color="gray.600">
+                            <Box as={PhoneIcon} w={3} h={3} color="blue.400" flexShrink={0} />
+                            <Text fontSize="xs" color="gray.600" noOfLines={1}>
                               {trip.riderPhone}
                             </Text>
                           </HStack>
                           {trip.riderEmail && (
                             <HStack spacing={2}>
-                              <Box as={EnvelopeIcon} w={3} h={3} color="gray.400" />
-                              <Text fontSize="xs" color="gray.600">
+                              <Box as={EnvelopeIcon} w={3} h={3} color="gray.400" flexShrink={0} />
+                              <Text fontSize="xs" color="gray.600" noOfLines={1}>
                                 {trip.riderEmail}
                               </Text>
                             </HStack>
@@ -827,54 +827,51 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
                         </VStack>
                       </Td>
                       
-                      <Td>
+                      <Td maxW="250px">
                         <VStack align="start" spacing={1}>
                           <HStack spacing={2}>
-                            <Box w={2} h={2} bg="green.400" rounded="full" />
-                            <Text fontSize="xs" color="gray.700" noOfLines={1}>
+                            <Box w={2} h={2} bg="green.400" rounded="full" flexShrink={0} />
+                            <Text fontSize="xs" color="gray.700" noOfLines={1} flex={1}>
                               {typeof trip.pickupLocation === 'object' ? trip.pickupLocation.address : trip.pickupLocation}
                             </Text>
                           </HStack>
                           <HStack spacing={2}>
-                            <Box w={2} h={2} bg="red.400" rounded="full" />
-                            <Text fontSize="xs" color="gray.700" noOfLines={1}>
+                            <Box w={2} h={2} bg="red.400" rounded="full" flexShrink={0} />
+                            <Text fontSize="xs" color="gray.700" noOfLines={1} flex={1}>
                               {typeof trip.dropoffLocation === 'object' ? trip.dropoffLocation.address : trip.dropoffLocation}
                             </Text>
                           </HStack>
                           {trip.estimatedDistance && (
-                            <Text fontSize="xs" color="gray.500">
+                            <Text fontSize="xs" color="gray.500" noOfLines={1}>
                               📏 {trip.estimatedDistance}
                             </Text>
                           )}
                         </VStack>
                       </Td>
                       
-                      <Td>
+                      <Td maxW="160px">
                         <VStack align="start" spacing={1}>
-                          <HStack>
-                            <Box as={CalendarDaysIcon} w={3} h={3} color="blue.400" />
-                            <Text fontSize="sm" fontWeight="medium">
+                          <HStack spacing={1}>
+                            <Box as={CalendarDaysIcon} w={3} h={3} color="blue.400" flexShrink={0} />
+                            <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
                               {new Date(trip.scheduledDate).toLocaleDateString()}
                             </Text>
                           </HStack>
-                          <HStack>
-                            <Box as={ClockIcon} w={3} h={3} color="orange.400" />
-                            <Text fontSize="sm">
+                          <HStack spacing={1}>
+                            <Box as={ClockIcon} w={3} h={3} color="orange.400" flexShrink={0} />
+                            <Text fontSize="sm" noOfLines={1}>
                               {trip.scheduledTime}
                             </Text>
                           </HStack>
                           {trip.estimatedDuration && (
-                            <HStack>
-                              <Box as={ClockIcon} w={3} h={3} color="gray.400" />
-                              <Text fontSize="xs" color="gray.500">
-                                {trip.estimatedDuration}
-                              </Text>
-                            </HStack>
+                            <Text fontSize="xs" color="gray.500" noOfLines={1}>
+                              ⏱️ {trip.estimatedDuration}
+                            </Text>
                           )}
                         </VStack>
                       </Td>
                       
-                      <Td>
+                      <Td maxW="120px">
                         <VStack align="start" spacing={1}>
                           <Badge 
                             colorScheme={getStatusColor(trip.status)} 
@@ -889,30 +886,30 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
                               variant="outline" 
                               size="sm"
                             >
-                              {trip.priority} priority
+                              {trip.priority}
                             </Badge>
                           )}
                         </VStack>
                       </Td>
                       
-                      <Td>
-                        <Text fontSize="sm" fontWeight="medium">
+                      <Td maxW="150px">
+                        <Text fontSize="sm" fontWeight="medium" noOfLines={2}>
                           {typeof trip.assignedDriver === 'object' && trip.assignedDriver 
                             ? `${trip.assignedDriver.firstName} ${trip.assignedDriver.lastName}` 
                             : trip.assignedDriver || 'Unassigned'}
                         </Text>
                       </Td>
                       
-                      <Td>
+                      <Td maxW="140px">
                         <VStack align="start" spacing={1}>
                           {trip.fare && (
-                            <Text fontSize="sm" fontWeight="bold" color="green.600">
+                            <Text fontSize="sm" fontWeight="bold" color="green.600" noOfLines={1}>
                               {trip.fare}
                             </Text>
                           )}
                           {trip.notes && (
-                            <HStack>
-                              <Box as={InformationCircleIcon} w={3} h={3} color="gray.400" />
+                            <HStack spacing={1}>
+                              <Box as={InformationCircleIcon} w={3} h={3} color="gray.400" flexShrink={0} />
                               <Text fontSize="xs" color="gray.600" noOfLines={1}>
                                 {trip.notes}
                               </Text>
@@ -922,7 +919,7 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
                       </Td>
                       
                       <Td>
-                        <HStack spacing={1}>
+                        <HStack spacing={1} justifyContent="center"  flexWrap="wrap">
                           <IconButton
                             size="sm"
                             icon={<Box as={EyeIcon} w={4} h={4} />}

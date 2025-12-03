@@ -776,17 +776,25 @@ const SchedulerDashboard = ({ view }) => {
       <Navbar title="Scheduler Dashboard" />
       
       <Box pt={{ base: 4, md: 0 }}>
-        <Container 
-          maxW="container.xl" 
-          py={{ base: 4, md: 6 }} 
-          px={{ base: 4, md: 6, lg: 8 }}
-        >
-          {/* Conditional rendering for different views */}
-          {isManageView ? (
+        {/* Conditional rendering for different views */}
+        {isManageView ? (
+          <Box px={{ base: 3, md: 4, lg: 6 }} py={{ base: 4, md: 6 }}>
             <TripManagement onTripUpdate={fetchTrips} initialTrips={trips} />
-          ) : isCalendarView ? (
+          </Box>
+        ) : isCalendarView ? (
+          <Container 
+            maxW="container.xl" 
+            py={{ base: 4, md: 6 }} 
+            px={{ base: 4, md: 6, lg: 8 }}
+          >
             <CalendarOverview onTripUpdate={fetchTrips} />
-          ) : (
+          </Container>
+        ) : (
+          <Container 
+            maxW="container.xl" 
+            py={{ base: 4, md: 6 }} 
+            px={{ base: 4, md: 6, lg: 8 }}
+          >
             <>
           {/* Enhanced Breadcrumb Navigation */}
           <Breadcrumb mb={{ base: 4, md: 6 }} fontSize={{ base: "sm", md: "md" }}>
@@ -1563,8 +1571,8 @@ const SchedulerDashboard = ({ view }) => {
           </CardBody>
         </Card>
             </>
-          )}
-        </Container>
+          </Container>
+        )}
       </Box>
 
       {/* Create/Edit Trip Modal */}

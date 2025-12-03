@@ -229,24 +229,38 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
+    // Update last login without triggering full validation
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { lastLogin: new Date() } }
+    );
 
     // Log activity
     await logActivity(user._id, 'user_login', 'User logged in successfully');
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id, role: user.role },
+      { 
+        userId: user._id, 
+        role: user.role,
+        roles: user.roles // Include roles array for multi-role support
+      },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
+    // Prepare user response
+    const userResponse = user.toJSON();
+    
+    // Add a flag if username is missing (for frontend to prompt setup)
+    if (!user.username) {
+      userResponse.needsUsernameSetup = true;
+    }
+
     res.json({
       message: 'Login successful',
       token,
-      user: user.toJSON()
+      user: userResponse
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -502,6 +516,56 @@ router.post('/admin/reset-password/:userId', authenticateToken, authorizeRoles('
   } catch (error) {
     console.error('Admin password reset error:', error);
     res.status(500).json({ message: 'Server error resetting password' });
+  }
+});
+
+// Set Username (for users created before username requirement)
+router.post('/set-username', authenticateToken, async (req, res) => {
+  try {
+    const { username } = req.body;
+    const userId = req.user.userId;
+
+    if (!username || username.length < 3 || username.length > 30) {
+      return res.status(400).json({ 
+        message: 'Username must be between 3 and 30 characters' 
+      });
+    }
+
+    const normalizedUsername = username.toLowerCase().trim();
+
+    // Check if username already exists
+    const existingUser = await User.findOne({ username: normalizedUsername });
+    if (existingUser && existingUser._id.toString() !== userId) {
+      return res.status(400).json({ message: 'Username already taken' });
+    }
+
+    // Update user with username
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { username: normalizedUsername },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await logActivity(
+      userId,
+      'username_set',
+      `User set username: ${normalizedUsername}`
+    );
+
+    res.json({
+      message: 'Username set successfully',
+      user: user.toJSON()
+    });
+  } catch (error) {
+    console.error('Set username error:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Username already taken' });
+    }
+    res.status(500).json({ message: 'Server error setting username' });
   }
 });
 

@@ -24,6 +24,7 @@ import { EmailIcon, PhoneIcon } from '@chakra-ui/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import ProfileImageUpload from './ProfileImageUpload';
 import Navbar from './Navbar';
+import WorkScheduleButton from './WorkScheduleButton';
 import axios from '../../config/axios';
 
 const UserProfile = () => {
@@ -197,15 +198,25 @@ const UserProfile = () => {
 
                   <Divider my={2} />
 
-                  <Button
-                    colorScheme="blue"
-                    size="lg"
-                    onClick={handleSaveProfile}
-                    isLoading={loading}
-                    loadingText="Saving..."
-                  >
-                    Save Changes
-                  </Button>
+                  <HStack spacing={3}>
+                    <WorkScheduleButton 
+                      userId={user?._id}
+                      userName={user?.firstName ? `${user.firstName} ${user.lastName}` : user?.name}
+                      variant="outline"
+                      colorScheme="green"
+                      size="lg"
+                    />
+                    <Button
+                      colorScheme="blue"
+                      size="lg"
+                      onClick={handleSaveProfile}
+                      isLoading={loading}
+                      loadingText="Saving..."
+                      flex={1}
+                    >
+                      Save Changes
+                    </Button>
+                  </HStack>
                 </VStack>
               </CardBody>
             </Card>

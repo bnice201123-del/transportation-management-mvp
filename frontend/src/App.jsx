@@ -31,6 +31,7 @@ import SystemAdministration from './components/admin/SystemAdministration';
 import ManageUsers from './components/admin/ManageUsers';
 import UserRolesPermissions from './components/admin/UserRolesPermissionsSimple';
 import ManageUserRoles from './components/admin/ManageUserRoles';
+import TimeOffManagement from './components/admin/TimeOffManagement';
 import Security from './components/admin/SecuritySimple';
 import BackupRestore from './components/admin/BackupRestore';
 import AdminPlaceholder from './components/admin/AdminPlaceholder';
@@ -497,6 +498,16 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={['admin']}>
             <ErrorBoundary fallbackMessage="Failed to load Manage User Roles. Please try refreshing the page.">
               <ManageUserRoles />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/time-off" 
+        element={
+          <ProtectedRoute allowedRoles={['admin', 'dispatcher', 'scheduler']}>
+            <ErrorBoundary fallbackMessage="Failed to load Time-Off Management. Please try refreshing the page.">
+              <TimeOffManagement />
             </ErrorBoundary>
           </ProtectedRoute>
         } 

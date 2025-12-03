@@ -851,445 +851,176 @@ const SchedulerDashboard = ({ view }) => {
             </CardBody>
           </Card>
 
-          {/* Enhanced Real-time Statistics Dashboard */}
+          {/* Quick Actions Dropdown */}
+          <Box mb={{ base: 6, md: 8 }}>
+            <Menu>
+              <Tooltip label="Quick Actions" placement="right">
+                <MenuButton
+                  as={Button}
+                  rightIcon={<Box as={ChevronDownIcon} w={5} h={5} />}
+                  leftIcon={<Box as={AdjustmentsHorizontalIcon} w={5} h={5} />}
+                  size="md"
+                  variant="solid"
+                  colorScheme="green"
+                >
+                  Quick Actions
+                </MenuButton>
+              </Tooltip>
+              <MenuList>
+                <MenuItem 
+                  icon={<Box as={PlusIcon} w={5} h={5} />}
+                  onClick={onOpen}
+                >
+                  Schedule Trip
+                </MenuItem>
+                <MenuItem 
+                  icon={<Box as={MagnifyingGlassIcon} w={5} h={5} />}
+                  onClick={() => navigate('/scheduler?view=manage')}
+                  fontWeight={isManageView ? "bold" : "normal"}
+                  bg={isManageView ? "blue.50" : "transparent"}
+                >
+                  Trip Management
+                </MenuItem>
+                <MenuItem 
+                  icon={<Box as={CalendarDaysIcon} w={5} h={5} />}
+                  onClick={() => navigate('/scheduler?view=calendar')}
+                  fontWeight={isCalendarView ? "bold" : "normal"}
+                  bg={isCalendarView ? "blue.50" : "transparent"}
+                >
+                  Calendar View
+                </MenuItem>
+                <MenuItem 
+                  icon={<Box as={CalendarDaysIcon} w={5} h={5} />}
+                  onClick={() => navigate('/scheduler')}
+                  fontWeight={!isManageView && !isCalendarView ? "bold" : "normal"}
+                  bg={!isManageView && !isCalendarView ? "blue.50" : "transparent"}
+                >
+                  Dashboard Overview
+                </MenuItem>
+                <MenuItem 
+                  icon={<Box as={DocumentTextIcon} w={5} h={5} />}
+                  onClick={() => navigate('/scheduler/recurring-trips')}
+                >
+                  Recurring Trips
+                </MenuItem>
+                
+                <MenuDivider />
+                
+                <MenuItem 
+                  icon={<Box as={UserGroupIconSolid} w={5} h={5} />}
+                  onClick={() => navigate('/riders?tab=all-riders')}
+                >
+                  All Riders
+                </MenuItem>
+                <MenuItem 
+                  icon={<Box as={ChartBarIcon} w={5} h={5} />}
+                  onClick={() => navigate('/admin/analytics')}
+                >
+                  Analytics Dashboard
+                </MenuItem>
+                
+                <MenuDivider />
+                
+                <MenuItem 
+                  icon={<Box as={ArrowDownTrayIcon} w={5} h={5} />}
+                >
+                  Export Schedule
+                </MenuItem>
+                <MenuItem 
+                  icon={<Box as={Cog6ToothIcon} w={5} h={5} />}
+                >
+                  Settings
+                </MenuItem>
+              </MenuList>
+            </Menu>
+          </Box>
+
+          {/* Statistics Dashboard */}
           <SimpleGrid 
-            columns={statsColumns}
-            spacing={{ base: 4, md: 6 }} 
+            columns={{ base: 2, md: 4 }}
+            spacing={{ base: 3, md: 4 }} 
             mb={{ base: 6, md: 8 }}
           >
+            {/* Today's Trips */}
             <Card 
               bg={cardBg}
               shadow="md" 
               _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
               transition="all 0.2s"
-              borderLeft="4px solid"
-              borderLeftColor="green.500"
-              overflow="hidden"
-            >
-              <CardBody p={{ base: 3, md: 4 }}>
-                <Stat>
-                  <HStack justify="space-between" align="flex-start" mb={2}>
-                    <Box as={CalendarDaysIconSolid} w={5} h={5} color="green.500" flexShrink={0} />
-                    <CircularProgress 
-                      value={schedulerStats.todayCompletionRate} 
-                      size="32px" 
-                      color="green.500"
-                      trackColor={borderColor}
-                      thickness="8px"
-                      flexShrink={0}
-                    >
-                      <CircularProgressLabel fontSize="2xs" fontWeight="bold">
-                        {Math.round(schedulerStats.todayCompletionRate)}%
-                      </CircularProgressLabel>
-                    </CircularProgress>
-                  </HStack>
-                  <StatNumber 
-                    fontSize={{ base: "2xl", md: "3xl" }} 
-                    fontWeight="bold" 
-                    color={primaryColor}
-                    lineHeight="1"
-                    mb={1}
-                  >
-                    {schedulerStats.todaysTrips}
-                  </StatNumber>
-                  <StatLabel 
-                    color={mutedColor}
-                    fontSize={{ base: "xs", md: "sm" }}
-                    fontWeight="medium"
-                    noOfLines={1}
-                  >
-                    Today's Trips
-                  </StatLabel>
-                  <StatHelpText fontSize="2xs" color={mutedColor} mb={0}>
-                    {schedulerStats.todayCompletionRate}% completed
-                  </StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-            
-            <Card 
-              bg={cardBg}
-              shadow="md" 
-              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
-              transition="all 0.2s"
-              borderLeft="4px solid"
-              borderLeftColor="blue.500"
-              overflow="hidden"
-            >
-              <CardBody p={{ base: 3, md: 4 }}>
-                <Stat>
-                  <HStack justify="space-between" align="flex-start" mb={2}>
-                    <Box as={ClockIconSolid} w={5} h={5} color="blue.500" flexShrink={0} />
-                    {schedulerStats.upcomingTrips > 10 && (
-                      <Badge colorScheme="blue" fontSize="2xs" flexShrink={0}>
-                        Active
-                      </Badge>
-                    )}
-                  </HStack>
-                  <StatNumber 
-                    fontSize={{ base: "2xl", md: "3xl" }} 
-                    fontWeight="bold" 
-                    color="blue.500"
-                    lineHeight="1"
-                    mb={1}
-                  >
-                    {schedulerStats.upcomingTrips}
-                  </StatNumber>
-                  <StatLabel 
-                    color={mutedColor}
-                    fontSize={{ base: "xs", md: "sm" }}
-                    fontWeight="medium"
-                    noOfLines={1}
-                  >
-                    Upcoming Trips
-                  </StatLabel>
-                  <StatHelpText fontSize="2xs" color={mutedColor} mb={0}>
-                    Scheduled ahead
-                  </StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-
-            <Card 
-              bg={cardBg}
-              shadow="md" 
-              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
-              transition="all 0.2s"
-              borderLeft="4px solid"
-              borderLeftColor="purple.500"
-              overflow="hidden"
-            >
-              <CardBody p={{ base: 3, md: 4 }}>
-                <Stat>
-                  <HStack justify="space-between" align="flex-start" mb={2}>
-                    <Box as={UserGroupIconSolid} w={5} h={5} color="purple.500" flexShrink={0} />
-                    <CircularProgress 
-                      value={schedulerStats.assignmentRate} 
-                      size="32px" 
-                      color="purple.500"
-                      trackColor={borderColor}
-                      thickness="8px"
-                      flexShrink={0}
-                    >
-                      <CircularProgressLabel fontSize="2xs" fontWeight="bold">
-                        {Math.round(schedulerStats.assignmentRate)}%
-                      </CircularProgressLabel>
-                    </CircularProgress>
-                  </HStack>
-                  <StatNumber 
-                    fontSize={{ base: "2xl", md: "3xl" }} 
-                    fontWeight="bold" 
-                    color="purple.500"
-                    lineHeight="1"
-                    mb={1}
-                  >
-                    {schedulerStats.assignedTrips}
-                  </StatNumber>
-                  <StatLabel 
-                    color={mutedColor}
-                    fontSize={{ base: "xs", md: "sm" }}
-                    fontWeight="medium"
-                    noOfLines={1}
-                  >
-                    Assigned Trips
-                  </StatLabel>
-                  <StatHelpText fontSize="2xs" color={mutedColor} mb={0}>
-                    {schedulerStats.unassignedTrips} unassigned
-                  </StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-
-            <Card 
-              bg={cardBg}
-              shadow="md" 
-              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
-              transition="all 0.2s"
-              borderLeft="4px solid"
-              borderLeftColor="orange.500"
-              overflow="hidden"
-            >
-              <CardBody p={{ base: 3, md: 4 }}>
-                <Stat>
-                  <HStack justify="space-between" align="flex-start" mb={2}>
-                    <Box as={CheckCircleIconSolid} w={5} h={5} color="orange.500" flexShrink={0} />
-                    <Badge colorScheme="green" fontSize="2xs" flexShrink={0}>
-                      +{schedulerStats.completedTrips > 50 ? '15%' : '8%'}
-                    </Badge>
-                  </HStack>
-                  <StatNumber 
-                    fontSize={{ base: "2xl", md: "3xl" }} 
-                    fontWeight="bold" 
-                    color={successColor}
-                    lineHeight="1"
-                    mb={1}
-                  >
-                    {schedulerStats.completedTrips}
-                  </StatNumber>
-                  <StatLabel 
-                    color={mutedColor}
-                    fontSize={{ base: "xs", md: "sm" }}
-                    fontWeight="medium"
-                    noOfLines={1}
-                  >
-                    Completed Trips
-                  </StatLabel>
-                  <StatHelpText fontSize="2xs" color="green.500" mb={0}>
-                    <StatArrow type="increase" />
-                    {schedulerStats.completionRate}% success rate
-                  </StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-          </SimpleGrid>
-          
-          {/* Quick Actions Section */}
-          <Card mb={{ base: 6, md: 8 }} bg={cardBg}>
-            <CardHeader>
-              <Heading size="md" display="flex" alignItems="center" gap={3}>
-                <Box as={AdjustmentsHorizontalIcon} w={5} h={5} color="green.500" />
-                Quick Actions
-              </Heading>
-            </CardHeader>
-            <CardBody pt={0}>
-              <Wrap spacing={4}>
-                <WrapItem>
-                  <Button 
-                    leftIcon={<Box as={PlusIcon} w={4} h={4} />}
-                    colorScheme="green" 
-                    onClick={onOpen}
-                    size={{ base: "md", md: "md" }}
-                    variant="solid"
-                  >
-                    Schedule Trip
-                  </Button>
-                </WrapItem>
-                <WrapItem>
-                  <Button
-                    leftIcon={<Box as={MagnifyingGlassIcon} w={4} h={4} />}
-                    colorScheme="blue"
-                    variant="outline"
-                    onClick={() => setActiveTab(3)} // All trips tab
-                    size={{ base: "md", md: "md" }}
-                  >
-                    View All Trips
-                  </Button>
-                </WrapItem>
-                <WrapItem>
-                  <Button
-                    leftIcon={<Box as={UserGroupIconSolid} w={4} h={4} />}
-                    colorScheme="purple"
-                    variant="outline"
-                    onClick={() => navigate('/riders?tab=all-riders')}
-                    size={{ base: "md", md: "md" }}
-                  >
-                    All Riders
-                  </Button>
-                </WrapItem>
-                <WrapItem>
-                  <Button
-                    leftIcon={<Box as={CalendarDaysIcon} w={4} h={4} />}
-                    colorScheme="teal"
-                    variant="outline"
-                    onClick={() => window.location.href = '/scheduler/calendar'}
-                    size={{ base: "md", md: "md" }}
-                  >
-                    Calendar View
-                  </Button>
-                </WrapItem>
-                <WrapItem>
-                  <Menu>
-                    <MenuButton 
-                      as={Button} 
-                      rightIcon={<Box as={ChevronDownIcon} w={4} h={4} />}
-                      size={{ base: "md", md: "md" }}
-                      variant="outline"
-                    >
-                      Advanced Options
-                    </MenuButton>
-                    <MenuList>
-                      <MenuItem icon={<Box as={DocumentTextIcon} w={4} h={4} />}>
-                        Recurring Trips
-                      </MenuItem>
-                      <MenuItem icon={<Box as={ChartBarIcon} w={4} h={4} />}>
-                        Analytics Dashboard
-                      </MenuItem>
-                      <MenuDivider />
-                      <MenuItem icon={<Box as={ArrowDownTrayIcon} w={4} h={4} />}>
-                        Export Schedule
-                      </MenuItem>
-                      <MenuItem icon={<Box as={Cog6ToothIcon} w={4} h={4} />}>
-                        Settings
-                      </MenuItem>
-                    </MenuList>
-                  </Menu>
-                </WrapItem>
-              </Wrap>
-            </CardBody>
-          </Card>
-          
-          {/* Enhanced Statistics Cards - Mobile-First 2x2 Grid */}
-          <Grid 
-            templateColumns={{ 
-              base: "repeat(2, 1fr)", 
-              md: "repeat(2, 1fr)",
-              lg: "repeat(4, 1fr)"
-            }} 
-            gap={{ base: 3, md: 4, lg: 6 }} 
-            mb={{ base: 6, md: 8 }}
-          >
-            {/* Today's Trips Card */}
-            <Card 
-              shadow="lg" 
-              _hover={{ shadow: "xl", transform: "translateY(-2px)" }} 
-              transition="all 0.3s ease"
-              bg="white"
               borderTop="4px solid"
               borderTopColor="green.500"
-              minH={{ base: "120px", md: "140px" }}
             >
-              <CardBody 
-                p={{ base: 4, md: 6 }} 
-                display="flex"
-                flexDirection="column"
-                justifyContent="center"
-                alignItems="center"
-                textAlign="center"
-              >
-                <Text 
-                  fontSize={{ base: "2xl", md: "3xl", lg: "4xl" }} 
-                  fontWeight="bold" 
-                  color="green.600"
-                  mb={2}
-                >
-                  {todayTrips.length}
+              <CardBody p={4} textAlign="center">
+                <Box as={CalendarDaysIconSolid} w={6} h={6} color="green.500" mx="auto" mb={2} />
+                <Text fontSize="3xl" fontWeight="bold" color="green.600" mb={1}>
+                  {schedulerStats.todaysTrips}
                 </Text>
-                <Text 
-                  fontSize={{ base: "xs", md: "sm", lg: "md" }}
-                  color="gray.600"
-                  fontWeight="semibold"
-                  textAlign="center"
-                  lineHeight="short"
-                >
+                <Text fontSize="sm" color="gray.600" fontWeight="medium">
                   Today's Trips
                 </Text>
               </CardBody>
             </Card>
             
-            {/* Pending Trips Card */}
+            {/* Pending Trips */}
             <Card 
-              shadow="lg" 
-              _hover={{ shadow: "xl", transform: "translateY(-2px)" }} 
-              transition="all 0.3s ease"
-              bg="white"
+              bg={cardBg}
+              shadow="md" 
+              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
+              transition="all 0.2s"
               borderTop="4px solid"
               borderTopColor="orange.500"
-              minH={{ base: "120px", md: "140px" }}
             >
-              <CardBody 
-                p={{ base: 4, md: 6 }} 
-                display="flex"
-                flexDirection="column"
-                justifyContent="center"
-                alignItems="center"
-                textAlign="center"
-              >
-                <Text 
-                  fontSize={{ base: "2xl", md: "3xl", lg: "4xl" }} 
-                  fontWeight="bold" 
-                  color="orange.500"
-                  mb={2}
-                >
+              <CardBody p={4} textAlign="center">
+                <Box as={ClockIconSolid} w={6} h={6} color="orange.500" mx="auto" mb={2} />
+                <Text fontSize="3xl" fontWeight="bold" color="orange.600" mb={1}>
                   {pendingTrips.length}
                 </Text>
-                <Text 
-                  fontSize={{ base: "xs", md: "sm", lg: "md" }}
-                  color="gray.600"
-                  fontWeight="semibold"
-                  textAlign="center"
-                  lineHeight="short"
-                >
+                <Text fontSize="sm" color="gray.600" fontWeight="medium">
                   Pending Trips
                 </Text>
               </CardBody>
             </Card>
-            
-            {/* Completed Trips Card */}
+
+            {/* Completed Trips */}
             <Card 
-              shadow="lg" 
-              _hover={{ shadow: "xl", transform: "translateY(-2px)" }} 
-              transition="all 0.3s ease"
-              bg="white"
+              bg={cardBg}
+              shadow="md" 
+              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
+              transition="all 0.2s"
               borderTop="4px solid"
               borderTopColor="green.400"
-              minH={{ base: "120px", md: "140px" }}
             >
-              <CardBody 
-                p={{ base: 4, md: 6 }} 
-                display="flex"
-                flexDirection="column"
-                justifyContent="center"
-                alignItems="center"
-                textAlign="center"
-              >
-                <Text 
-                  fontSize={{ base: "2xl", md: "3xl", lg: "4xl" }} 
-                  fontWeight="bold" 
-                  color="green.500"
-                  mb={2}
-                >
+              <CardBody p={4} textAlign="center">
+                <Box as={CheckCircleIconSolid} w={6} h={6} color="green.400" mx="auto" mb={2} />
+                <Text fontSize="3xl" fontWeight="bold" color="green.500" mb={1}>
                   {completedTrips.length}
                 </Text>
-                <Text 
-                  fontSize={{ base: "xs", md: "sm", lg: "md" }}
-                  color="gray.600"
-                  fontWeight="semibold"
-                  textAlign="center"
-                  lineHeight="short"
-                >
+                <Text fontSize="sm" color="gray.600" fontWeight="medium">
                   Completed Trips
                 </Text>
               </CardBody>
             </Card>
-            
-            {/* Available Dispatchers Card */}
+
+            {/* Available Dispatchers */}
             <Card 
-              shadow="lg" 
-              _hover={{ shadow: "xl", transform: "translateY(-2px)" }} 
-              transition="all 0.3s ease"
-              bg="white"
+              bg={cardBg}
+              shadow="md" 
+              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
+              transition="all 0.2s"
               borderTop="4px solid"
-              borderTopColor="green.700"
-              minH={{ base: "120px", md: "140px" }}
+              borderTopColor="blue.500"
             >
-              <CardBody 
-                p={{ base: 4, md: 6 }} 
-                display="flex"
-                flexDirection="column"
-                justifyContent="center"
-                alignItems="center"
-                textAlign="center"
-              >
-                <Text 
-                  fontSize={{ base: "2xl", md: "3xl", lg: "4xl" }} 
-                  fontWeight="bold" 
-                  color="green.700"
-                  mb={2}
-                >
+              <CardBody p={4} textAlign="center">
+                <Box as={UserGroupIconSolid} w={6} h={6} color="blue.500" mx="auto" mb={2} />
+                <Text fontSize="3xl" fontWeight="bold" color="blue.600" mb={1}>
                   {dispatchers.length}
                 </Text>
-                <Text 
-                  fontSize={{ base: "xs", md: "sm", lg: "md" }}
-                  color="gray.600"
-                  fontWeight="semibold"
-                  textAlign="center"
-                  lineHeight="short"
-                >
+                <Text fontSize="sm" color="gray.600" fontWeight="medium">
                   Available Dispatchers
                 </Text>
               </CardBody>
             </Card>
-        </Grid>
+          </SimpleGrid>
 
           {/* Enhanced Action Buttons - Mobile-First Design */}
           <Card 

@@ -79,6 +79,27 @@ const tripSchema = new mongoose.Schema({
     default: 'pending'
   },
   
+  // Status history for audit trail and reversion
+  statusHistory: [{
+    status: {
+      type: String,
+      enum: ['pending', 'assigned', 'in_progress', 'completed', 'cancelled'],
+      required: true
+    },
+    changedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    changedAt: {
+      type: Date,
+      default: Date.now,
+      required: true
+    },
+    reason: String, // For cancellations or special circumstances
+    metadata: mongoose.Schema.Types.Mixed // Additional context
+  }],
+  
   // Time tracking
   actualPickupTime: Date,
   actualDropoffTime: Date,

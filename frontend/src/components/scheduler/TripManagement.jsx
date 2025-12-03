@@ -86,7 +86,8 @@ import {
   Bars3Icon,
   CheckCircleIcon,
   XCircleIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  ArrowUturnLeftIcon
 } from '@heroicons/react/24/outline';
 import {
   TruckIcon as TruckIconSolid,
@@ -140,7 +141,12 @@ const TripManagement = ({ onTripUpdate }) => {
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
   const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  const { isOpen: isRevertOpen, onOpen: onRevertOpen, onClose: onRevertClose } = useDisclosure();
   const cancelRef = React.useRef();
+
+  // Revert State
+  const [revertReason, setRevertReason] = useState('');
+  const [isReverting, setIsReverting] = useState(false);
 
   const toast = useToast();
   const isMobile = useBreakpointValue({ base: true, md: false });
@@ -199,6 +205,44 @@ const TripManagement = ({ onTripUpdate }) => {
           estimatedDistance: '8.1 miles',
           fare: '$22.75',
           notes: 'Medical appointment',
+          createdAt: new Date().toISOString()
+        },
+        {
+          _id: '3',
+          riderName: 'Mike Davis',
+          riderPhone: '(555) 222-3333',
+          riderEmail: 'mike.d@email.com',
+          pickupLocation: '100 Broadway Ave, Downtown',
+          dropoffLocation: '200 Park St, Central',
+          scheduledDate: '2025-11-03',
+          scheduledTime: '11:00',
+          status: 'completed',
+          priority: 'medium',
+          assignedDriver: 'Driver C',
+          estimatedDuration: '25 min',
+          estimatedDistance: '4.5 miles',
+          fare: '$18.00',
+          notes: 'Completed trip - test revert',
+          createdAt: new Date().toISOString(),
+          actualPickupTime: new Date().toISOString()
+        },
+        {
+          _id: '4',
+          riderName: 'Emily Brown',
+          riderPhone: '(555) 444-5555',
+          riderEmail: 'emily.b@email.com',
+          pickupLocation: '500 Market St, Shopping District',
+          dropoffLocation: '600 Riverside Dr, Waterfront',
+          scheduledDate: '2025-11-03',
+          scheduledTime: '16:00',
+          status: 'cancelled',
+          priority: 'low',
+          assignedDriver: 'Driver D',
+          estimatedDuration: '35 min',
+          estimatedDistance: '6.8 miles',
+          fare: '$20.50',
+          notes: 'Cancelled by rider - test revert',
+          cancellationReason: 'Rider cancelled',
           createdAt: new Date().toISOString()
         }
       ];
@@ -361,6 +405,49 @@ const TripManagement = ({ onTripUpdate }) => {
   const handleDeleteTrip = (trip) => {
     setSelectedTrip(trip);
     onDeleteOpen();
+  };
+
+  const handleRevertTrip = (trip) => {
+    setSelectedTrip(trip);
+    setRevertReason('');
+    onRevertOpen();
+  };
+
+  const confirmRevertStatus = async () => {
+    if (!selectedTrip) return;
+
+    try {
+      setIsReverting(true);
+      
+      const response = await axios.post(`/api/trips/${selectedTrip._id}/revert-status`, {
+        reason: revertReason || undefined
+      });
+
+      toast({
+        title: 'Status Reverted Successfully',
+        description: `Trip status changed from ${response.data.reversion.oldStatus} to ${response.data.reversion.newStatus}`,
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+
+      // Refresh trips
+      await fetchTrips();
+      onTripUpdate && onTripUpdate();
+      onRevertClose();
+      setRevertReason('');
+    } catch (error) {
+      console.error('Error reverting trip status:', error);
+      toast({
+        title: 'Error Reverting Status',
+        description: error.response?.data?.message || 'Failed to revert trip status. Please try again.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsReverting(false);
+    }
   };
 
   const submitTrip = async (isEdit = false) => {
@@ -531,17 +618,19 @@ const TripManagement = ({ onTripUpdate }) => {
 
   if (loading) {
     return (
-      <Center h="400px">
-        <VStack spacing={4}>
-          <Spinner size="xl" color="blue.500" />
-          <Text>Loading trips...</Text>
-        </VStack>
-      </Center>
+      <Box minH="400px" bg={cardBg}>
+        <Center h="400px">
+          <VStack spacing={4}>
+            <Spinner size="xl" color="blue.500" />
+            <Text>Loading trips...</Text>
+          </VStack>
+        </Center>
+      </Box>
     );
   }
 
   return (
-    <Box>
+    <Box minH="100vh" bg="gray.50" py={{ base: 4, md: 6 }}>
       {/* Enhanced Header Section with Breadcrumbs and Statistics */}
       <Card 
         mb={cardSpacing} 
@@ -779,14 +868,14 @@ const TripManagement = ({ onTripUpdate }) => {
                             {trip.riderName}
                           </Text>
                           <HStack spacing={2}>
-                            <PhoneIcon boxSize={3} color="blue.400" />
+                            <Box as={PhoneIcon} w={3} h={3} color="blue.400" />
                             <Text fontSize="xs" color="gray.600">
                               {trip.riderPhone}
                             </Text>
                           </HStack>
                           {trip.riderEmail && (
                             <HStack spacing={2}>
-                              <EmailIcon boxSize={3} color="gray.400" />
+                              <Box as={EnvelopeIcon} w={3} h={3} color="gray.400" />
                               <Text fontSize="xs" color="gray.600">
                                 {trip.riderEmail}
                               </Text>
@@ -909,6 +998,17 @@ const TripManagement = ({ onTripUpdate }) => {
                             onClick={() => handleEditTrip(trip)}
                             _hover={{ bg: "orange.50" }}
                           />
+                          {(trip.status === 'completed' || trip.status === 'cancelled') && (
+                            <IconButton
+                              size="sm"
+                              icon={<Box as={ArrowUturnLeftIcon} w={4} h={4} />}
+                              variant="ghost"
+                              colorScheme="purple"
+                              title={`Revert ${trip.status === 'completed' ? 'Completion' : 'Cancellation'}`}
+                              onClick={() => handleRevertTrip(trip)}
+                              _hover={{ bg: "purple.50" }}
+                            />
+                          )}
                           <IconButton
                             size="sm"
                             icon={<Box as={TrashIcon} w={4} h={4} />}
@@ -935,7 +1035,7 @@ const TripManagement = ({ onTripUpdate }) => {
                           </Text>
                           {!searchTerm && statusFilter === 'all' && driverFilter === 'all' && dateFilter === 'all' && (
                             <Button
-                              leftIcon={<AddIcon />}
+                              leftIcon={<Box as={PlusIcon} w={4} h={4} />}
                               colorScheme="blue"
                               variant="outline"
                               onClick={handleAddTrip}
@@ -961,7 +1061,7 @@ const TripManagement = ({ onTripUpdate }) => {
         <ModalContent>
           <ModalHeader>
             <HStack>
-              <FaCalendarPlus color="blue" />
+              <Box as={PlusIcon} w={5} h={5} color="blue.500" />
               <Text>Create New Trip</Text>
             </HStack>
           </ModalHeader>
@@ -1164,7 +1264,7 @@ const TripManagement = ({ onTripUpdate }) => {
         <ModalContent>
           <ModalHeader>
             <HStack>
-              <EditIcon color="orange" />
+              <Box as={PencilIcon} w={5} h={5} color="orange.500" />
               <Text>Edit Trip</Text>
             </HStack>
           </ModalHeader>
@@ -1373,7 +1473,7 @@ const TripManagement = ({ onTripUpdate }) => {
         <ModalContent>
           <ModalHeader>
             <HStack>
-              <ViewIcon color="blue" />
+              <Box as={EyeIcon} w={5} h={5} color="blue.500" />
               <Text>Trip Details</Text>
             </HStack>
           </ModalHeader>
@@ -1546,7 +1646,7 @@ const TripManagement = ({ onTripUpdate }) => {
             </Button>
             <Button
               colorScheme="orange"
-              leftIcon={<EditIcon />}
+              leftIcon={<Box as={PencilIcon} w={4} h={4} />}
               onClick={() => {
                 onViewClose();
                 handleEditTrip(selectedTrip);
@@ -1557,6 +1657,103 @@ const TripManagement = ({ onTripUpdate }) => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Revert Status Confirmation Dialog */}
+      <AlertDialog
+        isOpen={isRevertOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onRevertClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              <HStack>
+                <Box as={ArrowUturnLeftIcon} w={5} h={5} color="purple.500" />
+                <Text>Revert Trip Status</Text>
+              </HStack>
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              <VStack align="stretch" spacing={4}>
+                <Text>
+                  Are you sure you want to revert the status of this trip for{' '}
+                  <Text as="span" fontWeight="bold" color="purple.600">
+                    {selectedTrip?.riderName}
+                  </Text>?
+                </Text>
+
+                <Box p={3} bg="purple.50" rounded="md" border="1px" borderColor="purple.200">
+                  <VStack align="stretch" spacing={2}>
+                    <Text fontSize="sm">
+                      <strong>Current Status:</strong>{' '}
+                      <Badge colorScheme={getStatusColor(selectedTrip?.status)} textTransform="capitalize">
+                        {selectedTrip?.status?.replace('-', ' ')}
+                      </Badge>
+                    </Text>
+                    <Text fontSize="sm">
+                      <strong>Trip Details:</strong><br />
+                      📍 {typeof selectedTrip?.pickupLocation === 'object' 
+                        ? selectedTrip?.pickupLocation.address 
+                        : selectedTrip?.pickupLocation} → {typeof selectedTrip?.dropoffLocation === 'object'
+                        ? selectedTrip?.dropoffLocation.address
+                        : selectedTrip?.dropoffLocation}
+                      <br />
+                      📅 {selectedTrip && new Date(selectedTrip.scheduledDate).toLocaleDateString()} at {selectedTrip?.scheduledTime}
+                    </Text>
+                  </VStack>
+                </Box>
+
+                <Alert status="info" variant="left-accent">
+                  <AlertIcon />
+                  <Box fontSize="sm">
+                    {selectedTrip?.status === 'completed' && (
+                      <Text>
+                        This trip will be reverted to{' '}
+                        <strong>
+                          {selectedTrip?.actualPickupTime ? 'In Progress' : 
+                           selectedTrip?.assignedDriver ? 'Assigned' : 'Pending'}
+                        </strong> status.
+                      </Text>
+                    )}
+                    {selectedTrip?.status === 'cancelled' && (
+                      <Text>
+                        This trip will be reverted to its previous status before cancellation.
+                      </Text>
+                    )}
+                  </Box>
+                </Alert>
+
+                <FormControl>
+                  <FormLabel fontSize="sm">Reason for Reverting (Optional)</FormLabel>
+                  <Textarea
+                    value={revertReason}
+                    onChange={(e) => setRevertReason(e.target.value)}
+                    placeholder="Enter reason for reverting this status change..."
+                    size="sm"
+                    rows={3}
+                  />
+                </FormControl>
+              </VStack>
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onRevertClose} isDisabled={isReverting}>
+                Cancel
+              </Button>
+              <Button 
+                colorScheme="purple" 
+                onClick={confirmRevertStatus} 
+                ml={3}
+                isLoading={isReverting}
+                loadingText="Reverting..."
+                leftIcon={<Box as={ArrowUturnLeftIcon} w={4} h={4} />}
+              >
+                Revert Status
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog

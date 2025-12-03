@@ -662,44 +662,30 @@ const TripMapModal = ({ isOpen, onClose, trip }) => {
           </Grid>
         </ModalBody>
 
-        <ModalFooter flexDirection={{ base: 'column', md: 'row' }} gap={3} pt={4}>
+        <ModalFooter justifyContent="center" pt={6} pb={6}>
           <Button
             leftIcon={<FaMapMarkedAlt />}
-            bg="linear-gradient(135deg, #4285F4 0%, #34A853 100%)"
-            color="white"
+            size="lg"
+            colorScheme="green"
             onClick={openInGoogleMaps}
             w={{ base: 'full', md: 'auto' }}
-            flex={{ base: 1, md: 0 }}
-            borderRadius="full"
-            px={6}
-            h="48px"
-            fontWeight="semibold"
-            fontSize={{ base: 'md', md: 'sm' }}
-            boxShadow="md"
+            minW={{ md: '280px' }}
+            borderRadius="xl"
+            h="56px"
+            fontWeight="bold"
+            fontSize="md"
+            boxShadow="lg"
             _hover={{
-              bg: 'linear-gradient(135deg, #3367D6 0%, #2D8F47 100%)',
               transform: 'translateY(-2px)',
-              boxShadow: 'lg'
+              boxShadow: '2xl'
             }}
             _active={{
               transform: 'translateY(0)',
-              boxShadow: 'md'
+              boxShadow: 'lg'
             }}
             transition="all 0.2s"
           >
-            View Route in Google Maps
-          </Button>
-          <Button 
-            onClick={onClose}
-            w={{ base: 'full', md: 'auto' }}
-            variant="outline"
-            borderRadius="full"
-            h="48px"
-            px={6}
-            fontWeight="semibold"
-            fontSize={{ base: 'md', md: 'sm' }}
-          >
-            Close
+            View In Google Maps
           </Button>
         </ModalFooter>
       </ModalContent>

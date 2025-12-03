@@ -4,8 +4,9 @@ import bcrypt from 'bcryptjs';
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
-    required: true,
+    required: false, // Temporarily optional for migration - should be true after migration
     unique: true,
+    sparse: true, // Allow null values to be non-unique during migration
     lowercase: true,
     trim: true,
     minlength: 3,

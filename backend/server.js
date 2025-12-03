@@ -19,6 +19,7 @@ import gpsTrackingRoutes from './routes/gpsTracking.js';
 import notificationsRoutes from './routes/notifications.js';
 import departureMonitoringRoutes from './routes/departureMonitoring.js';
 import tripMonitoringRoutes from './routes/tripMonitoring.js';
+import workScheduleRoutes from './routes/workSchedule.js';
 
 // Import services
 import departureMonitoringService from './services/departureMonitoringService.js';
@@ -78,6 +79,7 @@ app.use('/api/gps', gpsTrackingRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/departure-monitoring', departureMonitoringRoutes);
 app.use('/api/trip-monitoring', tripMonitoringRoutes);
+app.use('/api/work-schedule', workScheduleRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

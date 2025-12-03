@@ -106,7 +106,9 @@ import { useAuth } from "../../contexts/AuthContext";
 import Navbar from '../shared/Navbar';
 import GoogleMap from '../maps/GoogleMap';
 import RiderInfoModal from '../shared/RiderInfoModal';
+import TripMapModal from '../maps/TripMapModal';
 import DriveMode from './DriveMode';
+import WorkScheduleButton from '../shared/WorkScheduleButton';
 
 const ComprehensiveDriverDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -122,10 +124,12 @@ const ComprehensiveDriverDashboard = () => {
   const [reportType, setReportType] = useState('all');
   const [selectedRider, setSelectedRider] = useState({ id: null, name: null });
   const [selectedTrip, setSelectedTrip] = useState(null);
+  const [selectedTripForMap, setSelectedTripForMap] = useState(null);
   const { user } = useAuth();
   const toast = useToast();
   const { isOpen: isReportOpen, onOpen: onReportOpen, onClose: onReportClose } = useDisclosure();
   const { isOpen: isRiderInfoOpen, onOpen: onRiderInfoOpen, onClose: onRiderInfoClose } = useDisclosure();
+  const { isOpen: isMapOpen, onOpen: onMapOpen, onClose: onMapClose } = useDisclosure();
 
   // Color scheme
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -693,6 +697,17 @@ const ComprehensiveDriverDashboard = () => {
                                                 }}
                                               >
                                                 Drive
+                                              </Button>
+                                              <Button
+                                                size="sm"
+                                                colorScheme="blue"
+                                                leftIcon={<Box as={MapIcon} w={4} h={4} />}
+                                                onClick={() => {
+                                                  setSelectedTripForMap(trip);
+                                                  onMapOpen();
+                                                }}
+                                              >
+                                                Map View
                                               </Button>
                                               {trip.phone && (
                                                 <Button
@@ -1283,6 +1298,17 @@ const ComprehensiveDriverDashboard = () => {
                                               >
                                                 Drive
                                               </Button>
+                                              <Button
+                                                size="sm"
+                                                colorScheme="blue"
+                                                leftIcon={<Box as={MapIcon} w={4} h={4} />}
+                                                onClick={() => {
+                                                  setSelectedTripForMap(trip);
+                                                  onMapOpen();
+                                                }}
+                                              >
+                                                Map View
+                                              </Button>
                                               {trip.phone && (
                                                 <Button
                                                   size="sm"
@@ -1464,6 +1490,16 @@ const ComprehensiveDriverDashboard = () => {
                                           Drive
                                         </Button>
                                       )}
+                                      <IconButton
+                                        size="sm"
+                                        icon={<Box as={MapIcon} w={4} h={4} />}
+                                        colorScheme="blue"
+                                        aria-label="View map"
+                                        onClick={() => {
+                                          setSelectedTripForMap(trip);
+                                          onMapOpen();
+                                        }}
+                                      />
                                       {trip.phone && (
                                         <IconButton
                                           size="sm"
@@ -1893,9 +1929,17 @@ const ComprehensiveDriverDashboard = () => {
                                 </VStack>
                               </Grid>
 
-                              <Button leftIcon={<Box as={PencilIcon} w={4} h={4} />} colorScheme="brand" variant="outline">
-                                Edit Profile
-                              </Button>
+                              <HStack spacing={3}>
+                                <WorkScheduleButton 
+                                  userId={user?._id}
+                                  userName={user?.name}
+                                  variant="outline"
+                                  colorScheme="blue"
+                                />
+                                <Button leftIcon={<Box as={PencilIcon} w={4} h={4} />} colorScheme="brand" variant="outline">
+                                  Edit Profile
+                                </Button>
+                              </HStack>
                             </VStack>
                           </CardBody>
                         </Card>
@@ -1990,6 +2034,13 @@ const ComprehensiveDriverDashboard = () => {
         onClose={onRiderInfoClose}
         riderId={selectedRider.id}
         riderName={selectedRider.name}
+      />
+
+      {/* Trip Map Modal */}
+      <TripMapModal
+        isOpen={isMapOpen}
+        onClose={onMapClose}
+        trip={selectedTripForMap}
       />
     </Box>
   );

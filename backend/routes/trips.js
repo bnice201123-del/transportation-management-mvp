@@ -782,6 +782,24 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     }
 
     const oldStatus = trip.status;
+    
+    // Add to status history before changing
+    if (!trip.statusHistory) {
+      trip.statusHistory = [];
+    }
+    
+    trip.statusHistory.push({
+      status: oldStatus,
+      changedBy: req.user._id,
+      changedAt: new Date(),
+      reason: tripMetrics?.cancellationReason || req.body.reason,
+      metadata: { 
+        fromEndpoint: 'status_update',
+        location,
+        tripMetrics 
+      }
+    });
+    
     trip.status = status;
 
     // Update timestamps based on status
@@ -871,6 +889,141 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Update status error:', error);
     res.status(500).json({ message: 'Server error updating trip status' });
+  }
+});
+
+// Revert trip status (un-complete or un-cancel)
+router.post('/:id/revert-status', authenticateToken, authorizeRoles('dispatcher', 'scheduler', 'admin'), async (req, res) => {
+  try {
+    const { reason } = req.body;
+    
+    const trip = await Trip.findById(req.params.id);
+    if (!trip) {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+
+    const currentStatus = trip.status;
+    
+    // Only allow reverting completed or cancelled trips
+    if (currentStatus !== 'completed' && currentStatus !== 'cancelled') {
+      return res.status(400).json({ 
+        message: `Cannot revert trip with status: ${currentStatus}. Only completed or cancelled trips can be reverted.` 
+      });
+    }
+
+    // Determine the appropriate prior state based on business rules
+    let newStatus;
+    let revertReason = reason || 'Status reverted by authorized user';
+    
+    if (currentStatus === 'completed') {
+      // If trip was completed, check if it has actualPickupTime
+      // If yes, revert to in_progress. If no, revert to assigned
+      if (trip.actualPickupTime) {
+        newStatus = 'in_progress';
+        revertReason = reason || 'Un-completed trip - returning to in-progress';
+        // Clear actualDropoffTime since trip is no longer completed
+        trip.actualDropoffTime = null;
+      } else if (trip.assignedDriver) {
+        newStatus = 'assigned';
+        revertReason = reason || 'Un-completed trip - returning to assigned';
+      } else {
+        newStatus = 'pending';
+        revertReason = reason || 'Un-completed trip - returning to pending';
+      }
+    } else if (currentStatus === 'cancelled') {
+      // For cancelled trips, check the last non-cancelled status from history
+      if (trip.statusHistory && trip.statusHistory.length > 0) {
+        // Find the most recent non-cancelled status
+        const priorStatuses = trip.statusHistory
+          .filter(h => h.status !== 'cancelled')
+          .sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt));
+        
+        if (priorStatuses.length > 0) {
+          newStatus = priorStatuses[0].status;
+          revertReason = reason || `Un-cancelled trip - returning to ${newStatus}`;
+        } else {
+          // If no prior non-cancelled status, default based on assignment
+          newStatus = trip.assignedDriver ? 'assigned' : 'pending';
+          revertReason = reason || `Un-cancelled trip - returning to ${newStatus}`;
+        }
+      } else {
+        // No history available, use assignment to determine
+        newStatus = trip.assignedDriver ? 'assigned' : 'pending';
+        revertReason = reason || `Un-cancelled trip - returning to ${newStatus}`;
+      }
+      
+      // Clear cancellation data
+      trip.cancellationReason = null;
+      trip.cancelledBy = null;
+      trip.cancelledAt = null;
+      
+      // Clear trip metrics cancellation reason if present
+      if (trip.tripMetrics && trip.tripMetrics.cancellationReason) {
+        trip.tripMetrics.cancellationReason = null;
+      }
+    }
+
+    // Add to status history
+    if (!trip.statusHistory) {
+      trip.statusHistory = [];
+    }
+    
+    trip.statusHistory.push({
+      status: currentStatus,
+      changedBy: req.user._id,
+      changedAt: new Date(),
+      reason: revertReason,
+      metadata: { 
+        action: 'revert',
+        fromStatus: currentStatus,
+        toStatus: newStatus,
+        revertedBy: req.user._id
+      }
+    });
+
+    // Update status
+    trip.status = newStatus;
+    
+    await trip.save();
+
+    // Log the reversion activity
+    await logActivity(
+      req.user._id,
+      'trip_status_reverted',
+      `Reverted trip ${trip.tripId} status from ${currentStatus} to ${newStatus}`,
+      {
+        oldStatus: currentStatus,
+        newStatus: newStatus,
+        reason: revertReason,
+        revertedBy: `${req.user.firstName} ${req.user.lastName}`,
+        timestamp: new Date()
+      },
+      trip._id
+    );
+
+    const updatedTrip = await Trip.findById(trip._id)
+      .populate('rider', 'firstName lastName email phone')
+      .populate('assignedDriver', 'firstName lastName phone vehicleInfo')
+      .populate('createdBy', 'firstName lastName')
+      .populate('statusHistory.changedBy', 'firstName lastName');
+
+    res.json({
+      message: `Trip status reverted successfully from ${currentStatus} to ${newStatus}`,
+      trip: updatedTrip,
+      reversion: {
+        fromStatus: currentStatus,
+        toStatus: newStatus,
+        reason: revertReason,
+        revertedAt: new Date(),
+        revertedBy: {
+          id: req.user._id,
+          name: `${req.user.firstName} ${req.user.lastName}`
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Revert status error:', error);
+    res.status(500).json({ message: 'Server error reverting trip status', error: error.message });
   }
 });
 

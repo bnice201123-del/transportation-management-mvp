@@ -61,12 +61,15 @@ import {
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../shared/Navbar';
+import UnifiedTripManagement from '../shared/UnifiedTripManagement';
 
 const AdminDashboard = () => {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [isManageView, setIsManageView] = useState(false);
+  const [trips, setTrips] = useState([]);
   
   const toast = useToast();
   const navigate = useNavigate();
@@ -102,6 +105,15 @@ const AdminDashboard = () => {
       if (showLoading) setRefreshing(false);
     }
   }, [toast]);
+
+  const fetchTrips = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/trips');
+      setTrips(response.data?.data?.trips || response.data?.trips || []);
+    } catch (error) {
+      console.error('Error fetching trips:', error);
+    }
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -196,7 +208,7 @@ const AdminDashboard = () => {
   );
 
   // Navigation Card Component
-  const NavigationCard = ({ title, description, icon, color, path, count }) => (
+  const NavigationCard = ({ title, description, icon, color, path, count, onClick }) => (
     <Card
       bg={cardBg}
       borderColor={borderColor}
@@ -210,7 +222,7 @@ const AdminDashboard = () => {
         borderColor: `${color}.400`
       }}
       cursor="pointer"
-      onClick={() => navigate(path)}
+      onClick={onClick || (() => navigate(path))}
     >
       <CardBody p={5}>
         <VStack align="start" spacing={3}>
@@ -364,8 +376,24 @@ const AdminDashboard = () => {
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh" bg={bgColor}>
       <Navbar />
-      <Box flex="1" p={{ base: 3, md: 4 }} w="100%" overflowX="hidden">
-        <VStack align="stretch" spacing={4}>
+      <Box flex="1" w="100%" overflowX="hidden">
+        {/* Conditional rendering for different views */}
+        {isManageView ? (
+          <Box px={{ base: 3, md: 4, lg: 6 }} py={{ base: 4, md: 6 }}>
+            <UnifiedTripManagement onTripUpdate={fetchTrips} initialTrips={trips} />
+            <Button 
+              mt={4} 
+              onClick={() => setIsManageView(false)}
+              leftIcon={<RepeatIcon />}
+              variant="outline"
+              colorScheme="blue"
+            >
+              Back to Admin Dashboard
+            </Button>
+          </Box>
+        ) : (
+          <Box p={{ base: 3, md: 4 }}>
+            <VStack align="stretch" spacing={4}>
           {/* Header */}
           <Box>
             <HStack justify="space-between" mb={3} flexWrap="wrap" gap={3}>
@@ -455,6 +483,14 @@ const AdminDashboard = () => {
               color="blue"
               path="/admin/overview"
               count={analytics?.tripStats?.today}
+            />
+            <NavigationCard
+              title="Trip Management"
+              description="Create, view, edit and manage all trips"
+              icon={FaRoute}
+              color="purple"
+              onClick={() => setIsManageView(true)}
+              count={analytics?.tripStats?.total}
             />
             <NavigationCard
               title="Analytics"
@@ -565,7 +601,9 @@ const AdminDashboard = () => {
               </Button>
             </Alert>
           )}
-        </VStack>
+            </VStack>
+          </Box>
+        )}
       </Box>
     </Box>
   );

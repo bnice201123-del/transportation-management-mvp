@@ -121,7 +121,7 @@ import axios from 'axios';
 import '../../config/axios';
 import Navbar from '../shared/Navbar';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
-import TripManagement from './TripManagement';
+import UnifiedTripManagement from '../shared/UnifiedTripManagement';
 import TripManagementModal from './TripManagementModal';
 import CalendarOverview from './CalendarOverview';
 
@@ -780,7 +780,7 @@ const SchedulerDashboard = ({ view }) => {
         {/* Conditional rendering for different views */}
         {isManageView ? (
           <Box px={{ base: 3, md: 4, lg: 6 }} py={{ base: 4, md: 6 }}>
-            <TripManagement onTripUpdate={fetchTrips} initialTrips={trips} />
+            <UnifiedTripManagement onTripUpdate={fetchTrips} initialTrips={trips} />
           </Box>
         ) : isCalendarView ? (
           <Box 

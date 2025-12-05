@@ -104,7 +104,8 @@ import {
   ChevronDownIcon,
   HomeIcon,
   UserIcon,
-  CalendarIcon
+  CalendarIcon,
+  ArrowUturnLeftIcon
 } from '@heroicons/react/24/outline';
 import {
   ClockIcon as ClockIconSolid,
@@ -117,7 +118,7 @@ import {
 } from '@heroicons/react/24/solid';
 import axios from 'axios';
 import Navbar from '../shared/Navbar';
-import TripManagementModal from '../scheduler/TripManagementModal';
+import UnifiedTripManagement from '../shared/UnifiedTripManagement';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 import RiderInfoModal from '../shared/RiderInfoModal';
 import TripDetailsModal from '../scheduler/TripDetailsModal';
@@ -149,6 +150,9 @@ const DispatcherDashboard = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tripToDelete, setTripToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // View state for Trip Management
+  const [isManageView, setIsManageView] = useState(false);
   
   // Enhanced filtering and display state
   const [displayedTrips, setDisplayedTrips] = useState([]);
@@ -192,11 +196,6 @@ const DispatcherDashboard = () => {
     isOpen: isAssignOpen,
     onOpen: onAssignOpen,
     onClose: onAssignClose
-  } = useDisclosure();
-  const {
-    isOpen: isTripManagementOpen,
-    onOpen: onTripManagementOpen,
-    onClose: onTripManagementClose
   } = useDisclosure();
   
   // State for clickable riders and trips
@@ -640,8 +639,23 @@ const getLocationText = (location) => {
   return (
     <>
       <Navbar title="Dispatch Control Center" />
-      <Box bg="gray.50" minH="calc(100vh - 80px)" w="100%" px={{ base: 3, md: 4 }} py={{ base: 3, md: 4 }} overflowX="hidden">
-      {/* Enhanced Header Section - Mobile-First Design */}
+      <Box bg="gray.50" minH="calc(100vh - 80px)" w="100%" overflowX="hidden">
+        {/* Conditional rendering for different views */}
+        {isManageView ? (
+          <Box px={{ base: 3, md: 4, lg: 6 }} py={{ base: 4, md: 6 }}>
+            <UnifiedTripManagement onTripUpdate={fetchTrips} initialTrips={trips} />
+            <Button 
+              mt={4} 
+              onClick={() => setIsManageView(false)}
+              leftIcon={<Box as={ArrowUturnLeftIcon} w={4} h={4} />}
+              variant="outline"
+            >
+              Back to Dispatch Dashboard
+            </Button>
+          </Box>
+        ) : (
+          <Box px={{ base: 3, md: 4 }} py={{ base: 3, md: 4 }}>
+            {/* Enhanced Header Section - Mobile-First Design */}
       <Box mb={{ base: 6, md: 8 }}>
         <VStack align="start" spacing={3}>
           <Heading 
@@ -684,7 +698,7 @@ const getLocationText = (location) => {
                     </MenuItem>
                     <MenuItem 
                       icon={<Box as={MagnifyingGlassIcon} w={5} h={5} />}
-                      onClick={onTripManagementOpen}
+                      onClick={() => setIsManageView(true)}
                     >
                       Manage Trips
                     </MenuItem>
@@ -2433,6 +2447,8 @@ const getLocationText = (location) => {
           </CardBody>
         </Card>
       </Box>
+        )}
+      </Box>
 
         {/* Create/Edit Trip Modal */}
         <Modal isOpen={isOpen} onClose={handleCloseModal} size="xl">
@@ -2794,13 +2810,6 @@ const getLocationText = (location) => {
             </ModalFooter>
           </ModalContent>
         </Modal>
-
-        {/* Trip Management Modal */}
-        <TripManagementModal
-          isOpen={isTripManagementOpen}
-          onClose={onTripManagementClose}
-          onTripUpdate={fetchTrips}
-        />
 
         {/* Rider Info Modal */}
         <RiderInfoModal

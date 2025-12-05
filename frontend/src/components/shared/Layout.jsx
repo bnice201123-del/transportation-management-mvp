@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-import { Box, Flex } from '@chakra-ui/react';
+import { Box, Flex, useBreakpointValue } from '@chakra-ui/react';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSidebar } from '../../contexts/SidebarContext';
 
 const Layout = ({ children, currentView }) => {
   const [sidebarView, setSidebarView] = useState(currentView || 'dashboard');
   const { isAuthenticated } = useAuth();
+  const { isSidebarVisible, hideSidebar } = useSidebar();
+  
+  // Only auto-close on mobile/tablet where sidebar overlays content
+  const shouldAutoClose = useBreakpointValue({ base: true, md: true, lg: false });
 
   // Don't show sidebar for non-authenticated users or on login/register pages
   if (!isAuthenticated) {
@@ -72,6 +77,13 @@ const Layout = ({ children, currentView }) => {
         break;
     }
   };
+  
+  // Handle clicking on main content to close sidebar on mobile/tablet
+  const handleContentClick = () => {
+    if (shouldAutoClose && isSidebarVisible) {
+      hideSidebar();
+    }
+  };
 
   return (
     <Box minHeight="100vh" position="relative">
@@ -85,6 +97,7 @@ const Layout = ({ children, currentView }) => {
         direction="column"
         minHeight="100vh"
         transition="margin-left 0.3s ease"
+        onClick={handleContentClick}
       >
         {/* Main Content - Scrollable Area */}
         <Box 

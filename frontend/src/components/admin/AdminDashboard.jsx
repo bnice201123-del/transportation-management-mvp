@@ -97,8 +97,13 @@ import {
 import axios from 'axios';
 import Navbar from '../shared/Navbar';
 import TripManagementModal from '../scheduler/TripManagementModal';
+import { useSidebar } from '../../contexts/SidebarContext';
 
 const AdminDashboard = () => {
+  // Sidebar auto-close on mobile/tablet
+  const { isSidebarVisible, hideSidebar } = useSidebar();
+  const shouldAutoClose = useBreakpointValue({ base: true, md: true, lg: false });
+  
   const [analytics, setAnalytics] = useState(null);
   const [driverStats, setDriverStats] = useState([]);
   const [recentTrips, setRecentTrips] = useState([]);
@@ -338,11 +343,18 @@ const AdminDashboard = () => {
     );
   }
 
+  // Handle clicking on main content to close sidebar on mobile/tablet
+  const handleContentClick = () => {
+    if (shouldAutoClose && isSidebarVisible) {
+      hideSidebar();
+    }
+  };
+
   return (
     <>
       <Navbar title="Admin Dashboard" />
       {analytics && (
-        <Box p={{ base: 3, md: 4 }} w="100%" overflowX="hidden">
+        <Box p={{ base: 3, md: 4 }} w="100%" overflowX="hidden" onClick={handleContentClick}>
           <VStack spacing={6} mb={6} align="left">
             {/* Page Header with Responsive Typography */}
             <Heading

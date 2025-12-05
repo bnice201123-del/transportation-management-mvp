@@ -630,6 +630,21 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
 
   return (
     <>
+      {/* Overlay for desktop sidebar on md breakpoint (tablet) */}
+      {isSidebarVisible && (
+        <Box
+          position="fixed"
+          top={0}
+          left={0}
+          right={0}
+          bottom={0}
+          bg="blackAlpha.300"
+          display={{ base: "none", md: "block", lg: "none" }}
+          zIndex={899}
+          onClick={hideSidebar}
+        />
+      )}
+      
       <DesktopSidebar />
       <MobileDrawer />
 

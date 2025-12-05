@@ -554,6 +554,29 @@ const DispatcherDashboard = () => {
     }
   };
 
+  const handleRevertStatus = async (trip) => {
+    try {
+      const response = await axios.post(`/api/trips/${trip._id}/revert-status`);
+      toast({
+        title: 'Status Reverted',
+        description: `Trip status changed from ${response.data.reversion.oldStatus} to ${response.data.reversion.newStatus}`,
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+      fetchTrips();
+    } catch (error) {
+      console.error('Error reverting trip status:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to revert trip status',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
   const handleAssignClick = (trip) => {
     setTripToAssign(trip);
     // Pre-select current driver if reassigning
@@ -1430,6 +1453,16 @@ const getLocationText = (location) => {
                                         aria-label="Edit trip"
                                         title="Edit trip"
                                       />
+                                      {(trip.status === 'completed' || trip.status === 'cancelled') && (
+                                        <IconButton
+                                          icon={<Box as={ArrowUturnLeftIcon} w={4} h={4} />}
+                                          size="xs"
+                                          colorScheme="purple"
+                                          onClick={() => handleRevertStatus(trip)}
+                                          aria-label="Revert status"
+                                          title={`Revert ${trip.status === 'completed' ? 'completion' : 'cancellation'}`}
+                                        />
+                                      )}
                                       {!trip.assignedDriver && (
                                         <Button
                                           size="xs"

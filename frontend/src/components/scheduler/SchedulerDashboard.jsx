@@ -869,18 +869,16 @@ const SchedulerDashboard = ({ view }) => {
           {/* Quick Actions Dropdown */}
           <Box mb={{ base: 6, md: 8 }}>
             <Menu>
-              <Tooltip label="Quick Actions" placement="right">
-                <MenuButton
-                  as={Button}
-                  rightIcon={<Box as={ChevronDownIcon} w={5} h={5} />}
-                  leftIcon={<Box as={AdjustmentsHorizontalIcon} w={5} h={5} />}
-                  size="md"
-                  variant="solid"
-                  colorScheme="green"
-                >
-                  Quick Actions
-                </MenuButton>
-              </Tooltip>
+              <MenuButton
+                as={Button}
+                rightIcon={<Box as={ChevronDownIcon} w={5} h={5} />}
+                leftIcon={<Box as={AdjustmentsHorizontalIcon} w={5} h={5} />}
+                size="md"
+                variant="solid"
+                colorScheme="green"
+              >
+                Quick Actions
+              </MenuButton>
               <MenuList>
                 <MenuItem 
                   icon={<Box as={PlusIcon} w={5} h={5} />}
@@ -903,14 +901,6 @@ const SchedulerDashboard = ({ view }) => {
                   bg={isCalendarView ? "blue.50" : "transparent"}
                 >
                   Calendar View
-                </MenuItem>
-                <MenuItem 
-                  icon={<Box as={CalendarDaysIcon} w={5} h={5} />}
-                  onClick={() => navigate('/scheduler')}
-                  fontWeight={!isManageView && !isCalendarView ? "bold" : "normal"}
-                  bg={!isManageView && !isCalendarView ? "blue.50" : "transparent"}
-                >
-                  Dashboard Overview
                 </MenuItem>
                 <MenuItem 
                   icon={<Box as={DocumentTextIcon} w={5} h={5} />}

@@ -254,7 +254,7 @@ const ComprehensiveDriverDashboard = () => {
       setIsAvailable(available);
       toast({
         title: 'Status Updated',
-        description: `You are now ${available ? 'AVAILABLE' : 'UNAVAILABLE'} for trips`,
+        description: `You are now ${available ? 'Available' : 'Busy'} for trips`,
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -475,9 +475,9 @@ const ComprehensiveDriverDashboard = () => {
                     <Text 
                       fontSize={{ base: "2xl", md: "3xl" }} 
                       fontWeight="bold" 
-                      color={isAvailable ? 'green.500' : 'red.500'}
+                      color={isAvailable ? 'green.500' : 'orange.500'}
                     >
-                      {isAvailable ? 'AVAILABLE' : 'UNAVAILABLE'}
+                      {isAvailable ? 'Available' : 'Busy'}
                     </Text>
                     <Text 
                       color={textColor} 

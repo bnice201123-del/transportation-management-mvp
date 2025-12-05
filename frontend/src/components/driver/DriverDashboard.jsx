@@ -179,7 +179,7 @@ const DriverDashboard = () => {
       setIsAvailable(available);
       toast({
         title: 'Success',
-        description: `You are now ${available ? 'available' : 'unavailable'} for trips`,
+        description: `You are now ${available ? 'Available' : 'Busy'} for trips`,
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -384,10 +384,10 @@ const DriverDashboard = () => {
                         <Box 
                           as={isAvailable ? CheckCircleIconSolid : ExclamationTriangleIcon} 
                           w={4} h={4} 
-                          color={isAvailable ? 'green.500' : 'red.500'} 
+                          color={isAvailable ? 'green.500' : 'orange.500'} 
                         />
-                        <Text fontWeight="medium" color={isAvailable ? 'green.600' : 'red.600'}>
-                          {isAvailable ? 'AVAILABLE' : 'UNAVAILABLE'}
+                        <Text fontWeight="medium" color={isAvailable ? 'green.600' : 'orange.600'}>
+                          {isAvailable ? 'Available' : 'Busy'}
                         </Text>
                       </HStack>
                       <HStack>
@@ -430,8 +430,8 @@ const DriverDashboard = () => {
             <SimpleGrid columns={{ base: 2, md: 5 }} spacing={6}>
               <Stat>
                 <StatLabel>Status</StatLabel>
-                <StatNumber fontSize="lg" color={isAvailable ? 'green.500' : 'red.500'}>
-                  {isAvailable ? 'AVAILABLE' : 'UNAVAILABLE'}
+                <StatNumber fontSize="lg" color={isAvailable ? 'green.500' : 'orange.500'}>
+                  {isAvailable ? 'Available' : 'Busy'}
                 </StatNumber>
                 <StatHelpText>
                   <FormControl display="flex" alignItems="center">

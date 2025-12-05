@@ -85,6 +85,8 @@ const Layout = ({ children, currentView }) => {
         direction="column"
         minHeight="100vh"
         transition="margin-left 0.3s ease"
+        position="relative"
+        zIndex={1}
       >
         {/* Main Content - Scrollable Area */}
         <Box 

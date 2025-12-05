@@ -635,14 +635,22 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       {isSidebarVisible && (
         <Box
           position="fixed"
-          top={0}
+          top={{ base: 0, md: "60px" }}
           left={0}
           right={0}
           bottom={0}
-          bg="blackAlpha.300"
+          bg="blackAlpha.500"
+          backdropFilter="blur(2px)"
           display={{ base: "none", md: "block", lg: "none" }}
           zIndex={899}
-          onClick={hideSidebar}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Overlay clicked - closing sidebar');
+            hideSidebar();
+          }}
+          cursor="pointer"
+          _hover={{ bg: "blackAlpha.600" }}
         />
       )}
       

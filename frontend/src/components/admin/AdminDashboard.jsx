@@ -61,13 +61,8 @@ import {
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../shared/Navbar';
-import { useSidebar } from '../../contexts/SidebarContext';
 
 const AdminDashboard = () => {
-  // Sidebar auto-close on mobile/tablet
-  const { isSidebarVisible, hideSidebar } = useSidebar();
-  const shouldAutoClose = useBreakpointValue({ base: true, md: true, lg: false });
-  
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -366,15 +361,8 @@ const AdminDashboard = () => {
     );
   }
 
-  // Handle clicking on main content to close sidebar on mobile/tablet
-  const handleContentClick = () => {
-    if (shouldAutoClose && isSidebarVisible) {
-      hideSidebar();
-    }
-  };
-
   return (
-    <Box display="flex" flexDirection="column" minHeight="100vh" bg={bgColor} onClick={handleContentClick}>
+    <Box display="flex" flexDirection="column" minHeight="100vh" bg={bgColor}>
       <Navbar />
       <Box flex="1" p={{ base: 3, md: 4 }} w="100%" overflowX="hidden">
         <VStack align="stretch" spacing={4}>

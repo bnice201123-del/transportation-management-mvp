@@ -124,15 +124,10 @@ import TripDetailsModal from '../scheduler/TripDetailsModal';
 import DispatcherProfile from './DispatcherProfile';
 import DispatcherSchedule from './DispatcherSchedule';
 import DispatcherSearch from './DispatcherSearch';
-import { useSidebar } from '../../contexts/SidebarContext';
 
 const DispatcherDashboard = () => {
   // Navigation
   const navigate = useNavigate();
-  
-  // Sidebar auto-close on mobile/tablet
-  const { isSidebarVisible, hideSidebar } = useSidebar();
-  const shouldAutoClose = useBreakpointValue({ base: true, md: true, lg: false });
   
   // Core state management
   const [trips, setTrips] = useState([]);
@@ -642,17 +637,10 @@ const getLocationText = (location) => {
     );
   }
 
-  // Handle clicking on main content to close sidebar on mobile/tablet
-  const handleContentClick = () => {
-    if (shouldAutoClose && isSidebarVisible) {
-      hideSidebar();
-    }
-  };
-
   return (
     <>
       <Navbar title="Dispatch Control Center" />
-      <Box bg="gray.50" minH="calc(100vh - 80px)" w="100%" px={{ base: 3, md: 4 }} py={{ base: 3, md: 4 }} overflowX="hidden" onClick={handleContentClick}>
+      <Box bg="gray.50" minH="calc(100vh - 80px)" w="100%" px={{ base: 3, md: 4 }} py={{ base: 3, md: 4 }} overflowX="hidden">
       {/* Enhanced Header Section - Mobile-First Design */}
       <Box mb={{ base: 6, md: 8 }}>
         <VStack align="start" spacing={3}>

@@ -251,6 +251,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       display={{ base: "none", md: isSidebarVisible ? "block" : "none" }}
       overflowY="auto"
       transition="all 0.3s ease"
+      onClick={(e) => e.stopPropagation()}
     >
       {isExpanded ? (
         // Expanded sidebar for lg+ screens

@@ -124,15 +124,10 @@ import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 import TripManagement from './TripManagement';
 import TripManagementModal from './TripManagementModal';
 import CalendarOverview from './CalendarOverview';
-import { useSidebar } from '../../contexts/SidebarContext';
 
 const SchedulerDashboard = ({ view }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isSidebarVisible, hideSidebar } = useSidebar();
-  
-  // Only auto-close on mobile/tablet where sidebar overlays content
-  const shouldAutoClose = useBreakpointValue({ base: true, md: true, lg: false });
   
   const isManageView = view === 'manage' || location.pathname.includes('/manage') || location.search.includes('view=manage');
   const isCalendarView = view === 'calendar' || location.pathname.includes('/calendar') || location.search.includes('view=calendar');
@@ -777,15 +772,8 @@ const SchedulerDashboard = ({ view }) => {
   const pendingTrips = (trips || []).filter(trip => trip.status === 'pending');
   const completedTrips = (trips || []).filter(trip => trip.status === 'completed');
 
-  // Handle clicking on main content to close sidebar on mobile/tablet
-  const handleContentClick = () => {
-    if (shouldAutoClose && isSidebarVisible) {
-      hideSidebar();
-    }
-  };
-
   return (
-    <Box minH="100vh" bg="green.25" overflowX="hidden" onClick={handleContentClick}>
+    <Box minH="100vh" bg="green.25" overflowX="hidden">
       <Navbar title="Scheduler Dashboard" />
       
       <Box pt={{ base: 4, md: 0 }} w="100%">

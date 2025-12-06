@@ -163,6 +163,19 @@ const userSchema = new mongoose.Schema({
   twoFactorEnabledAt: {
     type: Date
   },
+  // Phone Verification
+  phoneVerified: {
+    type: Boolean,
+    default: false
+  },
+  phoneVerifiedAt: {
+    type: Date
+  },
+  phoneVerificationMethod: {
+    type: String,
+    enum: ['sms', 'whatsapp', 'call'],
+    default: 'sms'
+  },
   // Rider-specific fields
   riderId: {
     type: String,

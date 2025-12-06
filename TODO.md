@@ -77,7 +77,53 @@
 ## 🔐 **Authentication & Security**
 
 ### Authentication Enhancements
-- [ ] Phone-based verification (SMS/WhatsApp)
+- [x] **Phone-based verification (SMS/WhatsApp)**
+  - ✅ Installed Twilio SDK for SMS functionality
+  - ✅ Created PhoneVerification model (`backend/models/PhoneVerification.js`)
+    - Support for 5 verification purposes (registration, login, phone_change, 2fa_backup, password_reset)
+    - 6-digit random code generation
+    - Automatic expiration (10 minutes)
+    - Attempt tracking (max 5 attempts)
+    - Status workflow (pending → verified/expired/failed)
+    - Rate limiting integration
+    - TTL index for automatic cleanup
+  - ✅ Built SMS Service (`backend/services/smsService.js`)
+    - Twilio integration for production
+    - Development simulation mode (logs instead of sending)
+    - Phone number formatting to E.164 format
+    - Validation and error handling
+    - 6 message templates (verification, 2FA backup, password reset, security alerts, notifications)
+    - Service status checking
+  - ✅ Created Phone Verification API routes (`backend/routes/phoneVerification.js`)
+    - 5 public endpoints: send, verify, resend, status, update-phone
+    - 3 admin endpoints: statistics, cleanup, recent verifications
+    - Rate limiting (3 attempts per hour per phone)
+    - Audit logging integration
+    - Maximum attempt enforcement
+  - ✅ Updated User model with phone verification fields
+    - phoneVerified (Boolean)
+    - phoneVerifiedAt (Date)
+    - phoneVerificationMethod (enum: sms/whatsapp/call)
+  - ✅ Built PhoneVerification UI component (`frontend/src/components/security/PhoneVerification.jsx`)
+    - Two-step process: Enter phone → Enter code
+    - Real-time phone number formatting
+    - 6-digit PIN input with auto-submit
+    - Countdown timer for code expiration (10 minutes)
+    - Resend functionality with 60-second cooldown
+    - Attempts remaining display
+    - Development mode code display in toast
+    - Error handling and validation
+    - Reusable for multiple purposes
+  - ✅ Added Twilio configuration to .env.example
+  - ✅ Registered routes in server.js
+  - ✅ Created comprehensive documentation (`PHONE_VERIFICATION_FEATURE.md`)
+    - Setup instructions
+    - Usage examples for different scenarios
+    - Security best practices
+    - Monitoring and analytics guide
+    - Troubleshooting guide
+    - API reference
+  - **Priority:** High | **Effort:** High | **Impact:** High | **Status:** Completed (Dec 6, 2025)
 - [ ] OAuth integration (Google, Microsoft, Apple)
 - [ ] Biometric authentication for mobile apps
 - [ ] Login attempt monitoring dashboard
@@ -390,9 +436,47 @@
     - UI components operational
     - Permission checks work correctly
   - **Priority:** High | **Effort:** High | **Impact:** Critical | **Status:** Completed (Dec 6, 2025)
-- [ ] Security alerts and monitoring
-
-**Priority:** High | **Effort:** High | **Impact:** Critical
+- [x] **Security alerts and monitoring**
+  - ✅ Created SecurityAlert model (`backend/models/SecurityAlert.js`)
+    - Comprehensive alert types (11 types including brute force, rate limits, session anomalies, etc.)
+    - Severity levels (info, low, medium, high, critical)
+    - Status workflow (active → acknowledged → investigating → resolved/false_positive/ignored)
+    - Metrics tracking (occurrence count, first/last occurrence)
+    - Actor and source information capture
+    - Resolution tracking with findings and recommendations
+  - ✅ Built Security Alerting Service (`backend/services/securityAlertingService.js`)
+    - Automatic alert creation with deduplication (1-hour window)
+    - Anomaly detection algorithms
+    - Multiple security checks: authentication failures, rate limit violations, session anomalies, permission violations
+    - Cleanup operations for resolved/old alerts
+    - 8 service functions for alert lifecycle management
+  - ✅ Created Security API routes (`backend/routes/security.js`)
+    - 9 endpoints for alert management
+    - User endpoints: View own security events
+    - Admin endpoints: Dashboard, alerts list, statistics, detect anomalies
+    - Alert actions: Acknowledge, investigate, resolve, mark false positive
+    - Dashboard with critical alerts and top threats
+    - Comprehensive filtering and search
+  - ✅ Built SecurityMonitor UI (`frontend/src/components/admin/SecurityMonitor.jsx`)
+    - Three tabs: Dashboard, Active Alerts, Statistics
+    - Dashboard: Real-time security overview with critical alerts, active sessions, failed logins
+    - Active Alerts: Filterable list with severity/type/status filters
+    - Statistics: Aggregated metrics by severity, type, resolution rate
+    - Alert detail modal with full context
+    - Alert actions: Acknowledge, investigate, resolve, mark false positive
+    - Auto-refresh capability (configurable interval)
+  - ✅ Integrated with existing security systems
+    - Rate limiter violations auto-create security alerts
+    - Session tracking triggers anomaly alerts
+    - Authentication failures tracked
+    - Permission violations monitored
+  - ✅ Integrated with audit logging system
+    - All security alert actions audited
+    - Alert state changes logged
+    - Admin actions tracked
+  - ✅ Added to Admin Settings as "Security Alerts" tab
+  - ✅ Registered routes in server.js
+  - **Priority:** High | **Effort:** High | **Impact:** Critical | **Status:** Completed (Dec 6, 2025)
 
 ---
 

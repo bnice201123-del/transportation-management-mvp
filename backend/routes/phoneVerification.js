@@ -10,7 +10,7 @@ import User from '../models/User.js';
 import { sendVerificationCode } from '../services/smsService.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 import { authLimiter, passwordResetLimiter, adminLimiter } from '../middleware/rateLimiter.js';
-import { auditLog } from '../middleware/audit.js';
+import { logAudit } from '../middleware/audit.js';
 
 const router = express.Router();
 
@@ -76,14 +76,13 @@ router.post('/send', passwordResetLimiter, async (req, res) => {
     }
 
     // Log audit
-    await auditLog(req, {
+    await logAudit({
+      userId: userId || null,
       action: 'phone_verification_sent',
       category: 'authentication',
-      description: `Verification code sent to ${phoneNumber}`,
-      severity: 'info',
-      targetType: 'PhoneVerification',
-      targetId: verificationId,
-      success: true
+      details: { phoneNumber, purpose },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
     });
 
     res.json({
@@ -119,13 +118,13 @@ router.post('/verify', authLimiter, async (req, res) => {
 
     if (!result.success) {
       // Log failed attempt
-      await auditLog(req, {
+      await logAudit({
+        userId: null,
         action: 'phone_verification_failed',
         category: 'authentication',
-        description: `Failed verification attempt for ${phoneNumber}: ${result.error}`,
-        severity: result.code === 'MAX_ATTEMPTS' ? 'high' : 'warning',
-        success: false,
-        metadata: { errorCode: result.code, attemptsRemaining: result.attemptsRemaining }
+        details: { phoneNumber, purpose, errorCode: result.code, attemptsRemaining: result.attemptsRemaining },
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent')
       });
 
       return res.status(400).json(result);
@@ -140,14 +139,13 @@ router.post('/verify', authLimiter, async (req, res) => {
     }
 
     // Log successful verification
-    await auditLog(req, {
+    await logAudit({
+      userId: result.userId,
       action: 'phone_verification_success',
       category: 'authentication',
-      description: `Phone number ${phoneNumber} verified successfully`,
-      severity: 'info',
-      targetType: 'User',
-      targetId: result.userId,
-      success: true
+      details: { phoneNumber, purpose },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
     });
 
     res.json({
@@ -284,14 +282,13 @@ router.post('/update-phone', authenticateToken, async (req, res) => {
     ).select('-password -twoFactorSecret');
 
     // Log audit
-    await auditLog(req, {
-      action: 'phone_number_updated',
+    await logAudit({
+      userId: req.user._id,
+      action: 'user_updated',
       category: 'user_management',
-      description: `User updated phone number to ${newPhone}`,
-      severity: 'info',
-      targetType: 'User',
-      targetId: user._id,
-      success: true
+      details: { field: 'phoneNumber', newPhone },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
     });
 
     res.json({
@@ -342,13 +339,13 @@ router.post('/admin/cleanup', authenticateToken, requireAdmin, adminLimiter, asy
     const result = await PhoneVerification.cleanup(daysOld);
 
     // Log audit
-    await auditLog(req, {
-      action: 'phone_verification_cleanup',
+    await logAudit({
+      userId: req.user._id,
+      action: 'system_maintenance',
       category: 'system',
-      description: `Cleaned up ${result.deletedCount} old phone verifications`,
-      severity: 'info',
-      success: true,
-      metadata: result
+      details: { task: 'phone_verification_cleanup', deletedCount: result.deletedCount, daysOld },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent')
     });
 
     res.json({

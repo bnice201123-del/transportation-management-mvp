@@ -118,37 +118,43 @@ const RouteVisualization = ({ tripId }) => {
     });
     setPolyline(newPolyline);
 
-    // Add start marker (green)
-    new google.maps.Marker({
+    // Helper function to create marker element
+    const createMarkerElement = (color, size = 32) => {
+      const el = document.createElement('div');
+      el.style.width = `${size}px`;
+      el.style.height = `${size}px`;
+      el.innerHTML = `
+        <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="${color}"/>
+        </svg>
+      `;
+      return el;
+    };
+
+    // Add start marker (green) using AdvancedMarkerElement
+    new google.maps.marker.AdvancedMarkerElement({
       position: { lat: routePoints[0].latitude, lng: routePoints[0].longitude },
       map: newMap,
-      icon: {
-        url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
-      },
+      content: createMarkerElement('#10B981'),
       title: 'Start - ' + data.pickupLocation.address
     });
 
     // Add end marker (red)
     const endPoint = routePoints[routePoints.length - 1];
-    new google.maps.Marker({
+    new google.maps.marker.AdvancedMarkerElement({
       position: { lat: endPoint.latitude, lng: endPoint.longitude },
       map: newMap,
-      icon: {
-        url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
-      },
+      content: createMarkerElement('#EF4444'),
       title: 'End - ' + data.dropoffLocation.address
     });
 
-    // Add markers for significant points
+    // Add markers for significant points (blue)
     routePoints.forEach((point, index) => {
       if (point.isSignificant && index !== 0 && index !== routePoints.length - 1) {
-        new google.maps.Marker({
+        new google.maps.marker.AdvancedMarkerElement({
           position: { lat: point.latitude, lng: point.longitude },
           map: newMap,
-          icon: {
-            url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-            scaledSize: new google.maps.Size(32, 32)
-          },
+          content: createMarkerElement('#3B82F6', 28),
           title: `Waypoint - ${new Date(point.timestamp).toLocaleTimeString()}`
         });
       }

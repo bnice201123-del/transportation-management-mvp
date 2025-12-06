@@ -202,14 +202,14 @@ router.post('/register-admin', async (req, res) => {
 // Login user (supports both username and email)
 router.post('/login', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, twoFactorToken } = req.body;
 
     // Support login with either username or email
     let user;
     if (username) {
-      user = await User.findOne({ username: username.toLowerCase() });
+      user = await User.findOne({ username: username.toLowerCase() }).select('+twoFactorSecret');
     } else if (email) {
-      user = await User.findOne({ email: email.toLowerCase() });
+      user = await User.findOne({ email: email.toLowerCase() }).select('+twoFactorSecret');
     } else {
       return res.status(400).json({ message: 'Username or email is required' });
     }
@@ -227,6 +227,43 @@ router.post('/login', async (req, res) => {
     const isValidPassword = await user.comparePassword(password);
     if (!isValidPassword) {
       return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+      // If 2FA token not provided, return requiresTwoFactor flag
+      if (!twoFactorToken) {
+        return res.status(200).json({
+          requiresTwoFactor: true,
+          userId: user._id,
+          message: 'Two-factor authentication required'
+        });
+      }
+
+      // Verify 2FA token
+      const speakeasy = await import('speakeasy');
+      const verified = speakeasy.default.totp.verify({
+        secret: user.twoFactorSecret,
+        encoding: 'base32',
+        token: twoFactorToken,
+        window: 2
+      });
+
+      if (!verified) {
+        // Check if it's a backup code
+        const backupCode = user.twoFactorBackupCodes.find(
+          bc => bc.code === twoFactorToken.toUpperCase() && !bc.used
+        );
+
+        if (backupCode) {
+          // Mark backup code as used
+          backupCode.used = true;
+          backupCode.usedAt = new Date();
+          await user.save();
+        } else {
+          return res.status(401).json({ message: 'Invalid two-factor authentication code' });
+        }
+      }
     }
 
     // Update last login without triggering full validation

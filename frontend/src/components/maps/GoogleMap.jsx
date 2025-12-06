@@ -96,37 +96,48 @@ const MapComponent = ({
   useEffect(() => {
     if (map && markers) {
       // Clear existing markers
-      markersRef.current.forEach(marker => marker.setMap(null));
+      markersRef.current.forEach(marker => {
+        if (marker.map) {
+          marker.map = null; // AdvancedMarkerElement cleanup
+        }
+      });
       
-      // Add new markers
-      // Note: Using google.maps.Marker (deprecated as of Feb 2024)
-      // TODO: Migrate to google.maps.marker.AdvancedMarkerElement
-      // See: https://developers.google.com/maps/documentation/javascript/advanced-markers/migration
+      // Add new markers using AdvancedMarkerElement (updated Feb 2024)
       const newMarkers = markers.map((markerData, index) => {
-        // Process icon to ensure proper Google Maps objects
-        let iconConfig = markerData.icon;
-        if (iconConfig && iconConfig.scaledSize && !(iconConfig.scaledSize instanceof window.google.maps.Size)) {
-          iconConfig = {
-            ...iconConfig,
-            scaledSize: new window.google.maps.Size(
-              iconConfig.scaledSize.width || 30, 
-              iconConfig.scaledSize.height || 30
-            )
-          };
+        // Create marker content element
+        const markerElement = document.createElement('div');
+        markerElement.style.width = '30px';
+        markerElement.style.height = '30px';
+        markerElement.style.cursor = 'pointer';
+        
+        // Determine marker color based on type
+        let markerColor = '#ED8E36'; // default/dropoff color
+        if (markerData.type === 'pickup') {
+          markerColor = '#4F8EF7';
+        } else if (markerData.icon && markerData.icon.url) {
+          // Use custom icon if provided
+          const img = document.createElement('img');
+          img.src = markerData.icon.url;
+          img.style.width = '100%';
+          img.style.height = '100%';
+          markerElement.appendChild(img);
+        }
+        
+        // Create SVG marker if no custom icon
+        if (!markerElement.firstChild) {
+          markerElement.innerHTML = `
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="${markerColor}"/>
+            </svg>
+          `;
         }
 
-        const marker = new window.google.maps.Marker({
+        // Create AdvancedMarkerElement
+        const marker = new google.maps.marker.AdvancedMarkerElement({
           position: markerData.position,
           map,
           title: markerData.title || `Marker ${index + 1}`,
-          icon: iconConfig || {
-            url: markerData.type === 'pickup' 
-              ? 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDOC4xMyAyIDUgNS4xMyA1IDljMCA1LjI1IDcgMTMgNyAxM3M3LTcuNzUgNy0xM2MwLTMuODctMy4xMy03LTctN3ptMCA5LjVjLTEuMzggMC0yLjUtMS4xMi0yLjUtMi41czEuMTItMi41IDIuNS0yLjUgMi41IDEuMTIgMi41IDIuNS0xLjEyIDIuNS0yLjUgMi41eiIgZmlsbD0iIzRGOEVGNyIvPgo8L3N2Zz4K'
-              : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDOC4xMyAyIDUgNS4xMyA1IDljMCA1LjI1IDcgMTMgNyAxM3M3LTcuNzUgNy0xM2MwLTMuODctMy4xMy03LTctN3ptMCA5LjVjLTEuMzggMC0yLjUtMS4xMi0yLjUtMi41czEuMTItMi41IDIuNS0yLjUgMi41IDEuMTIgMi41IDIuNS0xLjEyIDIuNS0yLjUgMi41eiIgZmlsbD0iI0VEOEUzNiIvPgo8L3N2Zz4K',
-            scaledSize: new window.google.maps.Size(30, 30),
-            origin: new window.google.maps.Point(0, 0),
-            anchor: new window.google.maps.Point(15, 30)
-          }
+          content: markerElement
         });
 
         // Add click listener to marker
@@ -143,7 +154,10 @@ const MapComponent = ({
           });
 
           marker.addListener('click', () => {
-            infoWindow.open(map, marker);
+            infoWindow.open({
+              anchor: marker,
+              map
+            });
           });
         }
 
@@ -203,7 +217,7 @@ const GoogleMap = (props) => {
   return (
     <Wrapper 
       apiKey={apiKey}
-      libraries={['places', 'geometry', 'drawing']}
+      libraries={['places', 'geometry', 'drawing', 'marker']}
       version="weekly"
       render={render}
       // Use id to prevent duplicate script loading

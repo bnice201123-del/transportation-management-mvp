@@ -123,6 +123,31 @@ const userSchema = new mongoose.Schema({
   fcmToken: {
     type: String // For push notifications
   },
+  // Two-Factor Authentication
+  twoFactorEnabled: {
+    type: Boolean,
+    default: false
+  },
+  twoFactorSecret: {
+    type: String,
+    select: false // Don't return this field by default
+  },
+  twoFactorBackupCodes: [{
+    code: {
+      type: String,
+      required: true
+    },
+    used: {
+      type: Boolean,
+      default: false
+    },
+    usedAt: {
+      type: Date
+    }
+  }],
+  twoFactorEnabledAt: {
+    type: Date
+  },
   // Rider-specific fields
   riderId: {
     type: String,

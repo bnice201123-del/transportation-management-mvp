@@ -62,6 +62,27 @@ export const SYSTEM_CONFIG = {
     checkDriverProgress: '* * * * *',         // Every minute
     checkDriverMovement: '*/2 * * * *',       // Every 2 minutes
     cleanupOldRecords: '0 2 * * *'            // 2 AM daily
+  },
+
+  // Holiday and calendar settings
+  HOLIDAY_SETTINGS: {
+    // Enable holiday checking for recurring trips
+    enableHolidayChecking: true,
+    
+    // Include US Federal holidays
+    includeFederalHolidays: true,
+    
+    // Custom holidays (can be updated via admin settings)
+    customHolidays: [
+      // Example: { name: 'Company Holiday', date: '2025-12-24', description: 'Christmas Eve' }
+    ],
+    
+    // Holiday behavior options
+    skipHolidayTrips: true,        // Skip trips on holidays by default
+    rescheduleToNextDay: false,    // If true, reschedule to next business day instead of skipping
+    
+    // Weekend handling
+    treatWeekendsAsHolidays: false // If true, skip weekends automatically for all trips
   }
 };
 
@@ -70,5 +91,6 @@ export const GARAGE_LOCATION = SYSTEM_CONFIG.GARAGE_LOCATION;
 export const TRIP_MONITORING = SYSTEM_CONFIG.TRIP_MONITORING;
 export const NOTIFICATIONS = SYSTEM_CONFIG.NOTIFICATIONS;
 export const CRON_SCHEDULES = SYSTEM_CONFIG.CRON_SCHEDULES;
+export const HOLIDAY_SETTINGS = SYSTEM_CONFIG.HOLIDAY_SETTINGS;
 
 export default SYSTEM_CONFIG;

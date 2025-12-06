@@ -50,3 +50,26 @@ export const authorizeRoles = (...roles) => {
     next();
   };
 };
+
+// Convenience middleware for admin-only routes
+export const requireAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+
+  // Support both single role (legacy) and multiple roles array
+  const userRoles = req.user.roles && req.user.roles.length > 0 
+    ? req.user.roles 
+    : [req.user.role];
+
+  // Check if user has admin role
+  const isAdmin = userRoles.includes('admin');
+
+  if (!isAdmin) {
+    return res.status(403).json({ 
+      message: 'Access denied. Admin privileges required.' 
+    });
+  }
+
+  next();
+};

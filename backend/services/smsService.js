@@ -200,7 +200,7 @@ export async function sendSecurityAlert(phoneNumber, alertType, details = {}) {
   const alertMessages = {
     suspicious_login: `Security Alert: A login attempt was detected from ${details.location || 'an unknown location'}. If this wasn't you, please secure your account immediately.`,
     password_changed: 'Security Alert: Your password was just changed. If you didn\'t do this, please contact support immediately.',
-    2fa_disabled: 'Security Alert: Two-factor authentication was disabled on your account. If you didn\'t do this, please contact support immediately.',
+    '2fa_disabled': 'Security Alert: Two-factor authentication was disabled on your account. If you didn\'t do this, please contact support immediately.',
     account_locked: 'Security Alert: Your account has been locked due to multiple failed login attempts. Please contact support to unlock.',
     new_device: `Security Alert: A new device logged into your account from ${details.location || 'an unknown location'}. If this wasn't you, please secure your account.`
   };

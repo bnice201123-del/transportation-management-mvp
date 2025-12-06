@@ -176,6 +176,41 @@ const userSchema = new mongoose.Schema({
     enum: ['sms', 'whatsapp', 'call'],
     default: 'sms'
   },
+  // OAuth Providers (Google, Microsoft, Apple)
+  oauthProviders: [{
+    provider: {
+      type: String,
+      enum: ['google', 'microsoft', 'apple'],
+      required: true
+    },
+    providerId: {
+      type: String,
+      required: true
+    },
+    accessToken: {
+      type: String,
+      select: false // Don't return tokens by default
+    },
+    refreshToken: {
+      type: String,
+      select: false
+    },
+    profile: {
+      email: String,
+      displayName: String,
+      firstName: String,
+      lastName: String,
+      photo: String
+    },
+    linkedAt: {
+      type: Date,
+      default: Date.now
+    },
+    lastUsed: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   // Rider-specific fields
   riderId: {
     type: String,

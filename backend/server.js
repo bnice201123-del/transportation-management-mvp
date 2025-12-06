@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import connectDB from './config/database.js';
+import passport from './config/passport.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -24,6 +25,7 @@ import adminRoutes from './routes/admin.js';
 import holidaysRoutes from './routes/holidays.js';
 import twoFactorRoutes from './routes/twoFactor.js';
 import phoneVerificationRoutes from './routes/phoneVerification.js';
+import oauthRoutes from './routes/oauth.js';
 import auditRoutes from './routes/audit.js';
 import gdprRoutes from './routes/gdpr.js';
 import rateLimitRoutes from './routes/rateLimit.js';
@@ -78,6 +80,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Initialize Passport
+app.use(passport.initialize());
+
 // Apply global rate limiter to all routes
 app.use(globalLimiter);
 
@@ -100,6 +105,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/holidays', holidaysRoutes);
 app.use('/api/2fa', twoFactorRoutes);
 app.use('/api/phone-verification', phoneVerificationRoutes);
+app.use('/api/auth', oauthRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/gdpr', gdprRoutes);
 app.use('/api/rate-limit', rateLimitRoutes);

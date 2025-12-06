@@ -163,7 +163,7 @@ const SystemAdministration = () => {
   return (
     <Box minHeight="100vh" bg={bgColor}>
       <Navbar />
-      <Container maxW="7xl" py={{ base: 4, md: 6, lg: 8 }} px={{ base: 4, md: 6 }}>
+      <Container maxW="full" py={{ base: 4, md: 6, lg: 8 }} px={{ base: 4, md: 6 }}>
         <VStack spacing={{ base: 6, md: 8, lg: 10 }} align="stretch">
           {/* Header */}
           <Box

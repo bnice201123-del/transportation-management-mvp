@@ -146,7 +146,7 @@ const ManageUsers = () => {
 
   // Responsive design
   const isMobile = useBreakpointValue({ base: true, md: false });
-  const containerMaxW = useBreakpointValue({ base: 'full', md: '7xl' });
+  const containerMaxW = useBreakpointValue({ base: 'full', md: 'full' });
   const tableSize = useBreakpointValue({ base: 'sm', md: 'md' });
 
   // Color mode values

@@ -146,10 +146,21 @@ import {
   FaTablet,
   FaPalette,
   FaLanguage,
-  FaClock
+  FaClock,
+  FaLock,
+  FaClipboardList,
+  FaCalendarAlt,
+  FaKey
 } from 'react-icons/fa';
 import axios from '../../config/axios';
 import Navbar from '../shared/Navbar';
+import AuditLogViewer from './AuditLogViewer';
+import HolidayManagement from './HolidayManagement';
+import RateLimitMonitor from './RateLimitMonitor';
+import SessionManager from './SessionManager';
+import EncryptionManager from './EncryptionManager';
+import PermissionMatrix from './PermissionMatrix';
+import SecurityMonitor from './SecurityMonitor';
 
 const AdminSettings = () => {
   // State management
@@ -183,7 +194,7 @@ const AdminSettings = () => {
   // Responsive design hooks
   const isMobile = useBreakpointValue({ base: true, md: false });
   const sidebarWidth = useBreakpointValue({ base: '100%', md: '300px', lg: '350px' });
-  const containerMaxW = useBreakpointValue({ base: 'full', md: '7xl' });
+  const containerMaxW = useBreakpointValue({ base: 'full', md: 'full' });
   const tabOrientation = useBreakpointValue({ base: 'horizontal', lg: 'vertical' });
   const gridCols = useBreakpointValue({ base: 1, md: 2, lg: 3, xl: 4 });
   
@@ -726,7 +737,14 @@ const AdminSettings = () => {
     { label: 'Notifications', icon: FaBell, key: 'notifications' },
     { label: 'Maps & GPS', icon: FaMap, key: 'maps' },
     { label: 'Business', icon: FaBuilding, key: 'business' },
-    { label: 'Integration', icon: FaPlug, key: 'integration' }
+    { label: 'Integration', icon: FaPlug, key: 'integration' },
+    { label: 'Audit Logs', icon: FaClipboardList, key: 'audit' },
+    { label: 'Holidays', icon: FaCalendarAlt, key: 'holidays' },
+    { label: 'Rate Limits', icon: FaShieldAlt, key: 'rate-limits' },
+    { label: 'Sessions', icon: FaShieldAlt, key: 'sessions' },
+    { label: 'Encryption', icon: FaLock, key: 'encryption' },
+    { label: 'Permissions', icon: FaKey, key: 'permissions' },
+    { label: 'Security Alerts', icon: FaExclamationTriangle, key: 'security-alerts' }
   ].filter(tab => 
     tab.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
     tab.key.toLowerCase().includes(searchTerm.toLowerCase())
@@ -1173,6 +1191,55 @@ const AdminSettings = () => {
                       <VStack spacing={6} align="stretch">
                         <Heading size="md" color={textColor}>Integration Settings</Heading>
                         <Text color="gray.500">Manage third-party integrations and APIs.</Text>
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Audit Logs Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <AuditLogViewer />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Holidays Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <HolidayManagement />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Rate Limits Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <RateLimitMonitor />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Sessions Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <SessionManager />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Encryption Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <EncryptionManager />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Permissions Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <PermissionMatrix />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Security Alerts Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <SecurityMonitor />
                       </VStack>
                     </TabPanel>
                   </TabPanels>

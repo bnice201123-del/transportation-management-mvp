@@ -623,56 +623,6 @@ const AdminReports = () => {
               </CardBody>
             </Card>
 
-            {/* Quick Reports */}
-            <Card 
-              bg={cardBg} 
-              borderColor={borderColor}
-              shadow="md"
-              borderRadius="lg"
-            >
-              <CardHeader pb={2}>
-                <Heading size={{ base: "sm", md: "md" }}>Quick Reports</Heading>
-                <Text fontSize={{ base: "xs", md: "sm" }} color="gray.600" mt={1}>
-                  Generate common reports with one click
-                </Text>
-              </CardHeader>
-              <CardBody pt={2} p={{ base: 4, md: 5, lg: 6 }}>
-                <SimpleGrid 
-                  columns={{ base: 1, sm: 2, lg: 4 }} 
-                  spacing={{ base: 3, md: 4, lg: 6 }}
-                >
-                  <QuickReportCard
-                    title="Trip Analytics"
-                    description="Comprehensive trip performance and statistics"
-                    icon={FaChartLine}
-                    type="trip_analytics"
-                    color="blue.500"
-                  />
-                  <QuickReportCard
-                    title="User Activity"
-                    description="User engagement and behavior analysis"
-                    icon={FaUsers}
-                    type="user_activity"
-                    color="green.500"
-                  />
-                  <QuickReportCard
-                    title="Financial Summary"
-                    description="Revenue, costs, and financial performance"
-                    icon={FaMoneyBillWave}
-                    type="financial"
-                    color="purple.500"
-                  />
-                  <QuickReportCard
-                    title="Driver Performance"
-                    description="Driver ratings, efficiency, and metrics"
-                    icon={FaCar}
-                    type="driver_performance"
-                    color="orange.500"
-                  />
-                </SimpleGrid>
-              </CardBody>
-            </Card>
-
             {/* Main Content Tabs */}
             <Card 
               bg={cardBg} 

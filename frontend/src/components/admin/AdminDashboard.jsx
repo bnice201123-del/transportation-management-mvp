@@ -512,14 +512,6 @@ const AdminDashboard = () => {
             gap={{ base: 3, md: 4 }}
           >
             <NavigationCard
-              title="System Overview"
-              description="Dashboard metrics, user distribution, and key performance indicators"
-              icon={ViewIcon}
-              color="blue"
-              path="/admin/overview"
-              count={analytics?.tripStats?.today}
-            />
-            <NavigationCard
               title="Trip Management"
               description="Create, schedule, edit, and manage all transportation trips"
               icon={FaRoute}

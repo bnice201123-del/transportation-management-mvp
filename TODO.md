@@ -109,14 +109,288 @@
   - ✅ Implemented 10 backup codes system (single-use)
   - ✅ Support for authenticator apps (Google Authenticator, Authy, Microsoft Authenticator, etc.)
   - **Priority:** High | **Effort:** High | **Impact:** Critical | **Status:** Completed (Dec 5, 2025)
-- [ ] Audit trail for all critical actions
-- [ ] GDPR compliance tools (data export, deletion)
-- [ ] Data encryption at rest
-- [ ] Role permission matrix editor UI
-- [ ] Session management dashboard
+- [x] **Audit trail for all critical actions**
+  - ✅ Created comprehensive AuditLog model (`backend/models/AuditLog.js`)
+    - 40+ action types across 10 categories
+    - Change tracking (before/after values)
+    - Full metadata capture (IP, user agent, duration, status code)
+    - Severity levels (info, warning, error, critical)
+    - Text search indexing
+    - Automatic expiration support (TTL)
+  - ✅ Built audit middleware (`backend/middleware/audit.js`)
+    - Automatic request/response logging
+    - Smart filtering (excludes noise)
+    - Sensitive data sanitization
+    - Manual logging helper function
+  - ✅ Created audit API routes (`backend/routes/audit.js`)
+    - Filtered pagination with 10 endpoints
+    - Statistics aggregation
+    - Activity timeline
+    - CSV export functionality
+    - Cleanup operations
+  - ✅ Built AuditLogViewer UI (`frontend/src/components/admin/AuditLogViewer.jsx`)
+    - Comprehensive filter controls
+    - Real-time search
+    - Statistics dashboard
+    - Detail modal with full log information
+    - Pagination and export features
+  - ✅ Integrated audit logging into critical operations
+    - Login (success/failure)
+    - User management (create, update, deactivate)
+    - Trip management (create, status changes)
+  - ✅ Added to Admin Settings as dedicated tab
+  - **Priority:** High | **Effort:** High | **Impact:** Critical | **Status:** Completed (Dec 6, 2025)
+- [x] **GDPR compliance tools (data export, deletion)**
+  - ✅ Created GDPRRequest model (`backend/models/GDPRRequest.js`)
+    - Request tracking for export, deletion, portability, consent withdrawal
+    - Status workflow (pending → processing → completed/failed)
+    - Verification and audit trail
+    - Automatic expiration for exports (30 days)
+  - ✅ Built GDPR Service (`backend/services/gdprService.js`)
+    - Complete data export in JSON/CSV formats
+    - Safe data deletion with anonymization
+    - Collects data from 10+ collections
+    - Backup creation before deletion
+    - Legal retention compliance
+  - ✅ Created GDPR API routes (`backend/routes/gdpr.js`)
+    - POST /export - Request data export
+    - GET /export/:id/download - Download export file
+    - POST /delete - Request account deletion
+    - DELETE /delete/:id - Cancel deletion request
+    - GET /requests - User's request history
+    - Admin endpoints for processing and management
+  - ✅ Built GDPRManagement UI (`frontend/src/components/security/GDPRManagement.jsx`)
+    - Three tabs: Data Export, Account Deletion, Your Rights
+    - Request tracking with status badges
+    - Download interface for completed exports
+    - Safe deletion with confirmation (type DELETE_MY_ACCOUNT)
+    - Educational content about GDPR rights
+  - ✅ Integrated audit logging for all GDPR operations
+  - ✅ Registered routes in server.js
+  - **Priority:** High | **Effort:** High | **Impact:** Critical | **Status:** Completed (Dec 6, 2025)
+- [x] **Rate limiting per endpoint**
+  - ✅ Created Rate Limiter Middleware (`backend/middleware/rateLimiter.js`)
+    - 10 tiered rate limit configurations (auth, API, read, expensive, GDPR, upload, password reset, 2FA, admin, global)
+    - Optional Redis support with graceful memory fallback
+    - IP whitelisting for internal services
+    - Custom key generation (user-based when authenticated, IP-based otherwise)
+    - Automatic violation logging with audit integration
+    - Utility functions: getRateLimitInfo, resetRateLimit, getRateLimitStats
+  - ✅ Built RateLimitViolation Model (`backend/models/RateLimitViolation.js`)
+    - Tracks violations with user/IP context
+    - Automatic severity assessment (low, medium, high, critical)
+    - Pattern detection for repeat offenders
+    - 30-day TTL with automatic cleanup
+    - Statistical methods: getStatistics, shouldBlockIP, getSuspiciousIPs
+  - ✅ Created Rate Limit Monitoring API (`backend/routes/rateLimit.js`)
+    - User endpoints: View own violations and rate limit info
+    - Admin endpoints: System statistics, violations query, suspicious IP detection
+    - Admin actions: Reset limits, cleanup old violations
+  - ✅ Applied rate limiters to all routes
+    - auth: 5 req/15min for login (brute force protection)
+    - passwordReset: 3 req/hour for password reset flow
+    - twoFactor: 10 req/15min for 2FA operations
+    - gdpr: 5 req/hour for data export/deletion
+    - admin: 150 req/15min for admin operations
+    - global: 500 req/15min baseline for all routes
+  - ✅ Built RateLimitMonitor UI (`frontend/src/components/admin/RateLimitMonitor.jsx`)
+    - Three tabs: Overview, Violations, Suspicious IPs
+    - Real-time statistics with auto-refresh
+    - Advanced violation filtering (limiter type, severity, IP, user, date range)
+    - Suspicious IP detection with blocking recommendations
+    - Admin actions: View IP details, reset limits, cleanup violations
+  - ✅ Integrated with audit logging system
+    - High/critical violations auto-create audit entries
+    - Admin reset actions logged
+  - ✅ Added to Admin Settings as "Rate Limits" tab
+  - ✅ Registered routes in server.js
+  - **Priority:** High | **Effort:** High | **Impact:** Critical | **Status:** Completed (Dec 6, 2025)
+- [x] **Session management dashboard**
+  - ✅ Created Session Model (`backend/models/Session.js`)
+    - Tracks user sessions with device info, IP, location
+    - Login method tracking (password, 2FA, refresh-token)
+    - Automatic activity tracking and expiration
+    - Suspicious session detection with reasons
+    - 30-day TTL with automatic cleanup
+  - ✅ Built Session Tracking Middleware (`backend/middleware/sessionTracking.js`)
+    - Device info parsing (browser, OS, device type)
+    - Token hashing for secure storage
+    - Session creation on login
+    - Activity tracking middleware
+    - Session validation middleware
+    - Session revocation on logout
+  - ✅ Created Session Management API (`backend/routes/sessions.js`)
+    - User endpoints: View own sessions, session history, revoke session
+    - Admin endpoints: View all sessions, statistics, suspicious sessions
+    - Admin actions: Revoke any session, revoke all user sessions, cleanup old sessions
+    - 12 total endpoints with rate limiting
+  - ✅ Built SessionManager UI (`frontend/src/components/admin/SessionManager.jsx`)
+    - Three tabs: Overview, All Sessions, Suspicious Sessions
+    - Real-time statistics (total, active, revoked, expired, suspicious)
+    - Session filtering (status, suspicious flag, date range)
+    - Device icons and detailed session info
+    - Admin actions: Revoke session, revoke all user sessions, view anomalies
+    - User session modal with anomaly detection
+    - Auto-refresh capability
+  - ✅ Integrated with authentication flow
+    - Session creation on successful login
+    - Anomaly detection (multiple IPs, impossible travel, concurrent sessions)
+    - Suspicious session flagging
+  - ✅ Integrated with audit logging system
+    - Session revocation logged
+    - Bulk session revocation logged
+    - Admin actions audited
+  - ✅ Added to Admin Settings as "Sessions" tab
+  - ✅ Registered routes in server.js
+  - **Priority:** High | **Effort:** High | **Impact:** Critical | **Status:** Completed (Dec 6, 2025)
+- [x] **Data encryption at rest**
+  - ✅ Created encryption utility module (`backend/utils/encryption.js`)
+    - AES-256-GCM authenticated encryption
+    - Key versioning and rotation support
+    - Deterministic encryption for searchable fields
+    - PBKDF2 key derivation with unique salts
+    - Master key environment variable (ENCRYPTION_MASTER_KEY)
+  - ✅ Built EncryptionKey model (`backend/models/EncryptionKey.js`)
+    - Key lifecycle management (active, retired, deprecated)
+    - Automatic rotation scheduling (configurable intervals)
+    - Usage statistics tracking (encryption/decryption counts)
+    - Re-encryption progress monitoring
+    - 12 static methods for key operations
+  - ✅ Added encryption to User model
+    - Encrypted fields: email, phone, licenseNumber, twoFactorSecret
+    - Hash indexes for searchable encrypted fields
+    - Encryption metadata tracking (keyVersion, encryptedAt)
+    - Instance methods: encryptSensitiveFields(), decryptSensitiveFields()
+    - Static methods: findByEncryptedEmail(), findByEncryptedPhone()
+  - ✅ Added encryption to Rider model
+    - Encrypted fields: email, phone, address, dateOfBirth
+    - Hash indexes for searchable encrypted fields
+    - Encryption metadata tracking
+    - Same encryption/decryption helper methods
+  - ✅ Created encryption API routes (`backend/routes/encryption.js`)
+    - 9 admin endpoints with comprehensive functionality
+    - GET /status - System status and statistics
+    - POST /initialize - Initialize encryption with first key
+    - POST /rotate-key - Rotate to new encryption key
+    - POST /encrypt-data - Encrypt existing unencrypted data
+    - POST /reencrypt-data - Re-encrypt with new key after rotation
+    - GET /keys - List all encryption keys with details
+    - POST /validate-master-key - Validate master key strength
+    - GET /generate-master-key - Generate secure random master key
+    - DELETE /keys/:version - Deprecate old encryption keys
+  - ✅ Built EncryptionManager UI (`frontend/src/components/admin/EncryptionManager.jsx`)
+    - Three tabs: Overview, Encryption Keys, Data Encryption
+    - Encryption status monitoring (configured, initialized, active key)
+    - Real-time data encryption progress (users, riders)
+    - Key management interface (create, rotate, deprecate)
+    - Master key generation with clipboard copy
+    - Bulk data encryption and re-encryption
+    - Visual progress indicators
+    - Security alerts (rotation due, not configured)
+  - ✅ Created data migration script (`backend/scripts/migrateEncryption.js`)
+    - CLI tool for encrypting existing data
+    - Batch processing support (configurable batch size)
+    - Dry-run mode for testing
+    - Collection filtering (users, riders, or all)
+    - Progress reporting and statistics
+    - Error handling and logging
+  - ✅ Integrated with audit logging system
+    - All encryption operations audited
+    - Key generation, rotation, and deprecation logged
+    - Admin actions tracked with severity levels
+  - ✅ Added to Admin Settings as "Encryption" tab
+  - ✅ Registered routes in server.js
+  - **Priority:** High | **Effort:** High | **Impact:** Critical | **Status:** Completed (Dec 6, 2025)
+- ✅ **Role permission matrix editor UI** - Completed (Dec 6, 2025)
+  - ✅ Created Permission model (`backend/models/Permission.js`)
+    - Granular RBAC system (19 resources × 11 actions)
+    - 5 user roles: admin, dispatcher, scheduler, driver, rider
+    - Schema: resource, action, role, granted, conditions, isSystem
+    - Compound unique index: {role, resource, action}
+    - 11 static methods for permission operations
+    - hasPermission() - Check if role has permission with context
+    - getPermissionMatrix() - Get complete matrix for all roles
+    - initializeDefaultPermissions() - Create 100+ default permissions
+    - getRolePermissions() - Get all permissions for specific role
+    - setPermission() - Update or create permission
+    - getResourceCategories() - Group resources by category
+    - getResourceActions() - Get available actions per resource
+    - deleteRolePermissions() - Remove role permissions
+    - cloneRolePermissions() - Copy permissions between roles
+  - ✅ Created permission API routes (`backend/routes/permissions.js`)
+    - 12 admin endpoints with comprehensive functionality
+    - GET /matrix - Complete permission matrix + resource categories
+    - GET /role/:role - All permissions for specific role
+    - GET /check - Check specific permission (role, resource, action)
+    - GET /resources - All resources grouped by category with actions
+    - POST / - Create or update single permission
+    - POST /bulk - Bulk update permissions array
+    - POST /initialize - Initialize default permissions (100+)
+    - POST /clone - Clone permissions from one role to another
+    - DELETE /:id - Delete specific permission (not system)
+    - DELETE /role/:role - Delete all role permissions
+    - GET /stats - Permission statistics by role
+    - POST /reset/:role - Reset role to default permissions
+    - All routes: authenticateToken + requireAdmin + adminLimiter
+    - Audit logging integrated for all operations
+  - ✅ Built PermissionMatrix UI (`frontend/src/components/admin/PermissionMatrix.jsx`)
+    - Three tabs: Permission Matrix, Statistics, Management
+    - Permission Matrix tab:
+      * Accordion grouped by resource category (5 categories)
+      * Interactive table with roles as columns, resources/actions as rows
+      * Checkbox toggles for each permission
+      * Real-time change tracking with unsaved changes banner
+      * Save/discard changes functionality
+      * Role-based color coding (red=admin, blue=dispatcher, etc.)
+    - Statistics tab:
+      * Total permissions, granted, system, custom counts
+      * Permissions by role breakdown
+      * Visual statistics cards and grids
+    - Management tab:
+      * Initialize default permissions button + modal
+      * Clone role permissions interface + modal
+      * Reset role to defaults button + modal (with warning)
+      * Role descriptions reference
+    - Unsaved changes alert with bulk operations
+    - Refresh functionality
+    - Error handling and loading states
+  - ✅ Integrated with auth middleware (`backend/middleware/auth.js`)
+    - requirePermission(resource, action, contextProvider)
+      * Check single permission with optional context
+      * Returns 403 if user lacks permission
+    - requireAnyPermission(permissions[])
+      * User needs ANY of the listed permissions
+      * Useful for OR permission logic
+    - requireAllPermissions(permissions[])
+      * User needs ALL of the listed permissions
+      * Useful for AND permission logic
+    - Context support for conditional permissions
+    - Detailed error messages with required permissions
+  - ✅ Added to Admin Settings as "Permissions" tab (12th tab)
+    - Import: PermissionMatrix component + FaKey icon
+    - Tab label: "Permissions" with key icon
+    - Location: After "Encryption" tab
+    - Full integration with existing tabs
+  - ✅ Registered routes in server.js
+    - Import: permissionsRoutes from './routes/permissions.js'
+    - Registration: app.use('/api/permissions', permissionsRoutes)
+    - Order: After encryption routes
+  - ✅ Created comprehensive documentation (`PERMISSION_SYSTEM_GUIDE.md`)
+    - Architecture overview (backend + frontend)
+    - Usage guide for administrators
+    - Developer integration guide
+    - API endpoint reference
+    - Security features documentation
+    - Testing checklist
+    - Migration guide from role-based to permission-based
+  - ✅ Tested permissions enforcement
+    - Backend server starts successfully
+    - Frontend renders without errors
+    - All 12 API endpoints functional
+    - UI components operational
+    - Permission checks work correctly
+  - **Priority:** High | **Effort:** High | **Impact:** Critical | **Status:** Completed (Dec 6, 2025)
 - [ ] Security alerts and monitoring
-- [ ] IP whitelisting/blacklisting
-- [ ] Rate limiting per endpoint
 
 **Priority:** High | **Effort:** High | **Impact:** Critical
 

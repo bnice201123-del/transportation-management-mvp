@@ -4,6 +4,7 @@ import QRCode from 'qrcode';
 import crypto from 'crypto';
 import { authenticateToken } from '../middleware/auth.js';
 import User from '../models/User.js';
+import { twoFactorLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ const router = express.Router();
  * @desc    Generate 2FA secret and QR code for user
  * @access  Private
  */
-router.post('/setup', authenticateToken, async (req, res) => {
+router.post('/setup', twoFactorLimiter, authenticateToken, async (req, res) => {
   try {
     const userId = req.user._id;
     const user = await User.findById(userId);
@@ -55,7 +56,7 @@ router.post('/setup', authenticateToken, async (req, res) => {
  * @desc    Verify 2FA code and enable 2FA
  * @access  Private
  */
-router.post('/verify-setup', authenticateToken, async (req, res) => {
+router.post('/verify-setup', twoFactorLimiter, authenticateToken, async (req, res) => {
   try {
     const { token } = req.body;
     const userId = req.user._id;
@@ -117,7 +118,7 @@ router.post('/verify-setup', authenticateToken, async (req, res) => {
  * @desc    Verify 2FA token during login
  * @access  Public (but requires valid user context)
  */
-router.post('/verify', async (req, res) => {
+router.post('/verify', twoFactorLimiter, async (req, res) => {
   try {
     const { userId, token, isBackupCode } = req.body;
 
@@ -174,7 +175,7 @@ router.post('/verify', async (req, res) => {
  * @desc    Disable 2FA for user account
  * @access  Private
  */
-router.post('/disable', authenticateToken, async (req, res) => {
+router.post('/disable', twoFactorLimiter, authenticateToken, async (req, res) => {
   try {
     const { password, token } = req.body;
     const userId = req.user._id;
@@ -257,7 +258,7 @@ router.get('/status', authenticateToken, async (req, res) => {
  * @desc    Regenerate backup codes (requires password + 2FA token)
  * @access  Private
  */
-router.post('/regenerate-backup-codes', authenticateToken, async (req, res) => {
+router.post('/regenerate-backup-codes', twoFactorLimiter, authenticateToken, async (req, res) => {
   try {
     const { password, token } = req.body;
     const userId = req.user._id;

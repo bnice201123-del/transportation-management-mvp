@@ -20,6 +20,11 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  emailHash: {
+    type: String,
+    index: true,
+    select: false // For searchable encrypted email
+  },
   password: {
     type: String,
     required: true,
@@ -69,6 +74,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  phoneHash: {
+    type: String,
+    index: true,
+    select: false // For searchable encrypted phone
+  },
   profileImage: {
     type: String, // Store base64 image data or URL
     default: null
@@ -84,6 +94,11 @@ const userSchema = new mongoose.Schema({
   licenseNumber: {
     type: String,
     trim: true
+  },
+  licenseNumberHash: {
+    type: String,
+    index: true,
+    select: false // For searchable encrypted license number
   },
   vehicleInfo: {
     make: String,
@@ -216,7 +231,17 @@ const userSchema = new mongoose.Schema({
   trips: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Trip'
-  }]
+  }],
+  // Encryption metadata
+  encryptionMetadata: {
+    isEncrypted: {
+      type: Boolean,
+      default: false
+    },
+    encryptedAt: Date,
+    keyVersion: Number,
+    encryptedFields: [String] // Track which fields are encrypted
+  }
 }, {
   timestamps: true
 });
@@ -294,6 +319,127 @@ userSchema.pre('save', function(next) {
 userSchema.methods.toJSON = function() {
   const user = this.toObject();
   delete user.password;
+  return user;
+};
+
+// Encryption helper methods
+userSchema.methods.encryptSensitiveFields = async function() {
+  const EncryptionKey = mongoose.model('EncryptionKey');
+  const { encrypt, hashForSearch } = await import('../utils/encryption.js');
+  
+  try {
+    const activeKey = await EncryptionKey.getActiveKey();
+    
+    // Fields to encrypt
+    const fieldsToEncrypt = [];
+    
+    // Deterministic encryption for searchable fields
+    if (this.email && !this.encryptionMetadata?.isEncrypted) {
+      const originalEmail = this.email;
+      this.email = encrypt(originalEmail, activeKey, true); // deterministic
+      this.emailHash = hashForSearch(originalEmail);
+      fieldsToEncrypt.push('email');
+    }
+    
+    if (this.phone && !this.encryptionMetadata?.isEncrypted) {
+      const originalPhone = this.phone;
+      this.phone = encrypt(originalPhone, activeKey, true); // deterministic
+      this.phoneHash = hashForSearch(originalPhone);
+      fieldsToEncrypt.push('phone');
+    }
+    
+    if (this.licenseNumber && !this.encryptionMetadata?.isEncrypted) {
+      const originalLicense = this.licenseNumber;
+      this.licenseNumber = encrypt(originalLicense, activeKey, true); // deterministic
+      this.licenseNumberHash = hashForSearch(originalLicense);
+      fieldsToEncrypt.push('licenseNumber');
+    }
+    
+    // Random encryption for non-searchable sensitive fields
+    if (this.twoFactorSecret && !this.encryptionMetadata?.isEncrypted) {
+      this.twoFactorSecret = encrypt(this.twoFactorSecret, activeKey, false);
+      fieldsToEncrypt.push('twoFactorSecret');
+    }
+    
+    // Update encryption metadata
+    if (fieldsToEncrypt.length > 0) {
+      this.encryptionMetadata = {
+        isEncrypted: true,
+        encryptedAt: new Date(),
+        keyVersion: activeKey.version,
+        encryptedFields: fieldsToEncrypt
+      };
+      
+      await EncryptionKey.trackUsage(activeKey.version, 'encrypt');
+    }
+    
+    return this;
+  } catch (error) {
+    console.error('Encryption error:', error);
+    throw error;
+  }
+};
+
+userSchema.methods.decryptSensitiveFields = async function() {
+  if (!this.encryptionMetadata?.isEncrypted) {
+    return this;
+  }
+  
+  const EncryptionKey = mongoose.model('EncryptionKey');
+  const { decrypt } = await import('../utils/encryption.js');
+  
+  try {
+    const getKeyByVersion = async (version) => {
+      return await EncryptionKey.getKeyByVersion(version);
+    };
+    
+    // Decrypt fields
+    if (this.email && this.encryptionMetadata.encryptedFields.includes('email')) {
+      this.email = await decrypt(this.email, getKeyByVersion);
+      await EncryptionKey.trackUsage(this.encryptionMetadata.keyVersion, 'decrypt');
+    }
+    
+    if (this.phone && this.encryptionMetadata.encryptedFields.includes('phone')) {
+      this.phone = await decrypt(this.phone, getKeyByVersion);
+    }
+    
+    if (this.licenseNumber && this.encryptionMetadata.encryptedFields.includes('licenseNumber')) {
+      this.licenseNumber = await decrypt(this.licenseNumber, getKeyByVersion);
+    }
+    
+    if (this.twoFactorSecret && this.encryptionMetadata.encryptedFields.includes('twoFactorSecret')) {
+      this.twoFactorSecret = await decrypt(this.twoFactorSecret, getKeyByVersion);
+    }
+    
+    return this;
+  } catch (error) {
+    console.error('Decryption error:', error);
+    throw error;
+  }
+};
+
+// Static method to find by encrypted field
+userSchema.statics.findByEncryptedEmail = async function(email) {
+  const { hashForSearch } = await import('../utils/encryption.js');
+  const emailHash = hashForSearch(email);
+  
+  const user = await this.findOne({ emailHash }).select('+emailHash');
+  if (user && user.encryptionMetadata?.isEncrypted) {
+    await user.decryptSensitiveFields();
+  }
+  
+  return user;
+};
+
+userSchema.statics.findByEncryptedPhone = async function(phone) {
+  const { hashForSearch } = await import('../utils/encryption.js');
+  const phoneHash = hashForSearch(phone);
+  
+  const user = await this.findOne({ phoneHash }).select('+phoneHash');
+  if (user && user.encryptionMetadata?.isEncrypted) {
+    await user.decryptSensitiveFields();
+  }
+  
   return user;
 };
 

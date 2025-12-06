@@ -3,11 +3,44 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { logActivity } from '../utils/logger.js';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { logAudit } from '../middleware/audit.js';
+import { authLimiter, passwordResetLimiter, apiLimiter } from '../middleware/rateLimiter.js';
+import Session from '../models/Session.js';
+import { hashToken } from '../middleware/sessionTracking.js';
 
 const router = express.Router();
 
+// Helper function to hash token
+// (imported from sessionTracking middleware)
+
+// Helper function to parse user agent
+function parseUA(userAgent) {
+  if (!userAgent) return {};
+  const deviceInfo = {
+    browser: 'Unknown',
+    os: 'Unknown',
+    device: 'Unknown',
+    isMobile: false,
+    isDesktop: false,
+    isTablet: false
+  };
+  if (/Chrome/.test(userAgent) && !/Edg/.test(userAgent)) deviceInfo.browser = 'Chrome';
+  else if (/Firefox/.test(userAgent)) deviceInfo.browser = 'Firefox';
+  else if (/Safari/.test(userAgent) && !/Chrome/.test(userAgent)) deviceInfo.browser = 'Safari';
+  else if (/Edg/.test(userAgent)) deviceInfo.browser = 'Edge';
+  if (/Windows/.test(userAgent)) deviceInfo.os = 'Windows';
+  else if (/Mac OS X/.test(userAgent)) deviceInfo.os = 'macOS';
+  else if (/Linux/.test(userAgent)) deviceInfo.os = 'Linux';
+  else if (/Android/.test(userAgent)) deviceInfo.os = 'Android';
+  else if (/iOS|iPhone|iPad/.test(userAgent)) deviceInfo.os = 'iOS';
+  if (/Mobile|Android|iPhone/.test(userAgent)) { deviceInfo.device = 'Mobile'; deviceInfo.isMobile = true; }
+  else if (/Tablet|iPad/.test(userAgent)) { deviceInfo.device = 'Tablet'; deviceInfo.isTablet = true; }
+  else { deviceInfo.device = 'Desktop'; deviceInfo.isDesktop = true; }
+  return deviceInfo;
+}
+
 // Register new user (admin only)
-router.post('/register', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/register', apiLimiter, authenticateToken, authorizeRoles('admin'), async (req, res) => {
   try {
     const { username, email, password, firstName, lastName, role, phone, licenseNumber, vehicleInfo, riderId, dateOfBirth, preferredVehicleType, serviceBalance, contractDetails, pricingDetails, mileageBalance, trips, securityQuestions } = req.body;
 
@@ -129,6 +162,22 @@ router.post('/register', authenticateToken, authorizeRoles('admin'), async (req,
 
     // Log activity
     await logActivity(user._id, 'user_registered', `User registered with role: ${role}`);
+    
+    // Audit log
+    await logAudit({
+      userId: req.user._id,
+      username: req.user.username,
+      userRole: req.user.role,
+      action: 'user_created',
+      category: 'user_management',
+      description: `Created new user: ${user.username} (${role})`,
+      targetType: 'User',
+      targetId: user._id.toString(),
+      targetName: `${user.firstName} ${user.lastName}`,
+      metadata: { ipAddress: req.ip, userAgent: req.headers['user-agent'] },
+      severity: 'info',
+      success: true
+    });
 
     // Generate JWT token
     const token = jwt.sign(
@@ -200,7 +249,7 @@ router.post('/register-admin', async (req, res) => {
 });
 
 // Login user (supports both username and email)
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { username, email, password, twoFactorToken } = req.body;
 
@@ -215,6 +264,14 @@ router.post('/login', async (req, res) => {
     }
 
     if (!user) {
+      await logAudit({
+        action: 'login_failed',
+        category: 'authentication',
+        description: `Failed login attempt for ${username || email}`,
+        metadata: { ipAddress: req.ip, userAgent: req.headers['user-agent'] },
+        severity: 'warning',
+        success: false
+      });
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -226,6 +283,17 @@ router.post('/login', async (req, res) => {
     // Verify password
     const isValidPassword = await user.comparePassword(password);
     if (!isValidPassword) {
+      await logAudit({
+        userId: user._id,
+        username: user.username,
+        userRole: user.role,
+        action: 'login_failed',
+        category: 'authentication',
+        description: `Failed login attempt - invalid password`,
+        metadata: { ipAddress: req.ip, userAgent: req.headers['user-agent'] },
+        severity: 'warning',
+        success: false
+      });
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -274,6 +342,19 @@ router.post('/login', async (req, res) => {
 
     // Log activity
     await logActivity(user._id, 'user_login', 'User logged in successfully');
+    
+    // Audit log
+    await logAudit({
+      userId: user._id,
+      username: user.username,
+      userRole: user.role,
+      action: 'login_success',
+      category: 'authentication',
+      description: `User logged in successfully`,
+      metadata: { ipAddress: req.ip, userAgent: req.headers['user-agent'] },
+      severity: 'info',
+      success: true
+    });
 
     // Generate JWT token
     const token = jwt.sign(
@@ -285,6 +366,34 @@ router.post('/login', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
+
+    // Create session for tracking
+    try {
+      const tokenHash = hashToken(token);
+      const userAgent = req.headers['user-agent'] || 'Unknown';
+      const deviceInfo = parseUA(userAgent);
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      
+      await Session.createSession({
+        userId: user._id,
+        token,
+        tokenHash,
+        ipAddress,
+        userAgent,
+        deviceInfo,
+        loginMethod: user.twoFactorEnabled ? 'two-factor' : 'password',
+        expiresIn: 24 * 60 * 60 * 1000 // 24 hours
+      });
+
+      // Check for anomalies
+      const anomalies = await Session.detectAnomalies(user._id);
+      if (anomalies.length > 0) {
+        console.warn(`Suspicious login detected for user ${user.username}:`, anomalies);
+      }
+    } catch (sessionError) {
+      console.error('Error creating session:', sessionError);
+      // Don't fail login if session creation fails
+    }
 
     // Prepare user response
     const userResponse = user.toJSON();
@@ -357,7 +466,7 @@ router.post('/fcm-token', async (req, res) => {
 });
 
 // Password Recovery - Step 1: Get Security Questions
-router.post('/forgot-password/questions', async (req, res) => {
+router.post('/forgot-password/questions', passwordResetLimiter, async (req, res) => {
   try {
     const { username } = req.body;
 
@@ -395,7 +504,7 @@ router.post('/forgot-password/questions', async (req, res) => {
 });
 
 // Password Recovery - Step 2: Verify Security Answers
-router.post('/forgot-password/verify', async (req, res) => {
+router.post('/forgot-password/verify', passwordResetLimiter, async (req, res) => {
   try {
     const { username, answers } = req.body;
 
@@ -459,7 +568,7 @@ router.post('/forgot-password/verify', async (req, res) => {
 });
 
 // Password Recovery - Step 3: Reset Password
-router.post('/forgot-password/reset', async (req, res) => {
+router.post('/forgot-password/reset', passwordResetLimiter, async (req, res) => {
   try {
     const { resetToken, newPassword } = req.body;
 

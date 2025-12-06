@@ -23,11 +23,20 @@ import workScheduleRoutes from './routes/workSchedule.js';
 import adminRoutes from './routes/admin.js';
 import holidaysRoutes from './routes/holidays.js';
 import twoFactorRoutes from './routes/twoFactor.js';
+import auditRoutes from './routes/audit.js';
+import gdprRoutes from './routes/gdpr.js';
+import rateLimitRoutes from './routes/rateLimit.js';
+import sessionsRoutes from './routes/sessions.js';
+import encryptionRoutes from './routes/encryption.js';
+import permissionsRoutes from './routes/permissions.js';
+import securityRoutes from './routes/security.js';
+import { globalLimiter } from './middleware/rateLimiter.js';
 
 // Import services
 import departureMonitoringService from './services/departureMonitoringService.js';
 import unassignedTripMonitoringService from './services/unassignedTripMonitoringService.js';
 import driverProgressMonitoringService from './services/driverProgressMonitoringService.js';
+import securityAlertingService from './services/securityAlertingService.js';
 
 // Load environment variables
 dotenv.config();
@@ -68,6 +77,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Apply global rate limiter to all routes
+app.use(globalLimiter);
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/trips', tripRoutes);
@@ -86,6 +98,13 @@ app.use('/api/work-schedule', workScheduleRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/holidays', holidaysRoutes);
 app.use('/api/2fa', twoFactorRoutes);
+app.use('/api/audit', auditRoutes);
+app.use('/api/gdpr', gdprRoutes);
+app.use('/api/rate-limit', rateLimitRoutes);
+app.use('/api/sessions', sessionsRoutes);
+app.use('/api/encryption', encryptionRoutes);
+app.use('/api/permissions', permissionsRoutes);
+app.use('/api/security', securityRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -183,6 +202,13 @@ server.listen(PORT, () => {
   } catch (error) {
     console.error('Failed to start driver progress monitoring service:', error);
   }
+  
+  try {
+    securityAlertingService.start();
+    console.log('✓ Security alerting service started');
+  } catch (error) {
+    console.error('Failed to start security alerting service:', error);
+  }
 });
 
 // Graceful shutdown
@@ -191,6 +217,7 @@ process.on('SIGTERM', () => {
   departureMonitoringService.stop();
   unassignedTripMonitoringService.stop();
   driverProgressMonitoringService.stop();
+  securityAlertingService.stop();
   server.close(() => {
     console.log('HTTP server closed');
   });

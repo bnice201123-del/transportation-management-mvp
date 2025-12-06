@@ -2,6 +2,7 @@ import express from 'express';
 import User from '../models/User.js';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import { logActivity } from '../utils/logger.js';
+import { logAudit } from '../middleware/audit.js';
 
 const router = express.Router();
 
@@ -250,6 +251,26 @@ router.put('/:id', authenticateToken, async (req, res) => {
       `Updated profile for ${user.firstName} ${user.lastName}`,
       { updatedFields: Object.keys(updateData) }
     );
+    
+    // Audit log
+    await logAudit({
+      userId: req.user._id,
+      username: req.user.username,
+      userRole: req.user.role,
+      action: 'user_updated',
+      category: 'user_management',
+      description: `Updated user profile: ${user.username}`,
+      targetType: 'User',
+      targetId: user._id.toString(),
+      targetName: `${user.firstName} ${user.lastName}`,
+      metadata: { 
+        ipAddress: req.ip, 
+        userAgent: req.headers['user-agent'],
+        updatedFields: Object.keys(updateData)
+      },
+      severity: 'info',
+      success: true
+    });
 
     res.json({
       message: 'Profile updated successfully',
@@ -503,6 +524,22 @@ router.patch('/:id/deactivate', authenticateToken, authorizeRoles('admin'), asyn
       `Deactivated user ${user.firstName} ${user.lastName}`,
       { deactivatedUserId: user._id }
     );
+    
+    // Audit log
+    await logAudit({
+      userId: req.user._id,
+      username: req.user.username,
+      userRole: req.user.role,
+      action: 'user_deactivated',
+      category: 'user_management',
+      description: `Deactivated user: ${user.username}`,
+      targetType: 'User',
+      targetId: user._id.toString(),
+      targetName: `${user.firstName} ${user.lastName}`,
+      metadata: { ipAddress: req.ip, userAgent: req.headers['user-agent'] },
+      severity: 'warning',
+      success: true
+    });
 
     res.json({
       message: 'User deactivated successfully',

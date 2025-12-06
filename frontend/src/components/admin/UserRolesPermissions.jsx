@@ -206,7 +206,7 @@ const UserRolesPermissions = () => {
   // Responsive design hooks
   const isMobile = useBreakpointValue({ base: true, md: false });
   const isTablet = useBreakpointValue({ base: false, md: true, lg: false });
-  const containerMaxW = useBreakpointValue({ base: 'full', md: '7xl' });
+  const containerMaxW = useBreakpointValue({ base: 'full', md: 'full' });
   const cardColumns = useBreakpointValue({ base: 1, md: 2, lg: 3 });
   const tableSize = useBreakpointValue({ base: 'sm', md: 'md' });
   
@@ -512,7 +512,7 @@ const UserRolesPermissions = () => {
     return (
       <Box minHeight="100vh" bg={bgColor}>
         <Navbar />
-        <Container maxW="7xl" py={8}>
+        <Container maxW="full" py={8}>
           <Flex align="center" justify="center" minHeight="60vh">
             <VStack spacing={4}>
               <FaUserShield size={48} color="#3182ce" />
@@ -527,7 +527,7 @@ const UserRolesPermissions = () => {
   return (
     <Box minHeight="100vh" bg={bgColor}>
       <Navbar />
-      <Container maxW="7xl" py={8}>
+      <Container maxW="full" py={8}>
         <VStack spacing={8} align="stretch">
           {/* Header */}
           <Box

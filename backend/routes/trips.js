@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import Vehicle from '../models/Vehicle.js';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import { logActivity } from '../utils/logger.js';
+import { logAudit } from '../middleware/audit.js';
 import RecurringTripService from '../services/recurringTripService.js';
 import {
   handleTripAssigned,
@@ -615,6 +616,22 @@ router.post('/', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'a
       { tripId: trip._id },
       trip._id
     );
+    
+    // Audit log
+    await logAudit({
+      userId: req.user._id,
+      username: req.user.username,
+      userRole: req.user.role,
+      action: 'trip_created',
+      category: 'trip_management',
+      description: `Created trip ${trip.tripId} for ${trip.riderName}`,
+      targetType: 'Trip',
+      targetId: trip._id.toString(),
+      targetName: trip.tripId,
+      metadata: { ipAddress: req.ip, userAgent: req.headers['user-agent'] },
+      severity: 'info',
+      success: true
+    });
 
     const populatedTrip = await Trip.findById(trip._id)
       .populate('rider', 'firstName lastName phone email')
@@ -876,6 +893,23 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       activityDetails,
       trip._id
     );
+    
+    // Audit log
+    await logAudit({
+      userId: req.user._id,
+      username: req.user.username,
+      userRole: req.user.role,
+      action: 'trip_status_changed',
+      category: 'trip_management',
+      description: `Changed trip ${trip.tripId} status from ${oldStatus} to ${status}`,
+      targetType: 'Trip',
+      targetId: trip._id.toString(),
+      targetName: trip.tripId,
+      changes: { before: oldStatus, after: status },
+      metadata: { ipAddress: req.ip, userAgent: req.headers['user-agent'] },
+      severity: status === 'cancelled' ? 'warning' : 'info',
+      success: true
+    });
 
     const updatedTrip = await Trip.findById(trip._id)
       .populate('rider', 'firstName lastName email phone')

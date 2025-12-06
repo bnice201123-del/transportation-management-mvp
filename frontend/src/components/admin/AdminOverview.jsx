@@ -397,7 +397,7 @@ const AdminOverview = () => {
 
   const filteredData = getFilteredData();
 
-  // Enhanced Stat Card Component - Compact Design
+  // Modern Enhanced Stat Card Component
   const StatCard = ({ 
     title, 
     value, 
@@ -411,13 +411,13 @@ const AdminOverview = () => {
     loading: cardLoading = false
   }) => {
     const colorScheme = {
-      blue: { bg: 'blue.500', light: 'blue.50', dark: 'blue.900' },
-      green: { bg: 'green.500', light: 'green.50', dark: 'green.900' },
-      purple: { bg: 'purple.500', light: 'purple.50', dark: 'purple.900' },
-      orange: { bg: 'orange.500', light: 'orange.50', dark: 'orange.900' },
-      teal: { bg: 'teal.500', light: 'teal.50', dark: 'teal.900' },
-      yellow: { bg: 'yellow.500', light: 'yellow.50', dark: 'yellow.900' },
-      red: { bg: 'red.500', light: 'red.50', dark: 'red.900' }
+      blue: { bg: 'blue.500', light: 'blue.50', dark: 'blue.900', gradient: 'linear(to-br, blue.400, blue.600)' },
+      green: { bg: 'green.500', light: 'green.50', dark: 'green.900', gradient: 'linear(to-br, green.400, green.600)' },
+      purple: { bg: 'purple.500', light: 'purple.50', dark: 'purple.900', gradient: 'linear(to-br, purple.400, purple.600)' },
+      orange: { bg: 'orange.500', light: 'orange.50', dark: 'orange.900', gradient: 'linear(to-br, orange.400, orange.600)' },
+      teal: { bg: 'teal.500', light: 'teal.50', dark: 'teal.900', gradient: 'linear(to-br, teal.400, teal.600)' },
+      yellow: { bg: 'yellow.500', light: 'yellow.50', dark: 'yellow.900', gradient: 'linear(to-br, yellow.400, yellow.600)' },
+      red: { bg: 'red.500', light: 'red.50', dark: 'red.900', gradient: 'linear(to-br, red.400, red.600)' }
     };
 
     const colors = colorScheme[color] || colorScheme.blue;
@@ -427,78 +427,144 @@ const AdminOverview = () => {
         bg={cardBg}
         border="1px solid"
         borderColor={borderColor}
-        shadow="sm"
+        shadow="lg"
+        borderRadius="2xl"
         height="100%"
+        overflow="hidden"
         _hover={isClickable ? { 
-          shadow: 'xl', 
-          transform: 'translateY(-4px)',
-          transition: 'all 0.3s ease'
+          shadow: '2xl', 
+          transform: 'translateY(-6px)',
+          borderColor: colors.bg,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         } : {}}
-        transition="all 0.3s ease"
+        transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
         cursor={isClickable ? 'pointer' : 'default'}
         onClick={onClick}
+        position="relative"
       >
-        <CardBody p={{ base: 3, md: 4 }}>
+        {/* Decorative gradient background */}
+        <Box
+          position="absolute"
+          top="0"
+          right="0"
+          width="100px"
+          height="100px"
+          bgGradient={colors.gradient}
+          opacity="0.05"
+          borderRadius="full"
+          filter="blur(40px)"
+        />
+        
+        <CardBody p={{ base: 5, md: 6 }} position="relative">
           {cardLoading ? (
-            <VStack spacing={2} align="stretch">
-              <Skeleton height="20px" />
-              <Skeleton height="32px" />
-              <Skeleton height="16px" />
+            <VStack spacing={3} align="stretch">
+              <Skeleton height="20px" borderRadius="md" />
+              <Skeleton height="40px" borderRadius="md" />
+              <Skeleton height="16px" borderRadius="md" width="60%" />
             </VStack>
           ) : (
-            <HStack spacing={3} justify="space-between">
-              <VStack align="start" spacing={1} flex="1">
-                <Text fontSize="sm" fontWeight="medium" color={textColor}>
-                  {title}
-                </Text>
-                <Text fontSize={{ base: '2xl', md: '3xl' }} fontWeight="bold" color={headingColor}>
-                  {value}
-                </Text>
+            <VStack align="stretch" spacing={4}>
+              <HStack justify="space-between" align="start">
+                <VStack align="start" spacing={1} flex="1">
+                  <Text 
+                    fontSize="xs" 
+                    fontWeight="600" 
+                    color={textColor}
+                    textTransform="uppercase"
+                    letterSpacing="wider"
+                  >
+                    {title}
+                  </Text>
+                  <Text 
+                    fontSize={{ base: '2xl', md: '3xl' }} 
+                    fontWeight="bold" 
+                    color={headingColor}
+                    lineHeight="1"
+                  >
+                    {value}
+                  </Text>
+                </VStack>
+                <Box
+                  p={3}
+                  borderRadius="xl"
+                  bgGradient={colors.gradient}
+                  shadow="md"
+                >
+                  <Icon as={icon} boxSize={{ base: 5, md: 6 }} color="white" />
+                </Box>
+              </HStack>
+              
+              <HStack justify="space-between" align="center">
                 {subtitle && (
-                  <Text fontSize="xs" color={textColor}>
+                  <Text fontSize="sm" color={textColor} fontWeight="medium">
                     {subtitle}
                   </Text>
                 )}
                 {trend && trendValue && (
-                  <HStack spacing={1}>
+                  <HStack 
+                    spacing={1} 
+                    bg={trend === 'up' ? 'green.50' : 'red.50'}
+                    px={2}
+                    py={1}
+                    borderRadius="full"
+                  >
                     <Icon 
                       as={trend === 'up' ? FaArrowUp : FaArrowDown} 
                       color={trend === 'up' ? 'green.500' : 'red.500'}
                       boxSize={3}
                     />
-                    <Text fontSize="xs" color={trend === 'up' ? 'green.500' : 'red.500'} fontWeight="medium">
+                    <Text 
+                      fontSize="xs" 
+                      color={trend === 'up' ? 'green.600' : 'red.600'} 
+                      fontWeight="bold"
+                    >
                       {trendValue}
                     </Text>
                   </HStack>
                 )}
-              </VStack>
-              <Box
-                p={3}
-                borderRadius="lg"
-                bg={useColorModeValue(colors.light, colors.dark)}
-              >
-                <Icon as={icon} boxSize={{ base: 6, md: 7 }} color={colors.bg} />
-              </Box>
-            </HStack>
+              </HStack>
+            </VStack>
           )}
         </CardBody>
+        
+        {/* Bottom accent line */}
+        <Box 
+          height="4px" 
+          bgGradient={colors.gradient}
+          opacity={isClickable ? 1 : 0.3}
+        />
       </Card>
     );
   };
 
-  // Enhanced System Health Card
+  // Modern Enhanced System Health Card
   const SystemHealthCard = () => {
     const healthStatus = systemHealth?.status || 'Unknown';
     const isHealthy = healthStatus === 'OK';
+    const cpuUsage = systemHealth?.cpu || 0;
+    const memoryUsage = systemHealth?.memory || 0;
     
     return (
-      <Card bg={cardBg} border="1px solid" borderColor={borderColor} shadow="sm">
-        <CardHeader pb={2}>
-          <HStack justify="space-between">
-            <Heading size="sm" display="flex" alignItems="center" gap={2}>
-              <Icon as={FaTachometerAlt} color="blue.500" />
-              System Health
-            </Heading>
+      <Card 
+        bg={cardBg} 
+        border="1px solid" 
+        borderColor={borderColor} 
+        shadow="lg"
+        borderRadius="2xl"
+        overflow="hidden"
+      >
+        <Box 
+          bgGradient={isHealthy ? "linear(to-r, green.400, teal.500)" : "linear(to-r, orange.400, red.500)"}
+          p={4}
+        >
+          <HStack justify="space-between" color="white">
+            <HStack spacing={3}>
+              <Icon as={FaShieldAlt} boxSize={6} />
+              <VStack align="start" spacing={0}>
+                <Heading size="sm">System Health</Heading>
+                <Text fontSize="xs" opacity={0.9}>Real-time monitoring</Text>
+              </VStack>
+            </HStack>
             <IconButton
               size="sm"
               variant="ghost"
@@ -506,66 +572,110 @@ const AdminOverview = () => {
               onClick={() => fetchOverviewData()}
               isLoading={refreshing}
               aria-label="Refresh system health"
+              color="white"
+              _hover={{ bg: 'whiteAlpha.200' }}
             />
           </HStack>
-        </CardHeader>
-        <CardBody pt={0}>
-          <VStack align="stretch" spacing={3}>
-            <Alert 
-              status={isHealthy ? 'success' : 'warning'} 
-              borderRadius="lg"
-              variant="left-accent"
+        </Box>
+        
+        <CardBody p={5}>
+          <VStack align="stretch" spacing={4}>
+            {/* Status Badge */}
+            <HStack 
+              p={3} 
+              bg={isHealthy ? 'green.50' : 'orange.50'}
+              borderRadius="xl"
+              justify="space-between"
             >
-              <AlertIcon />
-              <Box>
-                <AlertTitle fontSize="sm" mb={1}>
-                  Backend Status: {healthStatus}
-                </AlertTitle>
-                <AlertDescription fontSize="xs">
-                  {systemHealth?.message || 'Status unavailable'}
-                </AlertDescription>
-              </Box>
-            </Alert>
+              <HStack>
+                <Icon 
+                  as={isHealthy ? FaCheckCircle : FaExclamationTriangle} 
+                  color={isHealthy ? 'green.500' : 'orange.500'}
+                  boxSize={5}
+                />
+                <VStack align="start" spacing={0}>
+                  <Text fontSize="sm" fontWeight="bold" color={headingColor}>
+                    {healthStatus}
+                  </Text>
+                  <Text fontSize="xs" color={textColor}>
+                    {systemHealth?.message || 'All systems operational'}
+                  </Text>
+                </VStack>
+              </HStack>
+              <Badge 
+                colorScheme={isHealthy ? 'green' : 'orange'}
+                borderRadius="full"
+                px={3}
+                py={1}
+              >
+                {isHealthy ? 'Healthy' : 'Warning'}
+              </Badge>
+            </HStack>
             
-            <VStack spacing={2}>
+            {/* Resource Usage */}
+            <VStack spacing={4}>
+              {/* CPU Usage */}
               <Box width="full">
                 <HStack justify="space-between" mb={2}>
-                  <Text fontSize="sm" fontWeight="medium">CPU Usage</Text>
-                  <Text fontSize="sm" color={textColor}>
-                    {systemHealth?.cpu || 0}%
+                  <HStack>
+                    <Icon as={FaTachometerAlt} color="blue.500" boxSize={4} />
+                    <Text fontSize="sm" fontWeight="600">CPU Usage</Text>
+                  </HStack>
+                  <Text fontSize="sm" fontWeight="bold" color={headingColor}>
+                    {cpuUsage}%
                   </Text>
                 </HStack>
-                <Progress 
-                  value={systemHealth?.cpu || 0} 
-                  colorScheme={systemHealth?.cpu > 80 ? 'red' : systemHealth?.cpu > 60 ? 'orange' : 'green'}
-                  size="sm"
-                  borderRadius="md"
-                />
+                <Box position="relative">
+                  <Progress 
+                    value={cpuUsage} 
+                    colorScheme={cpuUsage > 80 ? 'red' : cpuUsage > 60 ? 'orange' : 'green'}
+                    size="md"
+                    borderRadius="full"
+                    hasStripe
+                    isAnimated
+                  />
+                </Box>
               </Box>
               
+              {/* Memory Usage */}
               <Box width="full">
-                <HStack justify="space-between" mb={1}>
-                  <Text fontSize="sm" fontWeight="medium">Memory Usage</Text>
-                  <Text fontSize="sm" color={textColor}>
-                    {systemHealth?.memory || 0}%
+                <HStack justify="space-between" mb={2}>
+                  <HStack>
+                    <Icon as={FaTachometerAlt} color="purple.500" boxSize={4} />
+                    <Text fontSize="sm" fontWeight="600">Memory Usage</Text>
+                  </HStack>
+                  <Text fontSize="sm" fontWeight="bold" color={headingColor}>
+                    {memoryUsage}%
                   </Text>
                 </HStack>
-                <Progress 
-                  value={systemHealth?.memory || 0} 
-                  colorScheme={systemHealth?.memory > 80 ? 'red' : systemHealth?.memory > 60 ? 'orange' : 'green'}
-                  size="sm"
-                  borderRadius="md"
-                />
+                <Box position="relative">
+                  <Progress 
+                    value={memoryUsage} 
+                    colorScheme={memoryUsage > 80 ? 'red' : memoryUsage > 60 ? 'orange' : 'green'}
+                    size="md"
+                    borderRadius="full"
+                    hasStripe
+                    isAnimated
+                  />
+                </Box>
               </Box>
               
-              <Box width="full">
-                <HStack justify="space-between">
-                  <Text fontSize="sm" fontWeight="medium">Uptime</Text>
-                  <Text fontSize="sm" color={textColor}>
-                    {systemHealth?.uptime || '0h 0m'}
-                  </Text>
+              {/* Uptime */}
+              <HStack 
+                width="full" 
+                justify="space-between"
+                p={3}
+                bg={statBg}
+                borderRadius="lg"
+              >
+                <HStack>
+                  <Icon as={FaClock} color="teal.500" boxSize={4} />
+                  <Text fontSize="sm" fontWeight="600">System Uptime</Text>
                 </HStack>
-              </Box>
+                <Badge colorScheme="teal" fontSize="sm" px={3} py={1} borderRadius="full">
+                  {systemHealth?.uptime || '0h 0m'}
+                </Badge>
+              </HStack>
             </VStack>
           </VStack>
         </CardBody>
@@ -573,57 +683,83 @@ const AdminOverview = () => {
     );
   };
 
-  // Enhanced Quick Actions Card
+  // Modern Enhanced Quick Actions Card
   const QuickActionsCard = () => (
-    <Card bg={cardBg} border="1px solid" borderColor={borderColor} shadow="sm">
-      <CardHeader>
-        <Heading size="sm" display="flex" alignItems="center" gap={2}>
-          <Icon as={FaCog} color="purple.500" />
-          Quick Actions
-        </Heading>
-      </CardHeader>
-      <CardBody pt={0}>
-        <VStack spacing={2}>
+    <Card 
+      bg={cardBg} 
+      border="1px solid" 
+      borderColor={borderColor} 
+      shadow="lg"
+      borderRadius="2xl"
+      overflow="hidden"
+    >
+      <Box 
+        bgGradient="linear(to-r, purple.500, pink.500)"
+        p={4}
+      >
+        <HStack spacing={3} color="white">
+          <Icon as={FaCog} boxSize={6} />
+          <VStack align="start" spacing={0}>
+            <Heading size="sm">Quick Actions</Heading>
+            <Text fontSize="xs" opacity={0.9}>Common tasks</Text>
+          </VStack>
+        </HStack>
+      </Box>
+      
+      <CardBody p={5}>
+        <VStack spacing={3}>
           <Button 
-            size="md" 
+            size="lg" 
             width="full" 
             leftIcon={<Icon as={FaUserPlus} />}
             colorScheme="blue"
-            variant="outline"
+            bgGradient="linear(to-r, blue.400, blue.600)"
+            _hover={{ bgGradient: 'linear(to-r, blue.500, blue.700)' }}
             onClick={() => navigate('/admin/register')}
-            _hover={{ bg: 'blue.50' }}
+            borderRadius="xl"
+            shadow="md"
+            color="white"
           >
             Add New User
           </Button>
           <Button 
-            size="md" 
+            size="lg" 
             width="full" 
-            leftIcon={<Icon as={FaChartLine} />}
+            leftIcon={<Icon as={AddIcon} />}
             colorScheme="green"
-            variant="outline"
-            onClick={() => navigate('/admin/analytics')}
-            _hover={{ bg: 'green.50' }}
+            bgGradient="linear(to-r, green.400, green.600)"
+            _hover={{ bgGradient: 'linear(to-r, green.500, green.700)' }}
+            onClick={() => navigate('/scheduler')}
+            borderRadius="xl"
+            shadow="md"
+            color="white"
           >
-            View Analytics
+            Create Trip
           </Button>
           <Button 
-            size="md" 
+            size="lg" 
             width="full" 
             leftIcon={<Icon as={FaFileExport} />}
-            colorScheme="orange"
+            colorScheme="purple"
             variant="outline"
-            onClick={() => navigate('/admin/reports')}
-            _hover={{ bg: 'orange.50' }}
+            onClick={handleExportData}
+            isLoading={isExporting}
+            loadingText="Exporting..."
+            borderRadius="xl"
+            borderWidth="2px"
+            _hover={{ bg: 'purple.50' }}
           >
-            Export Reports
+            Export Report
           </Button>
           <Button 
-            size="md" 
+            size="lg" 
             width="full" 
             leftIcon={<Icon as={FaCog} />}
             colorScheme="gray"
             variant="outline"
             onClick={() => navigate('/admin/settings')}
+            borderRadius="xl"
+            borderWidth="2px"
             _hover={{ bg: 'gray.50' }}
           >
             System Settings
@@ -895,29 +1031,56 @@ const AdminOverview = () => {
     );
   };
 
-  // Recent Users Card
+  // Modern Enhanced Recent Users Card - Full Width
   const RecentUsersCard = () => (
-    <Card bg={cardBg} border="1px solid" borderColor={borderColor} shadow="sm">
-      <CardHeader>
-        <HStack justify="space-between">
-          <Heading size="sm" display="flex" alignItems="center" gap={2}>
-            <Icon as={FaUserPlus} color="purple.500" />
-            Recent Users
-          </Heading>
+    <Card 
+      bg={cardBg} 
+      border="1px solid" 
+      borderColor={borderColor} 
+      shadow="lg"
+      borderRadius="2xl"
+      overflow="hidden"
+    >
+      <Box 
+        bgGradient="linear(to-r, purple.500, blue.500)"
+        p={4}
+      >
+        <HStack justify="space-between" color="white">
+          <HStack spacing={3}>
+            <Icon as={FaUserPlus} boxSize={6} />
+            <VStack align="start" spacing={0}>
+              <Heading size="sm">Recent Users</Heading>
+              <Text fontSize="xs" opacity={0.9}>
+                {overviewData?.recentUsers?.length || 0} new members
+              </Text>
+            </VStack>
+          </HStack>
           <Button 
             size="sm" 
-            variant="ghost" 
             rightIcon={<ExternalLinkIcon />}
             onClick={() => navigate('/admin/users')}
+            colorScheme="whiteAlpha"
+            bg="whiteAlpha.200"
+            color="white"
+            _hover={{ bg: 'whiteAlpha.300' }}
+            borderRadius="full"
           >
             View All
           </Button>
         </HStack>
-      </CardHeader>
-      <CardBody pt={0}>
-        <VStack spacing={2}>
-          {overviewData?.recentUsers && overviewData.recentUsers.length > 0 ? (
-            overviewData.recentUsers.map((user) => {
+      </Box>
+      
+      <CardBody p={5}>
+        {overviewData?.recentUsers && overviewData.recentUsers.length > 0 ? (
+          <Grid 
+            templateColumns={{ 
+              base: "1fr", 
+              md: "repeat(2, 1fr)", 
+              lg: "repeat(5, 1fr)" 
+            }} 
+            gap={4}
+          >
+            {overviewData.recentUsers.map((user) => {
               if (!user) return null;
               
               const getRoleColor = (role) => {
@@ -932,48 +1095,74 @@ const AdminOverview = () => {
               };
               
               return (
-                <HStack 
-                  key={user._id || user.id} 
-                  width="full" 
-                  p={2} 
-                  bg={statBg} 
-                  borderRadius="lg"
-                  justify="space-between"
+                <Box
+                  key={user._id || user.id}
+                  p={4}
+                  bg={statBg}
+                  borderRadius="xl"
+                  borderWidth="1px"
+                  borderColor={borderColor}
+                  _hover={{
+                    shadow: 'md',
+                    transform: 'translateY(-2px)',
+                    transition: 'all 0.2s'
+                  }}
+                  transition="all 0.2s"
+                  cursor="pointer"
+                  onClick={() => navigate('/admin/users')}
                 >
-                  <HStack spacing={2}>
+                  <VStack spacing={3} align="center">
                     <Avatar 
-                      size="sm" 
+                      size="lg" 
                       name={`${user.firstName || ''} ${user.lastName || ''}`}
                       bg={`${getRoleColor(user.role)}.500`}
+                      color="white"
                     />
-                    <VStack align="start" spacing={0}>
-                      <Text fontSize="sm" fontWeight="semibold">
+                    <VStack spacing={1} align="center" w="full">
+                      <Text 
+                        fontSize="sm" 
+                        fontWeight="bold" 
+                        textAlign="center"
+                        noOfLines={1}
+                      >
                         {`${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown User'}
                       </Text>
-                      <Text fontSize="xs" color={textColor}>
+                      <Text 
+                        fontSize="xs" 
+                        color={textColor}
+                        noOfLines={1}
+                        w="full"
+                        textAlign="center"
+                      >
                         {user.email || 'No email'}
                       </Text>
                     </VStack>
-                  </HStack>
-                  <Tag 
-                    size="sm" 
-                    colorScheme={getRoleColor(user.role)}
-                    textTransform="capitalize"
-                  >
-                    {user.role || 'Unknown'}
-                  </Tag>
-                </HStack>
+                    <Badge 
+                      colorScheme={getRoleColor(user.role)}
+                      textTransform="capitalize"
+                      px={3}
+                      py={1}
+                      borderRadius="full"
+                      fontSize="xs"
+                    >
+                      {user.role || 'Unknown'}
+                    </Badge>
+                  </VStack>
+                </Box>
               );
-            }).filter(Boolean)
-          ) : (
-            <Box textAlign="center" py={8}>
-              <Icon as={FaUser} boxSize={12} color="gray.300" mb={3} />
-              <Text fontSize="sm" color={textColor}>
-                No recent users
-              </Text>
-            </Box>
-          )}
-        </VStack>
+            }).filter(Boolean)}
+          </Grid>
+        ) : (
+          <Box textAlign="center" py={12}>
+            <Icon as={FaUser} boxSize={16} color="gray.300" mb={4} />
+            <Text fontSize="md" fontWeight="semibold" color={headingColor} mb={2}>
+              No Recent Users
+            </Text>
+            <Text fontSize="sm" color={textColor}>
+              New users will appear here when they register
+            </Text>
+          </Box>
+        )}
       </CardBody>
     </Card>
   );
@@ -1050,28 +1239,64 @@ const AdminOverview = () => {
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh" bg={mainBg}>
       <Navbar />
-      <Box flex="1" p={{ base: 3, md: 4 }} w="100%" overflowX="hidden">
-        <VStack align="stretch" spacing={{ base: 4, md: 5 }}>
-            {/* Header Section - Compact */}
-            <Box>
-              <HStack justify="space-between" mb={2} flexWrap="wrap" gap={3}>
-                <VStack align="start" spacing={0}>
-                  <Heading size={{ base: 'lg', md: 'xl' }} color={headingColor}>
-                    System Overview
-                  </Heading>
-                  <Text color={textColor} fontSize="sm">
-                    Key metrics and system performance indicators
+      <Box flex="1" p={{ base: 4, md: 6 }} w="100%" overflowX="hidden">
+        <VStack align="stretch" spacing={{ base: 5, md: 6 }}>
+            {/* Modern Header with Gradient Background */}
+            <Box 
+              bgGradient="linear(to-r, blue.500, purple.600)" 
+              borderRadius="2xl" 
+              p={{ base: 6, md: 8 }}
+              shadow="xl"
+              position="relative"
+              overflow="hidden"
+            >
+              {/* Decorative background pattern */}
+              <Box 
+                position="absolute" 
+                top="0" 
+                right="0" 
+                opacity="0.1"
+                display={{ base: 'none', md: 'block' }}
+              >
+                <Icon as={FaTachometerAlt} boxSize="200px" />
+              </Box>
+              
+              <HStack justify="space-between" position="relative" zIndex="1" flexWrap="wrap" gap={4}>
+                <VStack align="start" spacing={2}>
+                  <HStack spacing={3}>
+                    <Icon as={FaTachometerAlt} color="white" boxSize={8} />
+                    <Heading size={{ base: 'xl', md: '2xl' }} color="white">
+                      System Overview
+                    </Heading>
+                  </HStack>
+                  <Text color="whiteAlpha.900" fontSize={{ base: 'sm', md: 'md' }} fontWeight="medium">
+                    Real-time monitoring and performance analytics
                   </Text>
+                  <HStack spacing={4} mt={2}>
+                    <Badge colorScheme="green" fontSize="sm" px={3} py={1} borderRadius="full">
+                      <HStack spacing={1}>
+                        <Box w={2} h={2} bg="green.300" borderRadius="full" />
+                        <Text>All Systems Operational</Text>
+                      </HStack>
+                    </Badge>
+                    <Text color="whiteAlpha.800" fontSize="sm">
+                      Last updated: {new Date().toLocaleTimeString()}
+                    </Text>
+                  </HStack>
                 </VStack>
-                <HStack spacing={2}>
-                  <Tooltip label="Refresh Data">
+                
+                <HStack spacing={3}>
+                  <Tooltip label="Refresh Data" placement="bottom">
                     <IconButton
                       icon={<RepeatIcon />}
                       onClick={() => fetchOverviewData()}
                       isLoading={refreshing}
-                      colorScheme="blue"
-                      variant="outline"
-                      size={{ base: 'sm', md: 'md' }}
+                      colorScheme="whiteAlpha"
+                      bg="whiteAlpha.200"
+                      color="white"
+                      _hover={{ bg: 'whiteAlpha.300' }}
+                      size="lg"
+                      borderRadius="full"
                       aria-label="Refresh dashboard data"
                     />
                   </Tooltip>
@@ -1079,8 +1304,12 @@ const AdminOverview = () => {
                     <MenuButton 
                       as={Button} 
                       rightIcon={<ChevronDownIcon />} 
-                      variant="outline"
-                      size={{ base: 'sm', md: 'md' }}
+                      colorScheme="whiteAlpha"
+                      bg="whiteAlpha.200"
+                      color="white"
+                      _hover={{ bg: 'whiteAlpha.300' }}
+                      size="lg"
+                      borderRadius="full"
                     >
                       Actions
                     </MenuButton>
@@ -1104,6 +1333,7 @@ const AdminOverview = () => {
                       <MenuItem icon={<FaFilter />} onClick={() => handleFilterView('completed')}>
                         Show Completed Only
                       </MenuItem>
+                      <Divider />
                       <MenuItem icon={<FaCog />} onClick={() => navigate('/admin/settings')}>
                         Settings
                       </MenuItem>
@@ -1115,25 +1345,43 @@ const AdminOverview = () => {
 
             {/* Filter Status Badge */}
             {filterView !== 'all' && (
-              <Alert status="info" variant="left-accent" borderRadius="lg">
-                <AlertIcon />
+              <Alert 
+                status="info" 
+                variant="subtle" 
+                borderRadius="xl"
+                bgGradient="linear(to-r, blue.50, purple.50)"
+                borderWidth="1px"
+                borderColor="blue.200"
+              >
+                <AlertIcon color="blue.500" />
                 <HStack justify="space-between" w="full">
-                  <Text fontSize="sm">
-                    Showing {filterView} items only • {filteredData?.displayLabel}: {filteredData?.displayTrips || 0}
-                  </Text>
-                  <Button size="sm" variant="ghost" onClick={() => handleFilterView('all')}>
+                  <HStack>
+                    <Text fontSize="sm" fontWeight="medium">
+                      Showing {filterView} items only
+                    </Text>
+                    <Badge colorScheme="blue" borderRadius="full">
+                      {filteredData?.displayTrips || 0} {filteredData?.displayLabel}
+                    </Badge>
+                  </HStack>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    colorScheme="blue"
+                    onClick={() => handleFilterView('all')}
+                    borderRadius="full"
+                  >
                     Clear Filter
                   </Button>
                 </HStack>
               </Alert>
             )}
 
-            {/* Key Metrics Grid - Compact Design */}
-            <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: 3, md: 4 }}>
+            {/* Enhanced Key Metrics Grid with Modern Cards */}
+            <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: 4, md: 5 }}>
               <StatCard
                 title="Total Users"
                 value={overviewData?.totalUsers || 0}
-                subtitle={`${overviewData?.activeUsers || 0} active`}
+                subtitle={`${overviewData?.activeUsers || 0} active users`}
                 icon={FaUsers}
                 color="blue"
                 trend="up"
@@ -1145,7 +1393,7 @@ const AdminOverview = () => {
               <StatCard
                 title="Today's Trips"
                 value={overviewData?.todayTrips || 0}
-                subtitle={`${overviewData?.totalTrips || 0} total`}
+                subtitle={`${overviewData?.totalTrips || 0} total trips`}
                 icon={FaRoute}
                 color="green"
                 trend="up"
@@ -1170,7 +1418,7 @@ const AdminOverview = () => {
                 title="System Health"
                 value={systemHealth?.status === 'OK' ? '100%' : '75%'}
                 subtitle={`${overviewData?.pendingTrips || 0} pending`}
-                icon={FaTachometerAlt}
+                icon={FaShieldAlt}
                 color="orange"
                 trend="up"
                 trendValue="5%"
@@ -1180,47 +1428,67 @@ const AdminOverview = () => {
               />
             </SimpleGrid>
 
-            {/* Main Content Grid - Improved Layout */}
+            {/* Modern Three-Column Layout */}
             <Grid 
               templateColumns={{ 
                 base: "1fr", 
-                lg: "2fr 1fr" 
+                md: "1fr 1fr",
+                lg: "2fr 1.5fr 1.5fr" 
               }} 
-              gap={{ base: 3, md: 4 }}
+              gap={{ base: 4, md: 5 }}
             >
-              {/* Left Column - Activity & Distribution */}
-              <VStack spacing={{ base: 3, md: 4 }}>
+              {/* Left Column - Recent Activity */}
+              <VStack spacing={{ base: 4, md: 5 }} align="stretch">
                 <RecentActivityCard />
+              </VStack>
+              
+              {/* Middle Column - Trip Status & Distribution */}
+              <VStack spacing={{ base: 4, md: 5 }} align="stretch">
+                <TripStatusCard />
                 <UserDistributionCard />
               </VStack>
               
-              {/* Right Column - Status & Actions */}
-              <VStack spacing={{ base: 3, md: 4 }}>
-                <TripStatusCard />
+              {/* Right Column - System Health & Quick Actions */}
+              <VStack spacing={{ base: 4, md: 5 }} align="stretch">
                 <SystemHealthCard />
                 <QuickActionsCard />
               </VStack>
             </Grid>
 
-            {/* Recent Users Section - Full Width */}
+            {/* Recent Users Section - Full Width with Modern Design */}
             <RecentUsersCard />
 
-            {/* Bottom Statistics Row - System Performance */}
+            {/* Enhanced System Performance Section */}
             <Box>
-              <Heading size="md" color={headingColor} mb={3}>
-                System Performance
-              </Heading>
-              <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: 3, md: 4 }}>
+              <HStack justify="space-between" mb={4}>
+                <HStack spacing={3}>
+                  <Icon as={FaChartLine} color="purple.500" boxSize={6} />
+                  <Heading size="md" color={headingColor}>
+                    System Performance Metrics
+                  </Heading>
+                </HStack>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  rightIcon={<ExternalLinkIcon />}
+                  onClick={() => navigate('/admin/analytics')}
+                >
+                  View Details
+                </Button>
+              </HStack>
+              <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: 4, md: 5 }}>
                 <StatCard
-                  title="Avg Duration"
+                  title="Avg Trip Duration"
                   value={`${overviewData?.systemStats?.avgTripDuration || 0}m`}
+                  subtitle="Per trip"
                   icon={FaClock}
                   color="teal"
                   loading={loading}
                 />
                 <StatCard
-                  title="Revenue"
+                  title="Total Revenue"
                   value={`$${(overviewData?.systemStats?.totalRevenue || 0).toLocaleString()}`}
+                  subtitle="This month"
                   icon={FaDollarSign}
                   color="green"
                   loading={loading}
@@ -1228,14 +1496,15 @@ const AdminOverview = () => {
                 <StatCard
                   title="Fuel Efficiency"
                   value={`${overviewData?.systemStats?.fuelEfficiency || 0}`}
-                  subtitle="MPG"
+                  subtitle="Miles per gallon"
                   icon={FaGasPump}
                   color="blue"
                   loading={loading}
                 />
                 <StatCard
-                  title="Rating"
+                  title="Customer Rating"
                   value={`${overviewData?.systemStats?.customerSatisfaction || 0}/5`}
+                  subtitle="Average rating"
                   icon={StarIcon}
                   color="yellow"
                   loading={loading}

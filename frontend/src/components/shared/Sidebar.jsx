@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
   VStack,
@@ -70,6 +70,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   const location = useLocation();
   const { isOpen: isSearchOpen, onOpen: onSearchOpen, onClose: onSearchClose } = useDisclosure();
   const [expandedItems, setExpandedItems] = useState({});
+  const sidebarRef = useRef(null);
   
   const bgColor = useColorModeValue('linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%)', 'linear-gradient(180deg, #4a5568 0%, #2d3748 100%)');
   const borderColor = useColorModeValue('gray.300', 'gray.600');
@@ -95,6 +96,42 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
     xl: true 
   });
 
+  // Current breakpoint for conditional logic
+  const currentBreakpoint = useBreakpointValue({ 
+    base: 'base',
+    md: 'md',
+    lg: 'lg',
+    xl: 'xl'
+  });
+
+  // Click outside handler for tablet sidebar (md breakpoint only)
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Only handle clicks when:
+      // 1. Sidebar is visible
+      // 2. On tablet (md) breakpoint only (not lg/xl where sidebar is part of layout)
+      // 3. Click is outside the sidebar element
+      if (isSidebarVisible && currentBreakpoint === 'md' && sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        // Check if click is not on the toggle button or inside a dropdown menu
+        const isToggleButton = event.target.closest('[aria-label="Hide sidebar"]') || 
+                               event.target.closest('[aria-label="Show sidebar"]');
+        const isDropdownMenu = event.target.closest('.menu-dropdown');
+        
+        if (!isToggleButton && !isDropdownMenu) {
+          hideSidebar();
+        }
+      }
+    };
+
+    // Add event listener
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isSidebarVisible, hideSidebar, currentBreakpoint]);
+
   const menuItems = [
     // Dashboard for non-admin users only
     ...(user?.role !== 'admin' ? [{
@@ -113,7 +150,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       ]
     }] : []),
     // Admin Dashboard - comprehensive for admin users
-    ...(user?.role === 'admin' ? [{
+    ...((user?.role === 'admin') ? [{
       id: 'admin-dashboard',
       label: 'Admin Dashboard',
       icon: ViewIcon,
@@ -147,8 +184,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       ]
     }] : []),
 
-
-    // Operations - for scheduler, dispatcher, driver, and admin users
+    // Operations - supporting resources (dispatcher, scheduler, driver, riders, vehicles, search)
     ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'driver' || user?.role === 'admin' ? [{
       id: 'operations',
       label: 'Operations',
@@ -158,7 +194,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       roles: ['scheduler', 'dispatcher', 'driver', 'admin'],
       subItems: [
         ...(user?.role === 'dispatcher' || user?.role === 'admin' ? [
-          { label: 'Dispatch', icon: TimeIcon, action: () => navigate('/dispatcher') }
+          { label: 'Dispatcher', icon: TimeIcon, action: () => navigate('/dispatcher') }
         ] : []),
         ...(user?.role === 'scheduler' || user?.role === 'admin' ? [
           { label: 'Scheduler', icon: CalendarIcon, action: () => navigate('/scheduler') }
@@ -193,9 +229,121 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
     }
   ];
 
-  const filteredMenuItems = menuItems.filter(item => 
-    item.roles.includes(user?.role || 'guest')
-  );
+  const filteredMenuItems = menuItems.filter(item => {
+    const userRoles = user?.roles || [user?.role];
+    return item.roles.some(role => userRoles.includes(role));
+  });
+
+  // Mobile-specific menu items (simplified for mobile UX)
+  const mobileMenuItems = [
+    // Admin Dashboard Overview - for users with admin role
+    ...((user?.roles?.includes('admin') || user?.role === 'admin') ? [{
+      id: 'admin-overview-mobile',
+      label: 'Admin Dashboard',
+      icon: ViewIcon,
+      color: 'purple.600',
+      path: '/admin/overview',
+      roles: ['admin']
+    }] : []),
+    
+    // Dispatcher - for users with dispatcher role
+    ...((user?.roles?.includes('dispatcher') || user?.role === 'dispatcher') ? [{
+      id: 'dispatch-mobile',
+      label: 'Dispatch',
+      icon: TimeIcon,
+      color: 'blue.500',
+      path: '/dispatcher',
+      roles: ['dispatcher']
+    }] : []),
+    
+    // Scheduler - for users with scheduler role
+    ...((user?.roles?.includes('scheduler') || user?.role === 'scheduler') ? [{
+      id: 'scheduler-mobile',
+      label: 'Scheduler',
+      icon: CalendarIcon,
+      color: 'teal.500',
+      path: '/scheduler',
+      roles: ['scheduler']
+    }] : []),
+
+    // Driver View - for users with driver role
+    ...((user?.roles?.includes('driver') || user?.role === 'driver') ? [{
+      id: 'drivers-mobile',
+      label: 'Driver View',
+      icon: FaUserTie,
+      color: 'purple.500',
+      path: '/driver',
+      roles: ['driver']
+    }] : []),
+    
+    // Reports - for admin users
+    ...((user?.roles?.includes('admin') || user?.role === 'admin') ? [{
+      id: 'reports-mobile',
+      label: 'Reports',
+      icon: SearchIcon,
+      color: 'orange.500',
+      path: '/admin/reports',
+      roles: ['admin']
+    }] : []),
+    
+    // Register New User - for admin users
+    ...((user?.roles?.includes('admin') || user?.role === 'admin') ? [{
+      id: 'register-mobile',
+      label: 'Register New User',
+      icon: UnlockIcon,
+      color: 'green.500',
+      path: '/admin/register',
+      roles: ['admin']
+    }] : []),
+    
+    // Manage Users - for admin users
+    ...((user?.roles?.includes('admin') || user?.role === 'admin') ? [{
+      id: 'users-mobile',
+      label: 'Manage Users',
+      icon: SettingsIcon,
+      color: 'red.500',
+      path: '/admin/users',
+      roles: ['admin']
+    }] : []),
+    
+    // Riders - for scheduler, dispatcher, admin
+    ...((user?.roles?.includes('scheduler') || user?.roles?.includes('dispatcher') || user?.roles?.includes('admin') || 
+        user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin') ? [{
+      id: 'riders-mobile',
+      label: 'Riders',
+      icon: FaUsers,
+      color: 'cyan.500',
+      path: '/riders',
+      roles: ['scheduler', 'dispatcher', 'admin']
+    }] : []),
+    
+    // Vehicles - for scheduler, dispatcher, admin
+    ...((user?.roles?.includes('scheduler') || user?.roles?.includes('dispatcher') || user?.roles?.includes('admin') || 
+        user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin') ? [{
+      id: 'vehicles-mobile',
+      label: 'Vehicles',
+      icon: FaCar,
+      color: 'yellow.600',
+      path: '/vehicles',
+      roles: ['scheduler', 'dispatcher', 'admin']
+    }] : []),
+    
+    // Live Tracking - for scheduler, dispatcher, admin
+    ...((user?.roles?.includes('scheduler') || user?.roles?.includes('dispatcher') || user?.roles?.includes('admin') || 
+        user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin') ? [{
+      id: 'tracking-mobile',
+      label: 'Live Tracking',
+      icon: FaMap,
+      color: 'green.500',
+      path: '/maps/tracking',
+      roles: ['scheduler', 'dispatcher', 'admin']
+    }] : [])
+  ];
+
+  const filteredMobileMenuItems = mobileMenuItems.filter(item => {
+    const userRoles = user?.roles || [user?.role];
+    return item.roles.some(role => userRoles.includes(role));
+  });
 
   const handleItemClick = (item) => {
     navigate(item.path || item);
@@ -237,6 +385,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   // Desktop Sidebar Component
   const DesktopSidebar = () => (
     <Box
+      ref={sidebarRef}
       position="fixed"
       left={0}
       top={{ base: 0, md: "60px" }}
@@ -418,10 +567,16 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
     <Drawer 
       isOpen={isMobileOpen} 
       placement="left" 
-      onClose={onMobileClose} 
+      onClose={onMobileClose}
       size={{ base: "xs", sm: "sm" }}
+      closeOnOverlayClick={true}
+      closeOnEsc={true}
     >
-      <DrawerOverlay bg="blackAlpha.300" />
+      <DrawerOverlay 
+        bg="blackAlpha.600" 
+        backdropFilter="blur(4px)"
+        onClick={onMobileClose}
+      />
       <DrawerContent maxW={{ base: "280px", sm: "320px" }}>
         <DrawerCloseButton 
           size="md"
@@ -440,7 +595,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
         </DrawerHeader>
         <DrawerBody p={2}>
           <VStack spacing={2} align="stretch">
-            {filteredMenuItems.map((item) => (
+            {filteredMobileMenuItems.map((item) => (
               <Box key={item.id}>
                 <Flex
                   align="center"
@@ -454,57 +609,15 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                   transition="all 0.2s ease"
                   borderRadius="md"
                   onClick={() => {
-                    if (item.subItems?.length > 0) {
-                      toggleExpanded(item.id);
-                    } else {
-                      handleItemClick(item);
-                      onMobileClose(); // Close drawer after navigation
-                    }
+                    handleItemClick(item);
+                    onMobileClose(); // Close drawer after navigation
                   }}
                 >
                   <Icon as={item.icon} boxSize={6} />
                   <Text ml={3} fontSize="md" fontWeight="medium" flex={1}>
                     {item.label}
                   </Text>
-                  {item.subItems?.length > 0 && (
-                    <Icon
-                      as={expandedItems[item.id] ? ChevronDownIcon : ChevronRightIcon}
-                      boxSize={5}
-                    />
-                  )}
                 </Flex>
-                
-                {/* Sub Items */}
-                {item.subItems && (
-                  <Collapse in={expandedItems[item.id]}>
-                    <VStack spacing={1} align="stretch" bg="gray.50" p={2} borderRadius="md" ml={2}>
-                      {item.subItems.map((subItem, index) => (
-                        <Flex
-                          key={index}
-                          align="center"
-                          p={3}
-                          pl={8}
-                          minH="44px" // Touch-friendly sub-item height
-                          cursor="pointer"
-                          _hover={{ bg: hoverBg, color: item.color }}
-                          _active={{ bg: activeBg, transform: "scale(0.96)" }}
-                          transition="all 0.1s"
-                          borderRadius="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            subItem.action();
-                            onMobileClose(); // Close drawer after navigation
-                          }}
-                        >
-                          <Icon as={subItem.icon} boxSize={4} />
-                          <Text ml={2} fontSize="sm" fontWeight="medium">
-                            {subItem.label}
-                          </Text>
-                        </Flex>
-                      ))}
-                    </VStack>
-                  </Collapse>
-                )}
               </Box>
             ))}
             
@@ -513,33 +626,10 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
               <Text fontSize="xs" fontWeight="bold" color="gray.500" px={3} mb={2}>
                 ACCOUNT
               </Text>
-              
-              {/* User Profile Info */}
-              <Flex
-                align="center"
-                p={3}
-                minH="56px"
-                bg={menuBg}
-                borderRadius="md"
-                mb={2}
-              >
-                <Avatar
-                  size="sm"
-                  name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-                  mr={3}
-                />
-                <VStack align="start" spacing={0} flex="1">
-                  <Text fontSize="sm" fontWeight="medium">
-                    {user ? `${user.firstName} ${user.lastName}` : 'User'}
-                  </Text>
-                  <Text fontSize="xs" color="gray.500">
-                    {user?.email}
-                  </Text>
-                </VStack>
-              </Flex>
 
               {/* Account Settings Options */}
               <VStack spacing={1} align="stretch">
+                {/* Profile */}
                 <Flex
                   align="center"
                   p={3}
@@ -554,12 +644,13 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                     onMobileClose();
                   }}
                 >
-                  <Icon as={SettingsIcon} boxSize={5} color="gray.600" />
+                  <Icon as={FaUser} boxSize={5} color="gray.600" />
                   <Text ml={3} fontSize="sm" fontWeight="medium">
-                    Profile Settings
+                    Profile
                   </Text>
                 </Flex>
 
+                {/* Help */}
                 <Flex
                   align="center"
                   p={3}
@@ -570,16 +661,17 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                   transition="all 0.1s"
                   borderRadius="md"
                   onClick={() => {
-                    navigate('/settings/preferences');
+                    navigate('/help');
                     onMobileClose();
                   }}
                 >
-                  <Icon as={SettingsIcon} boxSize={5} color="gray.600" />
+                  <Icon as={InfoIcon} boxSize={5} color="blue.500" />
                   <Text ml={3} fontSize="sm" fontWeight="medium">
-                    Account Preferences
+                    Help
                   </Text>
                 </Flex>
 
+                {/* Support */}
                 <Flex
                   align="center"
                   p={3}
@@ -590,17 +682,17 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                   transition="all 0.1s"
                   borderRadius="md"
                   onClick={() => {
-                    navigate('/settings/notifications');
+                    navigate('/support');
                     onMobileClose();
                   }}
                 >
-                  <Icon as={EmailIcon} boxSize={5} color="gray.600" />
+                  <Icon as={PhoneIcon} boxSize={5} color="green.500" />
                   <Text ml={3} fontSize="sm" fontWeight="medium">
-                    Notification Settings
+                    Support
                   </Text>
                 </Flex>
 
-                {/* Sign Out */}
+                {/* Logout */}
                 <Flex
                   align="center"
                   p={3}
@@ -616,9 +708,9 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                     onMobileClose();
                   }}
                 >
-                  <Icon as={UnlockIcon} boxSize={5} />
+                  <Icon as={WarningIcon} boxSize={5} />
                   <Text ml={3} fontSize="sm" fontWeight="medium">
-                    Sign Out
+                    Logout
                   </Text>
                 </Flex>
               </VStack>
@@ -631,26 +723,25 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
 
   return (
     <>
-      {/* Overlay for desktop sidebar on md breakpoint (tablet) */}
+      {/* Overlay for desktop/tablet sidebar - shows when sidebar is open on md/lg breakpoints */}
       {isSidebarVisible && (
         <Box
           position="fixed"
-          top={{ base: 0, md: "60px" }}
-          left={0}
-          right={0}
-          bottom={0}
-          bg="blackAlpha.500"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          bg="blackAlpha.600"
           backdropFilter="blur(2px)"
           display={{ base: "none", md: "block", lg: "none" }}
           zIndex={899}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
+          onClick={() => {
             console.log('Overlay clicked - closing sidebar');
             hideSidebar();
           }}
           cursor="pointer"
-          _hover={{ bg: "blackAlpha.600" }}
+          transition="opacity 0.3s ease"
+          _hover={{ bg: "blackAlpha.700" }}
         />
       )}
       

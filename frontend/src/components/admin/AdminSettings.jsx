@@ -477,9 +477,42 @@ const AdminSettings = () => {
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      // Using mock data for now
+      // Try to fetch from backend API first
+      try {
+        const response = await axios.get('/api/admin/settings');
+        if (response.data && response.data.settings) {
+          setSettings(response.data.settings);
+          setLoading(false);
+          return;
+        }
+      } catch (apiError) {
+        console.warn('API fetch failed, loading from localStorage or mock:', apiError);
+      }
+
+      // Fallback: Try localStorage
+      const savedSettings = localStorage.getItem('adminSettings');
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings);
+          setSettings(parsed);
+          setLoading(false);
+          return;
+        } catch (parseError) {
+          console.warn('Failed to parse saved settings:', parseError);
+        }
+      }
+
+      // Final fallback: Use mock data (flatten it)
+      const flattenedSettings = {};
+      Object.keys(mockSettings).forEach(category => {
+        flattenedSettings[category] = {};
+        Object.keys(mockSettings[category]).forEach(field => {
+          flattenedSettings[category][field] = mockSettings[category][field].value;
+        });
+      });
+      
       setTimeout(() => {
-        setSettings(mockSettings);
+        setSettings(flattenedSettings);
         setLoading(false);
       }, 1000);
     } catch (error) {
@@ -533,18 +566,32 @@ const AdminSettings = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Mock save delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Try to save to backend API
+      try {
+        await axios.put('/api/admin/settings', { settings });
+        toast({
+          title: 'Settings saved',
+          description: 'All system settings have been updated successfully',
+          status: 'success',
+          duration: 3000,
+          isClosable: true
+        });
+      } catch (apiError) {
+        // If API fails, still save locally for now
+        console.warn('API save failed, saving locally:', apiError);
+        toast({
+          title: 'Settings saved locally',
+          description: 'Settings saved to browser storage (API unavailable)',
+          status: 'warning',
+          duration: 3000,
+          isClosable: true
+        });
+        // Save to localStorage as fallback
+        localStorage.setItem('adminSettings', JSON.stringify(settings));
+      }
       
       setHasChanges(false);
       setLastSaved(new Date());
-      toast({
-        title: 'Settings saved',
-        description: 'All system settings have been updated successfully',
-        status: 'success',
-        duration: 3000,
-        isClosable: true
-      });
     } catch (error) {
       toast({
         title: 'Error saving settings',
@@ -866,7 +913,15 @@ const AdminSettings = () => {
                           {hasChanges && (
                             <Button
                               onClick={() => {
-                                setSettings(mockSettings);
+                                // Flatten mock settings structure
+                                const flattenedSettings = {};
+                                Object.keys(mockSettings).forEach(category => {
+                                  flattenedSettings[category] = {};
+                                  Object.keys(mockSettings[category]).forEach(field => {
+                                    flattenedSettings[category][field] = mockSettings[category][field].value;
+                                  });
+                                });
+                                setSettings(flattenedSettings);
                                 setHasChanges(false);
                               }}
                               variant="ghost"

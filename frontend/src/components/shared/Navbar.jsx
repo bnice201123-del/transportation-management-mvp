@@ -41,80 +41,28 @@ const Navbar = ({ title }) => {
   const navigationTimeoutRef = useRef(null);
   const isNavigatingRef = useRef(false);
   
-  // Active role state for multi-role users
-  const [activeRole, setActiveRole] = useState(null);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
 
-  // Initialize active role from localStorage or user's primary role
+  // Cleanup timeout on unmount
   useEffect(() => {
-    if (user) {
-      const savedRole = localStorage.getItem('activeRole');
-      const userRoles = user.roles || [user.role];
-      
-      if (savedRole && userRoles.includes(savedRole)) {
-        setActiveRole(savedRole);
-      } else {
-        setActiveRole(user.role);
-        // Save the default role to prevent re-initialization
-        localStorage.setItem('activeRole', user.role);
+    return () => {
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
       }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.role]); // Only re-run when user role changes, not on every user object change
-
-  // Handle role switching with debounce to prevent navigation flooding
-  const handleRoleSwitch = (role) => {
-    // Prevent multiple simultaneous navigation attempts
-    if (isNavigatingRef.current) {
-      return;
-    }
-
-    // Clear any pending navigation
-    if (navigationTimeoutRef.current) {
-      clearTimeout(navigationTimeoutRef.current);
-    }
-
-    setActiveRole(role);
-    localStorage.setItem('activeRole', role);
-    
-    // Get target path based on role
-    let targetPath = '/dashboard';
-    if (role === 'admin') {
-      targetPath = '/admin/overview';
-    } else if (role === 'dispatcher') {
-      targetPath = '/dispatcher';
-    } else if (role === 'scheduler') {
-      targetPath = '/scheduler';
-    } else if (role === 'driver') {
-      targetPath = '/driver-dashboard';
-    }
-
-    // Only navigate if not already on the target path
-    if (location.pathname !== targetPath) {
-      isNavigatingRef.current = true;
-      navigationTimeoutRef.current = setTimeout(() => {
-        navigate(targetPath);
-        // Reset navigation flag after a delay
-        setTimeout(() => {
-          isNavigatingRef.current = false;
-        }, 500);
-      }, 150);
-    }
-  };
+    };
+  }, []);
 
   // Navigate to dashboard based on active role with debounce
   const navigateToDashboard = () => {
-    // Prevent multiple simultaneous navigation attempts
     if (isNavigatingRef.current) {
       return;
     }
 
-    // Clear any pending navigation
     if (navigationTimeoutRef.current) {
       clearTimeout(navigationTimeoutRef.current);
     }
 
-    const currentRole = activeRole || user?.role;
+    const currentRole = user?.role;
     let targetPath = '/dashboard';
     
     if (currentRole === 'admin') {
@@ -169,15 +117,6 @@ const Navbar = ({ title }) => {
     
     return () => clearInterval(interval);
   }, [user]);
-
-  // Get available roles for the user
-  const getAvailableRoles = () => {
-    if (!user) return [];
-    return user.roles || [user.role];
-  };
-
-  const availableRoles = getAvailableRoles();
-  const hasMultipleRoles = availableRoles.length > 1;
 
   const handleLogout = () => {
     logout();
@@ -298,13 +237,13 @@ const Navbar = ({ title }) => {
                         {user ? `${user.firstName}` : 'User'}
                       </Text>
                       <Badge 
-                        colorScheme={getRoleBadgeColor(activeRole || user?.role)} 
+                        colorScheme={getRoleBadgeColor(user?.role)} 
                         variant="subtle"
                         fontSize="xx-small"
                         px={1}
                         py={0}
                       >
-                        {user ? getRoleDisplayName(activeRole || user.role).toUpperCase() : 'ROLE'}
+                        {user ? getRoleDisplayName(user.role).toUpperCase() : 'ROLE'}
                       </Badge>
                     </VStack>
                     <Avatar
@@ -359,57 +298,20 @@ const Navbar = ({ title }) => {
                     size="xs"
                     name={user ? `${user.firstName} ${user.lastName}` : 'User'}
                     src={user?.profileImage}
-                    bg={user?.profileImage ? 'transparent' : `${getRoleBadgeColor(activeRole || user?.role)}.500`}
+                    bg={user?.profileImage ? 'transparent' : `${getRoleBadgeColor(user?.role)}.500`}
                   />
                   <Text fontSize="sm" color="gray.600">
                     {user ? `${user.firstName} ${user.lastName}` : 'User'}
                   </Text>
                   
-                  {/* Role Badge with switcher for multi-role users */}
-                  {hasMultipleRoles ? (
-                    <Menu>
-                      <MenuButton
-                        as={Badge}
-                        colorScheme={getRoleBadgeColor(activeRole || user?.role)}
-                        variant="subtle"
-                        fontSize="xs"
-                        cursor="pointer"
-                        px={2}
-                        py={1}
-                        borderRadius="md"
-                        _hover={{ transform: 'scale(1.05)' }}
-                      >
-                        {getRoleDisplayName(activeRole || user.role)} <ChevronDownIcon />
-                      </MenuButton>
-                      <MenuList>
-                        <Text fontSize="xs" color="gray.500" px={3} py={1} fontWeight="bold">
-                          Switch Role
-                        </Text>
-                        <MenuDivider />
-                        {availableRoles.map((role) => (
-                          <MenuItem
-                            key={role}
-                            onClick={() => handleRoleSwitch(role)}
-                            bg={role === activeRole ? `${getRoleBadgeColor(role)}.50` : 'transparent'}
-                            fontWeight={role === activeRole ? 'bold' : 'normal'}
-                          >
-                            <Badge colorScheme={getRoleBadgeColor(role)} mr={2}>
-                              {getRoleDisplayName(role)}
-                            </Badge>
-                            {role === activeRole && '✓'}
-                          </MenuItem>
-                        ))}
-                      </MenuList>
-                    </Menu>
-                  ) : (
-                    <Badge 
-                      colorScheme={getRoleBadgeColor(activeRole || user?.role)} 
-                      variant="subtle"
-                      fontSize="xs"
-                    >
-                      {user ? getRoleDisplayName(activeRole || user.role) : 'Role'}
-                    </Badge>
-                  )}
+                  {/* Role Badge (static display) */}
+                  <Badge
+                    colorScheme={getRoleBadgeColor(user?.role)}
+                    variant="subtle"
+                    fontSize="xs"
+                  >
+                    {user ? getRoleDisplayName(user.role) : 'Role'}
+                  </Badge>
                 </HStack>
               </VStack>
             </Box>

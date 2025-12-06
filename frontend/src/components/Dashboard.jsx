@@ -20,7 +20,7 @@ const Dashboard = () => {
       const getDashboardRoute = (role) => {
         switch (role) {
           case 'admin':
-            return '/admin/overview';
+            return '/admin';
           case 'scheduler':
             return '/scheduler';
           case 'dispatcher':
@@ -32,18 +32,8 @@ const Dashboard = () => {
         }
       };
 
-      // Get active role from localStorage or use user's primary role
-      const activeRole = localStorage.getItem('activeRole');
-      const userRoles = user.roles || [user.role];
-      
-      let roleToUse = user.role;
-      if (activeRole && userRoles.includes(activeRole)) {
-        roleToUse = activeRole;
-      } else if (userRoles.length > 0) {
-        roleToUse = userRoles[0];
-      }
-
-      const destination = getDashboardRoute(roleToUse);
+      // Use user's primary role for routing
+      const destination = getDashboardRoute(user.role);
       navigate(destination, { replace: true });
     }
   }, [loading, isAuthenticated, user, navigate]);

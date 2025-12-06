@@ -397,7 +397,7 @@ const AdminOverview = () => {
 
   const filteredData = getFilteredData();
 
-  // Enhanced Stat Card Component
+  // Enhanced Stat Card Component - Compact Design
   const StatCard = ({ 
     title, 
     value, 
@@ -409,63 +409,82 @@ const AdminOverview = () => {
     onClick,
     isClickable = false,
     loading: cardLoading = false
-  }) => (
-    <Card 
-      bg={cardBg}
-      border="1px solid"
-      borderColor={borderColor}
-      shadow="sm"
-      _hover={isClickable ? { shadow: 'md', transform: 'translateY(-2px)' } : {}}
-      transition="all 0.2s"
-      cursor={isClickable ? 'pointer' : 'default'}
-      onClick={onClick}
-    >
-      <CardBody p={4}>
-        <Flex align="center" justify="space-between" mb={3}>
-          <Box 
-            p={3} 
-            borderRadius="xl" 
-            bg={`${color}.50`}
-            color={`${color}.500`}
-          >
-            <Icon as={icon} boxSize={5} />
-          </Box>
-          {trend && (
-            <HStack spacing={1}>
-              <Icon 
-                as={trend === 'up' ? FaArrowUp : FaArrowDown} 
-                color={trend === 'up' ? 'green.500' : 'red.500'}
-                boxSize={3}
-              />
-              <Text 
-                fontSize="sm" 
-                color={trend === 'up' ? 'green.500' : 'red.500'}
-                fontWeight="semibold"
+  }) => {
+    const colorScheme = {
+      blue: { bg: 'blue.500', light: 'blue.50', dark: 'blue.900' },
+      green: { bg: 'green.500', light: 'green.50', dark: 'green.900' },
+      purple: { bg: 'purple.500', light: 'purple.50', dark: 'purple.900' },
+      orange: { bg: 'orange.500', light: 'orange.50', dark: 'orange.900' },
+      teal: { bg: 'teal.500', light: 'teal.50', dark: 'teal.900' },
+      yellow: { bg: 'yellow.500', light: 'yellow.50', dark: 'yellow.900' },
+      red: { bg: 'red.500', light: 'red.50', dark: 'red.900' }
+    };
+
+    const colors = colorScheme[color] || colorScheme.blue;
+
+    return (
+      <Card 
+        bg={cardBg}
+        border="1px solid"
+        borderColor={borderColor}
+        shadow="sm"
+        height="100%"
+        _hover={isClickable ? { 
+          shadow: 'xl', 
+          transform: 'translateY(-4px)',
+          transition: 'all 0.3s ease'
+        } : {}}
+        transition="all 0.3s ease"
+        cursor={isClickable ? 'pointer' : 'default'}
+        onClick={onClick}
+      >
+        <CardBody p={{ base: 3, md: 4 }}>
+          {cardLoading ? (
+            <VStack spacing={2} align="stretch">
+              <Skeleton height="20px" />
+              <Skeleton height="32px" />
+              <Skeleton height="16px" />
+            </VStack>
+          ) : (
+            <HStack spacing={3} justify="space-between">
+              <VStack align="start" spacing={1} flex="1">
+                <Text fontSize="sm" fontWeight="medium" color={textColor}>
+                  {title}
+                </Text>
+                <Text fontSize={{ base: '2xl', md: '3xl' }} fontWeight="bold" color={headingColor}>
+                  {value}
+                </Text>
+                {subtitle && (
+                  <Text fontSize="xs" color={textColor}>
+                    {subtitle}
+                  </Text>
+                )}
+                {trend && trendValue && (
+                  <HStack spacing={1}>
+                    <Icon 
+                      as={trend === 'up' ? FaArrowUp : FaArrowDown} 
+                      color={trend === 'up' ? 'green.500' : 'red.500'}
+                      boxSize={3}
+                    />
+                    <Text fontSize="xs" color={trend === 'up' ? 'green.500' : 'red.500'} fontWeight="medium">
+                      {trendValue}
+                    </Text>
+                  </HStack>
+                )}
+              </VStack>
+              <Box
+                p={3}
+                borderRadius="lg"
+                bg={useColorModeValue(colors.light, colors.dark)}
               >
-                {trendValue}
-              </Text>
+                <Icon as={icon} boxSize={{ base: 6, md: 7 }} color={colors.bg} />
+              </Box>
             </HStack>
           )}
-        </Flex>
-        
-        <VStack align="start" spacing={1}>
-          <Skeleton isLoaded={!cardLoading}>
-            <Text fontSize="3xl" fontWeight="bold" color={headingColor}>
-              {value}
-            </Text>
-          </Skeleton>
-          <Text fontSize="sm" color={textColor} fontWeight="medium">
-            {title}
-          </Text>
-          {subtitle && (
-            <Text fontSize="xs" color={textColor}>
-              {subtitle}
-            </Text>
-          )}
-        </VStack>
-      </CardBody>
-    </Card>
-  );
+        </CardBody>
+      </Card>
+    );
+  };
 
   // Enhanced System Health Card
   const SystemHealthCard = () => {
@@ -1032,16 +1051,16 @@ const AdminOverview = () => {
     <Box display="flex" flexDirection="column" minHeight="100vh" bg={mainBg}>
       <Navbar />
       <Box flex="1" p={{ base: 3, md: 4 }} w="100%" overflowX="hidden">
-        <VStack align="stretch" spacing={4}>
-            {/* Header Section */}
+        <VStack align="stretch" spacing={{ base: 4, md: 5 }}>
+            {/* Header Section - Compact */}
             <Box>
-              <HStack justify="space-between" mb={3} flexWrap="wrap" gap={3}>
-                <VStack align="start" spacing={1}>
-                  <Heading size="xl" color={headingColor}>
-                    Admin Dashboard
+              <HStack justify="space-between" mb={2} flexWrap="wrap" gap={3}>
+                <VStack align="start" spacing={0}>
+                  <Heading size={{ base: 'lg', md: 'xl' }} color={headingColor}>
+                    System Overview
                   </Heading>
-                  <Text color={textColor} fontSize="lg">
-                    System overview and management center
+                  <Text color={textColor} fontSize="sm">
+                    Key metrics and system performance indicators
                   </Text>
                 </VStack>
                 <HStack spacing={2}>
@@ -1052,11 +1071,17 @@ const AdminOverview = () => {
                       isLoading={refreshing}
                       colorScheme="blue"
                       variant="outline"
+                      size={{ base: 'sm', md: 'md' }}
                       aria-label="Refresh dashboard data"
                     />
                   </Tooltip>
                   <Menu>
-                    <MenuButton as={Button} rightIcon={<ChevronDownIcon />} variant="outline">
+                    <MenuButton 
+                      as={Button} 
+                      rightIcon={<ChevronDownIcon />} 
+                      variant="outline"
+                      size={{ base: 'sm', md: 'md' }}
+                    >
                       Actions
                     </MenuButton>
                     <MenuList>
@@ -1086,15 +1111,14 @@ const AdminOverview = () => {
                   </Menu>
                 </HStack>
               </HStack>
-              <Divider />
             </Box>
 
             {/* Filter Status Badge */}
             {filterView !== 'all' && (
-              <Alert status="info" variant="left-accent" mb={2}>
+              <Alert status="info" variant="left-accent" borderRadius="lg">
                 <AlertIcon />
                 <HStack justify="space-between" w="full">
-                  <Text>
+                  <Text fontSize="sm">
                     Showing {filterView} items only • {filteredData?.displayLabel}: {filteredData?.displayTrips || 0}
                   </Text>
                   <Button size="sm" variant="ghost" onClick={() => handleFilterView('all')}>
@@ -1104,12 +1128,12 @@ const AdminOverview = () => {
               </Alert>
             )}
 
-            {/* Key Metrics Grid */}
-            <SimpleGrid columns={columnsCount} spacing={cardSpacing}>
+            {/* Key Metrics Grid - Compact Design */}
+            <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: 3, md: 4 }}>
               <StatCard
                 title="Total Users"
                 value={overviewData?.totalUsers || 0}
-                subtitle={`${overviewData?.activeUsers || 0} active this week`}
+                subtitle={`${overviewData?.activeUsers || 0} active`}
                 icon={FaUsers}
                 color="blue"
                 trend="up"
@@ -1121,19 +1145,19 @@ const AdminOverview = () => {
               <StatCard
                 title="Today's Trips"
                 value={overviewData?.todayTrips || 0}
-                subtitle={`${overviewData?.totalTrips || 0} total trips`}
+                subtitle={`${overviewData?.totalTrips || 0} total`}
                 icon={FaRoute}
                 color="green"
                 trend="up"
                 trendValue="8%"
                 isClickable
-                onClick={() => navigate('/admin/trips')}
+                onClick={() => navigate('/scheduler')}
                 loading={loading}
               />
               <StatCard
                 title="Active Drivers"
                 value={`${overviewData?.activeDrivers || 0}/${overviewData?.totalDrivers || 0}`}
-                subtitle="Available for assignments"
+                subtitle="Available now"
                 icon={FaCar}
                 color="purple"
                 trend="down"
@@ -1145,7 +1169,7 @@ const AdminOverview = () => {
               <StatCard
                 title="System Health"
                 value={systemHealth?.status === 'OK' ? '100%' : '75%'}
-                subtitle={`${overviewData?.pendingTrips || 0} pending trips`}
+                subtitle={`${overviewData?.pendingTrips || 0} pending`}
                 icon={FaTachometerAlt}
                 color="orange"
                 trend="up"
@@ -1156,74 +1180,68 @@ const AdminOverview = () => {
               />
             </SimpleGrid>
 
-            {/* Dashboard Grid Layout */}
-            <VStack spacing={cardSpacing} display={{ base: 'flex', md: 'none' }}>
-              {/* Mobile Layout - Full Width Cards */}
-              <UserDistributionCard />
-              <TripStatusCard />
-              <SystemHealthCard />
-              <QuickActionsCard />
-              <RecentActivityCard />
-              <RecentUsersCard />
-            </VStack>
-
+            {/* Main Content Grid - Improved Layout */}
             <Grid 
               templateColumns={{ 
                 base: "1fr", 
-                md: "1fr 1fr", 
-                lg: "2fr 1fr 1fr" 
+                lg: "2fr 1fr" 
               }} 
-              gap={cardSpacing}
-              display={{ base: 'none', md: 'grid' }}
+              gap={{ base: 3, md: 4 }}
             >
-              {/* Left Column - Recent Activity */}
-              <RecentActivityCard />
-              
-              {/* Middle Column - User Distribution & Trip Status */}
-              <VStack spacing={cardSpacing}>
+              {/* Left Column - Activity & Distribution */}
+              <VStack spacing={{ base: 3, md: 4 }}>
+                <RecentActivityCard />
                 <UserDistributionCard />
-                <TripStatusCard />
               </VStack>
               
-              {/* Right Column - System Health & Quick Actions */}
-              <VStack spacing={cardSpacing}>
+              {/* Right Column - Status & Actions */}
+              <VStack spacing={{ base: 3, md: 4 }}>
+                <TripStatusCard />
                 <SystemHealthCard />
                 <QuickActionsCard />
-                <RecentUsersCard />
               </VStack>
             </Grid>
 
-            {/* Bottom Statistics Row */}
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={cardSpacing}>
-              <StatCard
-                title="Avg Trip Duration"
-                value={`${overviewData?.systemStats?.avgTripDuration || 0} min`}
-                icon={FaClock}
-                color="teal"
-                loading={loading}
-              />
-              <StatCard
-                title="Total Revenue"
-                value={`$${overviewData?.systemStats?.totalRevenue || 0}`}
-                icon={FaDollarSign}
-                color="green"
-                loading={loading}
-              />
-              <StatCard
-                title="Fuel Efficiency"
-                value={`${overviewData?.systemStats?.fuelEfficiency || 0} MPG`}
-                icon={FaGasPump}
-                color="blue"
-                loading={loading}
-              />
-              <StatCard
-                title="Customer Rating"
-                value={`${overviewData?.systemStats?.customerSatisfaction || 0}/5`}
-                icon={StarIcon}
-                color="yellow"
-                loading={loading}
-              />
-            </SimpleGrid>
+            {/* Recent Users Section - Full Width */}
+            <RecentUsersCard />
+
+            {/* Bottom Statistics Row - System Performance */}
+            <Box>
+              <Heading size="md" color={headingColor} mb={3}>
+                System Performance
+              </Heading>
+              <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: 3, md: 4 }}>
+                <StatCard
+                  title="Avg Duration"
+                  value={`${overviewData?.systemStats?.avgTripDuration || 0}m`}
+                  icon={FaClock}
+                  color="teal"
+                  loading={loading}
+                />
+                <StatCard
+                  title="Revenue"
+                  value={`$${(overviewData?.systemStats?.totalRevenue || 0).toLocaleString()}`}
+                  icon={FaDollarSign}
+                  color="green"
+                  loading={loading}
+                />
+                <StatCard
+                  title="Fuel Efficiency"
+                  value={`${overviewData?.systemStats?.fuelEfficiency || 0}`}
+                  subtitle="MPG"
+                  icon={FaGasPump}
+                  color="blue"
+                  loading={loading}
+                />
+                <StatCard
+                  title="Rating"
+                  value={`${overviewData?.systemStats?.customerSatisfaction || 0}/5`}
+                  icon={StarIcon}
+                  color="yellow"
+                  loading={loading}
+                />
+              </SimpleGrid>
+            </Box>
           </VStack>
       </Box>
     </Box>

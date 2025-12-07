@@ -97,6 +97,7 @@ import {
 import axios from 'axios';
 import Navbar from '../shared/Navbar';
 import TripManagementModal from '../scheduler/TripManagementModal';
+import { formatDriverName } from '../../theme/driverTheme';
 
 const AdminDashboard = () => {
   const [analytics, setAnalytics] = useState(null);
@@ -308,7 +309,7 @@ const AdminDashboard = () => {
 
   const filteredDrivers = driverStats.filter(driver => {
     const matchesSearch = searchTerm === '' || 
-      `${driver.driver?.firstName} ${driver.driver?.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
+      formatDriverName(driver.driver).toLowerCase().includes(searchTerm.toLowerCase());
     
     if (filterStatus === 'all') return matchesSearch;
     if (filterStatus === 'active') return matchesSearch && driver.totalTrips > 0;
@@ -562,7 +563,7 @@ const AdminDashboard = () => {
                                 <Td>
                                   <VStack align="start" spacing={0}>
                                     <Text fontWeight="bold" fontSize={{ base: "sm", md: "md" }}>
-                                      {driver.driver.firstName} {driver.driver.lastName}
+                                      {formatDriverName(driver.driver)}
                                     </Text>
                                     <Text fontSize="xs" color="gray.500" display={{ base: "block", sm: "none" }}>
                                       {driver.completedTrips}/{driver.totalTrips} trips

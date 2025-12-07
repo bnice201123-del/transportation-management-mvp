@@ -36,6 +36,7 @@ import axios from 'axios';
 import Navbar from '../shared/Navbar';
 import GoogleMap from '../maps/GoogleMap';
 import VehicleQuickView from '../shared/VehicleQuickView';
+import { formatDriverName } from '../../theme/driverTheme';
 
 const LiveTrackingDashboard = () => {
   const [trips, setTrips] = useState([]);
@@ -319,7 +320,7 @@ const LiveTrackingDashboard = () => {
                                     <FaCar />
                                     <Text color="orange.600">
                                       {typeof trip.assignedDriver === 'object' 
-                                        ? (trip.assignedDriver.name || `${trip.assignedDriver.firstName || ''} ${trip.assignedDriver.lastName || ''}`.trim() || trip.assignedDriver.email || 'Unnamed Driver')
+                                        ? formatDriverName(trip.assignedDriver)
                                         : trip.assignedDriver
                                       }
                                     </Text>

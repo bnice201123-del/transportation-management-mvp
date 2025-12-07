@@ -14,28 +14,50 @@ import {
   Heading,
   Link,
   Center,
-  Container
+  Container,
+  FormErrorMessage
 } from '@chakra-ui/react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from "../../contexts/AuthContext";
+import { isValidEmail } from '../../utils/inputValidation';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [touched, setTouched] = useState({ email: false, password: false });
   const { login, loading } = useAuth();
   const navigate = useNavigate();
+
+  // Validation helpers
+  const isEmailInvalid = touched.email && email && !isValidEmail(email);
+  const isPasswordInvalid = touched.password && password && password.length < 6;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!email || !password) {
+    // Trim whitespace from inputs
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    // Validation
+    if (!trimmedEmail || !trimmedPassword) {
       setError('Please fill in all fields');
       return;
     }
 
-    const result = await login(email, password);
+    if (!isValidEmail(trimmedEmail)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (trimmedPassword.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    const result = await login(trimmedEmail, trimmedPassword);
     
     if (!result.success) {
       setError(result.error);
@@ -90,24 +112,32 @@ const Login = () => {
 
               <Box as="form" onSubmit={handleSubmit} width="100%">
                 <VStack spacing={4}>
-                  <FormControl isRequired>
+                  <FormControl isRequired isInvalid={isEmailInvalid}>
                     <FormLabel>Email</FormLabel>
                     <Input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
                       placeholder="Enter your email"
                     />
+                    <FormErrorMessage>
+                      Please enter a valid email address
+                    </FormErrorMessage>
                   </FormControl>
 
-                  <FormControl isRequired>
+                  <FormControl isRequired isInvalid={isPasswordInvalid}>
                     <FormLabel>Password</FormLabel>
                     <Input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
                       placeholder="Enter your password"
                     />
+                    <FormErrorMessage>
+                      Password must be at least 6 characters long
+                    </FormErrorMessage>
                   </FormControl>
 
                   <Button

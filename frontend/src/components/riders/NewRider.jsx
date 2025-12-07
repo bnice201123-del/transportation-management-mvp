@@ -37,7 +37,8 @@ import {
   InputGroup,
   InputLeftElement,
   InputRightAddon,
-  SimpleGrid
+  SimpleGrid,
+  FormErrorMessage
 } from '@chakra-ui/react';
 import {
   ArrowBackIcon,
@@ -63,7 +64,9 @@ import {
   getRawPhoneNumber,
   formatNameInput,
   isValidPhoneNumber,
-  isValidEmail
+  isValidEmail,
+  validateName,
+  isEmpty
 } from '../../utils/inputValidation';
 
 const NewRider = () => {
@@ -95,8 +98,27 @@ const NewRider = () => {
   const [generatedId, setGeneratedId] = useState('');
   const [loading, setLoading] = useState(false);
   const [createdRiderId, setCreatedRiderId] = useState(null);
+  const [touched, setTouched] = useState({});
   const navigate = useNavigate();
   const toast = useToast();
+
+  // Validation helpers
+  const firstNameValidation = validateName(formData.firstName, 'First name');
+  const isFirstNameInvalid = touched.firstName && !firstNameValidation.isValid;
+
+  const lastNameValidation = validateName(formData.lastName, 'Last name');
+  const isLastNameInvalid = touched.lastName && !lastNameValidation.isValid;
+
+  const emailValidation = isValidEmail(formData.email);
+  const isEmailInvalid = touched.email && !isEmpty(formData.email) && !emailValidation.isValid;
+
+  const phoneValidation = isValidPhoneNumber(formData.phone);
+  const isPhoneInvalid = touched.phone && !isEmpty(formData.phone) && !phoneValidation.isValid;
+
+  const isPasswordInvalid = touched.password && (isEmpty(formData.password) || formData.password.length < 6);
+  const passwordError = isEmpty(formData.password) ? 'Password is required' : 'Password must be at least 6 characters long';
+
+  const isDateOfBirthInvalid = touched.dateOfBirth && isEmpty(formData.dateOfBirth);
 
   // Generate Rider ID when last name or birth year changes
   const generateRiderId = (lastName, birthYear) => {
@@ -147,11 +169,22 @@ const NewRider = () => {
 
     console.log('Form data before validation:', formData);
 
-    // Validation - Email is now optional
-    if (!formData.firstName || !formData.lastName || !formData.dateOfBirth || !formData.password) {
+    // Mark all fields as touched
+    setTouched({
+      firstName: true,
+      lastName: true,
+      dateOfBirth: true,
+      password: true,
+      email: true,
+      phone: true
+    });
+
+    // Validate first name
+    const firstNameValidation = validateName(formData.firstName, 'First name');
+    if (!firstNameValidation.isValid) {
       toast({
         title: 'Validation Error',
-        description: 'Please fill in all required fields (First Name, Last Name, Date of Birth, Password)',
+        description: firstNameValidation.error,
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -159,11 +192,12 @@ const NewRider = () => {
       return;
     }
 
-    // Phone validation
-    if (formData.phone && !isValidPhoneNumber(formData.phone)) {
+    // Validate last name
+    const lastNameValidation = validateName(formData.lastName, 'Last name');
+    if (!lastNameValidation.isValid) {
       toast({
         title: 'Validation Error',
-        description: 'Please enter a valid 10-digit phone number',
+        description: lastNameValidation.error,
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -171,16 +205,69 @@ const NewRider = () => {
       return;
     }
 
-    // Email validation
-    if (formData.email && !isValidEmail(formData.email)) {
+    // Date of birth validation
+    if (isEmpty(formData.dateOfBirth)) {
       toast({
         title: 'Validation Error',
-        description: 'Please enter a valid email address',
+        description: 'Date of Birth is required',
         status: 'error',
         duration: 5000,
         isClosable: true,
       });
       return;
+    }
+
+    // Password validation
+    if (isEmpty(formData.password)) {
+      toast({
+        title: 'Validation Error',
+        description: 'Password is required',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast({
+        title: 'Validation Error',
+        description: 'Password must be at least 6 characters long',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Phone validation (optional but must be valid if provided)
+    if (!isEmpty(formData.phone)) {
+      const phoneValidation = isValidPhoneNumber(formData.phone);
+      if (!phoneValidation.isValid) {
+        toast({
+          title: 'Validation Error',
+          description: phoneValidation.error,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+    }
+
+    // Email validation (optional but must be valid if provided)
+    if (!isEmpty(formData.email)) {
+      const emailValidation = isValidEmail(formData.email);
+      if (!emailValidation.isValid) {
+        toast({
+          title: 'Validation Error',
+          description: emailValidation.error,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
     }
 
     // Contract validation
@@ -373,59 +460,74 @@ const NewRider = () => {
 
                 {/* Name Fields */}
                 <HStack spacing={4} w="full">
-                  <FormControl isRequired>
+                  <FormControl isRequired isInvalid={isFirstNameInvalid}>
                     <FormLabel>First Name</FormLabel>
                     <Input
                       value={formData.firstName}
                       onChange={(e) => handleInputChange('firstName', formatNameInput(e.target.value))}
+                      onBlur={() => setTouched(prev => ({ ...prev, firstName: true }))}
                       placeholder="Enter first name"
                     />
+                    <FormErrorMessage>
+                      {firstNameValidation.error}
+                    </FormErrorMessage>
                   </FormControl>
-                  <FormControl isRequired>
+                  <FormControl isRequired isInvalid={isLastNameInvalid}>
                     <FormLabel>Last Name</FormLabel>
                     <Input
                       value={formData.lastName}
                       onChange={(e) => handleInputChange('lastName', formatNameInput(e.target.value))}
+                      onBlur={() => setTouched(prev => ({ ...prev, lastName: true }))}
                       placeholder="Enter last name"
                     />
+                    <FormErrorMessage>
+                      {lastNameValidation.error}
+                    </FormErrorMessage>
                   </FormControl>
                 </HStack>
 
                 {/* Email and Password */}
                 <HStack spacing={4} w="full">
-                  <FormControl isInvalid={formData.email && !isValidEmail(formData.email)}>
+                  <FormControl isInvalid={isEmailInvalid}>
                     <FormLabel>Email (Optional)</FormLabel>
                     <Input
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
+                      onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
                       placeholder="Enter email address"
                     />
-                    {formData.email && !isValidEmail(formData.email) && (
-                      <Text fontSize="xs" color="red.500" mt={1}>
-                        Please enter a valid email address
-                      </Text>
-                    )}
+                    <FormErrorMessage>
+                      {emailValidation.error}
+                    </FormErrorMessage>
                   </FormControl>
-                  <FormControl isRequired>
+                  <FormControl isRequired isInvalid={isPasswordInvalid}>
                     <FormLabel>Password</FormLabel>
                     <Input
                       type="password"
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
+                      onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
                       placeholder="Enter password"
                     />
+                    <FormErrorMessage>
+                      {passwordError}
+                    </FormErrorMessage>
                   </FormControl>
                 </HStack>
 
                 {/* Date of Birth */}
-                <FormControl isRequired>
+                <FormControl isRequired isInvalid={isDateOfBirthInvalid}>
                   <FormLabel>Date of Birth</FormLabel>
                   <Input
                     type="date"
                     value={formData.dateOfBirth}
                     onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                    onBlur={() => setTouched(prev => ({ ...prev, dateOfBirth: true }))}
                   />
+                  <FormErrorMessage>
+                    Date of Birth is required
+                  </FormErrorMessage>
                 </FormControl>
 
                 {/* Address */}
@@ -441,20 +543,19 @@ const NewRider = () => {
                 </FormControl>
 
                 {/* Phone */}
-                <FormControl isInvalid={formData.phone && !isValidPhoneNumber(formData.phone)}>
+                <FormControl isInvalid={isPhoneInvalid}>
                   <FormLabel>Phone Number</FormLabel>
                   <Input
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', formatPhoneNumber(e.target.value))}
+                    onBlur={() => setTouched(prev => ({ ...prev, phone: true }))}
                     placeholder="(555) 123-4567"
                     type="tel"
                     maxLength={14}
                   />
-                  {formData.phone && !isValidPhoneNumber(formData.phone) && (
-                    <Text fontSize="xs" color="red.500" mt={1}>
-                      Please enter a valid 10-digit phone number
-                    </Text>
-                  )}
+                  <FormErrorMessage>
+                    {phoneValidation.error}
+                  </FormErrorMessage>
                 </FormControl>
 
                 {/* Preferred Vehicle Type */}

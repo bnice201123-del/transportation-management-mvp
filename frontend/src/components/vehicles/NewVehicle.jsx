@@ -40,6 +40,7 @@ import {
   isValidYear,
   isEmpty 
 } from '../../utils/inputValidation';
+import { useMobileKeyboard } from '../../hooks/useMobileKeyboard';
 
 const NewVehicle = () => {
   const [formData, setFormData] = useState({
@@ -61,6 +62,9 @@ const NewVehicle = () => {
   const [touched, setTouched] = useState({});
   const navigate = useNavigate();
   const toast = useToast();
+  
+  // Mobile keyboard handling
+  const { handleInputFocus, handleInputBlur } = useMobileKeyboard();
 
   // Validation helpers
   const isMakeInvalid = touched.make && isEmpty(formData.make);
@@ -226,7 +230,11 @@ const NewVehicle = () => {
                     <Input
                       value={formData.make}
                       onChange={(e) => handleInputChange('make', e.target.value)}
-                      onBlur={() => setTouched(prev => ({ ...prev, make: true }))}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, make: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="e.g., Toyota, Ford, Honda"
                     />
                     <FormErrorMessage>
@@ -238,7 +246,11 @@ const NewVehicle = () => {
                     <Input
                       value={formData.model}
                       onChange={(e) => handleInputChange('model', e.target.value)}
-                      onBlur={() => setTouched(prev => ({ ...prev, model: true }))}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, model: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="e.g., Camry, F-150, Civic"
                     />
                     <FormErrorMessage>
@@ -251,7 +263,11 @@ const NewVehicle = () => {
                       type="number"
                       value={formData.year}
                       onChange={(e) => handleInputChange('year', formatYear(e.target.value))}
-                      onBlur={() => setTouched(prev => ({ ...prev, year: true }))}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, year: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="e.g., 2020"
                       min="1900"
                       max={new Date().getFullYear() + 1}
@@ -265,7 +281,11 @@ const NewVehicle = () => {
                     <Input
                       value={formData.licensePlate}
                       onChange={(e) => handleInputChange('licensePlate', formatLicensePlate(e.target.value))}
-                      onBlur={() => setTouched(prev => ({ ...prev, licensePlate: true }))}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, licensePlate: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="e.g., ABC-1234"
                       textTransform="uppercase"
                     />
@@ -278,6 +298,8 @@ const NewVehicle = () => {
                     <Input
                       value={formData.vin}
                       onChange={(e) => handleInputChange('vin', formatVIN(e.target.value))}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                       placeholder="17-character VIN"
                       maxLength="17"
                     />
@@ -287,6 +309,8 @@ const NewVehicle = () => {
                     <Input
                       value={formData.color}
                       onChange={(e) => handleInputChange('color', e.target.value)}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                       placeholder="e.g., White, Blue, Silver"
                     />
                   </FormControl>

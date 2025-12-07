@@ -68,6 +68,8 @@ import {
   validateName,
   isEmpty
 } from '../../utils/inputValidation';
+import { useMobileKeyboard } from '../../hooks/useMobileKeyboard';
+import { useSafariDatePicker } from '../../hooks/useSafariDatePicker';
 
 const NewRider = () => {
   const [formData, setFormData] = useState({
@@ -101,6 +103,12 @@ const NewRider = () => {
   const [touched, setTouched] = useState({});
   const navigate = useNavigate();
   const toast = useToast();
+  
+  // Mobile keyboard handling
+  const { handleInputFocus, handleInputBlur } = useMobileKeyboard();
+  
+  // Safari date picker handling
+  const { handleDateFocus, handleDateBlur, handleDateChange } = useSafariDatePicker();
 
   // Validation helpers
   const firstNameValidation = validateName(formData.firstName, 'First name');
@@ -465,7 +473,11 @@ const NewRider = () => {
                     <Input
                       value={formData.firstName}
                       onChange={(e) => handleInputChange('firstName', formatNameInput(e.target.value))}
-                      onBlur={() => setTouched(prev => ({ ...prev, firstName: true }))}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, firstName: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="Enter first name"
                     />
                     <FormErrorMessage>
@@ -477,7 +489,11 @@ const NewRider = () => {
                     <Input
                       value={formData.lastName}
                       onChange={(e) => handleInputChange('lastName', formatNameInput(e.target.value))}
-                      onBlur={() => setTouched(prev => ({ ...prev, lastName: true }))}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, lastName: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="Enter last name"
                     />
                     <FormErrorMessage>
@@ -494,7 +510,11 @@ const NewRider = () => {
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, email: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="Enter email address"
                     />
                     <FormErrorMessage>
@@ -507,7 +527,11 @@ const NewRider = () => {
                       type="password"
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
-                      onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, password: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="Enter password"
                     />
                     <FormErrorMessage>
@@ -522,8 +546,16 @@ const NewRider = () => {
                   <Input
                     type="date"
                     value={formData.dateOfBirth}
-                    onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                    onBlur={() => setTouched(prev => ({ ...prev, dateOfBirth: true }))}
+                    onChange={(e) => handleDateChange(e, (e) => handleInputChange('dateOfBirth', e.target.value))}
+                    onFocus={(e) => {
+                      handleInputFocus(e);
+                      handleDateFocus(e);
+                    }}
+                    onBlur={(e) => {
+                      setTouched(prev => ({ ...prev, dateOfBirth: true }));
+                      handleInputBlur(e);
+                      handleDateBlur(e);
+                    }}
                   />
                   <FormErrorMessage>
                     Date of Birth is required
@@ -548,7 +580,11 @@ const NewRider = () => {
                   <Input
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', formatPhoneNumber(e.target.value))}
-                    onBlur={() => setTouched(prev => ({ ...prev, phone: true }))}
+                    onFocus={handleInputFocus}
+                    onBlur={(e) => {
+                      setTouched(prev => ({ ...prev, phone: true }));
+                      handleInputBlur(e);
+                    }}
                     placeholder="(555) 123-4567"
                     type="tel"
                     maxLength={14}
@@ -688,7 +724,9 @@ const NewRider = () => {
                               <Input
                                 type="date"
                                 value={formData.contractStartDate}
-                                onChange={(e) => handleInputChange('contractStartDate', e.target.value)}
+                                onChange={(e) => handleDateChange(e, (e) => handleInputChange('contractStartDate', e.target.value))}
+                                onFocus={handleDateFocus}
+                                onBlur={handleDateBlur}
                               />
                             </FormControl>
                             <FormControl isRequired>
@@ -696,7 +734,9 @@ const NewRider = () => {
                               <Input
                                 type="date"
                                 value={formData.contractEndDate}
-                                onChange={(e) => handleInputChange('contractEndDate', e.target.value)}
+                                onChange={(e) => handleDateChange(e, (e) => handleInputChange('contractEndDate', e.target.value))}
+                                onFocus={handleDateFocus}
+                                onBlur={handleDateBlur}
                                 min={formData.contractStartDate}
                               />
                             </FormControl>

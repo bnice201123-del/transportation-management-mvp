@@ -20,6 +20,7 @@ import {
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from "../../contexts/AuthContext";
 import { isValidEmail, isEmpty } from '../../utils/inputValidation';
+import { useMobileKeyboard } from '../../hooks/useMobileKeyboard';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -28,6 +29,9 @@ const Login = () => {
   const [touched, setTouched] = useState({ email: false, password: false });
   const { login, loading } = useAuth();
   const navigate = useNavigate();
+  
+  // Mobile keyboard handling
+  const { handleInputFocus, handleInputBlur } = useMobileKeyboard();
 
   // Validation helpers using enhanced validation
   const emailValidation = isValidEmail(email);
@@ -129,7 +133,11 @@ const Login = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, email: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="Enter your email"
                     />
                     <FormErrorMessage>
@@ -143,7 +151,11 @@ const Login = () => {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, password: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="Enter your password"
                     />
                     <FormErrorMessage>

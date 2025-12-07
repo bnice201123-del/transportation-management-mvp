@@ -31,6 +31,7 @@ import {
   validateName,
   isEmpty
 } from '../../utils/inputValidation';
+import { useMobileKeyboard } from '../../hooks/useMobileKeyboard';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -46,6 +47,9 @@ const Register = () => {
   const [touched, setTouched] = useState({});
   const [error, setError] = useState('');
   const { register, isLoading } = useAuth();
+  
+  // Mobile keyboard handling
+  const { handleInputFocus, handleInputBlur } = useMobileKeyboard();
 
   // Validation helpers
   const firstNameValidation = validateName(formData.firstName, 'First name');
@@ -220,7 +224,11 @@ const Register = () => {
                           name="firstName"
                           value={formData.firstName}
                           onChange={handleChange}
-                          onBlur={() => setTouched(prev => ({ ...prev, firstName: true }))}
+                          onFocus={handleInputFocus}
+                          onBlur={(e) => {
+                            setTouched(prev => ({ ...prev, firstName: true }));
+                            handleInputBlur(e);
+                          }}
                           placeholder="First name"
                         />
                         <FormErrorMessage>
@@ -235,7 +243,11 @@ const Register = () => {
                           name="lastName"
                           value={formData.lastName}
                           onChange={handleChange}
-                          onBlur={() => setTouched(prev => ({ ...prev, lastName: true }))}
+                          onFocus={handleInputFocus}
+                          onBlur={(e) => {
+                            setTouched(prev => ({ ...prev, lastName: true }));
+                            handleInputBlur(e);
+                          }}
                           placeholder="Last name"
                         />
                         <FormErrorMessage>
@@ -252,7 +264,11 @@ const Register = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, email: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="Enter your email"
                     />
                     <FormErrorMessage>
@@ -267,7 +283,11 @@ const Register = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      onBlur={() => setTouched(prev => ({ ...prev, phone: true }))}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, phone: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="(555) 123-4567"
                       maxLength={14}
                     />
@@ -310,7 +330,11 @@ const Register = () => {
                           name="password"
                           value={formData.password}
                           onChange={handleChange}
-                          onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
+                          onFocus={handleInputFocus}
+                          onBlur={(e) => {
+                            setTouched(prev => ({ ...prev, password: true }));
+                            handleInputBlur(e);
+                          }}
                           placeholder="Enter your password"
                         />
                         <FormErrorMessage>
@@ -326,7 +350,11 @@ const Register = () => {
                           name="confirmPassword"
                           value={formData.confirmPassword}
                           onChange={handleChange}
-                          onBlur={() => setTouched(prev => ({ ...prev, confirmPassword: true }))}
+                          onFocus={handleInputFocus}
+                          onBlur={(e) => {
+                            setTouched(prev => ({ ...prev, confirmPassword: true }));
+                            handleInputBlur(e);
+                          }}
                           placeholder="Confirm your password"
                         />
                         <FormErrorMessage>

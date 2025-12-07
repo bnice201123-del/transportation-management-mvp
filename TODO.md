@@ -1,6 +1,6 @@
 # 📋 Transportation Management MVP - To-Do List
 
-> **Last Updated:** December 5, 2025  
+> **Last Updated:** December 7, 2025  
 > **Status:** Active Development
 
 ---
@@ -798,12 +798,32 @@
 
 ### Known Issues
 - [ ] Fix form validation edge cases
-- [ ] Resolve timezone inconsistencies
-- [ ] Address memory leaks in long sessions
+- [x] **Resolve timezone inconsistencies**
+  - ✅ Created comprehensive timezone utilities (backend + frontend)
+  - ✅ Added timezone field to Trip model with IANA validation
+  - ✅ Implemented date/time format validation in trip routes
+  - ✅ Default timezone support (America/New_York)
+  - **Status:** Completed (Dec 7, 2025) | Commit: 75360bc
+- [x] **Address memory leaks in long sessions**
+  - ✅ Conducted comprehensive audit of 30+ React components
+  - ✅ Verified all setInterval/setTimeout have proper cleanup
+  - ✅ Verified all event listeners have removeEventListener cleanup
+  - ✅ All refs properly cleared on unmount
+  - ✅ Created detailed audit report (MEMORY_LEAK_AUDIT.md)
+  - ✅ No memory leaks detected - all components pass inspection
+  - **Status:** Completed (Dec 7, 2025) | Commit: 44aa30f
 - [ ] Fix mobile keyboard issues
 - [ ] Resolve date picker Safari bugs
-- [ ] Fix notification badge count sync
-- [ ] Address race conditions in trip assignment
+- [x] **Fix notification badge count sync**
+  - ✅ Created NotificationContext with cross-tab sync
+  - ✅ Implemented localStorage events for instant updates
+  - ✅ Refactored Navbar to use centralized context
+  - **Status:** Completed (Dec 6, 2025) | Commit: 4371445
+- [x] **Address race conditions in trip assignment**
+  - ✅ Replaced read-then-write pattern with atomic findOneAndUpdate
+  - ✅ Added status filter for concurrent assignment prevention
+  - ✅ Returns 409 Conflict if trip already assigned
+  - **Status:** Completed (Dec 6, 2025) | Commit: a3eb653
 
 **Priority:** High | **Effort:** Low-Medium | **Impact:** Medium
 
@@ -874,10 +894,19 @@
 ## 📊 **Progress Tracking**
 
 - **Total Items:** 200+
-- **Completed:** 0
-- **In Progress:** 2 (Google Maps, Holiday logic)
+- **Completed:** 20+ (including recent bug fixes and security features)
+- **In Progress:** 0
 - **Blocked:** 0
-- **Completion Rate:** ~1%
+- **Critical Bugs Fixed:** 4 (timezone, memory leaks, notification sync, race conditions)
+- **Recently Completed:** Dec 5-7, 2025
+  - Google Maps API Migration
+  - Holiday Checking Logic
+  - Security Features Suite (2FA, OAuth, Audit Logs, GDPR, Rate Limiting, Sessions, Encryption, Permissions, Security Alerts)
+  - Phone Verification System
+  - Timezone Handling
+  - Memory Leak Audit
+  - Notification Cross-Tab Sync
+  - Trip Assignment Race Condition Fix
 
 ---
 
@@ -902,5 +931,5 @@ To claim a task:
 
 ---
 
-**Last Reviewed:** December 5, 2025  
-**Next Review:** January 5, 2026
+**Last Reviewed:** December 7, 2025  
+**Next Review:** January 7, 2026

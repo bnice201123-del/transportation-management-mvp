@@ -145,24 +145,12 @@ const Sidebar = ({ isMobileOpen, onMobileClose, onMobileOpen }) => {
       roles: ['admin'],
       subItems: [
         { label: 'System Settings', icon: SettingsIcon, action: () => navigate('/admin/settings') },
-        { label: 'User Management', icon: AddIcon, action: () => navigate('/admin/register') },
         { label: 'System Config', icon: EditIcon, action: () => navigate('/admin/config') },
         { label: 'Audit Logs', icon: TimeIcon, action: () => navigate('/admin/logs') },
         { label: 'Backup & Restore', icon: CalendarIcon, action: () => navigate('/admin/backup') },
-        { label: 'Security', icon: UnlockIcon, action: () => navigate('/admin/security') }
-      ]
-    }] : []),
-    // User Management - for admin users only
-    ...(user?.role === 'admin' ? [{
-      id: 'user-management',
-      label: 'User Management',
-      icon: UnlockIcon,
-      color: 'teal.500',
-      path: '/admin/register',
-      roles: ['admin'],
-      subItems: [
+        { label: 'Security', icon: UnlockIcon, action: () => navigate('/admin/security') },
         { label: 'Register New User', icon: UnlockIcon, action: () => navigate('/admin/register') },
-        { label: 'Manage Users', icon: SettingsIcon, action: () => navigate('/admin/users') },
+        { label: 'Manage Users', icon: FaUser, action: () => navigate('/admin/users') },
         { label: 'User Roles & Permissions', icon: InfoIcon, action: () => navigate('/admin/roles') },
         { label: 'Access Control', icon: EditIcon, action: () => navigate('/admin/access') },
         { label: 'Bulk Operations', icon: AddIcon, action: () => navigate('/admin/import') }

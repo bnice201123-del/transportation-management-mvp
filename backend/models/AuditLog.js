@@ -24,7 +24,7 @@ const auditLogSchema = new mongoose.Schema({
     index: true,
     enum: [
       // Authentication
-      'login', 'logout', 'login_failed', 'password_change', 'password_reset',
+      'login', 'logout', 'login_failed', 'login_success', 'password_change', 'password_reset',
       '2fa_enabled', '2fa_disabled', '2fa_backup_used',
       
       // User Management
@@ -58,7 +58,7 @@ const auditLogSchema = new mongoose.Schema({
       'timeoff_requested', 'timeoff_approved', 'timeoff_denied',
       
       // Security
-      'security_alert', 'permission_denied', 'suspicious_activity',
+      'security_alert', 'security_alerts_viewed', 'permission_denied', 'suspicious_activity',
       
       // System
       'data_export', 'data_import', 'backup_created', 'backup_restored',
@@ -126,7 +126,7 @@ const auditLogSchema = new mongoose.Schema({
   // Severity level
   severity: {
     type: String,
-    enum: ['info', 'warning', 'error', 'critical'],
+    enum: ['low', 'info', 'warning', 'error', 'critical'],
     default: 'info',
     index: true
   },

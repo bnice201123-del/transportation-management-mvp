@@ -736,11 +736,7 @@ router.post('/:id/assign', authenticateToken, authorizeRoles('scheduler', 'dispa
   try {
     const { driverId } = req.body;
     
-    const trip = await Trip.findById(req.params.id);
-    if (!trip) {
-      return res.status(404).json({ message: 'Trip not found' });
-    }
-
+    // First validate driver exists and has correct role
     const driver = await User.findById(driverId);
     if (!driver) {
       return res.status(400).json({ message: 'Driver not found' });
@@ -752,9 +748,30 @@ router.post('/:id/assign', authenticateToken, authorizeRoles('scheduler', 'dispa
       return res.status(400).json({ message: 'User does not have driver role' });
     }
 
-    trip.assignedDriver = driverId;
-    trip.status = 'assigned';
-    await trip.save();
+    // Use atomic findOneAndUpdate to prevent race conditions
+    // This ensures only one dispatcher can assign the driver at a time
+    const trip = await Trip.findOneAndUpdate(
+      { 
+        _id: req.params.id,
+        status: { $in: ['pending', 'unassigned'] } // Only update if trip is not already assigned
+      },
+      { 
+        $set: { 
+          assignedDriver: driverId,
+          status: 'assigned'
+        }
+      },
+      { 
+        new: true, // Return updated document
+        runValidators: true // Run mongoose validators
+      }
+    );
+    
+    if (!trip) {
+      return res.status(409).json({ 
+        message: 'Trip not found or already assigned to another driver' 
+      });
+    }
 
     // Trigger lifecycle hook for trip assignment
     await handleTripAssigned(trip._id, driverId, req.user.userId);

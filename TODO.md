@@ -935,8 +935,20 @@
   - ✅ Created detailed audit report (MEMORY_LEAK_AUDIT.md)
   - ✅ No memory leaks detected - all components pass inspection
   - **Status:** Completed (Dec 7, 2025) | Commit: 44aa30f
-- [ ] Fix mobile keyboard issues
-- [ ] Resolve date picker Safari bugs
+- [x] **Fix mobile keyboard issues**
+  - ✅ Created mobileKeyboardHelper.js utility with 11 helper functions
+  - ✅ Created useMobileKeyboard hook for React components
+  - ✅ Auto-scrolls inputs into view when keyboard appears (300ms delay)
+  - ✅ Prevents iOS zoom on input focus (font-size: 16px minimum)
+  - ✅ Applied to Login, Register, NewRider, NewVehicle (24 inputs total)
+  - **Status:** Completed (Dec 7, 2025) | Commit: 2d3e11f
+- [x] **Resolve date picker Safari bugs**
+  - ✅ Created SafariDateInput.jsx component for Safari compatibility
+  - ✅ Created useSafariDatePicker.js hook with 8 helper functions
+  - ✅ Added global Safari-specific CSS fixes (@supports queries)
+  - ✅ Fixes date picker not opening on iOS Safari
+  - ✅ Applied to NewRider date inputs (Date of Birth, Contract dates)
+  - **Status:** Completed (Dec 7, 2025) | Commit: 2d3e11f
 - [x] **Fix notification badge count sync**
   - ✅ Created NotificationContext with cross-tab sync
   - ✅ Implemented localStorage events for instant updates

@@ -276,11 +276,15 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       subItems: [
         { label: 'System Landing', icon: ViewIcon, action: () => navigate('/admin/system') },
         { label: 'System Settings', icon: SettingsIcon, action: () => navigate('/admin/settings') },
-        { label: 'Register New User', icon: UnlockIcon, action: () => navigate('/admin/register') },
-        { label: 'Manage Users', icon: SettingsIcon, action: () => navigate('/admin/users') },
-        { label: 'User Roles & Permissions', icon: InfoIcon, action: () => navigate('/admin/roles') },
+        { label: 'System Config', icon: EditIcon, action: () => navigate('/admin/config') },
+        { label: 'Audit Logs', icon: TimeIcon, action: () => navigate('/admin/logs') },
         { label: 'Backup & Restore', icon: CalendarIcon, action: () => navigate('/admin/backup') },
-        { label: 'Security', icon: UnlockIcon, action: () => navigate('/admin/security') }
+        { label: 'Security', icon: UnlockIcon, action: () => navigate('/admin/security') },
+        { label: 'Register New User', icon: UnlockIcon, action: () => navigate('/admin/register') },
+        { label: 'Manage Users', icon: FaUser, action: () => navigate('/admin/users') },
+        { label: 'User Roles & Permissions', icon: InfoIcon, action: () => navigate('/admin/roles') },
+        { label: 'Access Control', icon: EditIcon, action: () => navigate('/admin/access') },
+        { label: 'Bulk Operations', icon: AddIcon, action: () => navigate('/admin/import') }
       ]
     }] : []),
 

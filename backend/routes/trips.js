@@ -6,6 +6,11 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import { logActivity } from '../utils/logger.js';
 import { logAudit } from '../middleware/audit.js';
 import RecurringTripService from '../services/recurringTripService.js';
+import { 
+  validateDateTime, 
+  combineDateTimeToUTC, 
+  getDefaultTimezone 
+} from '../utils/timezone.js';
 import {
   handleTripAssigned,
   handleTripCompleted,
@@ -561,6 +566,26 @@ router.post('/', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'a
       ...req.body,
       createdBy: req.user._id
     };
+
+    // Validate date/time format
+    if (tripData.scheduledDate && tripData.scheduledTime) {
+      const dateStr = typeof tripData.scheduledDate === 'string' 
+        ? tripData.scheduledDate.split('T')[0]  // Extract YYYY-MM-DD from ISO string
+        : new Date(tripData.scheduledDate).toISOString().split('T')[0];
+      
+      const validation = validateDateTime(dateStr, tripData.scheduledTime);
+      if (!validation.isValid) {
+        return res.status(400).json({ 
+          message: 'Invalid date or time format',
+          errors: validation.errors
+        });
+      }
+      
+      // Set default timezone if not provided
+      if (!tripData.timezone) {
+        tripData.timezone = getDefaultTimezone();
+      }
+    }
 
     // Validate rider exists in the system
     if (!tripData.rider) {

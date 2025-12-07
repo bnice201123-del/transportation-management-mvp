@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { validateDateTime, getDefaultTimezone } from '../utils/timezone.js';
 
 const tripSchema = new mongoose.Schema({
   tripId: {
@@ -48,7 +49,30 @@ const tripSchema = new mongoose.Schema({
   },
   scheduledTime: {
     type: String,
-    required: true
+    required: true,
+    validate: {
+      validator: function(v) {
+        // Validate HH:MM format
+        return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
+      },
+      message: props => `${props.value} is not a valid time format. Use HH:MM (24-hour format).`
+    }
+  },
+  timezone: {
+    type: String,
+    default: getDefaultTimezone,
+    validate: {
+      validator: function(v) {
+        // Basic timezone validation (IANA format)
+        try {
+          Intl.DateTimeFormat(undefined, { timeZone: v });
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
+      message: props => `${props.value} is not a valid timezone identifier.`
+    }
   },
   estimatedDuration: {
     type: Number // in minutes
@@ -274,6 +298,16 @@ tripSchema.pre('validate', function(next) {
     }
     this.tripId = tripId;
   }
+  
+  // Validate date/time combination
+  if (this.scheduledDate && this.scheduledTime) {
+    const dateStr = this.scheduledDate.toISOString().split('T')[0];
+    const validation = validateDateTime(dateStr, this.scheduledTime);
+    if (!validation.isValid) {
+      return next(new Error(`Invalid date/time: ${validation.errors.join(', ')}`));
+    }
+  }
+  
   next();
 });
 

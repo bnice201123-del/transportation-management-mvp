@@ -125,6 +125,7 @@ import TripDetailsModal from '../scheduler/TripDetailsModal';
 import DispatcherProfile from './DispatcherProfile';
 import DispatcherSchedule from './DispatcherSchedule';
 import DispatcherSearch from './DispatcherSearch';
+import { DriverInfoDisplay } from '../driver/shared';
 
 const DispatcherDashboard = () => {
   // Navigation
@@ -2401,19 +2402,15 @@ const getLocationText = (location) => {
                   {availableDrivers.map((driver) => (
                     <Box key={driver._id} p={3} bg="green.50" rounded="lg" border="1px solid" borderColor="green.200">
                       <HStack justify="space-between" flexWrap={{ base: "wrap", sm: "nowrap" }}>
-                        <VStack align="start" spacing={1} flex="1" minW="0">
-                          <Text fontSize="sm" fontWeight="medium" isTruncated>
-                            {driver.firstName} {driver.lastName}
-                          </Text>
-                          <Text fontSize="xs" color="gray.600" isTruncated>
-                            {driver.email}
-                          </Text>
-                          {driver.vehicleInfo && (
-                            <Text fontSize="xs" color="gray.600" isTruncated>
-                              {driver.vehicleInfo.make} {driver.vehicleInfo.model}
-                            </Text>
-                          )}
-                        </VStack>
+                        <Box flex="1" minW="0">
+                          <DriverInfoDisplay
+                            driver={driver}
+                            showVehicle={true}
+                            showContact={false}
+                            showStatus={false}
+                            size="sm"
+                          />
+                        </Box>
                         {driver.phone && (
                           <IconButton
                             icon={<Box as={PhoneIcon} w={4} h={4} />}
@@ -2422,6 +2419,8 @@ const getLocationText = (location) => {
                             flexShrink={0}
                             aria-label="Call driver"
                             title={`Call ${driver.firstName}`}
+                            as="a"
+                            href={`tel:${driver.phone}`}
                           />
                         )}
                       </HStack>
@@ -2444,19 +2443,15 @@ const getLocationText = (location) => {
                   {busyDrivers.map((driver) => (
                     <Box key={driver._id} p={3} bg="orange.50" rounded="lg" border="1px solid" borderColor="orange.200">
                       <HStack justify="space-between">
-                        <VStack align="start" spacing={1}>
-                          <Text fontSize="sm" fontWeight="medium">
-                            {driver.firstName} {driver.lastName}
-                          </Text>
-                          <Text fontSize="xs" color="gray.600">
-                            {driver.email}
-                          </Text>
-                          {driver.vehicleInfo && (
-                            <Text fontSize="xs" color="gray.600">
-                              {driver.vehicleInfo.make} {driver.vehicleInfo.model}
-                            </Text>
-                          )}
-                        </VStack>
+                        <Box flex="1" minW="0">
+                          <DriverInfoDisplay
+                            driver={driver}
+                            showVehicle={true}
+                            showContact={false}
+                            showStatus={false}
+                            size="sm"
+                          />
+                        </Box>
                         {driver.phone && (
                           <IconButton
                             icon={<Box as={PhoneIcon} w={4} h={4} />}
@@ -2464,6 +2459,8 @@ const getLocationText = (location) => {
                             colorScheme="orange"
                             aria-label="Call driver"
                             title={`Call ${driver.firstName}`}
+                            as="a"
+                            href={`tel:${driver.phone}`}
                           />
                         )}
                       </HStack>

@@ -21,6 +21,7 @@ import notificationsRoutes from './routes/notifications.js';
 import departureMonitoringRoutes from './routes/departureMonitoring.js';
 import tripMonitoringRoutes from './routes/tripMonitoring.js';
 import workScheduleRoutes from './routes/workSchedule.js';
+import weeklyScheduleRoutes from './routes/weeklySchedule.js';
 import adminRoutes from './routes/admin.js';
 import holidaysRoutes from './routes/holidays.js';
 import twoFactorRoutes from './routes/twoFactor.js';
@@ -33,6 +34,11 @@ import sessionsRoutes from './routes/sessions.js';
 import encryptionRoutes from './routes/encryption.js';
 import permissionsRoutes from './routes/permissions.js';
 import securityRoutes from './routes/security.js';
+import trustedDevicesRoutes from './routes/trustedDevices.js';
+import loginAttemptsRoutes from './routes/loginAttempts.js';
+import geoSecurityRoutes from './routes/geoSecurity.js';
+import biometricRoutes from './routes/biometric.js';
+import settingsHistoryRoutes from './routes/settingsHistory.js';
 import { globalLimiter } from './middleware/rateLimiter.js';
 
 // Import services
@@ -101,6 +107,7 @@ app.use('/api/notifications', notificationsRoutes);
 app.use('/api/departure-monitoring', departureMonitoringRoutes);
 app.use('/api/trip-monitoring', tripMonitoringRoutes);
 app.use('/api/work-schedule', workScheduleRoutes);
+app.use('/api/weekly-schedule', weeklyScheduleRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/holidays', holidaysRoutes);
 app.use('/api/2fa', twoFactorRoutes);
@@ -113,6 +120,11 @@ app.use('/api/sessions', sessionsRoutes);
 app.use('/api/encryption', encryptionRoutes);
 app.use('/api/permissions', permissionsRoutes);
 app.use('/api/security', securityRoutes);
+app.use('/api/trusted-devices', trustedDevicesRoutes);
+app.use('/api/login-attempts', loginAttemptsRoutes);
+app.use('/api/geo-security', geoSecurityRoutes);
+app.use('/api/biometric', biometricRoutes);
+app.use('/api/settings', settingsHistoryRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

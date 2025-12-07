@@ -7,6 +7,7 @@ import { logAudit } from '../middleware/audit.js';
 import { authLimiter, passwordResetLimiter, apiLimiter } from '../middleware/rateLimiter.js';
 import Session from '../models/Session.js';
 import { hashToken } from '../middleware/sessionTracking.js';
+import { processSecureLogin, checkBruteForce, checkCredentialStuffing } from '../services/authSecurityService.js';
 
 const router = express.Router();
 
@@ -263,6 +264,53 @@ router.post('/login', authLimiter, async (req, res) => {
       return res.status(400).json({ message: 'Username or email is required' });
     }
 
+    const loginEmail = user?.email || email;
+
+    // Check for brute force attacks (before revealing if user exists)
+    if (loginEmail) {
+      const bruteForceCheck = await checkBruteForce(loginEmail);
+      if (bruteForceCheck.isBruteForce) {
+        await logAudit({
+          action: 'brute_force_detected',
+          category: 'security',
+          description: `Brute force attack detected for ${loginEmail}`,
+          metadata: { 
+            ipAddress: req.ip, 
+            userAgent: req.headers['user-agent'],
+            attempts: bruteForceCheck.attemptCount
+          },
+          severity: 'critical',
+          success: false
+        });
+        return res.status(429).json({ 
+          message: 'Too many failed login attempts. Please try again later.',
+          retryAfter: 900 // 15 minutes
+        });
+      }
+    }
+
+    // Check for credential stuffing
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const deviceFingerprint = req.body.deviceFingerprint?.fingerprint;
+    if (ipAddress || deviceFingerprint) {
+      const stuffingCheck = await checkCredentialStuffing(ipAddress, deviceFingerprint);
+      if (stuffingCheck.isCredentialStuffing) {
+        await logAudit({
+          action: 'credential_stuffing_detected',
+          category: 'security',
+          description: `Credential stuffing attack detected`,
+          metadata: { 
+            ipAddress,
+            deviceFingerprint,
+            uniqueAccounts: stuffingCheck.uniqueAccounts
+          },
+          severity: 'critical',
+          success: false
+        });
+        // Continue but flag as suspicious
+      }
+    }
+
     if (!user) {
       await logAudit({
         action: 'login_failed',
@@ -283,6 +331,9 @@ router.post('/login', authLimiter, async (req, res) => {
     // Verify password
     const isValidPassword = await user.comparePassword(password);
     if (!isValidPassword) {
+      // Process failed login with security service
+      await processSecureLogin(req, user, { success: false, reason: 'invalid_credentials' });
+      
       await logAudit({
         userId: user._id,
         username: user.username,
@@ -298,6 +349,7 @@ router.post('/login', authLimiter, async (req, res) => {
     }
 
     // Check if 2FA is enabled
+    let twoFactorVerified = false;
     if (user.twoFactorEnabled) {
       // If 2FA token not provided, return requiresTwoFactor flag
       if (!twoFactorToken) {
@@ -328,10 +380,56 @@ router.post('/login', authLimiter, async (req, res) => {
           backupCode.used = true;
           backupCode.usedAt = new Date();
           await user.save();
+          twoFactorVerified = true;
         } else {
+          // Process failed 2FA attempt
+          await processSecureLogin(req, user, { success: false, reason: '2fa_failed' });
           return res.status(401).json({ message: 'Invalid two-factor authentication code' });
         }
+      } else {
+        twoFactorVerified = true;
       }
+    }
+
+    // Process secure login with all security checks
+    const securityResult = await processSecureLogin(req, user, {
+      twoFactorVerified,
+      authMethod: user.twoFactorEnabled ? '2fa' : 'password'
+    });
+
+    // Handle security check results
+    if (!securityResult.allowed) {
+      return res.status(403).json({
+        message: securityResult.message,
+        reason: securityResult.reason
+      });
+    }
+
+    if (securityResult.requires2FA && !twoFactorVerified) {
+      return res.status(200).json({
+        requiresTwoFactor: true,
+        userId: user._id,
+        message: securityResult.message
+      });
+    }
+
+    if (securityResult.requiresVerification) {
+      return res.status(200).json({
+        requiresVerification: true,
+        userId: user._id,
+        message: securityResult.message,
+        verificationType: 'device_changed',
+        changes: securityResult.changes
+      });
+    }
+
+    if (securityResult.requiresChallenge) {
+      return res.status(200).json({
+        requiresChallenge: true,
+        challengeType: securityResult.challengeType,
+        userId: user._id,
+        message: securityResult.message
+      });
     }
 
     // Update last login without triggering full validation
@@ -351,7 +449,12 @@ router.post('/login', authLimiter, async (req, res) => {
       action: 'login_success',
       category: 'authentication',
       description: `User logged in successfully`,
-      metadata: { ipAddress: req.ip, userAgent: req.headers['user-agent'] },
+      metadata: { 
+        ipAddress: req.ip, 
+        userAgent: req.headers['user-agent'],
+        deviceTrustScore: securityResult.trustScore,
+        location: securityResult.location
+      },
       severity: 'info',
       success: true
     });
@@ -374,7 +477,7 @@ router.post('/login', authLimiter, async (req, res) => {
       const deviceInfo = parseUA(userAgent);
       const ipAddress = req.ip || req.connection.remoteAddress;
       
-      await Session.createSession({
+      const session = await Session.createSession({
         userId: user._id,
         token,
         tokenHash,
@@ -385,10 +488,28 @@ router.post('/login', authLimiter, async (req, res) => {
         expiresIn: 24 * 60 * 60 * 1000 // 24 hours
       });
 
+      // Pass session ID to security result
+      securityResult.sessionId = session._id;
+
       // Check for anomalies
       const anomalies = await Session.detectAnomalies(user._id);
       if (anomalies.length > 0) {
         console.warn(`Suspicious login detected for user ${user.username}:`, anomalies);
+        
+        await logAudit({
+          userId: user._id,
+          username: user.username,
+          userRole: user.role,
+          action: 'suspicious_login',
+          category: 'security',
+          description: `Suspicious login detected: ${anomalies.join(', ')}`,
+          metadata: { 
+            ipAddress: req.ip,
+            anomalies
+          },
+          severity: 'warning',
+          success: true
+        });
       }
     } catch (sessionError) {
       console.error('Error creating session:', sessionError);
@@ -403,11 +524,26 @@ router.post('/login', authLimiter, async (req, res) => {
       userResponse.needsUsernameSetup = true;
     }
 
-    res.json({
+    // Add security info to response
+    const response = {
       message: 'Login successful',
       token,
-      user: userResponse
-    });
+      user: userResponse,
+      security: {
+        deviceTrusted: securityResult.device?.trustLevel === 'trusted' || securityResult.device?.trustLevel === 'verified',
+        trustScore: securityResult.trustScore,
+        deviceId: securityResult.device?._id,
+        newDevice: securityResult.device?.loginCount === 1,
+        location: securityResult.location
+      }
+    };
+
+    // Add warning if security checks failed but login was allowed
+    if (securityResult.securityChecksFailed) {
+      response.securityWarning = 'Some security checks could not be completed';
+    }
+
+    res.json(response);
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error during login' });

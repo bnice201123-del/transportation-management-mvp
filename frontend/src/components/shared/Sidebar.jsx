@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -20,6 +20,8 @@ import {
   useBreakpointValue,
   Avatar
 } from '@chakra-ui/react';
+import { useSwipeable } from 'react-swipeable';
+import FocusLock from 'react-focus-lock';
 import {
   CalendarIcon,
   SettingsIcon,
@@ -71,6 +73,25 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   const { isOpen: isSearchOpen, onOpen: onSearchOpen, onClose: onSearchClose } = useDisclosure();
   const [expandedItems, setExpandedItems] = useState({});
   const sidebarRef = useRef(null);
+  const lastFocusedElement = useRef(null);
+  
+  // Settings from localStorage (with defaults)
+  const [overlayOpacity, setOverlayOpacity] = useState(() => {
+    return localStorage.getItem('sidebar.overlayOpacity') || '600';
+  });
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    return localStorage.getItem('sidebar.soundEnabled') !== 'false';
+  });
+  const [hapticEnabled, setHapticEnabled] = useState(() => {
+    return localStorage.getItem('sidebar.hapticEnabled') !== 'false';
+  });
+  
+  // Audio elements for sound effects
+  const audioRefs = useRef({
+    open: null,
+    close: null,
+    click: null
+  });
   
   const bgColor = useColorModeValue('linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%)', 'linear-gradient(180deg, #4a5568 0%, #2d3748 100%)');
   const borderColor = useColorModeValue('gray.300', 'gray.600');
@@ -86,6 +107,85 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
     md: isSidebarVisible ? "60px" : "0", 
     lg: isSidebarVisible ? "200px" : "0", 
     xl: isSidebarVisible ? "240px" : "0" 
+  });
+  
+  // Utility functions for sound and haptic feedback
+  const playSound = useCallback((type) => {
+    if (!soundEnabled) return;
+    
+    // Create audio elements on first use
+    if (!audioRefs.current[type]) {
+      const audio = new Audio();
+      // Using data URIs for simple sound effects (short beeps)
+      const sounds = {
+        open: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBgoOFhoeJi42Oj5GSk5SVl5manJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w==',
+        close: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAAD+/fz7+vn4+Pf29fTz8vHw7+7t7Ovq6ejn5uXk4+Lh4N/e3dzb2tnY19bV1NPS0dDPzs3My8rJyMfGxcTDwsHAv769vLu6ubi3trW0s7KxsK+urayrqqmop6aloqGgn56dnJuamZiXlpWUk5KRkI+OjYyLioiHhYSCgQ==',
+        click: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACAgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKysbCvrq2sq6qpqKempaSjoqGgn56dnJuamZiXlpWUk5KRkA=='
+      };
+      audio.src = sounds[type];
+      audio.volume = 0.3; // Low volume for subtlety
+      audioRefs.current[type] = audio;
+    }
+    
+    // Play the sound
+    try {
+      audioRefs.current[type].currentTime = 0;
+      audioRefs.current[type].play().catch(() => {
+        // Ignore errors (e.g., user hasn't interacted with page yet)
+      });
+    } catch {
+      // Ignore errors silently
+    }
+  }, [soundEnabled]);
+  
+  const triggerHaptic = (pattern = 'light') => {
+    if (!hapticEnabled) return;
+    
+    // Check if Vibration API is supported
+    if ('vibrate' in navigator) {
+      const patterns = {
+        light: 10,
+        medium: 20,
+        strong: 30,
+        double: [10, 50, 10]
+      };
+      navigator.vibrate(patterns[pattern] || patterns.light);
+    }
+  };
+  
+  // Save last focused element when sidebar opens
+  useEffect(() => {
+    if (isMobileOpen || isSidebarVisible) {
+      lastFocusedElement.current = document.activeElement;
+      playSound('open');
+    }
+  }, [isMobileOpen, isSidebarVisible, playSound]);
+  
+  // Enhanced close function with focus restoration
+  const handleClose = () => {
+    playSound('close');
+    if (onMobileClose) {
+      onMobileClose();
+    }
+    hideSidebar();
+    
+    // Restore focus after a short delay to allow animations
+    setTimeout(() => {
+      if (lastFocusedElement.current && typeof lastFocusedElement.current.focus === 'function') {
+        lastFocusedElement.current.focus();
+      }
+    }, 100);
+  };
+  
+  // Swipe handlers for mobile drawer
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => {
+      triggerHaptic('light');
+      handleClose();
+    },
+    preventScrollOnSwipe: true,
+    trackMouse: false, // Only track touch events, not mouse
+    delta: 50 // Minimum distance for swipe detection
   });
   
   // Show full sidebar or collapsed version
@@ -346,6 +446,8 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   });
 
   const handleItemClick = (item) => {
+    playSound('click');
+    triggerHaptic('light');
     navigate(item.path || item);
     hideSidebar(); // Auto-close sidebar on desktop
     if (onMobileClose) {
@@ -567,156 +669,176 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
     <Drawer 
       isOpen={isMobileOpen} 
       placement="left" 
-      onClose={onMobileClose}
+      onClose={handleClose}
       size={{ base: "xs", sm: "sm" }}
       closeOnOverlayClick={true}
       closeOnEsc={true}
     >
       <DrawerOverlay 
-        bg="blackAlpha.600" 
+        bg={`blackAlpha.${overlayOpacity}`}
         backdropFilter="blur(4px)"
-        onClick={onMobileClose}
+        onClick={() => {
+          triggerHaptic('light');
+          handleClose();
+        }}
       />
-      <DrawerContent maxW={{ base: "280px", sm: "320px" }}>
-        <DrawerCloseButton 
-          size="md"
-          color="gray.600"
-          _hover={{ color: "gray.800", bg: "gray.100" }}
-        />
-        <DrawerHeader borderBottomWidth="1px" pb={4}>
-          <VStack align="start" spacing={1}>
-            <Text fontSize="lg" fontWeight="bold" color="green.600">
-              TransportHub
-            </Text>
-            <Text fontSize="xs" color="gray.500">
-              Transportation Management
-            </Text>
-          </VStack>
-        </DrawerHeader>
-        <DrawerBody p={2}>
-          <VStack spacing={2} align="stretch">
-            {filteredMobileMenuItems.map((item) => (
-              <Box key={item.id}>
-                <Flex
-                  align="center"
-                  p={4}
-                  minH="48px" // Touch-friendly minimum height
-                  cursor="pointer"
-                  bg={isActive(item.path) ? activeBg : 'transparent'}
-                  color={isActive(item.path) ? item.color : textColor}
-                  _hover={{ bg: hoverBg, color: item.color }}
-                  _active={{ bg: activeBg, transform: "scale(0.98)" }}
-                  transition="all 0.2s ease"
-                  borderRadius="md"
-                  onClick={() => {
-                    handleItemClick(item);
-                    onMobileClose(); // Close drawer after navigation
-                  }}
-                >
-                  <Icon as={item.icon} boxSize={6} />
-                  <Text ml={3} fontSize="md" fontWeight="medium" flex={1}>
-                    {item.label}
-                  </Text>
-                </Flex>
-              </Box>
-            ))}
-            
-            {/* Account Settings Section (Mobile Only) */}
-            <Box pt={4} mt={4} borderTop="1px" borderColor={borderColor}>
-              <Text fontSize="xs" fontWeight="bold" color="gray.500" px={3} mb={2}>
-                ACCOUNT
+      <DrawerContent maxW={{ base: "280px", sm: "320px" }} {...swipeHandlers}>
+        <FocusLock returnFocus>
+          <DrawerCloseButton 
+            size="md"
+            color="gray.600"
+            _hover={{ color: "gray.800", bg: "gray.100" }}
+            onClick={() => {
+              triggerHaptic('light');
+              playSound('click');
+              handleClose();
+            }}
+          />
+          <DrawerHeader borderBottomWidth="1px" pb={4}>
+            <VStack align="start" spacing={1}>
+              <Text fontSize="lg" fontWeight="bold" color="green.600">
+                TransportHub
               </Text>
+              <Text fontSize="xs" color="gray.500">
+                Transportation Management
+              </Text>
+            </VStack>
+          </DrawerHeader>
+          <DrawerBody p={2}>
+            <VStack spacing={2} align="stretch">
+              {filteredMobileMenuItems.map((item) => (
+                <Box key={item.id}>
+                  <Flex
+                    align="center"
+                    p={4}
+                    minH="48px" // Touch-friendly minimum height
+                    cursor="pointer"
+                    bg={isActive(item.path) ? activeBg : 'transparent'}
+                    color={isActive(item.path) ? item.color : textColor}
+                    _hover={{ bg: hoverBg, color: item.color }}
+                    _active={{ bg: activeBg, transform: "scale(0.98)" }}
+                    transition="all 0.2s ease"
+                    borderRadius="md"
+                    onClick={() => {
+                      triggerHaptic('light');
+                      playSound('click');
+                      handleItemClick(item);
+                      handleClose();
+                    }}
+                  >
+                    <Icon as={item.icon} boxSize={6} />
+                    <Text ml={3} fontSize="md" fontWeight="medium" flex={1}>
+                      {item.label}
+                    </Text>
+                  </Flex>
+                </Box>
+              ))}
+              
+              {/* Account Settings Section (Mobile Only) */}
+              <Box pt={4} mt={4} borderTop="1px" borderColor={borderColor}>
+                <Text fontSize="xs" fontWeight="bold" color="gray.500" px={3} mb={2}>
+                  ACCOUNT
+                </Text>
 
-              {/* Account Settings Options */}
-              <VStack spacing={1} align="stretch">
-                {/* Profile */}
-                <Flex
-                  align="center"
-                  p={3}
-                  minH="44px"
-                  cursor="pointer"
-                  _hover={{ bg: hoverBg }}
-                  _active={{ bg: activeBg, transform: "scale(0.96)" }}
-                  transition="all 0.1s"
-                  borderRadius="md"
-                  onClick={() => {
-                    navigate('/settings/profile');
-                    onMobileClose();
-                  }}
-                >
-                  <Icon as={FaUser} boxSize={5} color="gray.600" />
-                  <Text ml={3} fontSize="sm" fontWeight="medium">
-                    Profile
-                  </Text>
-                </Flex>
+                {/* Account Settings Options */}
+                <VStack spacing={1} align="stretch">
+                  {/* Profile */}
+                  <Flex
+                    align="center"
+                    p={3}
+                    minH="44px"
+                    cursor="pointer"
+                    _hover={{ bg: hoverBg }}
+                    _active={{ bg: activeBg, transform: "scale(0.96)" }}
+                    transition="all 0.1s"
+                    borderRadius="md"
+                    onClick={() => {
+                      triggerHaptic('light');
+                      playSound('click');
+                      navigate('/settings/profile');
+                      handleClose();
+                    }}
+                  >
+                    <Icon as={FaUser} boxSize={5} color="gray.600" />
+                    <Text ml={3} fontSize="sm" fontWeight="medium">
+                      Profile
+                    </Text>
+                  </Flex>
 
-                {/* Help */}
-                <Flex
-                  align="center"
-                  p={3}
-                  minH="44px"
-                  cursor="pointer"
-                  _hover={{ bg: hoverBg }}
-                  _active={{ bg: activeBg, transform: "scale(0.96)" }}
-                  transition="all 0.1s"
-                  borderRadius="md"
-                  onClick={() => {
-                    navigate('/help');
-                    onMobileClose();
-                  }}
-                >
-                  <Icon as={InfoIcon} boxSize={5} color="blue.500" />
-                  <Text ml={3} fontSize="sm" fontWeight="medium">
-                    Help
-                  </Text>
-                </Flex>
+                  {/* Help */}
+                  <Flex
+                    align="center"
+                    p={3}
+                    minH="44px"
+                    cursor="pointer"
+                    _hover={{ bg: hoverBg }}
+                    _active={{ bg: activeBg, transform: "scale(0.96)" }}
+                    transition="all 0.1s"
+                    borderRadius="md"
+                    onClick={() => {
+                      triggerHaptic('light');
+                      playSound('click');
+                      navigate('/help');
+                      handleClose();
+                    }}
+                  >
+                    <Icon as={InfoIcon} boxSize={5} color="blue.500" />
+                    <Text ml={3} fontSize="sm" fontWeight="medium">
+                      Help
+                    </Text>
+                  </Flex>
 
-                {/* Support */}
-                <Flex
-                  align="center"
-                  p={3}
-                  minH="44px"
-                  cursor="pointer"
-                  _hover={{ bg: hoverBg }}
-                  _active={{ bg: activeBg, transform: "scale(0.96)" }}
-                  transition="all 0.1s"
-                  borderRadius="md"
-                  onClick={() => {
-                    navigate('/support');
-                    onMobileClose();
-                  }}
-                >
-                  <Icon as={PhoneIcon} boxSize={5} color="green.500" />
-                  <Text ml={3} fontSize="sm" fontWeight="medium">
-                    Support
-                  </Text>
-                </Flex>
+                  {/* Support */}
+                  <Flex
+                    align="center"
+                    p={3}
+                    minH="44px"
+                    cursor="pointer"
+                    _hover={{ bg: hoverBg }}
+                    _active={{ bg: activeBg, transform: "scale(0.96)" }}
+                    transition="all 0.1s"
+                    borderRadius="md"
+                    onClick={() => {
+                      triggerHaptic('light');
+                      playSound('click');
+                      navigate('/support');
+                      handleClose();
+                    }}
+                  >
+                    <Icon as={PhoneIcon} boxSize={5} color="green.500" />
+                    <Text ml={3} fontSize="sm" fontWeight="medium">
+                      Support
+                    </Text>
+                  </Flex>
 
-                {/* Logout */}
-                <Flex
-                  align="center"
-                  p={3}
-                  minH="44px"
-                  cursor="pointer"
-                  _hover={{ bg: "red.50", color: "red.600" }}
-                  _active={{ bg: "red.100", transform: "scale(0.96)" }}
-                  transition="all 0.1s"
-                  borderRadius="md"
-                  color="red.500"
-                  onClick={() => {
-                    logout();
-                    onMobileClose();
-                  }}
-                >
-                  <Icon as={WarningIcon} boxSize={5} />
-                  <Text ml={3} fontSize="sm" fontWeight="medium">
-                    Logout
-                  </Text>
-                </Flex>
-              </VStack>
-            </Box>
-          </VStack>
-        </DrawerBody>
+                  {/* Logout */}
+                  <Flex
+                    align="center"
+                    p={3}
+                    minH="44px"
+                    cursor="pointer"
+                    _hover={{ bg: "red.50", color: "red.600" }}
+                    _active={{ bg: "red.100", transform: "scale(0.96)" }}
+                    transition="all 0.1s"
+                    borderRadius="md"
+                    color="red.500"
+                    onClick={() => {
+                      triggerHaptic('medium');
+                      playSound('click');
+                      logout();
+                      handleClose();
+                    }}
+                  >
+                    <Icon as={WarningIcon} boxSize={5} />
+                    <Text ml={3} fontSize="sm" fontWeight="medium">
+                      Logout
+                    </Text>
+                  </Flex>
+                </VStack>
+              </Box>
+            </VStack>
+          </DrawerBody>
+        </FocusLock>
       </DrawerContent>
     </Drawer>
   );
@@ -731,17 +853,19 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
           left="0"
           right="0"
           bottom="0"
-          bg="blackAlpha.600"
+          bg={`blackAlpha.${overlayOpacity}`}
           backdropFilter="blur(2px)"
           display={{ base: "none", md: "block", lg: "none" }}
           zIndex={899}
           onClick={() => {
             console.log('Overlay clicked - closing sidebar');
+            triggerHaptic('light');
+            playSound('close');
             hideSidebar();
           }}
           cursor="pointer"
           transition="opacity 0.3s ease"
-          _hover={{ bg: "blackAlpha.700" }}
+          _hover={{ bg: `blackAlpha.${Number(overlayOpacity) + 100}` }}
         />
       )}
       

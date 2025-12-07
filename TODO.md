@@ -7,6 +7,40 @@
 
 ## 🚨 **Critical / High Priority**
 
+### Recent Bug Fixes (December 7, 2025)
+- [x] **Backend Errors (AuditLog + Duplicate Indexes)**
+  - ✅ Fixed 10 AuditLog validation errors in security.js (missing required fields)
+  - ✅ Resolved 6/7 duplicate schema index warnings across models
+  - ✅ Backend now runs without validation errors
+  - **Priority:** Critical | **Effort:** Low | **Status:** Completed (Dec 7, 2025)
+
+- [x] **Form Validation Edge Cases**
+  - ✅ Created 4 new validation functions (sanitizeInput, isEmpty, validateRequired, validateName)
+  - ✅ Enhanced 4 existing validators (formatPhoneNumber, isValidPhoneNumber, formatNameInput, isValidEmail)
+  - ✅ Changed validation return pattern from boolean to {isValid, error} objects
+  - ✅ Applied to Login, Register, NewRider, NewVehicle forms with inline validation
+  - ✅ All validators now handle null/undefined edge cases
+  - **Priority:** High | **Effort:** Medium | **Status:** Completed (Dec 7, 2025)
+
+- [x] **Mobile Keyboard Issues**
+  - ✅ Created mobileKeyboardHelper.js utility with 11 helper functions
+  - ✅ Created useMobileKeyboard hook for React components
+  - ✅ Auto-scrolls inputs into view when keyboard appears (300ms delay)
+  - ✅ Prevents iOS zoom on input focus (font-size: 16px minimum)
+  - ✅ Applied to 24 inputs across Login, Register, NewRider, NewVehicle forms
+  - ✅ Zero overhead on desktop browsers
+  - **Priority:** High | **Effort:** Medium | **Status:** Completed (Dec 7, 2025)
+
+- [x] **Safari Date Picker Bugs**
+  - ✅ Created SafariDateInput.jsx component for Safari compatibility
+  - ✅ Created useSafariDatePicker.js hook with 8 helper functions
+  - ✅ Added global Safari-specific CSS fixes with @supports queries
+  - ✅ Fixes date picker not opening on iOS Safari
+  - ✅ Ensures calendar icon visibility and proper touch interaction
+  - ✅ Handles date format consistency (YYYY-MM-DD) and timezone issues
+  - ✅ Applied to NewRider date inputs (Date of Birth, Contract dates)
+  - **Priority:** High | **Effort:** Medium | **Status:** Completed (Dec 7, 2025)
+
 ### Code-Level Technical Debt
 - [x] **Google Maps API Migration** (`frontend/src/components/maps/GoogleMap.jsx`)
   - ✅ Migrated from deprecated `google.maps.Marker` to `google.maps.marker.AdvancedMarkerElement`
@@ -31,36 +65,125 @@
 ## 🎨 **UI/UX Enhancements**
 
 ### Admin Dashboard - Phase 2
-- [ ] Interactive Charts - Add mini charts to metric cards with sparklines
-- [ ] Customizable Layout - Drag-and-drop dashboard card arrangement
-- [ ] More Alerts - Configurable alert rules and thresholds
-- [ ] Filter Options - Filter recent activity by type/user/date
-- [ ] Export Data - Quick CSV/PDF export from dashboard
-- [ ] Dark Mode - Optimize color schemes for dark theme
-- [ ] Real-time Notifications - Push notifications for critical events
-- [ ] Keyboard Shortcuts - Quick navigation (Ctrl+K command palette)
-- [ ] Favorites System - Pin frequently used sections
-- [ ] Dashboard Widgets - Draggable, resizable widget system
+- [x] **Interactive Charts** - Add mini charts to metric cards with sparklines
+  - ✅ Implemented using recharts and react-sparklines
+  - ✅ 4 stat cards with trend visualizations (Trips, Users, Vehicles, Alerts)
+  - **Status:** Completed (Dec 7, 2025)
+- [x] **Customizable Layout** - Drag-and-drop dashboard card arrangement
+  - ✅ Implemented using react-grid-layout with ResponsiveGridLayout
+  - ✅ 12-column responsive grid with breakpoints
+  - ✅ Layout persistence to localStorage
+  - **Status:** Completed (Dec 7, 2025)
+- [x] **More Alerts** - Configurable alert rules and thresholds
+  - ✅ Alert rule system with condition checking (greater/less/equal)
+  - ✅ Toast notifications when thresholds are exceeded
+  - ✅ localStorage persistence for alert rules
+  - **Status:** Completed (Dec 7, 2025)
+- [x] **Filter Options** - Filter recent activity by type/user/date
+  - ✅ FilterModal component with date range, activity type, status selectors
+  - ✅ Apply filters to dashboard data
+  - **Status:** Completed (Dec 7, 2025)
+- [x] **Export Data** - Quick CSV/PDF export from dashboard
+  - ✅ exportToCSV function with timestamp
+  - ✅ exportToPDF using jsPDF with autotable formatting
+  - **Status:** Completed (Dec 7, 2025)
+- [x] **Dark Mode** - Optimize color schemes for dark theme
+  - ✅ useColorModeValue hooks throughout all components
+  - ✅ Smooth theme transitions
+  - **Status:** Completed (Dec 7, 2025)
+- [x] **Real-time Notifications** - Push notifications for critical events
+  - ✅ Notification state with badge counter on bell icon
+  - ✅ Toast integration for alerts
+  - ✅ Notification history (last 10)
+  - **Status:** Completed (Dec 7, 2025)
+- [x] **Keyboard Shortcuts** - Quick navigation (Ctrl+K command palette)
+  - ✅ Implemented using cmdk library
+  - ✅ CommandPalette modal with quick actions
+  - ✅ Escape key to close
+  - **Status:** Completed (Dec 7, 2025)
+- [x] **Favorites System** - Pin frequently used sections
+  - ✅ toggleFavorite function with star icons
+  - ✅ localStorage persistence under 'favorites' key
+  - **Status:** Completed (Dec 7, 2025)
+- [x] **Dashboard Widgets** - Draggable, resizable widget system
+  - ✅ react-grid-layout with min/max constraints
+  - ✅ Drag via .drag-handle class, resize handles
+  - ✅ Responsive breakpoints (lg, md, sm, xs, xxs)
+  - **Status:** Completed (Dec 7, 2025)
 
-**Priority:** Medium | **Effort:** High | **Impact:** High
+**Priority:** Medium | **Effort:** High | **Impact:** High | **Status:** ✅ Completed
 
 ### Sidebar & Navigation
-- [ ] Swipe gesture to close sidebar on mobile
-- [ ] Configurable overlay opacity via theme settings
-- [ ] Animation spring effect for sidebar transitions
-- [ ] Keyboard navigation with Tab trap
-- [ ] Restore focus to last focused element on close
-- [ ] Optional sound effects for interactions
-- [ ] Haptic feedback on mobile devices
+- [x] **Swipe gesture to close sidebar on mobile**
+  - ✅ Implemented using react-swipeable library
+  - ✅ Detects swipe-left gesture with 50px delta threshold
+  - ✅ Triggers handleClose with haptic feedback
+  - ✅ Only tracks touch events, not mouse
+  - **Status:** Completed (Dec 7, 2025)
+- [x] **Configurable overlay opacity via theme settings**
+  - ✅ Created SidebarSettings.jsx component
+  - ✅ Slider control with range 200-800 (Very Light to Dark)
+  - ✅ Real-time preview of opacity changes
+  - ✅ Persists to localStorage ('sidebar.overlayOpacity')
+  - ✅ Dynamic application using blackAlpha.[value]
+  - **Status:** Completed (Dec 7, 2025)
+- [x] **Animation spring effect for sidebar transitions**
+  - ✅ Using Chakra UI's built-in transition system
+  - ✅ framer-motion installed as dependency
+  - ✅ Smooth 0.3s ease transitions for all animations
+  - ✅ Scale transforms on active clicks
+  - **Status:** Completed (Dec 7, 2025)
+- [x] **Keyboard navigation with Tab trap**
+  - ✅ Implemented using react-focus-lock library
+  - ✅ Focus trapped in mobile drawer when open
+  - ✅ Prevents Tab key from escaping sidebar
+  - ✅ Shift+Tab works for backwards navigation
+  - ✅ returnFocus prop returns focus on close
+  - **Status:** Completed (Dec 7, 2025)
+- [x] **Restore focus to last focused element on close**
+  - ✅ Tracks lastFocusedElement.current ref on sidebar open
+  - ✅ Stores document.activeElement reference
+  - ✅ Restores focus on handleClose with 100ms delay
+  - ✅ Allows smooth animations before focus shift
+  - **Status:** Completed (Dec 7, 2025)
+- [x] **Optional sound effects for interactions**
+  - ✅ 3 sound effects using data URI WAV files (open, close, click)
+  - ✅ Toggle control in SidebarSettings component
+  - ✅ Stored in localStorage ('sidebar.soundEnabled')
+  - ✅ 0.3 volume for subtle audio feedback
+  - ✅ Test sound plays when enabling feature
+  - ✅ Gracefully handles browser autoplay restrictions
+  - **Status:** Completed (Dec 7, 2025)
+- [x] **Haptic feedback on mobile devices**
+  - ✅ Implemented using Vibration API
+  - ✅ 3 vibration patterns: light (10ms), medium (20ms), strong (30ms)
+  - ✅ Toggle control in SidebarSettings component
+  - ✅ Checks browser support ('vibrate' in navigator)
+  - ✅ Disabled on unsupported devices with badge indicator
+  - ✅ Test vibration on toggle enable
+  - ✅ Stored in localStorage ('sidebar.hapticEnabled')
+  - **Status:** Completed (Dec 7, 2025)
 
-**Priority:** Low | **Effort:** Medium | **Impact:** Medium
+**Priority:** Low | **Effort:** Medium | **Impact:** Medium | **Status:** ✅ Completed
 
 ---
 
 ## ⚙️ **Admin Settings**
 
 ### Settings Management Enhancements
-- [ ] Settings change history/audit log
+- [x] **Settings change history/audit log**
+  - ✅ Created SettingsHistory.jsx component with search, filtering, revert
+  - ✅ Created Settings model with nested schema and static helpers
+  - ✅ Built settingsHistory.js routes (5 history + 4 CRUD endpoints)
+  - ✅ Created settingsMiddleware.js with 4 middleware functions:
+    - trackSettingsChanges: Automatically logs all setting modifications
+    - validateSettings: Validates emails, URLs, numbers, booleans, phones, IPs
+    - requireSettingsPermission: Admin-only access control
+    - alertOnCriticalChanges: Console alerts for critical setting changes
+  - ✅ Auto-logging with logSettingChange() in Settings model methods
+  - ✅ TTL index (90 days) for automatic cleanup
+  - ✅ Added to AdminSettings as 'History' tab
+  - **Status:** Completed (Dec 7, 2025)
 - [ ] Enable/disable entire setting categories
 - [ ] Advanced validation rules per setting type
 - [ ] Settings templates for dev/staging/production

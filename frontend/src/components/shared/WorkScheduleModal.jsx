@@ -42,34 +42,106 @@ import {
   TabList,
   TabPanels,
   Tab,
-  TabPanel
+  TabPanel,
+  Select,
+  Checkbox,
+  Tfoot,
+  IconButton,
+  Flex
 } from '@chakra-ui/react';
 import {
   ClockIcon,
   CalendarDaysIcon,
   CurrencyDollarIcon,
   ExclamationTriangleIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  PencilIcon,
+  CheckIcon,
+  XMarkIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
+import { useAuth } from '../../contexts/AuthContext';
 
 const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState(null);
   const [timeOffRequests, setTimeOffRequests] = useState([]);
+  const [weeklySchedule, setWeeklySchedule] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  
+  // Week navigation state
+  const [currentWeekStart, setCurrentWeekStart] = useState(null);
   
   // Form state for time-off request
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
   
+  // Admin tab state
+  const [scheduleData, setScheduleData] = useState(null);
+  const [pendingTimeOffRequests, setPendingTimeOffRequests] = useState([]);
+  const [reviewingRequest, setReviewingRequest] = useState(null);
+  const [reviewNotes, setReviewNotes] = useState('');
+  
+  // Admin employee selection state
+  const [allEmployees, setAllEmployees] = useState([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
+  const [selectedEmployeeName, setSelectedEmployeeName] = useState('');
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+  
   const toast = useToast();
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const cardBg = useColorModeValue('gray.50', 'gray.700');
 
-  const fetchWorkScheduleData = async () => {
+  const isAdmin = user && ['admin', 'dispatcher', 'scheduler'].some(role => 
+    user.roles?.includes(role) || user.role === role
+  );
+
+  // Helper function to get the start of a week (Sunday)
+  const getWeekStart = (date = new Date()) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day; // Get Sunday
+    const weekStart = new Date(d.setDate(diff));
+    weekStart.setHours(0, 0, 0, 0);
+    return weekStart;
+  };
+
+  // Helper function to format week range
+  const formatWeekRange = (weekStart) => {
+    if (!weekStart) return '';
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    
+    const startStr = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const endStr = weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    
+    return `Week of ${startStr} – ${endStr}`;
+  };
+
+  // Helper function to check if a date is the current week
+  const isCurrentWeek = (weekStart) => {
+    if (!weekStart) return true;
+    const currentWeekStart = getWeekStart();
+    return weekStart.getTime() === currentWeekStart.getTime();
+  };
+
+  // Helper function to format time for display
+  const formatTime = (timeString) => {
+    if (!timeString) return '';
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  const fetchWorkScheduleData = async (weekStart = null) => {
     setLoading(true);
     try {
       // Fetch work schedule summary
@@ -79,6 +151,27 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
       // Fetch time-off requests
       const timeOffResponse = await axios.get(`/api/work-schedule/${userId}/time-off`);
       setTimeOffRequests(timeOffResponse.data);
+
+      // Fetch weekly schedule with week parameter
+      try {
+        const weekStartParam = weekStart || getWeekStart();
+        const weeklyResponse = await axios.get(`/api/weekly-schedule/${userId}`, {
+          params: { weekStart: weekStartParam.toISOString() }
+        });
+        setWeeklySchedule(weeklyResponse.data);
+        setCurrentWeekStart(weekStartParam);
+      } catch {
+        // Weekly schedule might not exist yet, that's okay
+        console.log('No weekly schedule found (this is normal for new users)');
+        setWeeklySchedule(null);
+        setCurrentWeekStart(weekStart || getWeekStart());
+      }
+
+      // Fetch pending time-off requests for admin
+      if (isAdmin) {
+        const pendingResponse = await axios.get(`/api/work-schedule/${userId}/time-off?status=pending`);
+        setPendingTimeOffRequests(pendingResponse.data);
+      }
     } catch (error) {
       console.error('Error fetching work schedule data:', error);
       toast({
@@ -93,12 +186,125 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
     }
   };
 
+  const handlePreviousWeek = () => {
+    const newWeekStart = new Date(currentWeekStart);
+    newWeekStart.setDate(newWeekStart.getDate() - 7);
+    fetchWorkScheduleData(newWeekStart);
+  };
+
+  const handleNextWeek = () => {
+    const newWeekStart = new Date(currentWeekStart);
+    newWeekStart.setDate(newWeekStart.getDate() + 7);
+    fetchWorkScheduleData(newWeekStart);
+  };
+
+  const handleThisWeek = () => {
+    fetchWorkScheduleData(getWeekStart());
+  };
+
+  // Fetch all employees for admin dropdown
+  const fetchAllEmployees = async () => {
+    if (!isAdmin) return;
+    
+    setLoadingEmployees(true);
+    try {
+      const response = await axios.get('/api/users', {
+        params: { 
+          role: 'driver,dispatcher,scheduler,admin',
+          limit: 1000 
+        }
+      });
+      setAllEmployees(response.data.users || response.data || []);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load employee list',
+        status: 'error',
+        duration: 3000,
+        isClosable: true
+      });
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
+
+  // Handle employee selection in admin tab
+  const handleEmployeeSelect = async (employeeId) => {
+    const employee = allEmployees.find(emp => emp._id === employeeId);
+    if (!employee) return;
+
+    setSelectedEmployeeId(employeeId);
+    setSelectedEmployeeName(employee.name || employee.email);
+    
+    // Fetch selected employee's schedule and time-off requests
+    try {
+      setLoading(true);
+      
+      // Fetch weekly schedule for selected employee
+      try {
+        const weekStartParam = currentWeekStart || getWeekStart();
+        const weeklyResponse = await axios.get(`/api/weekly-schedule/${employeeId}`, {
+          params: { weekStart: weekStartParam.toISOString() }
+        });
+        
+        // Convert to editable format for admin
+        const editableSchedule = weeklyResponse.data.schedule.map(day => ({
+          dayOfWeek: day.dayOfWeek,
+          dayName: day.dayName,
+          isWorkDay: day.isWorkDay,
+          shiftStart: day.shiftStart || '09:00',
+          shiftEnd: day.shiftEnd || '17:00',
+          hoursScheduled: day.hoursScheduled || 0
+        }));
+        setScheduleData(editableSchedule);
+      } catch {
+        // No schedule exists, initialize default
+        initializeScheduleData();
+      }
+
+      // Fetch pending time-off requests for selected employee
+      const timeOffResponse = await axios.get(`/api/work-schedule/${employeeId}/time-off?status=pending`);
+      setPendingTimeOffRequests(timeOffResponse.data);
+      
+    } catch (error) {
+      console.error('Error fetching employee data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load employee schedule',
+        status: 'error',
+        duration: 3000,
+        isClosable: true
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen && userId) {
       fetchWorkScheduleData();
+      // Initialize schedule data for admin tab
+      if (isAdmin) {
+        initializeScheduleData();
+        fetchAllEmployees();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, userId]);
+
+  const initializeScheduleData = () => {
+    const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const defaultSchedule = daysOfWeek.map((day, index) => ({
+      dayOfWeek: index,
+      dayName: day,
+      isWorkDay: false,
+      shiftStart: '09:00',
+      shiftEnd: '17:00',
+      hoursScheduled: 0
+    }));
+    setScheduleData(defaultSchedule);
+  };
 
   const handleSubmitTimeOff = async (e) => {
     e.preventDefault();
@@ -142,6 +348,144 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
       toast({
         title: 'Error',
         description: error.response?.data?.message || 'Failed to submit time-off request',
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSaveSchedule = async () => {
+    if (!isAdmin || !scheduleData) return;
+
+    // Determine which employee to save for (selected employee in admin tab or current user)
+    const targetUserId = selectedEmployeeId || userId;
+    const targetUserName = selectedEmployeeName || userName;
+
+    if (!targetUserId) {
+      toast({
+        title: 'Error',
+        description: 'Please select an employee first',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true
+      });
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await axios.post(`/api/weekly-schedule/${targetUserId}`, {
+        schedule: scheduleData,
+        isRecurring: true,
+        effectiveDate: new Date()
+      });
+
+      toast({
+        title: 'Success',
+        description: `Weekly schedule saved for ${targetUserName}`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true
+      });
+
+      setEditMode(false);
+      
+      // Refresh the selected employee's data
+      if (selectedEmployeeId) {
+        handleEmployeeSelect(selectedEmployeeId);
+      } else {
+        fetchWorkScheduleData();
+      }
+    } catch (error) {
+      console.error('Error saving schedule:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to save schedule',
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleToggleWorkDay = (dayIndex) => {
+    const newSchedule = [...scheduleData];
+    newSchedule[dayIndex].isWorkDay = !newSchedule[dayIndex].isWorkDay;
+    
+    // Recalculate hours
+    if (newSchedule[dayIndex].isWorkDay && newSchedule[dayIndex].shiftStart && newSchedule[dayIndex].shiftEnd) {
+      newSchedule[dayIndex].hoursScheduled = calculateHours(
+        newSchedule[dayIndex].shiftStart, 
+        newSchedule[dayIndex].shiftEnd
+      );
+    } else {
+      newSchedule[dayIndex].hoursScheduled = 0;
+    }
+    
+    setScheduleData(newSchedule);
+  };
+
+  const handleShiftChange = (dayIndex, field, value) => {
+    const newSchedule = [...scheduleData];
+    newSchedule[dayIndex][field] = value;
+    
+    // Recalculate hours if both times are set
+    if (newSchedule[dayIndex].shiftStart && newSchedule[dayIndex].shiftEnd && newSchedule[dayIndex].isWorkDay) {
+      newSchedule[dayIndex].hoursScheduled = calculateHours(
+        newSchedule[dayIndex].shiftStart,
+        newSchedule[dayIndex].shiftEnd
+      );
+    }
+    
+    setScheduleData(newSchedule);
+  };
+
+  const calculateHours = (startTime, endTime) => {
+    if (!startTime || !endTime) return 0;
+    
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    
+    let totalMinutes = endMinutes - startMinutes;
+    if (totalMinutes < 0) totalMinutes += 24 * 60; // Handle overnight shifts
+    
+    return totalMinutes / 60;
+  };
+
+  const handleReviewTimeOff = async (requestId, status) => {
+    if (!isAdmin) return;
+
+    try {
+      setSubmitting(true);
+      await axios.patch(`/api/work-schedule/time-off/${requestId}`, {
+        status,
+        reviewNotes
+      });
+
+      toast({
+        title: 'Success',
+        description: `Time-off request ${status}`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true
+      });
+
+      setReviewingRequest(null);
+      setReviewNotes('');
+      fetchWorkScheduleData();
+    } catch (error) {
+      console.error('Error reviewing time-off request:', error);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to review request',
         status: 'error',
         duration: 5000,
         isClosable: true
@@ -207,7 +551,9 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
             <Tabs variant="enclosed" colorScheme="blue">
               <TabList>
                 <Tab>Overview</Tab>
+                <Tab>Work Week</Tab>
                 <Tab>Time Off</Tab>
+                {isAdmin && <Tab>Admin</Tab>}
               </TabList>
 
               <TabPanels>
@@ -371,6 +717,187 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
                   </VStack>
                 </TabPanel>
 
+                {/* Work Week Tab */}
+                <TabPanel>
+                  <VStack spacing={6} align="stretch">
+                    {/* Week Navigation Header */}
+                    <Flex 
+                      justify="space-between" 
+                      align="center" 
+                      p={4}
+                      bg={cardBg}
+                      borderRadius="lg"
+                      borderWidth="1px"
+                      borderColor={borderColor}
+                    >
+                      <IconButton
+                        icon={<ChevronLeftIcon className="h-5 w-5" />}
+                        aria-label="Previous week"
+                        onClick={handlePreviousWeek}
+                        variant="ghost"
+                        size="sm"
+                      />
+                      
+                      <VStack spacing={0}>
+                        <Text fontSize="lg" fontWeight="bold">
+                          {currentWeekStart && formatWeekRange(currentWeekStart)}
+                        </Text>
+                        {!isCurrentWeek(currentWeekStart) && (
+                          <Button
+                            size="xs"
+                            variant="link"
+                            colorScheme="blue"
+                            onClick={handleThisWeek}
+                          >
+                            Go to This Week
+                          </Button>
+                        )}
+                      </VStack>
+                      
+                      <IconButton
+                        icon={<ChevronRightIcon className="h-5 w-5" />}
+                        aria-label="Next week"
+                        onClick={handleNextWeek}
+                        variant="ghost"
+                        size="sm"
+                      />
+                    </Flex>
+
+                    {/* Weekly Schedule Calendar View */}
+                    <Box>
+                      {weeklySchedule && weeklySchedule.schedule ? (
+                        <>
+                          <VStack spacing={3} align="stretch">
+                            {weeklySchedule.schedule.map((day, index) => (
+                              <Box
+                                key={index}
+                                p={5}
+                                bg={day.hasTimeOff ? 'blue.50' : day.isWorkDay ? bgColor : cardBg}
+                                borderRadius="lg"
+                                borderWidth="2px"
+                                borderColor={day.hasTimeOff ? 'blue.300' : day.isWorkDay ? 'green.300' : borderColor}
+                                transition="all 0.2s"
+                                _hover={{ shadow: 'md' }}
+                              >
+                                <Flex justify="space-between" align="center">
+                                  <VStack align="start" spacing={1} flex={1}>
+                                    <HStack spacing={3}>
+                                      <Text fontSize="lg" fontWeight="bold" color={day.isWorkDay ? 'green.600' : 'gray.600'}>
+                                        {day.dayName}
+                                      </Text>
+                                      <Text fontSize="sm" color="gray.500">
+                                        {new Date(day.date).toLocaleDateString('en-US', { 
+                                          month: 'short', 
+                                          day: 'numeric',
+                                          year: 'numeric'
+                                        })}
+                                      </Text>
+                                      <Badge
+                                        colorScheme={
+                                          day.hasTimeOff ? 'blue' :
+                                          day.isWorkDay ? 'green' :
+                                          'gray'
+                                        }
+                                        fontSize="xs"
+                                      >
+                                        {day.status}
+                                      </Badge>
+                                    </HStack>
+                                    
+                                    <HStack spacing={4} mt={2}>
+                                      <HStack spacing={2}>
+                                        <Icon as={ClockIcon} w={4} h={4} color="gray.500" />
+                                        <Text fontSize="md" fontWeight="medium">
+                                          {day.hasTimeOff ? (
+                                            <Text as="span" color="blue.600">Time Off</Text>
+                                          ) : day.isWorkDay && day.shiftStart && day.shiftEnd ? (
+                                            <Text as="span" color="green.700">
+                                              {formatTime(day.shiftStart)} – {formatTime(day.shiftEnd)}
+                                            </Text>
+                                          ) : (
+                                            <Text as="span" color="gray.500">Off</Text>
+                                          )}
+                                        </Text>
+                                      </HStack>
+                                    </HStack>
+                                  </VStack>
+
+                                  <Box textAlign="right">
+                                    {day.hoursScheduled > 0 ? (
+                                      <VStack spacing={0}>
+                                        <Text fontSize="2xl" fontWeight="bold" color={day.hasTimeOff ? 'blue.600' : 'green.600'}>
+                                          {day.hoursScheduled.toFixed(1)}
+                                        </Text>
+                                        <Text fontSize="xs" color="gray.500">
+                                          {day.hoursScheduled === 1 ? 'hour' : 'hours'}
+                                        </Text>
+                                      </VStack>
+                                    ) : (
+                                      <Text fontSize="lg" color="gray.400">
+                                        –
+                                      </Text>
+                                    )}
+                                  </Box>
+                                </Flex>
+                              </Box>
+                            ))}
+                          </VStack>
+
+                          {/* Total Weekly Hours Summary */}
+                          <Box
+                            mt={6}
+                            p={6}
+                            bg="blue.50"
+                            borderRadius="lg"
+                            borderWidth="2px"
+                            borderColor="blue.300"
+                          >
+                            <Flex justify="space-between" align="center">
+                              <VStack align="start" spacing={0}>
+                                <Text fontSize="sm" fontWeight="medium" color="gray.600">
+                                  Total Hours for Week
+                                </Text>
+                                <Text fontSize="xs" color="gray.500">
+                                  {formatWeekRange(currentWeekStart)}
+                                </Text>
+                              </VStack>
+                              <HStack spacing={2}>
+                                <Icon as={ClockIcon} w={6} h={6} color="blue.600" />
+                                <Text fontSize="3xl" fontWeight="bold" color="blue.600">
+                                  {weeklySchedule.totalWeeklyHours.toFixed(1)}
+                                </Text>
+                                <Text fontSize="md" color="gray.600">
+                                  hours
+                                </Text>
+                              </HStack>
+                            </Flex>
+                          </Box>
+                          
+                          {weeklySchedule.notes && (
+                            <Alert status="info" borderRadius="md" mt={4}>
+                              <AlertIcon />
+                              <Box>
+                                <Text fontWeight="bold">Notes:</Text>
+                                <Text fontSize="sm">{weeklySchedule.notes}</Text>
+                              </Box>
+                            </Alert>
+                          )}
+                        </>
+                      ) : (
+                        <Alert status="info" borderRadius="md">
+                          <AlertIcon />
+                          <VStack align="start" spacing={2}>
+                            <Text fontWeight="bold">No weekly schedule has been set yet</Text>
+                            <Text fontSize="sm">
+                              Contact your administrator to create your schedule.
+                            </Text>
+                          </VStack>
+                        </Alert>
+                      )}
+                    </Box>
+                  </VStack>
+                </TabPanel>
+
                 {/* Time Off Tab */}
                 <TabPanel>
                   <VStack spacing={6} align="stretch">
@@ -484,6 +1011,293 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
                     </Box>
                   </VStack>
                 </TabPanel>
+
+                {/* Admin Tab */}
+                {isAdmin && (
+                  <TabPanel>
+                    <VStack spacing={6} align="stretch">
+                      {/* Employee Selection Section */}
+                      <Box
+                        p={5}
+                        bg="blue.50"
+                        borderRadius="lg"
+                        borderWidth="2px"
+                        borderColor="blue.300"
+                      >
+                        <VStack align="stretch" spacing={3}>
+                          <Heading size="sm" color="blue.800">
+                            Select Employee to Manage
+                          </Heading>
+                          <FormControl>
+                            <Select
+                              placeholder="Choose an employee..."
+                              value={selectedEmployeeId || ''}
+                              onChange={(e) => handleEmployeeSelect(e.target.value)}
+                              size="lg"
+                              bg="white"
+                              isDisabled={loadingEmployees}
+                            >
+                              {allEmployees.map((employee) => (
+                                <option key={employee._id} value={employee._id}>
+                                  {employee.name || employee.email} - {employee.role}
+                                </option>
+                              ))}
+                            </Select>
+                            <Text fontSize="xs" color="gray.600" mt={2}>
+                              Select an employee to view and manage their schedule and time-off requests
+                            </Text>
+                          </FormControl>
+                          
+                          {selectedEmployeeId && (
+                            <Alert status="info" borderRadius="md">
+                              <AlertIcon />
+                              <Box>
+                                <Text fontWeight="bold">Managing: {selectedEmployeeName}</Text>
+                                <Text fontSize="sm">
+                                  You can now create/edit their schedule and review time-off requests below.
+                                </Text>
+                              </Box>
+                            </Alert>
+                          )}
+                        </VStack>
+                      </Box>
+
+                      {/* Show schedule and time-off sections only if employee is selected */}
+                      {selectedEmployeeId ? (
+                        <>
+                          {/* Create/Edit Schedule Section */}
+                          <Box
+                            p={5}
+                            bg={cardBg}
+                            borderRadius="lg"
+                            borderWidth="1px"
+                            borderColor={borderColor}
+                          >
+                            <Flex justify="space-between" align="center" mb={4}>
+                              <Heading size="md">Manage Schedule for {selectedEmployeeName}</Heading>
+                              <HStack>
+                                {editMode ? (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      leftIcon={<CheckIcon className="h-4 w-4" />}
+                                      colorScheme="green"
+                                      onClick={handleSaveSchedule}
+                                      isLoading={submitting}
+                                    >
+                                      Save
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      leftIcon={<XMarkIcon className="h-4 w-4" />}
+                                      onClick={() => {
+                                        setEditMode(false);
+                                        handleEmployeeSelect(selectedEmployeeId);
+                                      }}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    leftIcon={<PencilIcon className="h-4 w-4" />}
+                                    colorScheme="blue"
+                                    onClick={() => setEditMode(true)}
+                                  >
+                                    Edit Schedule
+                                  </Button>
+                                )}
+                              </HStack>
+                            </Flex>
+
+                            {scheduleData && (
+                              <Box overflowX="auto">
+                                <Table variant="simple" size="sm">
+                              <Thead>
+                                <Tr>
+                                  <Th>Day</Th>
+                                  <Th>Work Day</Th>
+                                  <Th>Shift Start</Th>
+                                  <Th>Shift End</Th>
+                                  <Th isNumeric>Hours</Th>
+                                </Tr>
+                              </Thead>
+                              <Tbody>
+                                {scheduleData.map((day, index) => (
+                                  <Tr key={index}>
+                                    <Td fontWeight="bold">{day.dayName}</Td>
+                                    <Td>
+                                      <Checkbox
+                                        isChecked={day.isWorkDay}
+                                        onChange={() => handleToggleWorkDay(index)}
+                                        isDisabled={!editMode}
+                                      />
+                                    </Td>
+                                    <Td>
+                                      <Input
+                                        type="time"
+                                        size="sm"
+                                        value={day.shiftStart || ''}
+                                        onChange={(e) => handleShiftChange(index, 'shiftStart', e.target.value)}
+                                        isDisabled={!editMode || !day.isWorkDay}
+                                      />
+                                    </Td>
+                                    <Td>
+                                      <Input
+                                        type="time"
+                                        size="sm"
+                                        value={day.shiftEnd || ''}
+                                        onChange={(e) => handleShiftChange(index, 'shiftEnd', e.target.value)}
+                                        isDisabled={!editMode || !day.isWorkDay}
+                                      />
+                                    </Td>
+                                    <Td isNumeric>
+                                      {day.isWorkDay && day.hoursScheduled > 0 ? day.hoursScheduled.toFixed(1) : '-'}
+                                    </Td>
+                                  </Tr>
+                                ))}
+                              </Tbody>
+                              <Tfoot>
+                                <Tr>
+                                  <Th colSpan={4}>Total Weekly Hours</Th>
+                                  <Th isNumeric fontSize="lg">
+                                    {scheduleData.reduce((total, day) => total + (day.hoursScheduled || 0), 0).toFixed(1)}
+                                  </Th>
+                                </Tr>
+                              </Tfoot>
+                            </Table>
+                          </Box>
+                        )}
+                      </Box>
+
+                      <Divider />
+
+                      {/* Time-Off Requests Management */}
+                      <Box
+                        p={5}
+                        bg={cardBg}
+                        borderRadius="lg"
+                        borderWidth="1px"
+                        borderColor={borderColor}
+                      >
+                        <Heading size="md" mb={4}>
+                          Pending Time-Off Requests
+                        </Heading>
+
+                        {pendingTimeOffRequests.length === 0 ? (
+                          <Alert status="success" borderRadius="md">
+                            <AlertIcon />
+                            No pending time-off requests
+                          </Alert>
+                        ) : (
+                          <VStack spacing={4} align="stretch">
+                            {pendingTimeOffRequests.map((request) => (
+                              <Box
+                                key={request._id}
+                                p={4}
+                                borderWidth="1px"
+                                borderColor={borderColor}
+                                borderRadius="md"
+                                bg={bgColor}
+                              >
+                                <HStack justify="space-between" mb={3}>
+                                  <VStack align="start" spacing={1}>
+                                    <HStack>
+                                      <Icon as={CalendarDaysIcon} w={5} h={5} color="blue.500" />
+                                      <Text fontWeight="bold">
+                                        {formatDate(request.startDate)} - {formatDate(request.endDate)}
+                                      </Text>
+                                      <Badge colorScheme="yellow">Pending</Badge>
+                                    </HStack>
+                                    <Text fontSize="sm" color="gray.600">
+                                      Requested {formatDate(request.requestedAt)}
+                                    </Text>
+                                  </VStack>
+                                </HStack>
+
+                                {request.reason && (
+                                  <Box mb={3}>
+                                    <Text fontSize="sm" fontWeight="medium" mb={1}>Reason:</Text>
+                                    <Text fontSize="sm" color="gray.600">{request.reason}</Text>
+                                  </Box>
+                                )}
+
+                                {reviewingRequest === request._id ? (
+                                  <VStack spacing={3} align="stretch">
+                                    <FormControl>
+                                      <FormLabel fontSize="sm">Review Notes</FormLabel>
+                                      <Textarea
+                                        value={reviewNotes}
+                                        onChange={(e) => setReviewNotes(e.target.value)}
+                                        placeholder="Add notes about this request..."
+                                        size="sm"
+                                        rows={3}
+                                      />
+                                    </FormControl>
+                                    <HStack spacing={2}>
+                                      <Button
+                                        size="sm"
+                                        colorScheme="green"
+                                        leftIcon={<CheckIcon className="h-4 w-4" />}
+                                        onClick={() => handleReviewTimeOff(request._id, 'approved')}
+                                        isLoading={submitting}
+                                        flex={1}
+                                      >
+                                        Approve
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        colorScheme="red"
+                                        leftIcon={<XMarkIcon className="h-4 w-4" />}
+                                        onClick={() => handleReviewTimeOff(request._id, 'denied')}
+                                        isLoading={submitting}
+                                        flex={1}
+                                      >
+                                        Deny
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          setReviewingRequest(null);
+                                          setReviewNotes('');
+                                        }}
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </HStack>
+                                  </VStack>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    colorScheme="blue"
+                                    onClick={() => setReviewingRequest(request._id)}
+                                    w="full"
+                                  >
+                                    Review Request
+                                  </Button>
+                                )}
+                              </Box>
+                            ))}
+                          </VStack>
+                        )}
+                      </Box>
+                      </>
+                    ) : (
+                      <Alert status="warning" borderRadius="md">
+                        <AlertIcon />
+                        <VStack align="start" spacing={2}>
+                          <Text fontWeight="bold">No Employee Selected</Text>
+                          <Text fontSize="sm">
+                            Please select an employee from the dropdown above to manage their schedule and time-off requests.
+                          </Text>
+                        </VStack>
+                      </Alert>
+                    )}
+                    </VStack>
+                  </TabPanel>
+                )}
               </TabPanels>
             </Tabs>
           )}

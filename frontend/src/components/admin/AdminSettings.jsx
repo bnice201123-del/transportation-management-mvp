@@ -150,7 +150,8 @@ import {
   FaLock,
   FaClipboardList,
   FaCalendarAlt,
-  FaKey
+  FaKey,
+  FaBars
 } from 'react-icons/fa';
 import axios from '../../config/axios';
 import Navbar from '../shared/Navbar';
@@ -161,6 +162,10 @@ import SessionManager from './SessionManager';
 import EncryptionManager from './EncryptionManager';
 import PermissionMatrix from './PermissionMatrix';
 import SecurityMonitor from './SecurityMonitor';
+import LoginAttemptMonitor from './LoginAttemptMonitor';
+import GeoSecurityManager from './GeoSecurityManager';
+import SidebarSettings from '../shared/SidebarSettings';
+import SettingsHistory from './SettingsHistory';
 
 const AdminSettings = () => {
   // State management
@@ -744,7 +749,11 @@ const AdminSettings = () => {
     { label: 'Sessions', icon: FaShieldAlt, key: 'sessions' },
     { label: 'Encryption', icon: FaLock, key: 'encryption' },
     { label: 'Permissions', icon: FaKey, key: 'permissions' },
-    { label: 'Security Alerts', icon: FaExclamationTriangle, key: 'security-alerts' }
+    { label: 'Security Alerts', icon: FaExclamationTriangle, key: 'security-alerts' },
+    { label: 'Login Attempts', icon: FaShieldAlt, key: 'login-attempts' },
+    { label: 'Geo-Security', icon: FaMap, key: 'geo-security' },
+    { label: 'Sidebar', icon: FaBars, key: 'sidebar-settings' },
+    { label: 'History', icon: FaHistory, key: 'settings-history' }
   ].filter(tab => 
     tab.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
     tab.key.toLowerCase().includes(searchTerm.toLowerCase())
@@ -1240,6 +1249,34 @@ const AdminSettings = () => {
                     <TabPanel p={6}>
                       <VStack spacing={6} align="stretch">
                         <SecurityMonitor />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Login Attempts Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <LoginAttemptMonitor />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Geo-Security Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <GeoSecurityManager />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Sidebar Settings Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <SidebarSettings />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Settings History Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <SettingsHistory />
                       </VStack>
                     </TabPanel>
                   </TabPanels>

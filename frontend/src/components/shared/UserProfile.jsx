@@ -18,13 +18,20 @@ import {
   Badge,
   SimpleGrid,
   Spinner,
-  Center
+  Center,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel
 } from '@chakra-ui/react';
 import { EmailIcon, PhoneIcon } from '@chakra-ui/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import ProfileImageUpload from './ProfileImageUpload';
 import Navbar from './Navbar';
 import WorkScheduleButton from './WorkScheduleButton';
+import TrustedDevicesManager from '../security/TrustedDevicesManager';
+import BiometricSetup from '../security/BiometricSetup';
 import axios from '../../config/axios';
 
 const UserProfile = () => {
@@ -266,6 +273,29 @@ const UserProfile = () => {
                     </HStack>
                   )}
                 </VStack>
+              </CardBody>
+            </Card>
+
+            {/* Security Settings Card */}
+            <Card>
+              <CardHeader>
+                <Heading size="md" color="gray.700">Security Settings</Heading>
+              </CardHeader>
+              <CardBody>
+                <Tabs variant="enclosed" colorScheme="blue">
+                  <TabList>
+                    <Tab>Trusted Devices</Tab>
+                    <Tab>Biometric Authentication</Tab>
+                  </TabList>
+                  <TabPanels>
+                    <TabPanel>
+                      <TrustedDevicesManager />
+                    </TabPanel>
+                    <TabPanel>
+                      <BiometricSetup />
+                    </TabPanel>
+                  </TabPanels>
+                </Tabs>
               </CardBody>
             </Card>
 

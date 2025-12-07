@@ -68,48 +68,46 @@ import {
   FormHelperText
 } from '@chakra-ui/react';
 import {
-  AddIcon,
-  EditIcon,
-  ViewIcon,
-  DeleteIcon,
-  RepeatIcon,
-  SearchIcon,
-  CalendarIcon,
+  PlusIcon,
+  PencilIcon,
+  EyeIcon,
+  TrashIcon,
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  CalendarDaysIcon,
   ChevronDownIcon,
-  DownloadIcon,
-  SettingsIcon,
-  InfoIcon,
-  TimeIcon,
+  ArrowDownTrayIcon,
+  Cog6ToothIcon,
+  InformationCircleIcon,
+  ClockIcon,
   CheckIcon,
-  WarningIcon
-} from '@chakra-ui/icons';
+  ExclamationTriangleIcon,
+  TruckIcon,
+  UserIcon,
+  MapPinIcon,
+  FunnelIcon,
+  Bars3Icon,
+  PhoneIcon,
+  EnvelopeIcon,
+  PlayIcon,
+  PauseIcon,
+  StopIcon,
+  TableCellsIcon
+} from '@heroicons/react/24/outline';
 import {
-  FaCar,
-  FaUser,
-  FaMapMarkerAlt,
-  FaClock,
-  FaRoute,
-  FaFilter,
-  FaSort,
-  FaCalendarPlus,
-  FaCalendarCheck,
-  FaCalendarTimes,
-  FaSync,
-  FaFileExport,
-  FaPhone,
-  FaEnvelope,
-  FaPlay,
-  FaPause,
-  FaStop,
-  FaCalendarWeek,
-  FaInfinity,
-  FaTh,
-  FaTable,
-  FaEye
-} from 'react-icons/fa';
+  TruckIcon as TruckIconSolid,
+  UserIcon as UserIconSolid,
+  MapPinIcon as MapPinIconSolid,
+  ClockIcon as ClockIconSolid,
+  CheckIcon as CheckIconSolid,
+  ExclamationTriangleIcon as ExclamationTriangleIconSolid,
+  CalendarDaysIcon as CalendarDaysIconSolid
+} from '@heroicons/react/24/solid';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from '../../config/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
+import Navbar from '../shared/Navbar';
 
 // Modern Recurring Trip Card Component (moved outside main component to avoid hooks issues)
 const RecurringTripCard = ({ trip, onEdit, onToggle, onDelete, onViewDetails }) => {
@@ -236,7 +234,10 @@ const RecurringTripCard = ({ trip, onEdit, onToggle, onDelete, onViewDetails }) 
               size="xs"
               variant="outline"
               colorScheme={trip.isActive ? 'orange' : 'green'}
-              icon={trip.isActive ? <FaPause /> : <FaPlay />}
+              icon={trip.isActive ? 
+                <Box as={PauseIcon} w={3} h={3} /> : 
+                <Box as={PlayIcon} w={3} h={3} />
+              }
               onClick={() => onToggle(trip)}
               aria-label={trip.isActive ? 'Pause' : 'Activate'}
             />
@@ -250,6 +251,15 @@ const RecurringTripCard = ({ trip, onEdit, onToggle, onDelete, onViewDetails }) 
 const RecurringTrips = () => {
   const { user } = useAuth();
   const toast = useToast();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Responsive design variables  
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  const headerBg = useColorModeValue('green.50', 'green.900');
+  const inputBg = useColorModeValue('gray.50', 'gray.700');
+  const cardSpacing = { base: 4, md: 6 };
+  const buttonSize = { base: "md", md: "md" };
   
   // Color mode values
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -269,6 +279,7 @@ const RecurringTrips = () => {
   
   // Form data for creating/editing recurring trips
   const [formData, setFormData] = useState({
+    riderId: '', // ID of the registered rider
     riderName: '',
     riderPhone: '',
     riderEmail: '',
@@ -337,6 +348,35 @@ const RecurringTrips = () => {
     fetchRecurringTrips();
   }, [fetchRecurringTrips]);
 
+  // Handle prepopulation from Create Trip modal
+  useEffect(() => {
+    if (location.state?.fromCreateTrip && location.state?.riderId) {
+      // Prepopulate form with rider data from Create Trip modal
+      setFormData(prev => ({
+        ...prev,
+        riderName: location.state.riderName || '',
+        riderPhone: location.state.riderPhone || '',
+        riderEmail: location.state.riderEmail || '',
+        riderId: location.state.riderId
+      }));
+
+      // Open the add modal automatically
+      onAddOpen();
+
+      // Show success toast
+      toast({
+        title: 'Rider Prepopulated',
+        description: `Creating recurring trip for ${location.state.riderName}`,
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+      });
+
+      // Clear the location state after using it
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, onAddOpen, toast, navigate, location.pathname]);
+
   // Filter recurring trips
   const filteredRecurringTrips = (Array.isArray(recurringTrips) ? recurringTrips : []).filter(trip => {
     const matchesSearch = 
@@ -364,6 +404,11 @@ const RecurringTrips = () => {
 
       if (!formData.pickupLocation.address || !formData.dropoffLocation.address) {
         throw new Error('Please select both pickup and dropoff locations');
+      }
+
+      // Validate that rider is registered (has riderId)
+      if (!formData.riderId) {
+        throw new Error('Recurring trips can only be created for registered riders. Please register this rider first or select them from the Create Trip modal.');
       }
 
       const url = selectedTrip 
@@ -411,6 +456,7 @@ const RecurringTrips = () => {
   // Reset form
   const resetForm = () => {
     setFormData({
+      riderId: '',
       riderName: '',
       riderPhone: '',
       riderEmail: '',
@@ -449,6 +495,7 @@ const RecurringTrips = () => {
   const handleEdit = (trip) => {
     setSelectedTrip(trip);
     setFormData({
+      riderId: trip.riderId || '',
       riderName: trip.riderName || '',
       riderPhone: trip.riderPhone || '',
       riderEmail: trip.riderEmail || '',
@@ -681,10 +728,12 @@ const RecurringTrips = () => {
   }
 
   return (
-    <Box bg={bgColor} minH="100vh">
-      <Container maxW="8xl" py={6}>
+    <>
+      <Navbar />
+      <Box bg={bgColor} minH="100vh" pt={{ base: "60px", md: "70px" }} overflowX="hidden">
+        <Box w="100%" py={{ base: 4, md: 6 }} px={{ base: 3, md: 4, lg: 6 }}>
         {/* Modern Header with Enhanced Actions */}
-        <Card bg={cardBg} shadow="lg" borderRadius="xl" mb={6}>
+        <Card bg={cardBg} shadow="lg" borderRadius="xl" mb={6} w="100%" maxW="100%">
           <CardHeader pb={4}>
             <Flex direction={{ base: 'column', md: 'row' }} gap={4} align="center">
               <VStack align="start" spacing={2} flex={1}>
@@ -695,7 +744,7 @@ const RecurringTrips = () => {
                     borderRadius="lg"
                     color="purple.600"
                   >
-                    <FaCalendarPlus size="24px" />
+                    <Box as={CalendarDaysIcon} w={6} h={6} />
                   </Box>
                   <VStack align="start" spacing={0}>
                     <Heading size="lg" color={textColor}>
@@ -726,7 +775,7 @@ const RecurringTrips = () => {
               {/* Action Buttons */}
               <VStack spacing={3} align="stretch" minW="200px">
                 <Button
-                  leftIcon={<AddIcon />}
+                  leftIcon={<Box as={PlusIcon} w={4} h={4} />}
                   colorScheme="purple"
                   onClick={handleAdd}
                   size="md"
@@ -739,7 +788,7 @@ const RecurringTrips = () => {
                 
                 <HStack spacing={2}>
                   <Button
-                    leftIcon={<FaFileExport />}
+                    leftIcon={<ArrowDownTrayIcon style={{ width: '16px', height: '16px' }} />}
                     variant="outline"
                     colorScheme="green"
                     onClick={exportRecurringTrips}
@@ -750,7 +799,7 @@ const RecurringTrips = () => {
                   </Button>
                   
                   <Button
-                    leftIcon={<FaSync />}
+                    leftIcon={<ArrowPathIcon style={{ width: '16px', height: '16px' }} />}
                     variant="outline"
                     onClick={fetchRecurringTrips}
                     size="sm"
@@ -770,13 +819,13 @@ const RecurringTrips = () => {
               {/* Search Bar */}
               <InputGroup>
                 <InputLeftElement>
-                  <SearchIcon color="gray.400" />
+                  <Box as={MagnifyingGlassIcon} w={4} h={4} color="gray.400" />
                 </InputLeftElement>
                 <Input
                   placeholder="Search by rider name or location..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  bg={useColorModeValue('gray.50', 'gray.700')}
+                  bg={inputBg}
                   border="1px"
                   borderColor={borderColor}
                   borderRadius="lg"
@@ -820,7 +869,7 @@ const RecurringTrips = () => {
                     variant={viewMode === 'grid' ? 'solid' : 'ghost'}
                     colorScheme="purple"
                     onClick={() => setViewMode('grid')}
-                    leftIcon={<FaTh />}
+                    leftIcon={<Bars3Icon style={{ width: '16px', height: '16px' }} />}
                   >
                     Grid
                   </Button>
@@ -829,7 +878,7 @@ const RecurringTrips = () => {
                     variant={viewMode === 'table' ? 'solid' : 'ghost'}
                     colorScheme="purple"
                     onClick={() => setViewMode('table')}
-                    leftIcon={<FaTable />}
+                    leftIcon={<TableCellsIcon style={{ width: '16px', height: '16px' }} />}
                   >
                     Table
                   </Button>
@@ -862,7 +911,7 @@ const RecurringTrips = () => {
             ))}
           </SimpleGrid>
         ) : (
-          <Card shadow="sm" bg={cardBg}>
+          <Card shadow="sm" bg={cardBg} w="100%" maxW="100%">
             <CardHeader>
               <Flex justify="space-between" align="center">
                 <Heading size="md" color={textColor}>
@@ -874,8 +923,8 @@ const RecurringTrips = () => {
               </Flex>
             </CardHeader>
             <CardBody p={0}>
-              <TableContainer>
-                <Table variant="simple" size="sm">
+              <TableContainer w="100%" overflowX="auto">
+                <Table variant="simple" size="sm" w="100%">
                   <Thead>
                     <Tr>
                   <Th>Rider</Th>
@@ -964,7 +1013,7 @@ const RecurringTrips = () => {
                           <Tooltip label="View Details">
                             <IconButton
                               size="sm"
-                              icon={<ViewIcon />}
+                              icon={<EyeIcon style={{ width: '16px', height: '16px' }} />}
                               variant="ghost"
                               colorScheme="blue"
                               onClick={() => handleView(trip)}
@@ -973,7 +1022,7 @@ const RecurringTrips = () => {
                           <Tooltip label="Edit Pattern">
                             <IconButton
                               size="sm"
-                              icon={<EditIcon />}
+                              icon={<PencilIcon style={{ width: '16px', height: '16px' }} />}
                               variant="ghost"
                               colorScheme="orange"
                               onClick={() => handleEdit(trip)}
@@ -982,7 +1031,7 @@ const RecurringTrips = () => {
                           <Tooltip label="Preview Generated Trips">
                             <IconButton
                               size="sm"
-                              icon={<FaCalendarWeek />}
+                              icon={<CalendarDaysIcon style={{ width: '16px', height: '16px' }} />}
                               variant="ghost"
                               colorScheme="green"
                               onClick={() => handlePreview(trip)}
@@ -991,7 +1040,7 @@ const RecurringTrips = () => {
                           <Tooltip label="Delete Pattern">
                             <IconButton
                               size="sm"
-                              icon={<DeleteIcon />}
+                              icon={<TrashIcon style={{ width: '16px', height: '16px' }} />}
                               variant="ghost"
                               colorScheme="red"
                               onClick={() => handleDelete(trip)}
@@ -1006,7 +1055,7 @@ const RecurringTrips = () => {
                     <Td colSpan={6}>
                       <Center py={8}>
                         <VStack>
-                          <RepeatIcon size={40} color="gray.300" />
+                          <ArrowPathIcon style={{ width: '40px', height: '40px', color: 'gray' }} />
                           <Text color="gray.500">
                             {searchTerm || statusFilter !== 'all' || frequencyFilter !== 'all'
                               ? 'No recurring trips match your current filters'
@@ -1014,7 +1063,7 @@ const RecurringTrips = () => {
                           </Text>
                           {!searchTerm && statusFilter === 'all' && frequencyFilter === 'all' && (
                             <Button
-                              leftIcon={<AddIcon />}
+                              leftIcon={<Box as={PlusIcon} w={4} h={4} />}
                               colorScheme="purple"
                               variant="outline"
                               onClick={handleAdd}
@@ -1055,7 +1104,7 @@ const RecurringTrips = () => {
                 </Text>
                 {!searchTerm && statusFilter === 'all' && frequencyFilter === 'all' && (
                   <Button
-                    leftIcon={<AddIcon />}
+                    leftIcon={<Box as={PlusIcon} w={4} h={4} />}
                     colorScheme="purple"
                     onClick={handleAdd}
                     size="md"
@@ -1068,53 +1117,92 @@ const RecurringTrips = () => {
             </CardBody>
           </Card>
         )}
-      </Container>
+      </Box>
 
       {/* Add/Edit Modal */}
-      <Modal isOpen={isAddOpen || isEditOpen} onClose={isAddOpen ? onAddClose : onEditClose} size="xl" scrollBehavior="inside">
+      <Modal 
+        isOpen={isAddOpen || isEditOpen} 
+        onClose={isAddOpen ? onAddClose : onEditClose} 
+        size="xl" 
+        scrollBehavior="inside"
+      >
         <ModalOverlay />
-        <ModalContent maxW="4xl">
+        <ModalContent maxW={{ base: "95vw", md: "4xl" }}>
           <form onSubmit={handleSubmit}>
-            <ModalHeader>
+            <ModalHeader bg="purple.50" borderTopRadius="md">
               <HStack>
-                <RepeatIcon color="purple" />
-                <Text>{selectedTrip ? 'Edit Recurring Trip' : 'Create New Recurring Trip'}</Text>
+                <ArrowPathIcon style={{ width: '24px', height: '24px', color: 'purple' }} />
+                <Text fontSize={{ base: "lg", md: "xl" }}>
+                  {selectedTrip ? 'Edit Recurring Trip' : 'Create New Recurring Trip'}
+                </Text>
               </HStack>
             </ModalHeader>
             <ModalCloseButton />
-            <ModalBody maxH="70vh" overflowY="auto">
-              <VStack spacing={6} align="stretch">
+            <ModalBody 
+              maxH={{ base: "60vh", md: "70vh" }} 
+              overflowY="auto" 
+              p={{ base: 4, md: 6 }}
+            >
+              <VStack spacing={{ base: 5, md: 6 }} align="stretch">
                 {/* Rider Information */}
                 <Box>
                   <Heading size="sm" mb={4} color="blue.600">
                     👤 Rider Information
                   </Heading>
-                  <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                  
+                  {/* Registered Rider Info/Warning */}
+                  {!formData.riderId && (
+                    <Alert status="warning" mb={4} borderRadius="lg" fontSize="sm">
+                      <AlertIcon />
+                      <Box>
+                        <Text fontWeight="bold">Registered Riders Only</Text>
+                        <Text fontSize="sm">
+                          Recurring trips can only be created for registered riders. 
+                          Please select a rider from the "Create Trip" modal or register this rider first.
+                        </Text>
+                      </Box>
+                    </Alert>
+                  )}
+                  
+                  {formData.riderId && (
+                    <Alert status="success" mb={4} borderRadius="lg" fontSize="sm">
+                      <AlertIcon />
+                      <Box>
+                        <Text fontWeight="bold">Registered Rider Selected</Text>
+                        <Text fontSize="sm">
+                          This recurring trip will be created for registered rider: {formData.riderName}
+                        </Text>
+                      </Box>
+                    </Alert>
+                  )}
+                  
+                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                     <FormControl isRequired>
-                      <FormLabel>Rider Name</FormLabel>
+                      <FormLabel fontSize="sm" fontWeight="semibold">Rider Name</FormLabel>
                       <Input
                         value={formData.riderName}
                         onChange={(e) => setFormData({ ...formData, riderName: e.target.value })}
                         placeholder="Enter rider's full name"
+                        isReadOnly={!!formData.riderId}
+                        bg={formData.riderId ? 'gray.100' : 'white'}
+                        size="md"
                       />
+                      {formData.riderId && (
+                        <FormHelperText fontSize="xs" color="green.600">
+                          ✓ Prepopulated from registered rider
+                        </FormHelperText>
+                      )}
                     </FormControl>
                     
                     <FormControl>
-                      <FormLabel>Phone Number</FormLabel>
+                      <FormLabel fontSize="sm" fontWeight="semibold">Phone Number</FormLabel>
                       <Input
                         value={formData.riderPhone}
                         onChange={(e) => setFormData({ ...formData, riderPhone: e.target.value })}
                         placeholder="Enter phone number"
-                      />
-                    </FormControl>
-                    
-                    <FormControl>
-                      <FormLabel>Email Address</FormLabel>
-                      <Input
-                        type="email"
-                        value={formData.riderEmail}
-                        onChange={(e) => setFormData({ ...formData, riderEmail: e.target.value })}
-                        placeholder="Enter email address"
+                        isReadOnly={!!formData.riderId}
+                        bg={formData.riderId ? 'gray.100' : 'white'}
+                        size="md"
                       />
                     </FormControl>
                   </SimpleGrid>
@@ -1122,45 +1210,65 @@ const RecurringTrips = () => {
 
                 {/* Route Information */}
                 <Box>
+                  <Divider mb={4} />
                   <Heading size="sm" mb={4} color="green.600">
                     🗺️ Route Information
                   </Heading>
-                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                    <FormControl isRequired>
-                      <FormLabel>Pickup Location</FormLabel>
-                      <PlacesAutocomplete
-                        onPlaceSelect={(location) => 
-                          setFormData({ ...formData, pickupLocation: location })
-                        }
-                        placeholder="Enter pickup address"
-                        value={formData.pickupLocation.address}
-                      />
-                    </FormControl>
+                  <VStack spacing={4} align="stretch">
+                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                      <FormControl isRequired>
+                        <FormLabel fontSize="sm" fontWeight="semibold">Pickup Location</FormLabel>
+                        <PlacesAutocomplete
+                          onPlaceSelected={(location) => 
+                            setFormData({ ...formData, pickupLocation: location })
+                          }
+                          placeholder="Enter pickup address"
+                          value={formData.pickupLocation.address}
+                        />
+                      </FormControl>
+                      
+                      <FormControl isRequired>
+                        <FormLabel fontSize="sm" fontWeight="semibold">Drop-off Location</FormLabel>
+                        <PlacesAutocomplete
+                          onPlaceSelected={(location) => 
+                            setFormData({ ...formData, dropoffLocation: location })
+                          }
+                          placeholder="Enter drop-off address"
+                          value={formData.dropoffLocation.address}
+                        />
+                      </FormControl>
+                    </SimpleGrid>
                     
-                    <FormControl isRequired>
-                      <FormLabel>Dropoff Location</FormLabel>
-                      <PlacesAutocomplete
-                        onPlaceSelect={(location) => 
-                          setFormData({ ...formData, dropoffLocation: location })
-                        }
-                        placeholder="Enter dropoff address"
-                        value={formData.dropoffLocation.address}
-                      />
-                    </FormControl>
-                  </SimpleGrid>
+                    {/* Distance & Travel Time Display */}
+                    {formData.pickupLocation.address && formData.dropoffLocation.address && (
+                      <Alert status="info" borderRadius="lg" fontSize="sm">
+                        <AlertIcon />
+                        <Box>
+                          <Text fontSize="sm">
+                            <strong>Estimated Distance:</strong> {formData.estimatedDistance || 'Calculating...'}
+                          </Text>
+                          <Text fontSize="sm">
+                            <strong>Estimated Travel Time:</strong> {formData.estimatedDuration ? `${formData.estimatedDuration} minutes` : 'Calculating...'}
+                          </Text>
+                        </Box>
+                      </Alert>
+                    )}
+                  </VStack>
                 </Box>
 
                 {/* Frequency Configuration */}
                 <Box>
+                  <Divider mb={4} />
                   <Heading size="sm" mb={4} color="orange.600">
                     🔄 Frequency Configuration
                   </Heading>
                   <VStack spacing={4} align="stretch">
                     <FormControl isRequired>
-                      <FormLabel>Frequency Type</FormLabel>
+                      <FormLabel fontSize="sm" fontWeight="semibold">Frequency Type</FormLabel>
                       <Select
                         value={formData.frequency}
                         onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
+                        size="md"
                       >
                         <option value="daily">Daily</option>
                         <option value="weekly">Weekly</option>
@@ -1172,19 +1280,23 @@ const RecurringTrips = () => {
                     {/* Days of Week for Weekly frequency */}
                     {formData.frequency === 'weekly' && (
                       <FormControl>
-                        <FormLabel>Days of Week</FormLabel>
+                        <FormLabel fontSize="sm" fontWeight="semibold">Select Days of the Week</FormLabel>
                         <CheckboxGroup
                           value={formData.daysOfWeek}
                           onChange={(values) => setFormData({ ...formData, daysOfWeek: values })}
                         >
-                          <Stack direction={['column', 'row']} wrap="wrap">
-                            <Checkbox value="Monday">Monday</Checkbox>
-                            <Checkbox value="Tuesday">Tuesday</Checkbox>
-                            <Checkbox value="Wednesday">Wednesday</Checkbox>
-                            <Checkbox value="Thursday">Thursday</Checkbox>
-                            <Checkbox value="Friday">Friday</Checkbox>
-                            <Checkbox value="Saturday">Saturday</Checkbox>
-                            <Checkbox value="Sunday">Sunday</Checkbox>
+                          <Stack 
+                            direction={{ base: 'column', md: 'row' }} 
+                            wrap="wrap" 
+                            spacing={{ base: 2, md: 4 }}
+                          >
+                            <Checkbox value="Monday" size="md">Monday</Checkbox>
+                            <Checkbox value="Tuesday" size="md">Tuesday</Checkbox>
+                            <Checkbox value="Wednesday" size="md">Wednesday</Checkbox>
+                            <Checkbox value="Thursday" size="md">Thursday</Checkbox>
+                            <Checkbox value="Friday" size="md">Friday</Checkbox>
+                            <Checkbox value="Saturday" size="md">Saturday</Checkbox>
+                            <Checkbox value="Sunday" size="md">Sunday</Checkbox>
                           </Stack>
                         </CheckboxGroup>
                       </FormControl>
@@ -1193,12 +1305,13 @@ const RecurringTrips = () => {
                     {/* Day of Month for Monthly frequency */}
                     {formData.frequency === 'monthly' && (
                       <FormControl>
-                        <FormLabel>Day of Month</FormLabel>
+                        <FormLabel fontSize="sm" fontWeight="semibold">Day of Month</FormLabel>
                         <NumberInput
                           min={1}
                           max={31}
                           value={formData.dayOfMonth}
                           onChange={(value) => setFormData({ ...formData, dayOfMonth: parseInt(value) || 1 })}
+                          size="md"
                         >
                           <NumberInputField />
                           <NumberInputStepper>
@@ -1206,7 +1319,7 @@ const RecurringTrips = () => {
                             <NumberDecrementStepper />
                           </NumberInputStepper>
                         </NumberInput>
-                        <FormHelperText>Select which day of the month (1-31)</FormHelperText>
+                        <FormHelperText fontSize="xs">Select which day of the month (1-31)</FormHelperText>
                       </FormControl>
                     )}
 
@@ -1214,11 +1327,12 @@ const RecurringTrips = () => {
                     {formData.frequency === 'custom' && (
                       <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                         <FormControl>
-                          <FormLabel>Every</FormLabel>
+                          <FormLabel fontSize="sm" fontWeight="semibold">Every</FormLabel>
                           <NumberInput
                             min={1}
                             value={formData.customInterval}
                             onChange={(value) => setFormData({ ...formData, customInterval: parseInt(value) || 1 })}
+                            size="md"
                           >
                             <NumberInputField />
                             <NumberInputStepper>
@@ -1229,10 +1343,11 @@ const RecurringTrips = () => {
                         </FormControl>
                         
                         <FormControl>
-                          <FormLabel>Unit</FormLabel>
+                          <FormLabel fontSize="sm" fontWeight="semibold">Unit</FormLabel>
                           <Select
                             value={formData.customUnit}
                             onChange={(e) => setFormData({ ...formData, customUnit: e.target.value })}
+                            size="md"
                           >
                             <option value="days">Days</option>
                             <option value="weeks">Weeks</option>
@@ -1246,151 +1361,71 @@ const RecurringTrips = () => {
 
                 {/* Schedule Configuration */}
                 <Box>
+                  <Divider mb={4} />
                   <Heading size="sm" mb={4} color="teal.600">
                     📅 Schedule Configuration
                   </Heading>
-                  <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
+                  <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
                     <FormControl isRequired>
-                      <FormLabel>Start Date</FormLabel>
+                      <FormLabel fontSize="sm" fontWeight="semibold">Start Date</FormLabel>
                       <Input
                         type="date"
                         value={formData.startDate}
                         onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                        size="md"
                       />
-                    </FormControl>
-                    
-                    <FormControl>
-                      <FormLabel>End Date</FormLabel>
-                      <Input
-                        type="date"
-                        value={formData.endDate}
-                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      />
-                      <FormHelperText>Leave empty for no end date</FormHelperText>
                     </FormControl>
                     
                     <FormControl isRequired>
-                      <FormLabel>Start Time</FormLabel>
+                      <FormLabel fontSize="sm" fontWeight="semibold">Pickup Time</FormLabel>
                       <Input
                         type="time"
                         value={formData.startTime}
                         onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                        size="md"
                       />
                     </FormControl>
                     
                     <FormControl>
-                      <FormLabel>Duration (minutes)</FormLabel>
-                      <NumberInput
-                        min={15}
-                        max={480}
-                        value={formData.duration}
-                        onChange={(value) => setFormData({ ...formData, duration: parseInt(value) || 30 })}
-                      >
-                        <NumberInputField />
-                        <NumberInputStepper>
-                          <NumberIncrementStepper />
-                          <NumberDecrementStepper />
-                        </NumberInputStepper>
-                      </NumberInput>
+                      <FormLabel fontSize="sm" fontWeight="semibold">
+                        Return Time
+                        <Text as="span" fontSize="xs" color="gray.500" ml={1}>(Optional)</Text>
+                      </FormLabel>
+                      <Input
+                        type="time"
+                        value={formData.returnTime || ''}
+                        onChange={(e) => setFormData({ ...formData, returnTime: e.target.value })}
+                        size="md"
+                        placeholder="--:--"
+                      />
+                      <FormHelperText fontSize="xs">For round trips</FormHelperText>
                     </FormControl>
                   </SimpleGrid>
                 </Box>
 
-                {/* Advanced Options */}
-                <Box>
-                  <Heading size="sm" mb={4} color="red.600">
-                    ⚙️ Advanced Options
-                  </Heading>
-                  <VStack spacing={4} align="stretch">
-                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                      <FormControl>
-                        <FormLabel>Maximum Occurrences</FormLabel>
-                        <NumberInput
-                          min={1}
-                          value={formData.maxOccurrences || ''}
-                          onChange={(value) => setFormData({ ...formData, maxOccurrences: value ? parseInt(value) : null })}
-                        >
-                          <NumberInputField placeholder="Leave empty for unlimited" />
-                          <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                          </NumberInputStepper>
-                        </NumberInput>
-                        <FormHelperText>Limit total number of generated trips</FormHelperText>
-                      </FormControl>
-                      
-                      <FormControl>
-                        <FormLabel>Fare Amount</FormLabel>
-                        <Input
-                          value={formData.fare}
-                          onChange={(e) => setFormData({ ...formData, fare: e.target.value })}
-                          placeholder="Enter fare amount (optional)"
-                        />
-                      </FormControl>
-                    </SimpleGrid>
-
-                    <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
-                      <FormControl display="flex" alignItems="center">
-                        <FormLabel mb="0">Skip Holidays</FormLabel>
-                        <Switch
-                          isChecked={formData.skipHolidays}
-                          onChange={(e) => setFormData({ ...formData, skipHolidays: e.target.checked })}
-                          colorScheme="blue"
-                        />
-                      </FormControl>
-                      
-                      <FormControl display="flex" alignItems="center">
-                        <FormLabel mb="0">Skip Weekends</FormLabel>
-                        <Switch
-                          isChecked={formData.skipWeekends}
-                          onChange={(e) => setFormData({ ...formData, skipWeekends: e.target.checked })}
-                          colorScheme="orange"
-                        />
-                      </FormControl>
-                      
-                      <FormControl display="flex" alignItems="center">
-                        <FormLabel mb="0">Auto Assign</FormLabel>
-                        <Switch
-                          isChecked={formData.autoAssign}
-                          onChange={(e) => setFormData({ ...formData, autoAssign: e.target.checked })}
-                          colorScheme="green"
-                        />
-                      </FormControl>
-                      
-                      <FormControl display="flex" alignItems="center">
-                        <FormLabel mb="0">Active</FormLabel>
-                        <Switch
-                          isChecked={formData.isActive}
-                          onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                          colorScheme="purple"
-                        />
-                      </FormControl>
-                    </SimpleGrid>
-
-                    <FormControl>
-                      <FormLabel>Notes</FormLabel>
-                      <Textarea
-                        value={formData.notes}
-                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                        placeholder="Any additional notes or special instructions..."
-                        rows={3}
-                      />
-                    </FormControl>
-                  </VStack>
-                </Box>
-
                 {/* Error Display */}
                 {error && (
-                  <Alert status="error">
+                  <Alert status="error" borderRadius="lg">
                     <AlertIcon />
-                    {error}
+                    <Text fontSize="sm">{error}</Text>
                   </Alert>
                 )}
               </VStack>
             </ModalBody>
             
-            <ModalFooter>
-              <Button variant="ghost" mr={3} onClick={isAddOpen ? onAddClose : onEditClose}>
+            <ModalFooter 
+              bg="gray.50" 
+              borderBottomRadius="md"
+              flexDirection={{ base: 'column', md: 'row' }}
+              gap={{ base: 2, md: 3 }}
+            >
+              <Button 
+                variant="ghost" 
+                onClick={isAddOpen ? onAddClose : onEditClose}
+                w={{ base: 'full', md: 'auto' }}
+                size="lg"
+                order={{ base: 2, md: 1 }}
+              >
                 Cancel
               </Button>
               <Button 
@@ -1398,6 +1433,11 @@ const RecurringTrips = () => {
                 colorScheme="purple" 
                 isLoading={isSubmitting}
                 loadingText="Saving..."
+                isDisabled={!formData.riderId || isSubmitting}
+                w={{ base: 'full', md: 'auto' }}
+                size="lg"
+                minH="48px"
+                order={{ base: 1, md: 2 }}
               >
                 {selectedTrip ? 'Update Pattern' : 'Create Pattern'}
               </Button>
@@ -1412,7 +1452,7 @@ const RecurringTrips = () => {
         <ModalContent>
           <ModalHeader>
             <HStack>
-              <ViewIcon color="blue" />
+              <EyeIcon style={{ width: '20px', height: '20px', color: 'blue' }} />
               <Text>Recurring Trip Details</Text>
             </HStack>
           </ModalHeader>
@@ -1552,7 +1592,8 @@ const RecurringTrips = () => {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
-    </Box>
+      </Box>
+    </>
   );
 };
 

@@ -14,6 +14,7 @@ import {
   Input,
   Select,
   Button,
+  ButtonGroup,
   Grid,
   GridItem,
   Text,
@@ -50,13 +51,23 @@ import {
   CalendarIcon,
   InfoIcon,
   RepeatIcon,
-  CloseIcon
+  CloseIcon,
+  ViewOffIcon,
+  DownloadIcon
 } from '@chakra-ui/icons';
 import { FaCar, FaUser, FaRoute } from 'react-icons/fa';
 import axios from 'axios';
+import PlacesAutocomplete from '../maps/PlacesAutocomplete';
+import VehicleQuickView from '../shared/VehicleQuickView';
+import { 
+  formatNameInput, 
+  formatAlphanumeric,
+  validationPatterns 
+} from '../../utils/inputValidation';
 
 const AdvancedSearchModal = ({ isOpen, onClose }) => {
   const [searchCriteria, setSearchCriteria] = useState({
+    keyword: '', // New: Full-system keyword search
     dateFrom: '',
     dateTo: '',
     riderName: '',
@@ -78,6 +89,47 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
   const [hasSearched, setHasSearched] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [selectedTrip, setSelectedTrip] = useState(null);
+  const [savedSearches] = useState([
+    {
+      id: 'all',
+      name: 'All Trips',
+      criteria: {
+        status: 'completed' // Only completed trips
+      }
+    },
+    {
+      id: 'today',
+      name: 'Today\'s Trips',
+      criteria: {
+        dateFrom: new Date().toISOString().split('T')[0],
+        dateTo: new Date().toISOString().split('T')[0]
+        // No status filter - show all trips scheduled for today
+      }
+    },
+    {
+      id: 'upcoming',
+      name: 'Upcoming Trips',
+      criteria: {
+        dateFrom: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Tomorrow onwards
+        // No status filter - show all future-dated trips
+      }
+    },
+    {
+      id: 'cancelled',
+      name: 'Canceled Trips',
+      criteria: {
+        status: 'cancelled'
+      }
+    },
+    {
+      id: 'inprogress',
+      name: 'In Progress',
+      criteria: {
+        status: 'in_progress'
+      }
+    }
+  ]);
+  const [viewMode, setViewMode] = useState('table'); // 'table' or 'card'
   const toast = useToast();
 
   useEffect(() => {
@@ -89,14 +141,14 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
   const fetchDropdownData = async () => {
     try {
       const [ridersRes, vehiclesRes, driversRes] = await Promise.all([
-        axios.get('/api/users?role=rider'),
+        axios.get('/api/riders'),
         axios.get('/api/vehicles'),
         axios.get('/api/users?role=driver')
       ]);
 
       setRiders(ridersRes.data || []);
-      setVehicles(vehiclesRes.data || []);
-      setDrivers(driversRes.data || []);
+      setVehicles(vehiclesRes.data?.vehicles || vehiclesRes.data?.data?.vehicles || vehiclesRes.data || []);
+      setDrivers(driversRes.data?.users || driversRes.data || []);
     } catch (error) {
       console.error('Error fetching dropdown data:', error);
       toast({
@@ -123,8 +175,50 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
         }
       });
 
-      const response = await axios.get(`/trips/search?${queryParams.toString()}`);
-      setSearchResults(response.data || []);
+      const response = await axios.get(`/api/trips/search?${queryParams.toString()}`);
+      
+      // Handle both old format (array) and new format (object with trips array)
+      let results = Array.isArray(response.data) 
+        ? response.data 
+        : (response.data.trips || []);
+      
+      // Sort all results by most recent first (descending order)
+      results = results.sort((a, b) => {
+        let dateA, dateB;
+        
+        // For completed trips, use actualDropoffTime
+        if (searchCriteria.status === 'completed') {
+          dateA = new Date(a.actualDropoffTime || a.scheduledDate);
+          dateB = new Date(b.actualDropoffTime || b.scheduledDate);
+        }
+        // For in-progress trips, use actualPickupTime
+        else if (searchCriteria.status === 'in_progress') {
+          dateA = new Date(a.actualPickupTime || a.scheduledDate);
+          dateB = new Date(b.actualPickupTime || b.scheduledDate);
+        }
+        // For all other trips (upcoming, today's, cancelled), use scheduledDate
+        else {
+          dateA = new Date(a.scheduledDate);
+          dateB = new Date(b.scheduledDate);
+        }
+        
+        return dateB - dateA; // Descending order (most recent first)
+      });
+      
+      setSearchResults(results);
+      
+      // Show search info if available
+      if (response.data.searchInfo) {
+        const info = response.data.searchInfo;
+        toast({
+          title: 'Search Complete',
+          description: `Found ${info.resultsCount} result(s). ${info.searchedAllHistory ? 'Searched entire history.' : `Searched from ${info.dateRange.from || 'beginning'} to ${info.dateRange.to || 'now'}.`}`,
+          status: 'success',
+          duration: 4000,
+          isClosable: true,
+        });
+      }
+      
       setActiveTab(1); // Switch to results tab
     } catch (error) {
       console.error('Search error:', error);
@@ -142,6 +236,7 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
 
   const handleClearSearch = () => {
     setSearchCriteria({
+      keyword: '',
       dateFrom: '',
       dateTo: '',
       riderName: '',
@@ -183,6 +278,167 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
 
   const handleViewTrip = (trip) => {
     setSelectedTrip(trip);
+  };
+
+  const handleExportResults = () => {
+    if (!searchResults || searchResults.length === 0) {
+      toast({
+        title: 'No Data to Export',
+        description: 'Please perform a search first',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Create CSV content
+    const headers = [
+      'Trip ID',
+      'Rider Name',
+      'Rider Phone',
+      'Driver Name',
+      'Driver ID',
+      'Scheduled Date',
+      'Pickup Location',
+      'Dropoff Location',
+      'Status',
+      'Vehicle Make',
+      'Vehicle Model',
+      'License Plate',
+      'Created Date'
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      ...searchResults.map(trip => [
+        trip._id,
+        `"${trip.riderName || ''}"`,
+        `"${trip.riderPhone || ''}"`,
+        `"${trip.assignedDriver?.name || 'Unassigned'}"`,
+        trip.assignedDriver?._id || '',
+        trip.scheduledDateTime ? new Date(trip.scheduledDateTime).toISOString() : '',
+        `"${trip.pickupLocation?.address || ''}"`,
+        `"${trip.dropoffLocation?.address || ''}"`,
+        trip.status,
+        `"${trip.assignedVehicle?.make || ''}"`,
+        `"${trip.assignedVehicle?.model || ''}"`,
+        `"${trip.assignedVehicle?.licensePlate || ''}"`,
+        trip.createdAt ? new Date(trip.createdAt).toISOString() : ''
+      ].join(','))
+    ].join('\n');
+
+    // Create and download the file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `trip_search_results_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: 'Export Successful',
+      description: `Exported ${searchResults.length} trips to CSV`,
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
+  };
+
+  const handleLoadSavedSearch = async (savedSearch) => {
+    const newCriteria = {
+      ...searchCriteria,
+      ...savedSearch.criteria
+    };
+    
+    setSearchCriteria(newCriteria);
+    
+    toast({
+      title: 'Search Loaded',
+      description: `Loaded "${savedSearch.name}" search criteria`,
+      status: 'info',
+      duration: 2000,
+      isClosable: true,
+    });
+    
+    // Auto-execute search for all quick searches
+    setIsLoading(true);
+    setHasSearched(true);
+    
+    try {
+      // Build query parameters from the saved search criteria
+      const queryParams = new URLSearchParams();
+      
+      Object.entries(newCriteria).forEach(([key, value]) => {
+        if (value && value.trim() !== '') {
+          queryParams.append(key, value);
+        }
+      });
+
+      const response = await axios.get(`/api/trips/search?${queryParams.toString()}`);
+      
+      // Handle both old format (array) and new format (object with trips array)
+      let results = Array.isArray(response.data) 
+        ? response.data 
+        : (response.data.trips || []);
+      
+      // Sort results by most recent first (descending order)
+      results = results.sort((a, b) => {
+        let dateA, dateB;
+        
+        // For completed trips, use actualDropoffTime
+        if (savedSearch.id === 'all' || newCriteria.status === 'completed') {
+          dateA = new Date(a.actualDropoffTime || a.scheduledDate);
+          dateB = new Date(b.actualDropoffTime || b.scheduledDate);
+        }
+        // For in-progress trips, use actualPickupTime
+        else if (savedSearch.id === 'inprogress' || newCriteria.status === 'in_progress') {
+          dateA = new Date(a.actualPickupTime || a.scheduledDate);
+          dateB = new Date(b.actualPickupTime || b.scheduledDate);
+        }
+        // For all other trips (upcoming, today's, cancelled), use scheduledDate
+        else {
+          dateA = new Date(a.scheduledDate);
+          dateB = new Date(b.scheduledDate);
+        }
+        
+        return dateB - dateA; // Descending order (most recent first)
+      });
+      
+      setSearchResults(results);
+      setActiveTab(1); // Switch to results tab
+      
+      // Custom toast messages for each search type
+      const toastMessages = {
+        all: `Found ${results.length} completed trip(s), sorted by most recent first`,
+        today: `Found ${results.length} trip(s) scheduled for today, sorted by most recent first`,
+        upcoming: `Found ${results.length} future-dated trip(s), sorted by most recent first`,
+        cancelled: `Found ${results.length} canceled trip(s), sorted by most recent first`,
+        inprogress: `Found ${results.length} trip(s) in progress, sorted by most recent first`
+      };
+      
+      toast({
+        title: savedSearch.name,
+        description: toastMessages[savedSearch.id] || `Found ${results.length} trip(s)`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Search error:', error);
+      toast({
+        title: 'Search Error',
+        description: error.response?.data?.message || 'Failed to perform search',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -236,6 +492,82 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
               {/* Search Criteria Tab */}
               <TabPanel>
                 <VStack spacing={6} align="stretch">
+                  {/* Search Info Alert */}
+                  <Alert status="info" borderRadius="md">
+                    <AlertIcon />
+                    <Box>
+                      <Text fontWeight="bold" fontSize="sm">Comprehensive Search</Text>
+                      <Text fontSize="xs">
+                        Search across entire ride history including past, active, and scheduled (future) trips. 
+                        Leave filters empty to search all records.
+                      </Text>
+                    </Box>
+                  </Alert>
+
+                  {/* Keyword Search - Full System Match */}
+                  <Card bg="purple.50" borderColor="purple.200" borderWidth="2px">
+                    <CardBody>
+                      <Text fontWeight="bold" mb={3} color="purple.700">
+                        🔍 Quick Keyword Search
+                      </Text>
+                      <Text fontSize="sm" color="gray.600" mb={3}>
+                        Search across all fields: Trip ID, dates, rider name, driver name, vehicle, pickup/drop-off locations
+                      </Text>
+                      <FormControl>
+                        <Input
+                          placeholder="Type any keyword to search across all trips..."
+                          value={searchCriteria.keyword}
+                          onChange={(e) => setSearchCriteria({
+                            ...searchCriteria,
+                            keyword: e.target.value
+                          })}
+                          size="lg"
+                          bg="white"
+                          _focus={{
+                            borderColor: "purple.500",
+                            boxShadow: "0 0 0 1px var(--chakra-colors-purple-500)"
+                          }}
+                        />
+                      </FormControl>
+                      <Button
+                        mt={3}
+                        colorScheme="purple"
+                        width="full"
+                        onClick={handleSearch}
+                        isLoading={isLoading}
+                        leftIcon={<SearchIcon />}
+                      >
+                        Search All Trips
+                      </Button>
+                    </CardBody>
+                  </Card>
+
+                  {/* Quick Searches */}
+                  <Card bg="gray.50">
+                    <CardBody>
+                      <Text fontWeight="bold" mb={3} color="purple.600">
+                        ⚡ Quick Searches
+                      </Text>
+                      <Text fontSize="sm" color="gray.600" mb={3}>
+                        Load pre-configured search criteria
+                      </Text>
+                      <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={3}>
+                        {savedSearches.map((savedSearch) => (
+                          <Button
+                            key={savedSearch.id}
+                            size="sm"
+                            variant="outline"
+                            colorScheme="purple"
+                            onClick={() => handleLoadSavedSearch(savedSearch)}
+                            leftIcon={<SearchIcon />}
+                          >
+                            {savedSearch.name}
+                          </Button>
+                        ))}
+                      </Grid>
+                    </CardBody>
+                  </Card>
+
                   {/* Date Range */}
                   <Card>
                     <CardBody>
@@ -283,8 +615,9 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                             value={searchCriteria.tripId}
                             onChange={(e) => setSearchCriteria({
                               ...searchCriteria,
-                              tripId: e.target.value
+                              tripId: formatAlphanumeric(e.target.value)
                             })}
+                            pattern={validationPatterns.alphanumeric}
                           />
                         </FormControl>
                         <FormControl>
@@ -321,8 +654,9 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                             value={searchCriteria.riderName}
                             onChange={(e) => setSearchCriteria({
                               ...searchCriteria,
-                              riderName: e.target.value
+                              riderName: formatNameInput(e.target.value)
                             })}
+                            pattern={validationPatterns.letters}
                           />
                         </FormControl>
                         <FormControl>
@@ -335,7 +669,7 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                               driverName: e.target.value
                             })}
                           >
-                            {drivers.map(driver => (
+                            {Array.isArray(drivers) && drivers.map(driver => (
                               <option key={driver._id} value={driver.name}>
                                 {driver.name} (ID: {driver._id.slice(-6)})
                               </option>
@@ -349,8 +683,9 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                             value={searchCriteria.userId}
                             onChange={(e) => setSearchCriteria({
                               ...searchCriteria,
-                              userId: e.target.value
+                              userId: formatAlphanumeric(e.target.value)
                             })}
+                            pattern={validationPatterns.alphanumeric}
                           />
                         </FormControl>
                       </Grid>
@@ -390,7 +725,7 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                               vehicleId: e.target.value
                             })}
                           >
-                            {vehicles.map(vehicle => (
+                            {Array.isArray(vehicles) && vehicles.map(vehicle => (
                               <option key={vehicle._id} value={vehicle._id}>
                                 {vehicle.licensePlate} - {vehicle.make} {vehicle.model}
                               </option>
@@ -410,23 +745,31 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                       <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
                         <FormControl>
                           <FormLabel fontSize="sm">Pickup Location</FormLabel>
-                          <Input
+                          <PlacesAutocomplete
                             placeholder="Enter pickup location"
                             value={searchCriteria.pickupLocation}
-                            onChange={(e) => setSearchCriteria({
+                            onChange={(address) => setSearchCriteria({
                               ...searchCriteria,
-                              pickupLocation: e.target.value
+                              pickupLocation: address
+                            })}
+                            onPlaceSelected={(place) => setSearchCriteria({
+                              ...searchCriteria,
+                              pickupLocation: place.address
                             })}
                           />
                         </FormControl>
                         <FormControl>
                           <FormLabel fontSize="sm">Dropoff Location</FormLabel>
-                          <Input
+                          <PlacesAutocomplete
                             placeholder="Enter dropoff location"
                             value={searchCriteria.dropoffLocation}
-                            onChange={(e) => setSearchCriteria({
+                            onChange={(address) => setSearchCriteria({
                               ...searchCriteria,
-                              dropoffLocation: e.target.value
+                              dropoffLocation: address
+                            })}
+                            onPlaceSelected={(place) => setSearchCriteria({
+                              ...searchCriteria,
+                              dropoffLocation: place.address
                             })}
                           />
                         </FormControl>
@@ -481,113 +824,250 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                   <VStack spacing={4} align="stretch">
                     {/* Results Summary */}
                     <Box bg="blue.50" p={4} borderRadius="md">
-                      <Text fontWeight="bold" color="blue.700">
-                        Found {searchResults.length} trip(s) matching your criteria
-                      </Text>
+                      <Flex justify="space-between" align="center" direction={{ base: "column", md: "row" }} gap={3}>
+                        <Text fontWeight="bold" color="blue.700">
+                          Found {searchResults.length} trip(s) matching your criteria
+                        </Text>
+                        <HStack spacing={2}>
+                          <Text fontSize="sm" color="blue.600">View:</Text>
+                          <ButtonGroup size="sm" isAttached variant="outline">
+                            <IconButton
+                              icon={<ViewIcon />}
+                              aria-label="Table view"
+                              colorScheme={viewMode === 'table' ? 'blue' : 'gray'}
+                              onClick={() => setViewMode('table')}
+                              title="Table View"
+                            />
+                            <IconButton
+                              icon={<ViewOffIcon />}
+                              aria-label="Card view"
+                              colorScheme={viewMode === 'card' ? 'blue' : 'gray'}
+                              onClick={() => setViewMode('card')}
+                              title="Card View"
+                            />
+                          </ButtonGroup>
+                          <Button
+                            leftIcon={<DownloadIcon />}
+                            size="sm"
+                            colorScheme="green"
+                            variant="outline"
+                            onClick={handleExportResults}
+                            isDisabled={!searchResults || searchResults.length === 0}
+                            title="Export to CSV"
+                          >
+                            Export
+                          </Button>
+                        </HStack>
+                      </Flex>
                     </Box>
 
-                    {/* Results Table - Responsive */}
-                    <TableContainer 
-                      overflowX="auto" 
-                      bg="white" 
-                      borderRadius="md" 
-                      shadow="sm"
-                    >
-                      <Table 
-                        variant="simple" 
-                        size={{ base: "sm", md: "md" }}
-                        fontSize={{ base: "xs", md: "sm" }}
+                    {/* Results Display - Table or Card View */}
+                    {viewMode === 'table' ? (
+                      <TableContainer 
+                        overflowX="auto" 
+                        bg="white" 
+                        borderRadius="md" 
+                        shadow="sm"
                       >
-                        <Thead>
-                          <Tr>
-                            <Th>Trip ID</Th>
-                            <Th>Rider</Th>
-                            <Th>Driver</Th>
-                            <Th>Date/Time</Th>
-                            <Th>Pickup</Th>
-                            <Th>Dropoff</Th>
-                            <Th>Status</Th>
-                            <Th>Vehicle</Th>
-                            <Th>Actions</Th>
-                          </Tr>
-                        </Thead>
-                        <Tbody>
-                          {searchResults.map((trip) => (
-                            <Tr key={trip._id}>
-                              <Td>
-                                <Text fontFamily="mono" fontSize="xs">
-                                  {trip._id.slice(-8)}
-                                </Text>
-                              </Td>
-                              <Td>
-                                <VStack align="start" spacing={1}>
-                                  <Text fontWeight="medium">{trip.riderName}</Text>
-                                  {trip.riderPhone && (
+                        <Table 
+                          variant="simple" 
+                          size={{ base: "sm", md: "md" }}
+                          fontSize={{ base: "xs", md: "sm" }}
+                        >
+                          <Thead>
+                            <Tr>
+                              <Th>Trip ID</Th>
+                              <Th>Rider</Th>
+                              <Th>Driver</Th>
+                              <Th>Date/Time</Th>
+                              <Th>Pickup</Th>
+                              <Th>Dropoff</Th>
+                              <Th>Status</Th>
+                              <Th>Vehicle</Th>
+                              <Th>Actions</Th>
+                            </Tr>
+                          </Thead>
+                          <Tbody>
+                            {Array.isArray(searchResults) && searchResults.map((trip) => (
+                              <Tr key={trip._id}>
+                                <Td>
+                                  <Text fontFamily="mono" fontSize="xs">
+                                    {trip._id.slice(-8)}
+                                  </Text>
+                                </Td>
+                                <Td>
+                                  <VStack align="start" spacing={1}>
+                                    <Text fontWeight="medium">{trip.riderName}</Text>
+                                    {trip.riderPhone && (
+                                      <Text fontSize="xs" color="gray.600">
+                                        {trip.riderPhone}
+                                      </Text>
+                                    )}
+                                  </VStack>
+                                </Td>
+                                <Td>
+                                  <Text>
+                                    {trip.assignedDriver?.name || 'Unassigned'}
+                                  </Text>
+                                  {trip.assignedDriver?._id && (
                                     <Text fontSize="xs" color="gray.600">
-                                      {trip.riderPhone}
+                                      ID: {trip.assignedDriver._id.slice(-6)}
                                     </Text>
                                   )}
-                                </VStack>
-                              </Td>
-                              <Td>
-                                <Text>
-                                  {trip.assignedDriver?.name || 'Unassigned'}
-                                </Text>
-                                {trip.assignedDriver?._id && (
-                                  <Text fontSize="xs" color="gray.600">
-                                    ID: {trip.assignedDriver._id.slice(-6)}
+                                </Td>
+                                <Td>
+                                  <Text fontSize="sm">
+                                    {formatDate(trip.scheduledDateTime)}
                                   </Text>
-                                )}
-                              </Td>
-                              <Td>
-                                <Text fontSize="sm">
-                                  {formatDate(trip.scheduledDateTime)}
-                                </Text>
-                              </Td>
-                              <Td maxW="150px">
-                                <Text fontSize="xs" noOfLines={2}>
-                                  {trip.pickupLocation?.address}
-                                </Text>
-                              </Td>
-                              <Td maxW="150px">
-                                <Text fontSize="xs" noOfLines={2}>
-                                  {trip.dropoffLocation?.address}
-                                </Text>
-                              </Td>
-                              <Td>
-                                <Badge colorScheme={getStatusColor(trip.status)}>
-                                  {trip.status}
-                                </Badge>
-                              </Td>
-                              <Td>
-                                {trip.assignedVehicle ? (
-                                  <VStack align="start" spacing={1}>
-                                    <Text fontSize="sm">
-                                      {trip.assignedVehicle.make} {trip.assignedVehicle.model}
+                                </Td>
+                                <Td maxW="150px">
+                                  <Text fontSize="xs" noOfLines={2}>
+                                    {trip.pickupLocation?.address}
+                                  </Text>
+                                </Td>
+                                <Td maxW="150px">
+                                  <Text fontSize="xs" noOfLines={2}>
+                                    {trip.dropoffLocation?.address}
+                                  </Text>
+                                </Td>
+                                <Td>
+                                  <Badge colorScheme={getStatusColor(trip.status)}>
+                                    {trip.status}
+                                  </Badge>
+                                </Td>
+                                <Td>
+                                  {trip.assignedVehicle ? (
+                                    <VStack align="start" spacing={1}>
+                                      <Text fontSize="sm">
+                                        {trip.assignedVehicle.make} {trip.assignedVehicle.model}
+                                      </Text>
+                                      <Text fontSize="xs" color="gray.600">
+                                        {trip.assignedVehicle.licensePlate}
+                                      </Text>
+                                    </VStack>
+                                  ) : (
+                                    <Text color="gray.500">No vehicle</Text>
+                                  )}
+                                </Td>
+                                <Td>
+                                  <Tooltip label="View Details">
+                                    <IconButton
+                                      icon={<ViewIcon />}
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleViewTrip(trip)}
+                                    />
+                                  </Tooltip>
+                                </Td>
+                              </Tr>
+                            ))}
+                          </Tbody>
+                        </Table>
+                      </TableContainer>
+                    ) : (
+                      /* Card View for Mobile */
+                      <VStack spacing={3} align="stretch">
+                        {Array.isArray(searchResults) && searchResults.map((trip) => (
+                          <Card key={trip._id} shadow="sm" _hover={{ shadow: "md" }}>
+                            <CardBody p={4}>
+                              <VStack align="stretch" spacing={3}>
+                                {/* Header with Trip ID and Status */}
+                                <Flex justify="space-between" align="center">
+                                  <HStack>
+                                    <Text fontFamily="mono" fontSize="sm" fontWeight="bold">
+                                      {trip._id.slice(-8)}
                                     </Text>
-                                    <Text fontSize="xs" color="gray.600">
-                                      {trip.assignedVehicle.licensePlate}
+                                    <Badge colorScheme={getStatusColor(trip.status)} size="sm">
+                                      {trip.status}
+                                    </Badge>
+                                  </HStack>
+                                  <Tooltip label="View Details">
+                                    <IconButton
+                                      icon={<ViewIcon />}
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleViewTrip(trip)}
+                                    />
+                                  </Tooltip>
+                                </Flex>
+
+                                {/* Rider and Driver Info */}
+                                <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={3}>
+                                  <Box>
+                                    <Text fontSize="xs" color="gray.600" mb={1}>Rider</Text>
+                                    <VStack align="start" spacing={1}>
+                                      <Text fontWeight="medium" fontSize="sm">{trip.riderName}</Text>
+                                      {trip.riderPhone && (
+                                        <Text fontSize="xs" color="gray.600">
+                                          {trip.riderPhone}
+                                        </Text>
+                                      )}
+                                    </VStack>
+                                  </Box>
+                                  <Box>
+                                    <Text fontSize="xs" color="gray.600" mb={1}>Driver</Text>
+                                    <VStack align="start" spacing={1}>
+                                      <Text fontSize="sm">
+                                        {trip.assignedDriver?.name || 'Unassigned'}
+                                      </Text>
+                                      {trip.assignedDriver?._id && (
+                                        <Text fontSize="xs" color="gray.600">
+                                          ID: {trip.assignedDriver._id.slice(-6)}
+                                        </Text>
+                                      )}
+                                    </VStack>
+                                  </Box>
+                                </Grid>
+
+                                {/* Date and Time */}
+                                <Box>
+                                  <Text fontSize="xs" color="gray.600" mb={1}>Date & Time</Text>
+                                  <Text fontSize="sm">
+                                    {formatDate(trip.scheduledDateTime)}
+                                  </Text>
+                                </Box>
+
+                                {/* Locations */}
+                                <Grid templateColumns={{ base: "1fr", sm: "1fr 1fr" }} gap={3}>
+                                  <Box>
+                                    <HStack mb={1}>
+                                      <Badge colorScheme="blue" size="sm">Pickup</Badge>
+                                    </HStack>
+                                    <Text fontSize="xs" noOfLines={2}>
+                                      {trip.pickupLocation?.address}
                                     </Text>
-                                  </VStack>
-                                ) : (
-                                  <Text color="gray.500">No vehicle</Text>
+                                  </Box>
+                                  <Box>
+                                    <HStack mb={1}>
+                                      <Badge colorScheme="orange" size="sm">Dropoff</Badge>
+                                    </HStack>
+                                    <Text fontSize="xs" noOfLines={2}>
+                                      {trip.dropoffLocation?.address}
+                                    </Text>
+                                  </Box>
+                                </Grid>
+
+                                {/* Vehicle Info */}
+                                {trip.assignedVehicle && (
+                                  <Box>
+                                    <Text fontSize="xs" color="gray.600" mb={1}>Vehicle</Text>
+                                    <HStack>
+                                      <FaCar />
+                                      <Text fontSize="sm">
+                                        {trip.assignedVehicle.make} {trip.assignedVehicle.model}
+                                      </Text>
+                                      <Text fontSize="xs" color="gray.600">
+                                        {trip.assignedVehicle.licensePlate}
+                                      </Text>
+                                    </HStack>
+                                  </Box>
                                 )}
-                              </Td>
-                              <Td>
-                                <Tooltip label="View Details">
-                                  <IconButton
-                                    icon={<ViewIcon />}
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleViewTrip(trip)}
-                                  />
-                                </Tooltip>
-                              </Td>
-                            </Tr>
-                          ))}
-                        </Tbody>
-                      </Table>
-                    </TableContainer>
+                              </VStack>
+                            </CardBody>
+                          </Card>
+                        ))}
+                      </VStack>
+                    )}
 
                     {/* Trip Details Modal */}
                     {selectedTrip && (
@@ -661,9 +1141,14 @@ const AdvancedSearchModal = ({ isOpen, onClose }) => {
                                   <Divider />
                                   <Box>
                                     <Text fontWeight="bold">Assigned Driver</Text>
-                                    <Text>{selectedTrip.assignedDriver.name}</Text>
+                                    <Text>
+                                      {typeof selectedTrip.assignedDriver === 'object' 
+                                        ? (selectedTrip.assignedDriver.name || `${selectedTrip.assignedDriver.firstName || ''} ${selectedTrip.assignedDriver.lastName || ''}`.trim() || selectedTrip.assignedDriver.email || 'Unnamed Driver')
+                                        : selectedTrip.assignedDriver
+                                      }
+                                    </Text>
                                     <Text fontSize="xs" color="gray.600">
-                                      Driver ID: {selectedTrip.assignedDriver._id}
+                                      Driver ID: {typeof selectedTrip.assignedDriver === 'object' ? selectedTrip.assignedDriver._id : 'N/A'}
                                     </Text>
                                   </Box>
                                 </>

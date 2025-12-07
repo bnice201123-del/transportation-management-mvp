@@ -7,9 +7,14 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "seed:vehicles": "node scripts/seedVehicles.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["transportation", "logistics", "api"],
+  "keywords": [
+    "transportation",
+    "logistics",
+    "api"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -18,10 +23,21 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
     "firebase-admin": "^13.5.0",
+    "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.2",
+    "node-cron": "^4.2.1",
     "nodemon": "^3.1.10",
-    "socket.io": "^4.8.1"
+    "passport": "^0.7.0",
+    "passport-apple": "^2.0.2",
+    "passport-google-oauth20": "^2.0.0",
+    "passport-microsoft": "^2.1.0",
+    "qrcode": "^1.5.4",
+    "rate-limit-redis": "^4.3.1",
+    "socket.io": "^4.8.1",
+    "speakeasy": "^2.0.0",
+    "twilio": "^5.10.7"
   }
 }

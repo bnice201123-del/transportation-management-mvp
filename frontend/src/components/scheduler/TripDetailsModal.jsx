@@ -26,8 +26,20 @@ import {
   Spacer,
   Alert,
   AlertIcon,
-  Image
+  Image,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  useDisclosure
 } from '@chakra-ui/react';
+import TripMap from '../maps/TripMap';
+import RiderInfoModal from '../shared/RiderInfoModal';
 import {
   PhoneIcon,
   EmailIcon,
@@ -52,11 +64,22 @@ import {
   FaStopwatch,
   FaRoad,
   FaGasPump,
-  FaClipboardList
+  FaClipboardList,
+  FaInfo,
+  FaMap
 } from 'react-icons/fa';
 
 const TripDetailsModal = ({ isOpen, onClose, trip }) => {
+  const [selectedRider, setSelectedRider] = React.useState({ id: null, name: null });
+  const { isOpen: isRiderInfoOpen, onOpen: onRiderInfoOpen, onClose: onRiderInfoClose } = useDisclosure();
+  
   if (!trip) return null;
+
+  const handleRiderClick = (e, riderId, riderName) => {
+    e.stopPropagation();
+    setSelectedRider({ id: riderId, name: riderName });
+    onRiderInfoOpen();
+  };
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -126,8 +149,26 @@ const TripDetailsModal = ({ isOpen, onClose, trip }) => {
         <ModalCloseButton />
         
         <ModalBody>
-          <VStack spacing={6} align="stretch">
-            {/* Rider Information */}
+          <Tabs variant="enclosed" colorScheme="blue">
+            <TabList>
+              <Tab>
+                <HStack>
+                  <FaInfo />
+                  <Text>Trip Details</Text>
+                </HStack>
+              </Tab>
+              <Tab>
+                <HStack>
+                  <FaMap />
+                  <Text>Route Map</Text>
+                </HStack>
+              </Tab>
+            </TabList>
+
+            <TabPanels>
+              <TabPanel px={0}>
+                <VStack spacing={6} align="stretch">
+                  {/* Rider Information */}
             <Card>
               <CardHeader>
                 <Heading size="md">
@@ -142,7 +183,16 @@ const TripDetailsModal = ({ isOpen, onClose, trip }) => {
                   <VStack align="start" spacing={3}>
                     <Box>
                       <Text fontSize="sm" color="gray.600">Full Name</Text>
-                      <Text fontSize="lg" fontWeight="semibold">{trip.riderName || 'Not provided'}</Text>
+                      <Text 
+                        fontSize="lg" 
+                        fontWeight="semibold"
+                        color="blue.600"
+                        cursor="pointer"
+                        _hover={{ textDecoration: 'underline', color: 'blue.700' }}
+                        onClick={(e) => handleRiderClick(e, trip.riderId || trip._id, trip.riderName)}
+                      >
+                        {trip.riderName || 'Not provided'}
+                      </Text>
                     </Box>
                     
                     {trip.riderPhone && (
@@ -378,17 +428,21 @@ const TripDetailsModal = ({ isOpen, onClose, trip }) => {
 
                   <Box>
                     <Text fontSize="sm" color="gray.600" mb={2}>Assigned Vehicle</Text>
-                    {trip.assignedVehicle ? (
+                    {(trip.assignedVehicle || trip.vehicle) ? (
                       <VStack align="start" spacing={2}>
                         <Text fontSize="lg" fontWeight="semibold">
-                          🚗 {trip.assignedVehicle.make} {trip.assignedVehicle.model}
+                          🚗 {(trip.assignedVehicle || trip.vehicle)?.make} {(trip.assignedVehicle || trip.vehicle)?.model}
                         </Text>
-                        <Text color="gray.600">
-                          🏷️ {trip.assignedVehicle.licensePlate}
-                        </Text>
-                        <Text color="gray.600">
-                          🎨 {trip.assignedVehicle.color}
-                        </Text>
+                        {(trip.assignedVehicle || trip.vehicle)?.licensePlate && (
+                          <Text color="gray.600">
+                            🏷️ {(trip.assignedVehicle || trip.vehicle).licensePlate}
+                          </Text>
+                        )}
+                        {(trip.assignedVehicle || trip.vehicle)?.color && (
+                          <Text color="gray.600">
+                            🎨 {(trip.assignedVehicle || trip.vehicle).color}
+                          </Text>
+                        )}
                       </VStack>
                     ) : (
                       <Alert status="warning">
@@ -558,7 +612,108 @@ const TripDetailsModal = ({ isOpen, onClose, trip }) => {
                 </CardBody>
               </Card>
             )}
-          </VStack>
+                </VStack>
+              </TabPanel>
+
+              {/* Map Tab Panel */}
+              <TabPanel px={0}>
+                <VStack spacing={4} align="stretch">
+                  {/* Route Statistics */}
+                  {trip.pickupLocation && trip.dropoffLocation && (
+                    <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                      <Stat>
+                        <StatLabel>Estimated Distance</StatLabel>
+                        <StatNumber>
+                          {trip.estimatedDistance ? `${trip.estimatedDistance.toFixed(2)} miles` : 'Calculating...'}
+                        </StatNumber>
+                        <StatHelpText>Direct route</StatHelpText>
+                      </Stat>
+                      
+                      <Stat>
+                        <StatLabel>Estimated Duration</StatLabel>
+                        <StatNumber>
+                          {trip.estimatedDuration ? `${trip.estimatedDuration} min` : 'Calculating...'}
+                        </StatNumber>
+                        <StatHelpText>Based on traffic</StatHelpText>
+                      </Stat>
+                      
+                      <Stat>
+                        <StatLabel>Trip Type</StatLabel>
+                        <StatNumber fontSize="lg">
+                          {trip.isRecurring ? 'Recurring' : 'One-time'}
+                        </StatNumber>
+                        <StatHelpText>{trip.status}</StatHelpText>
+                      </Stat>
+                    </SimpleGrid>
+                  )}
+
+                  {/* Interactive Map */}
+                  {trip.pickupLocation && trip.dropoffLocation && (
+                    <Card>
+                      <CardHeader>
+                        <HStack justify="space-between">
+                          <Heading size="md">Route Preview</Heading>
+                          <Button
+                            size="sm"
+                            leftIcon={<FaRoute />}
+                            colorScheme="blue"
+                            variant="outline"
+                            onClick={() => openInGoogleMaps(trip.pickupLocation, trip.dropoffLocation)}
+                          >
+                            Open in Google Maps
+                          </Button>
+                        </HStack>
+                      </CardHeader>
+                      <CardBody>
+                        <TripMap
+                          trip={trip}
+                          height="400px"
+                          showRoute={true}
+                          showControls={true}
+                        />
+                      </CardBody>
+                    </Card>
+                  )}
+
+                  {/* Quick Actions for Navigation */}
+                  {trip.pickupLocation && trip.dropoffLocation && (
+                    <Card>
+                      <CardHeader>
+                        <Heading size="sm">Navigation Quick Actions</Heading>
+                      </CardHeader>
+                      <CardBody>
+                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                          <Button
+                            leftIcon={<FaMapPin />}
+                            colorScheme="green"
+                            variant="outline"
+                            onClick={() => {
+                              const addr = encodeURIComponent(trip.pickupLocation.address);
+                              window.open(`https://www.google.com/maps/search/?api=1&query=${addr}`, '_blank');
+                            }}
+                          >
+                            Navigate to Pickup
+                          </Button>
+                          
+                          <Button
+                            leftIcon={<FaMapPin />}
+                            colorScheme="red"
+                            variant="outline"
+                            onClick={() => {
+                              const addr = encodeURIComponent(trip.dropoffLocation.address);
+                              window.open(`https://www.google.com/maps/search/?api=1&query=${addr}`, '_blank');
+                            }}
+                          >
+                            Navigate to Dropoff
+                          </Button>
+                        </SimpleGrid>
+                      </CardBody>
+                    </Card>
+                  )}
+                </VStack>
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
         </ModalBody>
 
         <ModalFooter>
@@ -570,6 +725,14 @@ const TripDetailsModal = ({ isOpen, onClose, trip }) => {
           </Button>
         </ModalFooter>
       </ModalContent>
+      
+      {/* Rider Info Modal */}
+      <RiderInfoModal
+        isOpen={isRiderInfoOpen}
+        onClose={onRiderInfoClose}
+        riderId={selectedRider.id}
+        riderName={selectedRider.name}
+      />
     </Modal>
   );
 };

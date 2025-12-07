@@ -23,7 +23,8 @@ import {
   IconButton,
   Divider,
   Alert,
-  AlertIcon
+  AlertIcon,
+  FormErrorMessage
 } from '@chakra-ui/react';
 import {
   ArrowBackIcon,
@@ -32,7 +33,14 @@ import {
 } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
+import { 
+  formatVIN, 
+  formatLicensePlate, 
+  formatYear, 
+  isValidYear,
+  isEmpty 
+} from '../../utils/inputValidation';
+import { useMobileKeyboard } from '../../hooks/useMobileKeyboard';
 
 const NewVehicle = () => {
   const [formData, setFormData] = useState({
@@ -51,9 +59,21 @@ const NewVehicle = () => {
     notes: ''
   });
   const [loading, setLoading] = useState(false);
+  const [touched, setTouched] = useState({});
   const navigate = useNavigate();
-  const { user } = useAuth();
   const toast = useToast();
+  
+  // Mobile keyboard handling
+  const { handleInputFocus, handleInputBlur } = useMobileKeyboard();
+
+  // Validation helpers
+  const isMakeInvalid = touched.make && isEmpty(formData.make);
+  const isModelInvalid = touched.model && isEmpty(formData.model);
+  
+  const isYearInvalid = touched.year && (!formData.year || !isValidYear(formData.year));
+  const yearError = isEmpty(formData.year) ? 'Year is required' : 'Please enter a valid year (1900-current)';
+  
+  const isLicensePlateInvalid = touched.licensePlate && isEmpty(formData.licensePlate);
 
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
@@ -62,11 +82,63 @@ const NewVehicle = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Mark all required fields as touched
+    setTouched({
+      make: true,
+      model: true,
+      year: true,
+      licensePlate: true
+    });
+
     // Validation
-    if (!formData.make || !formData.model || !formData.year || !formData.licensePlate) {
+    if (isEmpty(formData.make)) {
       toast({
         title: 'Validation Error',
-        description: 'Please fill in all required fields (Make, Model, Year, License Plate)',
+        description: 'Vehicle make is required',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (isEmpty(formData.model)) {
+      toast({
+        title: 'Validation Error',
+        description: 'Vehicle model is required',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (isEmpty(formData.year)) {
+      toast({
+        title: 'Validation Error',
+        description: 'Vehicle year is required',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!isValidYear(formData.year)) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please enter a valid year (1900-current)',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (isEmpty(formData.licensePlate)) {
+      toast({
+        title: 'Validation Error',
+        description: 'License plate is required',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -153,47 +225,81 @@ const NewVehicle = () => {
               <VStack spacing={6}>
                 {/* Basic Information */}
                 <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="full">
-                  <FormControl isRequired>
+                  <FormControl isRequired isInvalid={isMakeInvalid}>
                     <FormLabel>Make</FormLabel>
                     <Input
                       value={formData.make}
                       onChange={(e) => handleInputChange('make', e.target.value)}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, make: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="e.g., Toyota, Ford, Honda"
                     />
+                    <FormErrorMessage>
+                      Vehicle make is required
+                    </FormErrorMessage>
                   </FormControl>
-                  <FormControl isRequired>
+                  <FormControl isRequired isInvalid={isModelInvalid}>
                     <FormLabel>Model</FormLabel>
                     <Input
                       value={formData.model}
                       onChange={(e) => handleInputChange('model', e.target.value)}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, model: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="e.g., Camry, F-150, Civic"
                     />
+                    <FormErrorMessage>
+                      Vehicle model is required
+                    </FormErrorMessage>
                   </FormControl>
-                  <FormControl isRequired>
+                  <FormControl isRequired isInvalid={isYearInvalid}>
                     <FormLabel>Year</FormLabel>
                     <Input
                       type="number"
                       value={formData.year}
-                      onChange={(e) => handleInputChange('year', e.target.value)}
+                      onChange={(e) => handleInputChange('year', formatYear(e.target.value))}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, year: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="e.g., 2020"
                       min="1900"
                       max={new Date().getFullYear() + 1}
                     />
+                    <FormErrorMessage>
+                      {yearError}
+                    </FormErrorMessage>
                   </FormControl>
-                  <FormControl isRequired>
+                  <FormControl isRequired isInvalid={isLicensePlateInvalid}>
                     <FormLabel>License Plate</FormLabel>
                     <Input
                       value={formData.licensePlate}
-                      onChange={(e) => handleInputChange('licensePlate', e.target.value)}
+                      onChange={(e) => handleInputChange('licensePlate', formatLicensePlate(e.target.value))}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, licensePlate: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="e.g., ABC-1234"
                       textTransform="uppercase"
                     />
+                    <FormErrorMessage>
+                      License plate is required
+                    </FormErrorMessage>
                   </FormControl>
                   <FormControl>
                     <FormLabel>VIN (Vehicle Identification Number)</FormLabel>
                     <Input
                       value={formData.vin}
-                      onChange={(e) => handleInputChange('vin', e.target.value)}
+                      onChange={(e) => handleInputChange('vin', formatVIN(e.target.value))}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                       placeholder="17-character VIN"
                       maxLength="17"
                     />
@@ -203,6 +309,8 @@ const NewVehicle = () => {
                     <Input
                       value={formData.color}
                       onChange={(e) => handleInputChange('color', e.target.value)}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                       placeholder="e.g., White, Blue, Silver"
                     />
                   </FormControl>

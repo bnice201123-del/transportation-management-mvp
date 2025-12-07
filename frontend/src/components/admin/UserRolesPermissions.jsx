@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Container,
@@ -10,6 +10,7 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
+  InputRightElement,
   Select,
   Table,
   Thead,
@@ -32,11 +33,13 @@ import {
   AlertTitle,
   AlertDescription,
   useColorModeValue,
+  useBreakpointValue,
   IconButton,
   Menu,
   MenuButton,
   MenuList,
   MenuItem,
+  MenuDivider,
   useDisclosure,
   Modal,
   ModalOverlay,
@@ -47,7 +50,9 @@ import {
   ModalFooter,
   FormControl,
   FormLabel,
+  FormErrorMessage,
   Checkbox,
+  Icon,
   CheckboxGroup,
   Divider,
   Grid,
@@ -64,7 +69,36 @@ import {
   TagLabel,
   TagCloseButton,
   Wrap,
-  WrapItem
+  WrapItem,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
+  Progress,
+  Center,
+  Spinner,
+  Tooltip,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  Drawer,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  DrawerHeader,
+  DrawerBody,
+  DrawerFooter,
+  ButtonGroup,
+  Stack,
+  RadioGroup,
+  Radio,
+  Textarea,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper
 } from '@chakra-ui/react';
 import {
   SearchIcon,
@@ -73,36 +107,125 @@ import {
   EditIcon,
   DeleteIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
   ViewIcon,
   CheckIcon,
   CloseIcon,
   LockIcon,
-  UnlockIcon
+  UnlockIcon,
+  WarningIcon,
+  InfoIcon,
+  CopyIcon,
+  DownloadIcon,
+  TimeIcon,
+  CalendarIcon,
+  StarIcon,
+  SmallCloseIcon
 } from '@chakra-ui/icons';
-import { FaUserShield, FaUsers, FaKey, FaLock, FaUnlock, FaFilter, FaCog, FaEye, FaEyeSlash, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import {
+  HiUsers,
+  HiUserGroup,
+  HiShieldCheck,
+  HiShieldExclamation,
+  HiKey,
+  HiLockClosed,
+  HiLockOpen,
+  HiFilter,
+  HiCog,
+  HiEye,
+  HiEyeOff,
+  HiCheckCircle,
+  HiXCircle,
+  HiPlus,
+  HiPencil,
+  HiTrash,
+  HiRefresh,
+  HiDownload,
+  HiUpload,
+  HiHome,
+  HiSearch,
+  HiAdjustments,
+  HiClipboard,
+  HiClipboardCheck,
+  HiExclamation,
+  HiInformationCircle,
+  HiChartBar,
+  HiViewGrid,
+  HiViewList,
+  HiSortAscending,
+  HiSortDescending,
+  HiDotsVertical,
+  HiUserAdd,
+  HiUserRemove,
+  HiSave,
+  HiX,
+  HiCheck
+} from 'react-icons/hi';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../shared/Navbar';
 
 const UserRolesPermissions = () => {
   const navigate = useNavigate();
   const toast = useToast();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  
+  // Enhanced modal management
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
+  const { isOpen: isRoleOpen, onOpen: onRoleOpen, onClose: onRoleClose } = useDisclosure();
+  const { isOpen: isPermissionOpen, onOpen: onPermissionOpen, onClose: onPermissionClose } = useDisclosure();
+  const { isOpen: isMatrixOpen, onOpen: onMatrixOpen, onClose: onMatrixClose } = useDisclosure();
+  
+  // Enhanced state management
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
+  const [filteredRoles, setFilteredRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [permissionCategory, setPermissionCategory] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedRole, setSelectedRole] = useState(null);
   const [selectedPermissions, setSelectedPermissions] = useState([]);
+  const [activeTab, setActiveTab] = useState(0);
+  const [sortField, setSortField] = useState('name');
+  const [sortDirection, setSortDirection] = useState('asc');
+  const [viewMode, setViewMode] = useState('table'); // table, grid, matrix
+  const [bulkSelection, setBulkSelection] = useState([]);
+  const [showBulkActions, setShowBulkActions] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-
+  const [roleFormData, setRoleFormData] = useState({
+    name: '',
+    displayName: '',
+    description: '',
+    permissions: []
+  });
+  const [formErrors, setFormErrors] = useState({});
+  
+  // Responsive design hooks
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const isTablet = useBreakpointValue({ base: false, md: true, lg: false });
+  const containerMaxW = useBreakpointValue({ base: 'full', md: 'full' });
+  const cardColumns = useBreakpointValue({ base: 1, md: 2, lg: 3 });
+  const tableSize = useBreakpointValue({ base: 'sm', md: 'md' });
+  
+  // Color mode values - must be at the top
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
+  const textColor = useColorModeValue('gray.700', 'gray.100');
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const accentColor = useColorModeValue('blue.500', 'blue.300');
+  const hoverBg = useColorModeValue('gray.100', 'gray.700');
+  const selectedBg = useColorModeValue('blue.50', 'blue.900');
+  const headerBg = useColorModeValue('linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 'linear-gradient(135deg, #4a5568 0%, #2d3748 100%)');
+  const successColor = useColorModeValue('green.500', 'green.300');
+  const errorColor = useColorModeValue('red.500', 'red.300');
+  const warningColor = useColorModeValue('orange.500', 'orange.300');
 
-  // Mock data for demonstration
-  const mockUsers = [
+  // Enhanced mock data for demonstration
+  const mockUsers = useMemo(() => [
     {
       id: 1,
       name: 'John Doe',
@@ -110,7 +233,14 @@ const UserRolesPermissions = () => {
       role: 'admin',
       status: 'active',
       permissions: ['all'],
-      lastLogin: '2025-11-09T10:30:00Z'
+      lastLogin: '2025-11-09T10:30:00Z',
+      createdAt: '2024-01-15T08:00:00Z',
+      department: 'Administration',
+      avatar: null,
+      isVerified: true,
+      lastActivity: '2025-11-09T14:30:00Z',
+      loginCount: 245,
+      permissionLevel: 'full'
     },
     {
       id: 2,
@@ -118,8 +248,15 @@ const UserRolesPermissions = () => {
       email: 'jane.smith@example.com',
       role: 'scheduler',
       status: 'active',
-      permissions: ['view_trips', 'create_trips', 'edit_trips', 'view_reports'],
-      lastLogin: '2025-11-09T09:45:00Z'
+      permissions: ['view_trips', 'create_trips', 'edit_trips', 'view_reports', 'manage_recurring'],
+      lastLogin: '2025-11-09T09:45:00Z',
+      createdAt: '2024-02-20T10:30:00Z',
+      department: 'Operations',
+      avatar: null,
+      isVerified: true,
+      lastActivity: '2025-11-09T13:20:00Z',
+      loginCount: 189,
+      permissionLevel: 'high'
     },
     {
       id: 3,
@@ -127,8 +264,15 @@ const UserRolesPermissions = () => {
       email: 'bob.johnson@example.com',
       role: 'dispatcher',
       status: 'active',
-      permissions: ['view_trips', 'assign_drivers', 'view_vehicles', 'view_riders'],
-      lastLogin: '2025-11-09T08:20:00Z'
+      permissions: ['view_trips', 'assign_drivers', 'view_vehicles', 'view_riders', 'update_trip_status', 'emergency_access'],
+      lastLogin: '2025-11-09T08:20:00Z',
+      createdAt: '2024-03-10T09:15:00Z',
+      department: 'Dispatch',
+      avatar: null,
+      isVerified: true,
+      lastActivity: '2025-11-09T12:45:00Z',
+      loginCount: 156,
+      permissionLevel: 'medium'
     },
     {
       id: 4,
@@ -136,10 +280,49 @@ const UserRolesPermissions = () => {
       email: 'alice.brown@example.com',
       role: 'driver',
       status: 'inactive',
-      permissions: ['view_assigned_trips', 'update_trip_status'],
-      lastLogin: '2025-11-08T16:15:00Z'
+      permissions: ['view_assigned_trips', 'update_trip_status', 'view_vehicle_info', 'report_issues'],
+      lastLogin: '2025-11-08T16:15:00Z',
+      createdAt: '2024-04-05T07:45:00Z',
+      department: 'Transportation',
+      avatar: null,
+      isVerified: false,
+      lastActivity: '2025-11-08T16:15:00Z',
+      loginCount: 89,
+      permissionLevel: 'basic'
+    },
+    {
+      id: 5,
+      name: 'Michael Chen',
+      email: 'michael.chen@example.com',
+      role: 'scheduler',
+      status: 'active',
+      permissions: ['view_trips', 'create_trips', 'edit_trips', 'view_reports'],
+      lastLogin: '2025-11-09T07:30:00Z',
+      createdAt: '2024-05-15T11:20:00Z',
+      department: 'Operations',
+      avatar: null,
+      isVerified: true,
+      lastActivity: '2025-11-09T11:15:00Z',
+      loginCount: 134,
+      permissionLevel: 'medium'
+    },
+    {
+      id: 6,
+      name: 'Sarah Wilson',
+      email: 'sarah.wilson@example.com',
+      role: 'driver',
+      status: 'active',
+      permissions: ['view_assigned_trips', 'update_trip_status', 'view_vehicle_info'],
+      lastLogin: '2025-11-09T06:45:00Z',
+      createdAt: '2024-06-12T08:30:00Z',
+      department: 'Transportation',
+      avatar: null,
+      isVerified: true,
+      lastActivity: '2025-11-09T10:20:00Z',
+      loginCount: 78,
+      permissionLevel: 'basic'
     }
-  ];
+  ], []);
 
   const mockRoles = [
     {
@@ -329,7 +512,7 @@ const UserRolesPermissions = () => {
     return (
       <Box minHeight="100vh" bg={bgColor}>
         <Navbar />
-        <Container maxW="7xl" py={8}>
+        <Container maxW="full" py={8}>
           <Flex align="center" justify="center" minHeight="60vh">
             <VStack spacing={4}>
               <FaUserShield size={48} color="#3182ce" />
@@ -344,7 +527,7 @@ const UserRolesPermissions = () => {
   return (
     <Box minHeight="100vh" bg={bgColor}>
       <Navbar />
-      <Container maxW="7xl" py={8}>
+      <Container maxW="full" py={8}>
         <VStack spacing={8} align="stretch">
           {/* Header */}
           <Box

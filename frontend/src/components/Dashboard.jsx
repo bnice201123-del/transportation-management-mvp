@@ -1,53 +1,54 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Center, Spinner, Text, VStack } from '@chakra-ui/react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
   const { user, isAuthenticated, loading } = useAuth();
+  const navigate = useNavigate();
 
-  // Debug logging
-  console.log('Dashboard - loading:', loading, 'isAuthenticated:', isAuthenticated, 'user:', user);
+  useEffect(() => {
+    // Only navigate when not loading and user is authenticated
+    if (!loading) {
+      if (!isAuthenticated || !user) {
+        navigate('/login', { replace: true });
+        return;
+      }
 
-  // Show loading spinner while authentication is being checked
-  if (loading) {
-    return (
-      <Center minHeight="100vh" bg="gray.50">
-        <VStack spacing={4}>
-          <Spinner size="xl" color="blue.500" />
-          <Text color="gray.600">Loading your dashboard...</Text>
-        </VStack>
-      </Center>
-    );
-  }
+      // Determine role-specific route
+      const getDashboardRoute = (role) => {
+        switch (role) {
+          case 'admin':
+            return '/admin';
+          case 'scheduler':
+            return '/scheduler';
+          case 'dispatcher':
+            return '/dispatcher';
+          case 'driver':
+            return '/driver';
+          default:
+            return '/login';
+        }
+      };
 
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
-    console.log('Dashboard - Not authenticated, redirecting to login');
-    return <Navigate to="/login" replace />;
-  }
-
-  // Redirect based on user role
-  const getDashboardRoute = (role) => {
-    switch (role) {
-      case 'admin':
-        return '/admin/overview';
-      case 'scheduler':
-        return '/scheduler';
-      case 'dispatcher':
-        return '/dispatcher';
-      case 'driver':
-        return '/driver';
-      default:
-        return '/login'; // Fallback for unknown roles
+      // Use user's primary role for routing
+      const destination = getDashboardRoute(user.role);
+      navigate(destination, { replace: true });
     }
-  };
+  }, [loading, isAuthenticated, user, navigate]);
 
-  const dashboardRoute = getDashboardRoute(user?.role);
-  console.log('Dashboard - Redirecting to:', dashboardRoute, 'for role:', user?.role);
-
-  // Redirect to appropriate dashboard
-  return <Navigate to={dashboardRoute} replace />;
+  // Show loading spinner
+  return (
+    <Center minHeight="100vh" bg="gray.50">
+      <VStack spacing={4}>
+        <Spinner size="xl" color="blue.500" />
+        <Text color="gray.600">
+          {loading ? 'Loading your dashboard...' : 'Redirecting...'}
+        </Text>
+      </VStack>
+    </Center>
+  );
 };
 
 export default Dashboard;

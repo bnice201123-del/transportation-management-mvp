@@ -50,7 +50,7 @@ import {
 } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
+import VehicleQuickView from '../shared/VehicleQuickView';
 
 const VehiclesLanding = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -60,14 +60,18 @@ const VehiclesLanding = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [makeFilter, setMakeFilter] = useState('all');
   const navigate = useNavigate();
-  const { user } = useAuth();
   const toast = useToast();
 
   const fetchVehicles = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get('/api/vehicles', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        params: {
+          status: statusFilter === 'all' ? undefined : statusFilter,
+          make: makeFilter === 'all' ? undefined : makeFilter,
+          search: searchTerm || undefined
+        }
       });
       setVehicles(response.data.vehicles);
       setFilteredVehicles(response.data.vehicles);
@@ -83,7 +87,7 @@ const VehiclesLanding = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, statusFilter, makeFilter, searchTerm]);
 
   useEffect(() => {
     fetchVehicles();
@@ -303,7 +307,7 @@ const VehiclesLanding = () => {
           </CardBody>
         </Card>
 
-        {/* Vehicles Table */}
+        {/* Vehicles Display - Responsive */}
         <Card>
           <CardHeader>
             <Heading size="md">Vehicles</Heading>
@@ -319,64 +323,141 @@ const VehiclesLanding = () => {
                 </VStack>
               </Center>
             ) : (
-              <Table variant="simple">
-                <Thead>
-                  <Tr>
-                    <Th>Vehicle</Th>
-                    <Th>License Plate</Th>
-                    <Th>Status</Th>
-                    <Th>Last Service</Th>
-                    <Th>Current Driver</Th>
-                    <Th>Actions</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {filteredVehicles.map((vehicle) => (
-                    <Tr key={vehicle._id}>
-                      <Td>
-                        <VStack align="start" spacing={1}>
-                          <Text fontWeight="bold" cursor="pointer" color="blue.500"
-                                onClick={() => handleViewProfile(vehicle._id)}>
-                            {vehicle.year} {vehicle.make} {vehicle.model}
-                          </Text>
-                          <Text fontSize="sm" color="gray.600">
-                            VIN: {vehicle.vin || 'N/A'}
-                          </Text>
-                        </VStack>
-                      </Td>
-                      <Td fontWeight="bold">{vehicle.licensePlate}</Td>
-                      <Td>{getStatusBadge(vehicle.status)}</Td>
-                      <Td>{formatDate(vehicle.lastServiceDate)}</Td>
-                      <Td>
-                        {vehicle.currentDriver ? (
-                          <HStack>
-                            <Avatar size="sm" name={vehicle.currentDriver.name} />
-                            <Text>{vehicle.currentDriver.name}</Text>
-                          </HStack>
-                        ) : (
-                          <Text color="gray.500">Unassigned</Text>
-                        )}
-                      </Td>
-                      <Td>
-                        <HStack spacing={2}>
-                          <IconButton
-                            size="sm"
-                            icon={<ViewIcon />}
-                            onClick={() => handleViewProfile(vehicle._id)}
-                            title="View Profile"
-                          />
-                          <IconButton
-                            size="sm"
-                            icon={<EditIcon />}
-                            onClick={() => navigate(`/vehicles/${vehicle._id}/edit`)}
-                            title="Edit Vehicle"
-                          />
-                        </HStack>
-                      </Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </Table>
+              <>
+                {/* Desktop Table View */}
+                <Box display={{ base: "none", md: "block" }}>
+                  <Table variant="simple">
+                    <Thead>
+                      <Tr>
+                        <Th>Vehicle</Th>
+                        <Th>License Plate</Th>
+                        <Th>Status</Th>
+                        <Th>Last Service</Th>
+                        <Th>Current Driver</Th>
+                        <Th>Actions</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {filteredVehicles.map((vehicle) => (
+                        <Tr key={vehicle._id}>
+                          <Td>
+                            <VStack align="start" spacing={1}>
+                              <VehicleQuickView vehicle={vehicle}>
+                                <Text fontWeight="bold">
+                                  {vehicle.year} {vehicle.make} {vehicle.model}
+                                </Text>
+                              </VehicleQuickView>
+                              <Text fontSize="sm" color="gray.600">
+                                VIN: {vehicle.vin || 'N/A'}
+                              </Text>
+                            </VStack>
+                          </Td>
+                          <Td fontWeight="bold">{vehicle.licensePlate}</Td>
+                          <Td>{getStatusBadge(vehicle.status)}</Td>
+                          <Td>{formatDate(vehicle.lastServiceDate)}</Td>
+                          <Td>
+                            {vehicle.currentDriver ? (
+                              <HStack>
+                                <Avatar 
+                                  size="sm" 
+                                  name={typeof vehicle.currentDriver === 'object' 
+                                    ? `${vehicle.currentDriver.firstName || ''} ${vehicle.currentDriver.lastName || ''}`.trim() 
+                                    : vehicle.currentDriver} 
+                                />
+                                <Text>
+                                  {typeof vehicle.currentDriver === 'object'
+                                    ? `${vehicle.currentDriver.firstName || ''} ${vehicle.currentDriver.lastName || ''}`.trim() || vehicle.currentDriver.email || 'Unknown'
+                                    : vehicle.currentDriver}
+                                </Text>
+                              </HStack>
+                            ) : (
+                              <Text color="gray.500">Unassigned</Text>
+                            )}
+                          </Td>
+                          <Td>
+                            <HStack spacing={2}>
+                              <IconButton
+                                size="sm"
+                                icon={<ViewIcon />}
+                                onClick={() => handleViewProfile(vehicle._id)}
+                                title="View Profile"
+                              />
+                              <IconButton
+                                size="sm"
+                                icon={<EditIcon />}
+                                onClick={() => navigate(`/vehicles/${vehicle._id}/edit`)}
+                                title="Edit Vehicle"
+                              />
+                            </HStack>
+                          </Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                </Box>
+
+                {/* Mobile Card View */}
+                <Box display={{ base: "block", md: "none" }}>
+                  <VStack spacing={4}>
+                    {filteredVehicles.map((vehicle) => (
+                      <Card key={vehicle._id} width="100%" shadow="sm" borderRadius="lg">
+                        <CardBody p={4}>
+                          <Flex justify="space-between" align="start" mb={3}>
+                            <VStack align="start" spacing={1} flex={1}>
+                              <Text fontWeight="bold" fontSize="lg">{vehicle.licensePlate}</Text>
+                              <VehicleQuickView vehicle={vehicle}>
+                                <Text fontSize="sm" color="gray.600">
+                                  {vehicle.year} {vehicle.make} {vehicle.model}
+                                </Text>
+                              </VehicleQuickView>
+                              {getStatusBadge(vehicle.status)}
+                            </VStack>
+                            <HStack spacing={2}>
+                              <IconButton
+                                size="sm"
+                                icon={<ViewIcon />}
+                                onClick={() => handleViewProfile(vehicle._id)}
+                                title="View Profile"
+                              />
+                              <IconButton
+                                size="sm"
+                                icon={<EditIcon />}
+                                onClick={() => navigate(`/vehicles/${vehicle._id}/edit`)}
+                                title="Edit Vehicle"
+                              />
+                            </HStack>
+                          </Flex>
+
+                          <Grid templateColumns="repeat(2, 1fr)" gap={3} fontSize="sm">
+                            <VStack align="start" spacing={1}>
+                              <Text color="gray.500">VIN</Text>
+                              <Text fontWeight="medium">{vehicle.vin || 'N/A'}</Text>
+                            </VStack>
+                            <VStack align="start" spacing={1}>
+                              <Text color="gray.500">Last Service</Text>
+                              <Text fontWeight="medium">{formatDate(vehicle.lastServiceDate)}</Text>
+                            </VStack>
+                            <VStack align="start" spacing={1}>
+                              <Text color="gray.500">Driver</Text>
+                              <Text fontWeight="medium">
+                                {vehicle.currentDriver 
+                                  ? (typeof vehicle.currentDriver === 'object'
+                                    ? `${vehicle.currentDriver.firstName || ''} ${vehicle.currentDriver.lastName || ''}`.trim() || vehicle.currentDriver.email || 'Unknown'
+                                    : vehicle.currentDriver)
+                                  : 'Unassigned'}
+                              </Text>
+                            </VStack>
+                            <VStack align="start" spacing={1}>
+                              <Text color="gray.500">Capacity</Text>
+                              <Text fontWeight="medium">{vehicle.capacity || 'N/A'}</Text>
+                            </VStack>
+                          </Grid>
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </VStack>
+                </Box>
+              </>
             )}
           </CardBody>
         </Card>

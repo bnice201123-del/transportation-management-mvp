@@ -19,6 +19,7 @@ const activityLogSchema = new mongoose.Schema({
       'trip_started',
       'trip_completed',
       'trip_cancelled',
+      'trip_status_reverted',
       'driver_arrived',
       'status_updated',
       'location_updated',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Container,
@@ -25,6 +25,8 @@ import {
   Stat,
   StatLabel,
   StatNumber,
+  StatHelpText,
+  StatArrow,
   Flex,
   Spacer,
   Alert,
@@ -32,6 +34,8 @@ import {
   AlertTitle,
   AlertDescription,
   useColorModeValue,
+  useBreakpointValue,
+  Icon,
   IconButton,
   Menu,
   MenuButton,
@@ -44,7 +48,10 @@ import {
   ModalHeader,
   ModalBody,
   ModalCloseButton,
+  ModalFooter,
   Progress,
+  CircularProgress,
+  CircularProgressLabel,
   Divider,
   Grid,
   GridItem,
@@ -61,43 +68,175 @@ import {
   SliderFilledTrack,
   SliderThumb,
   Tooltip,
-  useToast
+  useToast,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  ButtonGroup,
+  Center,
+  Spinner,
+  Skeleton,
+  SkeletonText,
+  Avatar,
+  Tag,
+  TagLabel,
+  TagCloseButton,
+  Wrap,
+  WrapItem,
+  Checkbox,
+  CheckboxGroup,
+  RadioGroup,
+  Radio,
+  Stack,
+  Textarea,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
+  Code,
+  Kbd
 } from '@chakra-ui/react';
 import {
   SearchIcon,
   SettingsIcon,
-  LockIcon,
-  UnlockIcon,
-  ViewIcon,
-  EditIcon,
-  DeleteIcon,
-  ChevronDownIcon,
   WarningIcon,
   CheckCircleIcon,
   InfoIcon,
   TimeIcon,
-  BellIcon,
-  RepeatIcon
+  RepeatIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon,
+  AddIcon,
+  ViewIcon,
+  EditIcon,
+  DeleteIcon,
+  CheckIcon,
+  CloseIcon,
+  CopyIcon,
+  SmallCloseIcon,
+  ExternalLinkIcon,
+  AttachmentIcon
 } from '@chakra-ui/icons';
-import { FaShieldAlt, FaUserShield, FaLock, FaUnlock, FaKey, FaEye, FaEyeSlash, FaBell, FaHistory, FaCog, FaFilter } from 'react-icons/fa';
+import {
+  HiShieldCheck,
+  HiShieldExclamation,
+  HiLockClosed,
+  HiLockOpen,
+  HiKey,
+  HiEye,
+  HiEyeOff,
+  HiBell,
+  HiClock,
+  HiCog,
+  HiFilter,
+  HiRefresh,
+  HiPlay,
+  HiPause,
+  HiStop,
+  HiSearch,
+  HiAdjustments,
+  HiClipboard,
+  HiClipboardCheck,
+  HiExclamation,
+  HiInformationCircle,
+  HiCheckCircle,
+  HiXCircle,
+  HiPlus,
+  HiPencil,
+  HiTrash,
+  HiDownload,
+  HiUpload,
+  HiHome,
+  HiChartBar,
+  HiViewGrid,
+  HiViewList,
+  HiSortAscending,
+  HiSortDescending,
+  HiDotsVertical,
+  HiSave,
+  HiX,
+  HiCheck,
+  HiArchive,
+  HiCollection,
+  HiShare,
+  HiUserGroup,
+  HiDatabase,
+  HiServer,
+  HiCloudDownload,
+  HiCloudUpload,
+  HiFolder,
+  HiFolderOpen,
+  HiDocumentDuplicate,
+  HiFingerPrint,
+  HiGlobeAlt,
+  HiWifi,
+  HiCalendar,
+  HiUsers
+} from 'react-icons/hi';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../shared/Navbar';
 
 const Security = () => {
   const navigate = useNavigate();
   const toast = useToast();
-  const { isOpen, onOpen, onClose } = useDisclosure();
 
+  // Enhanced modal management
+  const { isOpen: isEventModalOpen, onOpen: onEventModalOpen, onClose: onEventModalClose } = useDisclosure();
+  const { isOpen: isSettingsModalOpen, onOpen: onSettingsModalOpen, onClose: onSettingsModalClose } = useDisclosure();
+  const { isOpen: isAlertModalOpen, onOpen: onAlertModalOpen, onClose: onAlertModalClose } = useDisclosure();
+  const { isOpen: isPolicyModalOpen, onOpen: onPolicyModalOpen, onClose: onPolicyModalClose } = useDisclosure();
+
+  // Responsive design variables
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const containerMaxW = useBreakpointValue({ base: 'full', md: '7xl' });
+  const tableSize = useBreakpointValue({ base: 'sm', md: 'md' });
+  const tableVariant = useBreakpointValue({ base: 'simple', md: 'striped' });
+  const cardColumns = useBreakpointValue({ base: 1, sm: 2, md: 3, lg: 4 });
+  const containerPadding = useBreakpointValue({ base: 4, md: 8 });
+  const cardSpacing = useBreakpointValue({ base: 4, md: 6 });
+  const stackDirection = useBreakpointValue({ base: 'column', lg: 'row' });
+
+  // Enhanced state management
   const [securityEvents, setSecurityEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [eventTypeFilter, setEventTypeFilter] = useState('all');
   const [severityFilter, setSeverityFilter] = useState('all');
+  const [dateRange, setDateRange] = useState('all');
+  const [sortBy, setSortBy] = useState('timestamp');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [bulkAction, setBulkAction] = useState('');
+  const [processingItems, setProcessingItems] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [viewMode, setViewMode] = useState('table');
 
+  // Color mode values
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const textColor = useColorModeValue('gray.700', 'gray.200');
+  const mutedColor = useColorModeValue('gray.500', 'gray.400');
+  const hoverBg = useColorModeValue('gray.100', 'gray.700');
+  const selectedRowBg = useColorModeValue('blue.50', 'blue.900');
+  const headerBg = useColorModeValue('linear-gradient(135deg, #4299e1 0%, #3182ce 100%)', 'linear-gradient(135deg, #2b6cb0 0%, #2c5282 100%)');
+  const accentColor = useColorModeValue('blue.500', 'blue.300');
+  const successColor = useColorModeValue('green.500', 'green.300');
+  const errorColor = useColorModeValue('red.500', 'red.300');
+  const warningColor = useColorModeValue('orange.500', 'orange.300');
+  const tableHeaderBg = useColorModeValue('gray.50', 'gray.700');
+  const statIconBg = useColorModeValue('gray.50', 'gray.700');
 
   // Mock security data
   const mockSecurityEvents = [
@@ -157,26 +296,34 @@ const Security = () => {
     {
       label: 'Total Events',
       value: securityEvents.length,
-      icon: FaHistory,
-      color: 'blue.500'
+      icon: HiClipboard,
+      color: 'blue.500',
+      trend: '+12%',
+      trendDirection: 'increase'
     },
     {
       label: 'Failed Logins',
       value: securityEvents.filter(e => e.type === 'failed_login').length,
-      icon: FaLock,
-      color: 'red.500'
+      icon: HiLockClosed,
+      color: 'red.500',
+      trend: '-8%',
+      trendDirection: 'decrease'
     },
     {
       label: 'Active Sessions',
       value: 12,
-      icon: FaUnlock,
-      color: 'green.500'
+      icon: HiLockOpen,
+      color: 'green.500',
+      trend: '+5%',
+      trendDirection: 'increase'
     },
     {
       label: 'Security Alerts',
       value: securityEvents.filter(e => e.severity === 'high').length,
-      icon: WarningIcon,
-      color: 'orange.500'
+      icon: HiShieldExclamation,
+      color: 'orange.500',
+      trend: '-15%',
+      trendDirection: 'decrease'
     }
   ];
 
@@ -184,7 +331,7 @@ const Security = () => {
     {
       title: 'Authentication Settings',
       description: 'Configure login policies and MFA settings',
-      icon: FaKey,
+      icon: HiKey,
       features: [
         { name: 'Password Policy', status: 'enabled', description: 'Minimum 8 characters, special chars required' },
         { name: 'Two-Factor Authentication', status: 'enabled', description: 'SMS and authenticator app support' },
@@ -195,7 +342,7 @@ const Security = () => {
     {
       title: 'Access Control',
       description: 'Manage permissions and role-based access',
-      icon: FaUserShield,
+      icon: HiUsers,
       features: [
         { name: 'Role-Based Access', status: 'enabled', description: 'Admin, Scheduler, Dispatcher, Driver roles' },
         { name: 'IP Whitelisting', status: 'disabled', description: 'Restrict access to specific IP ranges' },
@@ -206,7 +353,7 @@ const Security = () => {
     {
       title: 'Monitoring & Alerts',
       description: 'Real-time security monitoring and notifications',
-      icon: FaBell,
+      icon: HiBell,
       features: [
         { name: 'Real-time Alerts', status: 'enabled', description: 'Instant notifications for security events' },
         { name: 'Intrusion Detection', status: 'enabled', description: 'Monitor for suspicious patterns' },
@@ -289,18 +436,18 @@ const Security = () => {
 
   const getEventTypeIcon = (type) => {
     switch (type) {
-      case 'login_attempt': return CheckCircleIcon;
-      case 'failed_login': return WarningIcon;
-      case 'suspicious_activity': return WarningIcon;
-      case 'password_change': return LockIcon;
-      case 'session_timeout': return TimeIcon;
-      default: return InfoIcon;
+      case 'login_attempt': return HiCheckCircle;
+      case 'failed_login': return HiXCircle;
+      case 'suspicious_activity': return HiShieldExclamation;
+      case 'password_change': return HiKey;
+      case 'session_timeout': return HiClock;
+      default: return HiInformationCircle;
     }
   };
 
   const handleViewEvent = (event) => {
     setSelectedEvent(event);
-    onOpen();
+    onEventModalOpen();
   };
 
   if (loading) {
@@ -320,53 +467,121 @@ const Security = () => {
   }
 
   return (
-    <Box minHeight="100vh" bg={bgColor}>
+    <Box minHeight="100vh" bg={bgColor} pb={8}>
       <Navbar />
-      <Container maxW="7xl" py={8}>
-        <VStack spacing={8} align="stretch">
-          {/* Header */}
-          <Box
-            bg={useColorModeValue('linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 'linear-gradient(135deg, #4a5568 0%, #2d3748 100%)')}
-            borderRadius="xl"
-            p={8}
-            textAlign="center"
-            color="white"
-            boxShadow="2xl"
-          >
-            <VStack spacing={4}>
-              <FaShieldAlt size={48} />
-              <Heading size="2xl" fontWeight="bold">
+      
+      {/* Enhanced Header with Breadcrumbs */}
+      <Container maxW={containerMaxW} pt={6} pb={4}>
+        <VStack spacing={4} align="stretch">
+          <Breadcrumb spacing="8px" separator={<ChevronRightIcon color={mutedColor} />}>
+            <BreadcrumbItem>
+              <BreadcrumbLink onClick={() => navigate('/admin')} color={mutedColor}>
+                <HiHome style={{ display: 'inline', marginRight: '4px' }} />
+                Admin
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbItem isCurrentPage>
+              <BreadcrumbLink color={textColor} fontWeight="semibold">
                 Security Dashboard
-              </Heading>
-              <Text fontSize="xl" opacity={0.9}>
-                Monitor and manage system security, access controls, and threat detection
-              </Text>
-            </VStack>
-          </Box>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+          </Breadcrumb>
+          
+          <Card bg={cardBg} shadow="xl" borderRadius="xl" overflow="hidden">
+            <CardBody p={0}>
+              <VStack spacing={0} align="stretch">
+                <Box
+                  bg={headerBg}
+                  p={{ base: 6, md: 8 }}
+                  textAlign="center"
+                  color="white"
+                  position="relative"
+                  overflow="hidden"
+                >
+                  <VStack spacing={4}>
+                    <Icon as={HiShieldCheck} boxSize={12} />
+                    <VStack spacing={2}>
+                      <Heading 
+                        size={{ base: 'xl', md: '2xl' }} 
+                        fontWeight="bold"
+                        textShadow="0 2px 4px rgba(0,0,0,0.2)"
+                      >
+                        Security Dashboard
+                      </Heading>
+                      <Text 
+                        fontSize={{ base: 'md', md: 'lg' }} 
+                        opacity={0.9}
+                        maxW="600px"
+                      >
+                        Comprehensive security monitoring, threat detection, and access control management for your transportation system
+                      </Text>
+                    </VStack>
+                  </VStack>
+                </Box>
+              </VStack>
+            </CardBody>
+          </Card>
+        </VStack>
+      </Container>
 
-          {/* Security Stats */}
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
-            {securityStats.map((stat, index) => (
-              <Card
-                key={index}
-                bg={cardBg}
-                shadow="lg"
-                borderRadius="lg"
-                _hover={{ shadow: 'xl', transform: 'translateY(-2px)' }}
-                transition="all 0.3s"
-                border="1px solid"
-                borderColor={useColorModeValue('gray.200', 'gray.600')}
-              >
-                <CardBody textAlign="center" py={6}>
-                  <Icon as={stat.icon} boxSize={8} color={stat.color} mb={3} />
-                  <Stat>
-                    <StatLabel fontSize="sm" color="gray.600" fontWeight="medium">{stat.label}</StatLabel>
-                    <StatNumber fontSize="3xl" fontWeight="bold" color={stat.color}>{stat.value}</StatNumber>
-                  </Stat>
-                </CardBody>
-              </Card>
-            ))}
-          </SimpleGrid>
+      <Container maxW={containerMaxW} px={6}>
+        <VStack spacing={8} align="stretch">
+
+          {/* Enhanced Statistics Dashboard */}
+          <Card bg={cardBg} shadow="lg" borderRadius="xl">
+            <CardHeader>
+              <Flex align="center" justify="space-between">
+                <VStack align="flex-start" spacing={1}>
+                  <Heading size="md" color={textColor}>
+                    Security Overview
+                  </Heading>
+                  <Text fontSize="sm" color={mutedColor}>
+                    Real-time security metrics and threat assessment
+                  </Text>
+                </VStack>
+                <ButtonGroup size="sm" variant="outline">
+                  <Button leftIcon={<HiRefresh />} onClick={() => window.location.reload()}>
+                    Refresh
+                  </Button>
+                  <Button leftIcon={<HiDownload />}>
+                    Export
+                  </Button>
+                </ButtonGroup>
+              </Flex>
+            </CardHeader>
+            <CardBody pt={0}>
+              <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={6}>
+                {securityStats.map((stat, index) => (
+                  <Card
+                    key={index}
+                    bg={statIconBg}
+                    borderRadius="lg"
+                    shadow="md"
+                    transition="all 0.2s"
+                    _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }}
+                    border="1px solid"
+                    borderColor={borderColor}
+                  >
+                    <CardBody p={6} textAlign="center">
+                      <Stat>
+                        <StatLabel display="flex" alignItems="center" justifyContent="center" gap={2}>
+                          <Icon as={stat.icon} color={stat.color} />
+                          {stat.label}
+                        </StatLabel>
+                        <StatNumber fontSize="3xl" color={textColor}>
+                          {stat.value}
+                        </StatNumber>
+                        <StatHelpText>
+                          <StatArrow type={stat.trendDirection} />
+                          {stat.trend} from last week
+                        </StatHelpText>
+                      </Stat>
+                    </CardBody>
+                  </Card>
+                ))}
+              </SimpleGrid>
+            </CardBody>
+          </Card>
 
           {/* Main Content Tabs */}
           <Tabs variant="enclosed" colorScheme="blue">
@@ -623,7 +838,7 @@ const Security = () => {
           </Tabs>
 
           {/* Event Details Modal */}
-          <Modal isOpen={isOpen} onClose={onClose} size="lg">
+          <Modal isOpen={isEventModalOpen} onClose={onEventModalClose} size="lg">
             <ModalOverlay />
             <ModalContent>
               <ModalHeader>Security Event Details</ModalHeader>
@@ -666,7 +881,12 @@ const Security = () => {
                     <SimpleGrid columns={2} spacing={4}>
                       <Box>
                         <Text fontWeight="bold" fontSize="sm" color="gray.600">User</Text>
-                        <Text>{selectedEvent.user}</Text>
+                        <Text>
+                          {typeof selectedEvent.user === 'object' 
+                            ? (selectedEvent.user.name || selectedEvent.user.email || `${selectedEvent.user.firstName || ''} ${selectedEvent.user.lastName || ''}`.trim() || 'Unknown User')
+                            : selectedEvent.user
+                          }
+                        </Text>
                       </Box>
                       <Box>
                         <Text fontWeight="bold" fontSize="sm" color="gray.600">IP Address</Text>

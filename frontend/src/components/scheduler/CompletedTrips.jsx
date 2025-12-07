@@ -392,9 +392,9 @@ const CompletedTrips = () => {
   );
 
   return (
-    <Container maxW="7xl" py={6}>
+    <Box w="100%" py={{ base: 4, md: 6 }} px={{ base: 3, md: 4, lg: 6 }} overflowX="hidden">
       {/* Header */}
-      <Box bg={headerBg} p={6} borderRadius="lg" mb={6}>
+      <Box bg={headerBg} p={6} borderRadius="lg" mb={6} w="100%" maxW="100%">
         <HStack justify="space-between" align="start">
           <VStack align="start" spacing={2}>
             <Heading size="lg" color="green.600">
@@ -615,10 +615,10 @@ const CompletedTrips = () => {
               ))}
             </SimpleGrid>
           ) : (
-            <Card>
+            <Card w="100%" maxW="100%">
               <CardBody p={0}>
-                <TableContainer>
-                  <Table variant="simple">
+                <TableContainer w="100%" overflowX="auto">
+                  <Table variant="simple" w="100%">
                     <Thead bg={useColorModeValue('gray.50', 'gray.700')}>
                       <Tr>
                         <Th>Trip ID</Th>
@@ -821,7 +821,7 @@ const CompletedTrips = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </Container>
+    </Box>
   );
 };
 

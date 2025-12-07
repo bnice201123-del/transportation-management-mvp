@@ -263,49 +263,65 @@ const VehiclesDashboard = () => {
     <Box ml="60px" bg={bgColor} minH="100vh">
       <Navbar />
       
-      <Box p={6}>
-        {/* Header */}
-        <Flex justify="space-between" align="center" mb={6}>
-          <Heading size="lg" color="cyan.500">
+      <Box p={{ base: 4, md: 6 }}>
+        {/* Header - Responsive Layout */}
+        <Flex 
+          direction={{ base: "column", sm: "row" }}
+          justify="space-between" 
+          align={{ base: "stretch", sm: "center" }} 
+          mb={{ base: 4, md: 6 }}
+          gap={{ base: 3, sm: 0 }}
+        >
+          <Heading size={{ base: "md", md: "lg" }} color="cyan.500">
             Vehicle Management
           </Heading>
           <Button
             leftIcon={<AddIcon />}
             colorScheme="cyan"
             onClick={onAddOpen}
+            size={{ base: "md", md: "md" }}
+            width={{ base: "full", sm: "auto" }}
           >
             Add New Vehicle
           </Button>
         </Flex>
 
-        {/* Stats Cards */}
-        <Grid templateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={6} mb={6}>
-          <Card bg={cardBg}>
-            <CardBody>
+        {/* Stats Cards - Responsive Grid */}
+        <Grid 
+          templateColumns={{ 
+            base: "1fr", 
+            sm: "repeat(2, 1fr)", 
+            lg: "repeat(4, 1fr)" 
+          }} 
+          gap={{ base: 4, md: 6 }} 
+          mb={{ base: 6, md: 8 }}
+        >
+          <Card bg={cardBg} shadow="sm" _hover={{ shadow: "md" }} transition="all 0.2s">
+            <CardBody p={{ base: 4, md: 6 }}>
               <Stat>
-                <StatLabel>Total Vehicles</StatLabel>
-                <StatNumber color="cyan.500">{stats.totalVehicles}</StatNumber>
-                <StatHelpText>Fleet size</StatHelpText>
+                <StatLabel fontSize={{ base: "sm", md: "md" }}>Total Vehicles</StatLabel>
+                <StatNumber color="cyan.500" fontSize={{ base: "2xl", md: "3xl" }}>{stats.totalVehicles}</StatNumber>
+                <StatHelpText fontSize={{ base: "xs", md: "sm" }}>Fleet size</StatHelpText>
               </Stat>
             </CardBody>
           </Card>
           
-          <Card bg={cardBg}>
-            <CardBody>
+          <Card bg={cardBg} shadow="sm" _hover={{ shadow: "md" }} transition="all 0.2s">
+            <CardBody p={{ base: 4, md: 6 }}>
               <Stat>
-                <StatLabel>Active Vehicles</StatLabel>
-                <StatNumber color="green.500">{stats.activeVehicles}</StatNumber>
-                <StatHelpText>Ready for service</StatHelpText>
+                <StatLabel fontSize={{ base: "sm", md: "md" }}>Active Vehicles</StatLabel>
+                <StatNumber color="green.500" fontSize={{ base: "2xl", md: "3xl" }}>{stats.activeVehicles}</StatNumber>
+                <StatHelpText fontSize={{ base: "xs", md: "sm" }}>Ready for service</StatHelpText>
               </Stat>
             </CardBody>
           </Card>
           
-          <Card bg={cardBg}>
-            <CardBody>
+          <Card bg={cardBg} shadow="sm" _hover={{ shadow: "md" }} transition="all 0.2s">
+            <CardBody p={{ base: 4, md: 6 }}>
               <Stat>
-                <StatLabel>Assigned Vehicles</StatLabel>
-                <StatNumber color="blue.500">{stats.assignedVehicles}</StatNumber>
-                <StatHelpText>With drivers</StatHelpText>
+                <StatLabel fontSize={{ base: "sm", md: "md" }}>Assigned Vehicles</StatLabel>
+                <StatNumber color="blue.500" fontSize={{ base: "2xl", md: "3xl" }}>{stats.assignedVehicles}</StatNumber>
+                <StatHelpText fontSize={{ base: "xs", md: "sm" }}>With drivers</StatHelpText>
               </Stat>
             </CardBody>
           </Card>
@@ -359,19 +375,21 @@ const VehiclesDashboard = () => {
             <Heading size="md">Vehicle Fleet ({filteredVehicles.length})</Heading>
           </CardHeader>
           <CardBody>
-            <TableContainer>
-              <Table variant="simple">
-                <Thead>
-                  <Tr>
-                    <Th>Vehicle Info</Th>
-                    <Th>Status</Th>
-                    <Th>Capacity</Th>
-                    <Th>Assigned Driver</Th>
-                    <Th>Fuel Level</Th>
-                    <Th>Service Due</Th>
-                    <Th>Actions</Th>
-                  </Tr>
-                </Thead>
+            {/* Desktop Table View */}
+            <Box display={{ base: "none", lg: "block" }}>
+              <TableContainer>
+                <Table variant="simple">
+                  <Thead>
+                    <Tr>
+                      <Th>Vehicle Info</Th>
+                      <Th>Status</Th>
+                      <Th>Capacity</Th>
+                      <Th>Assigned Driver</Th>
+                      <Th>Fuel Level</Th>
+                      <Th>Service Due</Th>
+                      <Th>Actions</Th>
+                    </Tr>
+                  </Thead>
                 <Tbody>
                   {filteredVehicles.map((vehicle) => (
                     <Tr key={vehicle.id}>
@@ -400,8 +418,16 @@ const VehiclesDashboard = () => {
                       <Td>
                         {vehicle.assignedDriver ? (
                           <HStack>
-                            <Avatar size="xs" name={vehicle.assignedDriver} />
-                            <Text fontSize="sm">{vehicle.assignedDriver}</Text>
+                            <Avatar size="xs" name={typeof vehicle.assignedDriver === 'object' 
+                              ? (vehicle.assignedDriver.name || `${vehicle.assignedDriver.firstName || ''} ${vehicle.assignedDriver.lastName || ''}`.trim() || vehicle.assignedDriver.email || 'Unnamed Driver')
+                              : vehicle.assignedDriver
+                            } />
+                            <Text fontSize="sm">
+                              {typeof vehicle.assignedDriver === 'object' 
+                                ? (vehicle.assignedDriver.name || `${vehicle.assignedDriver.firstName || ''} ${vehicle.assignedDriver.lastName || ''}`.trim() || vehicle.assignedDriver.email || 'Unnamed Driver')
+                                : vehicle.assignedDriver
+                              }
+                            </Text>
                           </HStack>
                         ) : (
                           <Text fontSize="sm" color="gray.500">Unassigned</Text>
@@ -478,63 +504,207 @@ const VehiclesDashboard = () => {
                     </Tr>
                   ))}
                 </Tbody>
-              </Table>
-            </TableContainer>
+                </Table>
+              </TableContainer>
+            </Box>
+
+            {/* Mobile Card View */}
+            <Box display={{ base: "block", lg: "none" }}>
+              <VStack spacing={4}>
+                {filteredVehicles.map((vehicle) => (
+                  <Card key={vehicle.id} width="100%" shadow="sm" borderRadius="lg">
+                    <CardBody p={{ base: 4, md: 5 }}>
+                      <Flex justify="space-between" align="start" mb={3}>
+                        <VStack align="start" spacing={1} flex={1}>
+                          <Text fontWeight="bold" fontSize="lg">{vehicle.plateNumber}</Text>
+                          <Text fontSize="sm" color="gray.600">
+                            {vehicle.year} {vehicle.make} {vehicle.model}
+                          </Text>
+                          <Badge
+                            colorScheme={
+                              vehicle.status === 'active' ? 'green' :
+                              vehicle.status === 'maintenance' ? 'red' :
+                              vehicle.status === 'out-of-service' ? 'gray' : 'blue'
+                            }
+                            size="sm"
+                          >
+                            {vehicle.status.charAt(0).toUpperCase() + vehicle.status.slice(1)}
+                          </Badge>
+                        </VStack>
+                        <Menu>
+                          <MenuButton
+                            as={IconButton}
+                            icon={<SettingsIcon />}
+                            variant="ghost"
+                            size="sm"
+                            _hover={{ bg: "gray.100" }}
+                          />
+                          <MenuList>
+                            <MenuItem icon={<ViewIcon />}>
+                              View Details
+                            </MenuItem>
+                            <MenuItem icon={<EditIcon />}>
+                              Edit Vehicle
+                            </MenuItem>
+                            <MenuItem icon={<DeleteIcon />} color="red.500">
+                              Delete Vehicle
+                            </MenuItem>
+                          </MenuList>
+                        </Menu>
+                      </Flex>
+                      
+                      <Grid templateColumns="repeat(2, 1fr)" gap={3} fontSize="sm">
+                        <VStack align="start" spacing={1}>
+                          <Text color="gray.500">Capacity</Text>
+                          <Text fontWeight="medium">{vehicle.capacity} passengers</Text>
+                        </VStack>
+                        <VStack align="start" spacing={1}>
+                          <Text color="gray.500">Fuel Level</Text>
+                          <HStack>
+                            <Progress 
+                              value={vehicle.fuelLevel} 
+                              size="sm" 
+                              colorScheme={vehicle.fuelLevel > 50 ? "green" : vehicle.fuelLevel > 25 ? "yellow" : "red"}
+                              width="60px"
+                            />
+                            <Text fontWeight="medium">{vehicle.fuelLevel}%</Text>
+                          </HStack>
+                        </VStack>
+                        <VStack align="start" spacing={1}>
+                          <Text color="gray.500">Driver</Text>
+                          <Text fontWeight="medium">
+                            {vehicle.assignedDriver || 'Unassigned'}
+                          </Text>
+                        </VStack>
+                        <VStack align="start" spacing={1}>
+                          <Text color="gray.500">Next Service</Text>
+                          <Text fontWeight="medium" color={
+                            new Date(vehicle.nextService) < new Date() ? "red.500" : "gray.700"
+                          }>
+                            {new Date(vehicle.nextService).toLocaleDateString()}
+                          </Text>
+                        </VStack>
+                      </Grid>
+                    </CardBody>
+                  </Card>
+                ))}
+              </VStack>
+            </Box>
           </CardBody>
         </Card>
 
         {/* Add Vehicle Modal */}
-        <Modal isOpen={isAddOpen} onClose={onAddClose} size="xl">
+        <Modal 
+          isOpen={isAddOpen} 
+          onClose={onAddClose} 
+          size={{ base: "full", md: "xl" }}
+          scrollBehavior="inside"
+        >
           <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>Add New Vehicle</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>
-              <VStack spacing={4}>
-                <HStack spacing={4} w="full">
+          <ModalContent mx={{ base: 0, md: 4 }} my={{ base: 0, md: 16 }}>
+            <ModalHeader fontSize={{ base: "lg", md: "xl" }} pb={2}>
+              Add New Vehicle
+            </ModalHeader>
+            <ModalCloseButton size={{ base: "md", md: "lg" }} />
+            <ModalBody pb={6}>
+              <VStack spacing={{ base: 4, md: 5 }}>
+                <Flex 
+                  direction={{ base: "column", md: "row" }}
+                  gap={4} 
+                  w="full"
+                >
                   <FormControl>
-                    <FormLabel>Plate Number</FormLabel>
-                    <Input placeholder="ABC-123" />
+                    <FormLabel fontSize={{ base: "sm", md: "md" }}>Plate Number</FormLabel>
+                    <Input 
+                      placeholder="ABC-123" 
+                      size={{ base: "md", md: "lg" }}
+                      _focus={{ borderColor: "cyan.400", boxShadow: "0 0 0 1px cyan.400" }}
+                    />
                   </FormControl>
                   <FormControl>
-                    <FormLabel>Make</FormLabel>
-                    <Input placeholder="Ford" />
+                    <FormLabel fontSize={{ base: "sm", md: "md" }}>Make</FormLabel>
+                    <Input 
+                      placeholder="Ford" 
+                      size={{ base: "md", md: "lg" }}
+                      _focus={{ borderColor: "cyan.400", boxShadow: "0 0 0 1px cyan.400" }}
+                    />
                   </FormControl>
-                </HStack>
+                </Flex>
                 
-                <HStack spacing={4} w="full">
+                <Flex 
+                  direction={{ base: "column", md: "row" }}
+                  gap={4} 
+                  w="full"
+                >
                   <FormControl>
-                    <FormLabel>Model</FormLabel>
-                    <Input placeholder="Transit" />
+                    <FormLabel fontSize={{ base: "sm", md: "md" }}>Model</FormLabel>
+                    <Input 
+                      placeholder="Transit" 
+                      size={{ base: "md", md: "lg" }}
+                      _focus={{ borderColor: "cyan.400", boxShadow: "0 0 0 1px cyan.400" }}
+                    />
                   </FormControl>
                   <FormControl>
-                    <FormLabel>Year</FormLabel>
-                    <Input placeholder="2023" type="number" />
+                    <FormLabel fontSize={{ base: "sm", md: "md" }}>Year</FormLabel>
+                    <Input 
+                      placeholder="2023" 
+                      type="number" 
+                      size={{ base: "md", md: "lg" }}
+                      _focus={{ borderColor: "cyan.400", boxShadow: "0 0 0 1px cyan.400" }}
+                    />
                   </FormControl>
-                </HStack>
+                </Flex>
                 
-                <HStack spacing={4} w="full">
+                <Flex 
+                  direction={{ base: "column", md: "row" }}
+                  gap={4} 
+                  w="full"
+                >
                   <FormControl>
-                    <FormLabel>Capacity</FormLabel>
-                    <Input placeholder="8" type="number" />
+                    <FormLabel fontSize={{ base: "sm", md: "md" }}>Capacity</FormLabel>
+                    <Input 
+                      placeholder="8" 
+                      type="number" 
+                      size={{ base: "md", md: "lg" }}
+                      _focus={{ borderColor: "cyan.400", boxShadow: "0 0 0 1px cyan.400" }}
+                    />
                   </FormControl>
                   <FormControl>
-                    <FormLabel>Wheelchair Accessible</FormLabel>
-                    <Switch mt={2} />
+                    <FormLabel fontSize={{ base: "sm", md: "md" }}>Wheelchair Accessible</FormLabel>
+                    <Switch mt={2} size={{ base: "md", md: "lg" }} colorScheme="cyan" />
                   </FormControl>
-                </HStack>
+                </Flex>
                 
                 <FormControl>
-                  <FormLabel>Maintenance Notes</FormLabel>
-                  <Textarea placeholder="Any notes about the vehicle..." />
+                  <FormLabel fontSize={{ base: "sm", md: "md" }}>Maintenance Notes</FormLabel>
+                  <Textarea 
+                    placeholder="Any notes about the vehicle..." 
+                    rows={{ base: 3, md: 4 }}
+                    resize="vertical"
+                    _focus={{ borderColor: "cyan.400", boxShadow: "0 0 0 1px cyan.400" }}
+                  />
                 </FormControl>
               </VStack>
             </ModalBody>
-            <ModalFooter>
-              <Button variant="ghost" mr={3} onClick={onAddClose}>
+            <ModalFooter 
+              flexDirection={{ base: "column-reverse", md: "row" }}
+              gap={{ base: 2, md: 0 }}
+            >
+              <Button 
+                variant="ghost" 
+                mr={{ base: 0, md: 3 }} 
+                onClick={onAddClose}
+                width={{ base: "full", md: "auto" }}
+                size={{ base: "lg", md: "md" }}
+              >
                 Cancel
               </Button>
-              <Button colorScheme="cyan" onClick={onAddClose}>
+              <Button 
+                colorScheme="cyan" 
+                onClick={onAddClose}
+                width={{ base: "full", md: "auto" }}
+                size={{ base: "lg", md: "md" }}
+              >
                 Add Vehicle
               </Button>
             </ModalFooter>

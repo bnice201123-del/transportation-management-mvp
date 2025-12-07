@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { isUSFederalHoliday } from '../utils/holidays.js';
 
 const recurringTripSchema = new mongoose.Schema({
   title: {
@@ -396,10 +397,10 @@ recurringTripSchema.methods.generateOccurrences = function(startDate, endDate, l
         shouldInclude = false;
       }
       
-      // TODO: Add holiday checking logic here if needed
-      // if (pattern.skipHolidays && isHoliday(currentDate)) {
-      //   shouldInclude = false;
-      // }
+      // Skip holidays if option is enabled
+      if (pattern.skipHolidays && isUSFederalHoliday(currentDate)) {
+        shouldInclude = false;
+      }
     }
     
     if (shouldInclude) {

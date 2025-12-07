@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Flex,
@@ -21,15 +22,79 @@ import {
   Heading,
   Badge,
   Container,
-  Spacer
+  Spacer,
+  Tooltip
 } from '@chakra-ui/react';
-import { HamburgerIcon, ChevronDownIcon, SettingsIcon } from '@chakra-ui/icons';
+import { HamburgerIcon, ChevronDownIcon, SettingsIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import { BellIcon as BellIconOutline } from '@heroicons/react/24/outline';
 import { useAuth } from "../../contexts/AuthContext";
+import { useSidebar } from "../../contexts/SidebarContext";
+import { useNotifications } from "../../contexts/NotificationContext";
 import Sidebar from './Sidebar';
 
 const Navbar = ({ title }) => {
   const { user, logout } = useAuth();
+  const { isSidebarVisible, toggleSidebar } = useSidebar();
+  const { unreadCount } = useNotifications(); // Use notification context
   const { isOpen: isMobileMenuOpen, onOpen: onMobileMenuOpen, onClose: onMobileMenuClose } = useDisclosure();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const navigationTimeoutRef = useRef(null);
+  const isNavigatingRef = useRef(false);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Navigate to dashboard based on active role with debounce
+  const navigateToDashboard = () => {
+    if (isNavigatingRef.current) {
+      return;
+    }
+
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+    }
+
+    const currentRole = user?.role;
+    let targetPath = '/dashboard';
+    
+    if (currentRole === 'admin') {
+      targetPath = '/admin/overview';
+    } else if (currentRole === 'dispatcher') {
+      targetPath = '/dispatcher';
+    } else if (currentRole === 'scheduler') {
+      targetPath = '/scheduler';
+    } else if (currentRole === 'driver') {
+      targetPath = '/driver-dashboard';
+    }
+
+    // Only navigate if not already on the target path
+    if (location.pathname !== targetPath) {
+      isNavigatingRef.current = true;
+      navigationTimeoutRef.current = setTimeout(() => {
+        navigate(targetPath);
+        // Reset navigation flag after a delay
+        setTimeout(() => {
+          isNavigatingRef.current = false;
+        }, 500);
+      }, 150);
+    }
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -46,9 +111,9 @@ const Navbar = ({ title }) => {
       case 'dispatcher':
         return 'purple';
       case 'scheduler':
-        return 'green';
+        return 'secondary'; // green
       case 'driver':
-        return 'blue';
+        return 'brand'; // blue
       default:
         return 'gray';
     }
@@ -59,73 +124,145 @@ const Navbar = ({ title }) => {
       {/* Responsive Sidebar */}
       <Sidebar 
         isMobileOpen={isMobileMenuOpen}
-        onMobileOpen={onMobileMenuOpen}
         onMobileClose={onMobileMenuClose}
       />
       
       <Box
-        bg="green.50"
+        bg="brand.50"
         borderBottom="2px"
-        borderColor="green.200"
+        borderColor="brand.200"
         position="sticky"
         top={0}
-        zIndex={10}
-        shadow="sm"
-        ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} // Responsive left margin for sidebar
+        zIndex={1000}
+        shadow="md"
       >
-        <Container maxW="container.xl" py={{ base: 2, md: 3 }} px={{ base: 4, md: 6 }}>
+        <Container maxW="container.xl" py={{ base: 2, md: 3 }} px={{ base: 4, md: 0 }} pl={{ md: 0 }} pr={{ md: 6 }}>
           <Flex alignItems="center" minH={{ base: "50px", md: "60px" }}>
             
-            {/* Mobile: Logo + Menu Button */}
-            <Box display={{ base: "flex", md: "none" }} alignItems="center" flex="1">
-              <HStack spacing={3}>
+            {/* Mobile: Three Column Layout - Hamburger | Logo | User Profile */}
+            <Flex 
+              display={{ base: "flex", md: "none" }} 
+              width="100%" 
+              alignItems="center" 
+              justifyContent="space-between"
+            >
+              {/* Column 1: Hamburger Menu */}
+              <Box flex="0 0 auto">
                 <IconButton
-                  size={{ base: "sm", md: "md" }}
+                  size="sm"
                   icon={<HamburgerIcon />}
                   aria-label="Open menu"
                   onClick={onMobileMenuOpen}
                   variant="ghost"
-                  colorScheme="green"
+                  colorScheme="brand"
                 />
-                <Box 
-                  cursor="pointer"
-                  onClick={() => {
-                    if (user?.role === 'admin') {
-                      window.location.href = '/admin/overview';
-                    } else {
-                      window.location.href = '/dashboard';
-                    }
-                  }}
-                >
-                  <Text fontSize={{ base: "lg", md: "2xl" }} fontWeight="bold" color="green.600">
+              </Box>
+
+              {/* Column 2: Company Logo/Name (Centered) */}
+              <Box 
+                flex="1" 
+                display="flex" 
+                justifyContent="center"
+                cursor="pointer"
+                onClick={navigateToDashboard}
+              >
+                <VStack spacing={0}>
+                  <Text fontSize="md" fontWeight="bold" color="brand.600" lineHeight="1.2">
                     TransportHub
                   </Text>
-                  <Text fontSize="xs" color="green.500" mt="-1" display={{ base: "none", sm: "block" }}>
+                  <Text fontSize="xx-small" color="secondary.600" lineHeight="1">
+                    Transportation Management
+                  </Text>
+                </VStack>
+              </Box>
+
+              {/* Column 3: Notifications + User Profile */}
+              <Box flex="0 0 auto">
+                <HStack spacing={2}>
+                  {/* Notification Bell Icon */}
+                  <Box position="relative">
+                    <IconButton
+                      icon={<Box as={BellIconOutline} w={5} h={5} />}
+                      aria-label="Notifications"
+                      onClick={() => navigate('/notifications')}
+                      variant="ghost"
+                      size="sm"
+                      position="relative"
+                    />
+                    {unreadCount > 0 && (
+                      <Badge
+                        position="absolute"
+                        top="0"
+                        right="0"
+                        colorScheme="red"
+                        borderRadius="full"
+                        fontSize="2xs"
+                        minW="16px"
+                        h="16px"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </Badge>
+                    )}
+                  </Box>
+                  
+                  {/* User Profile */}
+                  <HStack spacing={1}>
+                    <VStack spacing={0} align="end">
+                      <Text fontSize="xs" fontWeight="medium" color="gray.700" lineHeight="1.2">
+                        {user ? `${user.firstName}` : 'User'}
+                      </Text>
+                      <Badge 
+                        colorScheme={getRoleBadgeColor(user?.role)} 
+                        variant="subtle"
+                        fontSize="xx-small"
+                        px={1}
+                        py={0}
+                      >
+                        {user ? getRoleDisplayName(user.role).toUpperCase() : 'ROLE'}
+                      </Badge>
+                    </VStack>
+                    <Avatar
+                      size="sm"
+                      name={user ? `${user.firstName} ${user.lastName}` : 'User'}
+                      src={user?.profileImage}
+                      bg={user?.profileImage ? 'transparent' : `${getRoleBadgeColor(user?.role)}.500`}
+                    />
+                  </HStack>
+                </HStack>
+              </Box>
+            </Flex>
+
+            {/* Desktop: Sidebar Toggle + Logo Section */}
+            <Box flex="1" display={{ base: "none", md: "block" }}>
+              <HStack spacing={3}>
+                {/* Sidebar Toggle Button */}
+                <Tooltip label={isSidebarVisible ? "Hide Sidebar" : "Show Sidebar"} placement="bottom">
+                  <IconButton
+                    icon={isSidebarVisible ? <ChevronLeftIcon boxSize={6} /> : <ChevronRightIcon boxSize={6} />}
+                    aria-label={isSidebarVisible ? "Hide sidebar" : "Show sidebar"}
+                    onClick={toggleSidebar}
+                    variant="ghost"
+                    colorScheme="brand"
+                    size="md"
+                  />
+                </Tooltip>
+                
+                {/* Logo */}
+                <Box 
+                  cursor="pointer"
+                  onClick={navigateToDashboard}
+                >
+                  <Text fontSize={{ base: "lg", md: "2xl" }} fontWeight="bold" color="brand.600">
+                    TransportHub
+                  </Text>
+                  <Text fontSize="xs" color="secondary.600" mt="-1">
                     Transportation Management
                   </Text>
                 </Box>
               </HStack>
-            </Box>
-
-            {/* Desktop: Logo Section */}
-            <Box flex="1" display={{ base: "none", md: "block" }}>
-              <Box 
-                cursor="pointer"
-                onClick={() => {
-                  if (user?.role === 'admin') {
-                    window.location.href = '/admin/overview';
-                  } else {
-                    window.location.href = '/dashboard';
-                  }
-                }}
-              >
-                <Text fontSize={{ base: "lg", md: "2xl" }} fontWeight="bold" color="green.600">
-                  TransportHub
-                </Text>
-                <Text fontSize="xs" color="green.500" mt="-1">
-                  Transportation Management
-                </Text>
-              </Box>
             </Box>
 
             {/* Center: Page Title (Hidden on mobile) */}
@@ -138,13 +275,16 @@ const Navbar = ({ title }) => {
                   <Avatar
                     size="xs"
                     name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-                    bg={`${getRoleBadgeColor(user?.role)}.500`}
+                    src={user?.profileImage}
+                    bg={user?.profileImage ? 'transparent' : `${getRoleBadgeColor(user?.role)}.500`}
                   />
                   <Text fontSize="sm" color="gray.600">
                     {user ? `${user.firstName} ${user.lastName}` : 'User'}
                   </Text>
-                  <Badge 
-                    colorScheme={getRoleBadgeColor(user?.role)} 
+                  
+                  {/* Role Badge (static display) */}
+                  <Badge
+                    colorScheme={getRoleBadgeColor(user?.role)}
                     variant="subtle"
                     fontSize="xs"
                   >
@@ -154,28 +294,59 @@ const Navbar = ({ title }) => {
               </VStack>
             </Box>
 
-            {/* Right: Account Settings */}
-            <Box flex="1">
-              <Flex justify="flex-end">
+            {/* Right: Account Settings (Desktop Only) */}
+            <Box flex="1" display={{ base: "none", md: "block" }}>
+              <Flex justify="flex-end" align="center" gap={3}>
+                {/* Notifications Bell Icon */}
+                <Tooltip label="Notifications" placement="bottom">
+                  <Box position="relative">
+                    <IconButton
+                      icon={<Box as={BellIconOutline} w={6} h={6} />}
+                      aria-label="Notifications"
+                      onClick={() => navigate('/notifications')}
+                      variant="ghost"
+                      colorScheme="brand"
+                      size="md"
+                      position="relative"
+                    />
+                    {unreadCount > 0 && (
+                      <Badge
+                        position="absolute"
+                        top="-1"
+                        right="-1"
+                        colorScheme="red"
+                        borderRadius="full"
+                        fontSize="xs"
+                        minW="20px"
+                        h="20px"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </Badge>
+                    )}
+                  </Box>
+                </Tooltip>
+
+                {/* Account Settings Menu */}
                 <Menu>
                   <MenuButton
                     as={Button}
                     leftIcon={<SettingsIcon />}
                     rightIcon={<ChevronDownIcon />}
                     variant="outline"
-                    colorScheme="green"
-                    size={{ base: "sm", md: "md" }}
-                    bg="green.100"
-                    _hover={{ bg: "green.200" }}
-                    _active={{ bg: "green.300" }}
+                    colorScheme="brand"
+                    size="md"
+                    bg="brand.100"
+                    _hover={{ bg: "brand.200" }}
+                    _active={{ bg: "brand.300" }}
                   >
-                    <Text display={{ base: 'none', md: 'block' }}>
-                      Account Settings
-                    </Text>
+                    Account Settings
                   </MenuButton>
-                  <MenuList border="1px" borderColor="green.200" shadow="lg">
+                  <MenuList border="1px" borderColor="brand.200" shadow="lg">
                     <MenuItem 
-                      icon={<Avatar size="xs" name={user ? `${user.firstName} ${user.lastName}` : 'User'} />}
+                      icon={<Avatar size="xs" name={user ? `${user.firstName} ${user.lastName}` : 'User'} src={user?.profileImage} bg={user?.profileImage ? 'transparent' : 'blue.500'} />}
                       _hover={{ bg: "green.50" }}
                     >
                       <VStack align="start" spacing={0}>
@@ -188,7 +359,7 @@ const Navbar = ({ title }) => {
                       </VStack>
                     </MenuItem>
                     <MenuDivider />
-                    <MenuItem _hover={{ bg: "green.50" }}>
+                    <MenuItem _hover={{ bg: "green.50" }} onClick={() => navigate('/profile')}>
                       Profile Settings
                     </MenuItem>
                     <MenuItem _hover={{ bg: "green.50" }}>
@@ -208,37 +379,6 @@ const Navbar = ({ title }) => {
                   </MenuList>
                 </Menu>
               </Flex>
-            </Box>
-
-            {/* Mobile: User Info + Menu */}
-            <Box display={{ base: "flex", md: "none" }} alignItems="center" ml="auto">
-              <HStack spacing={2}>
-                <VStack spacing={0} align="end">
-                  <Text fontSize="xs" fontWeight="medium" color="gray.700">
-                    {user ? `${user.firstName} ${user.lastName}` : 'User'}
-                  </Text>
-                  <Badge 
-                    colorScheme={getRoleBadgeColor(user?.role)} 
-                    variant="subtle"
-                    fontSize="xs"
-                  >
-                    {user ? getRoleDisplayName(user.role) : 'Role'}
-                  </Badge>
-                </VStack>
-                <Avatar
-                  size="sm"
-                  name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-                  bg={`${getRoleBadgeColor(user?.role)}.500`}
-                />
-                <IconButton
-                  size="sm"
-                  icon={<SettingsIcon />}
-                  aria-label="Account Settings"
-                  variant="ghost"
-                  colorScheme="green"
-                  onClick={handleLogout}
-                />
-              </HStack>
             </Box>
 
           </Flex>

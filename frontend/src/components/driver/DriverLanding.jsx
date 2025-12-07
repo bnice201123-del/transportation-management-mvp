@@ -132,7 +132,7 @@ const DriverLanding = () => {
       setIsAvailable(available);
       toast({
         title: 'Success',
-        description: `You are now ${available ? 'available' : 'unavailable'} for trips`,
+        description: `You are now ${available ? 'Available' : 'Busy'} for trips`,
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -206,7 +206,7 @@ const DriverLanding = () => {
 
   const updateDriverLocation = useCallback(async (location) => {
     try {
-      await axios.patch(`/users/${user._id}/location`, location);
+      await axios.patch(`/api/users/${user._id}/location`, location);
     } catch (err) {
       console.error('Error updating location:', err);
     }
@@ -222,12 +222,19 @@ const DriverLanding = () => {
           };
           setCurrentLocation(location);
           updateDriverLocation(location);
+          toast({
+            title: 'Location Updated',
+            description: 'Your location has been saved successfully',
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+          });
         },
         (error) => {
           console.error('Error getting location:', error);
           toast({
             title: 'Location Error',
-            description: 'Unable to get your current location',
+            description: 'Unable to get your current location. Please check permissions.',
             status: 'warning',
             duration: 3000,
             isClosable: true,
@@ -236,12 +243,6 @@ const DriverLanding = () => {
       );
     }
   }, [toast, updateDriverLocation]);
-
-  const openGoogleMaps = (address) => {
-    const encodedAddress = encodeURIComponent(address);
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-    window.open(url, '_blank');
-  };
 
   const submitReport = async () => {
     if (!reportType || !reportDescription) {
@@ -256,7 +257,7 @@ const DriverLanding = () => {
     }
 
     try {
-      await axios.post('/reports', {
+      await axios.post('/api/reports', {
         type: reportType,
         description: reportDescription,
         submittedBy: user._id,
@@ -397,8 +398,8 @@ const DriverLanding = () => {
                     <CardBody>
                       <Grid templateColumns={{ base: '1fr', md: 'repeat(4, 1fr)' }} gap={6}>
                         <VStack>
-                          <Text fontSize="2xl" fontWeight="bold" color={isAvailable ? 'green.500' : 'red.500'}>
-                            {isAvailable ? 'AVAILABLE' : 'UNAVAILABLE'}
+                          <Text fontSize="2xl" fontWeight="bold" color={isAvailable ? 'green.500' : 'orange.500'}>
+                            {isAvailable ? 'Available' : 'Busy'}
                           </Text>
                           <FormControl display="flex" alignItems="center">
                             <FormLabel htmlFor="availability" mb="0">
@@ -501,14 +502,6 @@ const DriverLanding = () => {
                                       <Text fontSize="sm" mb={2}>
                                         {trip.pickupLocation.address}
                                       </Text>
-                                      <Button
-                                        leftIcon={<SearchIcon />}
-                                        size="sm"
-                                        colorScheme="green"
-                                        onClick={() => openGoogleMaps(trip.pickupLocation.address)}
-                                      >
-                                        Navigate
-                                      </Button>
                                     </Box>
 
                                     <Box>
@@ -518,14 +511,6 @@ const DriverLanding = () => {
                                       <Text fontSize="sm" mb={2}>
                                         {trip.dropoffLocation.address}
                                       </Text>
-                                      <Button
-                                        leftIcon={<SearchIcon />}
-                                        size="sm"
-                                        colorScheme="red"
-                                        onClick={() => openGoogleMaps(trip.dropoffLocation.address)}
-                                      >
-                                        Navigate
-                                      </Button>
                                     </Box>
                                   </Grid>
 

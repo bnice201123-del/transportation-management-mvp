@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Input, Box, List, ListItem, Text, Spinner } from '@chakra-ui/react';
+import { loadGoogleMapsAPI } from '../../utils/googleMapsLoader';
 
 const PlacesAutocomplete = ({ 
   onPlaceSelected, 
@@ -9,48 +10,69 @@ const PlacesAutocomplete = ({
   size = "md",
   isRequired = false,
   restrictions = { country: 'us' }, // Restrict to US by default
-  types = ['geocode'], // address, establishment, geocode
   ...inputProps 
 }) => {
   const inputRef = useRef();
-  const autocompleteRef = useRef();
   const [predictions, setPredictions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showPredictions, setShowPredictions] = useState(false);
 
   useEffect(() => {
-    if (window.google && window.google.maps && window.google.maps.places) {
-      // Initialize autocomplete service
-      autocompleteRef.current = new window.google.maps.places.AutocompleteService();
-    }
+    const initializeAutocomplete = async () => {
+      try {
+        await loadGoogleMapsAPI();
+        // No need to initialize a service - we'll use the new API directly
+      } catch (error) {
+        console.error('Failed to load Google Maps API:', error);
+      }
+    };
+
+    initializeAutocomplete();
   }, []);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = async (e) => {
     const inputValue = e.target.value;
     if (onChange) {
       onChange(inputValue);
     }
 
-    if (inputValue.length > 2 && autocompleteRef.current) {
+    if (inputValue.length > 2 && window.google?.maps?.places) {
       setIsLoading(true);
       
-      autocompleteRef.current.getPlacePredictions(
-        {
+      try {
+        // Use the new AutocompleteSuggestion API
+        const request = {
           input: inputValue,
-          componentRestrictions: restrictions,
-          types: types
-        },
-        (predictions, status) => {
-          setIsLoading(false);
-          if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-            setPredictions(predictions);
-            setShowPredictions(true);
-          } else {
-            setPredictions([]);
-            setShowPredictions(false);
-          }
+          includedRegionCodes: restrictions?.country ? [restrictions.country.toUpperCase()] : ['US'],
+          locationRestriction: restrictions?.location || undefined,
+        };
+
+        // Use the new fetchAutocompleteSuggestions method
+        const { suggestions } = await window.google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+        
+        setIsLoading(false);
+        if (suggestions && suggestions.length > 0) {
+          // Transform suggestions to match our expected format
+          const transformedPredictions = suggestions.map(suggestion => ({
+            place_id: suggestion.placePrediction.placeId,
+            description: suggestion.placePrediction.text.text,
+            structured_formatting: {
+              main_text: suggestion.placePrediction.text.text.split(',')[0],
+              secondary_text: suggestion.placePrediction.text.text.split(',').slice(1).join(',').trim()
+            }
+          }));
+          setPredictions(transformedPredictions);
+          setShowPredictions(true);
+        } else {
+          setPredictions([]);
+          setShowPredictions(false);
         }
-      );
+      } catch (error) {
+        console.error('Error fetching autocomplete suggestions:', error);
+        setIsLoading(false);
+        setPredictions([]);
+        setShowPredictions(false);
+      }
     } else {
       setPredictions([]);
       setShowPredictions(false);

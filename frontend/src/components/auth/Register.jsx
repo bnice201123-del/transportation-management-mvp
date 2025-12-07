@@ -17,10 +17,21 @@ import {
   Container,
   Select,
   Grid,
-  GridItem
+  GridItem,
+  FormErrorMessage
 } from '@chakra-ui/react';
 import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from "../../contexts/AuthContext";
+import { 
+  formatPhoneNumber, 
+  getRawPhoneNumber,
+  formatNameInput,
+  isValidPhoneNumber,
+  isValidEmail,
+  validateName,
+  isEmpty
+} from '../../utils/inputValidation';
+import { useMobileKeyboard } from '../../hooks/useMobileKeyboard';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -33,11 +44,55 @@ const Register = () => {
     role: 'driver',
     licenseNumber: ''
   });
+  const [touched, setTouched] = useState({});
   const [error, setError] = useState('');
   const { register, isLoading } = useAuth();
+  
+  // Mobile keyboard handling
+  const { handleInputFocus, handleInputBlur } = useMobileKeyboard();
+
+  // Validation helpers
+  const firstNameValidation = validateName(formData.firstName, 'First name');
+  const isFirstNameInvalid = touched.firstName && !firstNameValidation.isValid;
+
+  const lastNameValidation = validateName(formData.lastName, 'Last name');
+  const isLastNameInvalid = touched.lastName && !lastNameValidation.isValid;
+
+  const emailValidation = isValidEmail(formData.email);
+  const isEmailInvalid = touched.email && !emailValidation.isValid;
+
+  const phoneValidation = isValidPhoneNumber(formData.phone);
+  const isPhoneInvalid = touched.phone && !isEmpty(formData.phone) && !phoneValidation.isValid;
+
+  const isPasswordEmpty = isEmpty(formData.password);
+  const isPasswordTooShort = !isPasswordEmpty && formData.password.length < 6;
+  const isPasswordInvalid = touched.password && (isPasswordEmpty || isPasswordTooShort);
+  const passwordError = isPasswordEmpty ? 'Password is required' : 'Password must be at least 6 characters long';
+
+  const isConfirmPasswordInvalid = touched.confirmPassword && formData.password !== formData.confirmPassword;
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Validation for name fields - only allow letters, spaces, hyphens, and apostrophes
+    if (name === 'firstName' || name === 'lastName') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: formatNameInput(value)
+      }));
+      return;
+    }
+    
+    // Validation for phone field - format as (XXX) XXX-XXXX
+    if (name === 'phone') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: formatPhoneNumber(value)
+      }));
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -48,14 +103,50 @@ const Register = () => {
     e.preventDefault();
     setError('');
 
-    // Validation
-    if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
-      setError('Please fill in all required fields');
+    // Mark all fields as touched
+    setTouched({
+      email: true,
+      password: true,
+      confirmPassword: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      licenseNumber: true
+    });
+
+    // Validate first name
+    const firstNameValidation = validateName(formData.firstName, 'First name');
+    if (!firstNameValidation.isValid) {
+      setError(firstNameValidation.error);
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    // Validate last name
+    const lastNameValidation = validateName(formData.lastName, 'Last name');
+    if (!lastNameValidation.isValid) {
+      setError(lastNameValidation.error);
+      return;
+    }
+
+    // Validate email
+    const emailValidation = isValidEmail(formData.email);
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error);
+      return;
+    }
+
+    // Validate phone (optional but must be valid if provided)
+    if (!isEmpty(formData.phone)) {
+      const phoneValidation = isValidPhoneNumber(formData.phone);
+      if (!phoneValidation.isValid) {
+        setError(phoneValidation.error);
+        return;
+      }
+    }
+
+    // Validate password
+    if (isEmpty(formData.password)) {
+      setError('Password is required');
       return;
     }
 
@@ -64,19 +155,31 @@ const Register = () => {
       return;
     }
 
+    // Validate password confirmation
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    // Validate driver-specific fields
+    if (formData.role === 'driver' && isEmpty(formData.licenseNumber)) {
+      setError('License number is required for drivers');
+      return;
+    }
+
     // Prepare data for submission
     const userData = {
-      email: formData.email,
+      email: formData.email.trim(),
       password: formData.password,
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      phone: formData.phone,
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      phone: getRawPhoneNumber(formData.phone), // Store raw phone number
       role: formData.role
     };
 
     // Add driver-specific fields if role is driver
     if (formData.role === 'driver') {
-      userData.licenseNumber = formData.licenseNumber;
+      userData.licenseNumber = formData.licenseNumber.trim();
     }
 
     const result = await register(userData);
@@ -115,49 +218,82 @@ const Register = () => {
                 <VStack spacing={4}>
                   <Grid templateColumns="repeat(2, 1fr)" gap={4} width="100%">
                     <GridItem>
-                      <FormControl isRequired>
+                      <FormControl isRequired isInvalid={isFirstNameInvalid}>
                         <FormLabel>First Name</FormLabel>
                         <Input
                           name="firstName"
                           value={formData.firstName}
                           onChange={handleChange}
+                          onFocus={handleInputFocus}
+                          onBlur={(e) => {
+                            setTouched(prev => ({ ...prev, firstName: true }));
+                            handleInputBlur(e);
+                          }}
                           placeholder="First name"
                         />
+                        <FormErrorMessage>
+                          {firstNameValidation.error}
+                        </FormErrorMessage>
                       </FormControl>
                     </GridItem>
                     <GridItem>
-                      <FormControl isRequired>
+                      <FormControl isRequired isInvalid={isLastNameInvalid}>
                         <FormLabel>Last Name</FormLabel>
                         <Input
                           name="lastName"
                           value={formData.lastName}
                           onChange={handleChange}
+                          onFocus={handleInputFocus}
+                          onBlur={(e) => {
+                            setTouched(prev => ({ ...prev, lastName: true }));
+                            handleInputBlur(e);
+                          }}
                           placeholder="Last name"
                         />
+                        <FormErrorMessage>
+                          {lastNameValidation.error}
+                        </FormErrorMessage>
                       </FormControl>
                     </GridItem>
                   </Grid>
 
-                  <FormControl isRequired>
+                  <FormControl isRequired isInvalid={isEmailInvalid}>
                     <FormLabel>Email</FormLabel>
                     <Input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, email: true }));
+                        handleInputBlur(e);
+                      }}
                       placeholder="Enter your email"
                     />
+                    <FormErrorMessage>
+                      {emailValidation.error}
+                    </FormErrorMessage>
                   </FormControl>
 
-                  <FormControl>
+                  <FormControl isInvalid={isPhoneInvalid}>
                     <FormLabel>Phone</FormLabel>
                     <Input
                       type="tel"
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      placeholder="Phone number"
+                      onFocus={handleInputFocus}
+                      onBlur={(e) => {
+                        setTouched(prev => ({ ...prev, phone: true }));
+                        handleInputBlur(e);
+                      }}
+                      placeholder="(555) 123-4567"
+                      maxLength={14}
                     />
+                    <FormErrorMessage>
+                      {phoneValidation.error}
+                    </FormErrorMessage>
                   </FormControl>
 
                   <FormControl isRequired>
@@ -187,27 +323,43 @@ const Register = () => {
 
                   <Grid templateColumns="repeat(2, 1fr)" gap={4} width="100%">
                     <GridItem>
-                      <FormControl isRequired>
+                      <FormControl isRequired isInvalid={isPasswordInvalid}>
                         <FormLabel>Password</FormLabel>
                         <Input
                           type="password"
                           name="password"
                           value={formData.password}
                           onChange={handleChange}
+                          onFocus={handleInputFocus}
+                          onBlur={(e) => {
+                            setTouched(prev => ({ ...prev, password: true }));
+                            handleInputBlur(e);
+                          }}
                           placeholder="Enter your password"
                         />
+                        <FormErrorMessage>
+                          {passwordError}
+                        </FormErrorMessage>
                       </FormControl>
                     </GridItem>
                     <GridItem>
-                      <FormControl isRequired>
+                      <FormControl isRequired isInvalid={isConfirmPasswordInvalid}>
                         <FormLabel>Confirm Password</FormLabel>
                         <Input
                           type="password"
                           name="confirmPassword"
                           value={formData.confirmPassword}
                           onChange={handleChange}
+                          onFocus={handleInputFocus}
+                          onBlur={(e) => {
+                            setTouched(prev => ({ ...prev, confirmPassword: true }));
+                            handleInputBlur(e);
+                          }}
                           placeholder="Confirm your password"
                         />
+                        <FormErrorMessage>
+                          Passwords do not match
+                        </FormErrorMessage>
                       </FormControl>
                     </GridItem>
                   </Grid>

@@ -1,7 +1,181 @@
 import { extendTheme } from '@chakra-ui/react';
 
+// Color mode configuration
+const config = {
+  initialColorMode: "light",
+  useSystemColorMode: false,
+};
+
+// Brand color palette - Custom Theme Colors
+const colors = {
+  brand: {
+    50:  "#e6f2fb",
+    100: "#c2dcf3",
+    200: "#9dc6eb",
+    300: "#77afe3",
+    400: "#529adb",
+    500: "#3674B5", // main brand blue
+    600: "#2c5d91",
+    700: "#22466d",
+    800: "#182f49",
+    900: "#0e1825",
+  },
+  secondary: {
+    50:  "#eef6ea",
+    100: "#d4e7cb",
+    200: "#b9d8ab",
+    300: "#9eca8c",
+    400: "#84bb6c",
+    500: "#3E7B27", // main secondary green
+    600: "#326220",
+    700: "#254918",
+    800: "#193110",
+    900: "#0c1808",
+  },
+  neutral: {
+    50:  "#f9fafb",
+    100: "#f3f4f6",
+    200: "#e5e7eb",
+    300: "#d1d5db",
+    400: "#9ca3af",
+    500: "#6b7280",
+    600: "#4b5563",
+    700: "#374151",
+    800: "#1f2933",
+    900: "#111827",
+  },
+  success: {
+    50:  "#ecfdf3",
+    100: "#d1fadf",
+    200: "#a6f4c5",
+    300: "#6ce9a6",
+    400: "#32d583",
+    500: "#12b76a",
+    600: "#039855",
+    700: "#027a48",
+    800: "#05603a",
+    900: "#054f31",
+  },
+  warning: {
+    50:  "#fffbeb",
+    100: "#fef3c7",
+    200: "#fde68a",
+    300: "#fcd34d",
+    400: "#fbbf24",
+    500: "#f59e0b",
+    600: "#d97706",
+    700: "#b45309",
+    800: "#92400e",
+    900: "#78350f",
+  },
+  error: {
+    50:  "#fef2f2",
+    100: "#fee2e2",
+    200: "#fecaca",
+    300: "#fca5a5",
+    400: "#f87171",
+    500: "#ef4444",
+    600: "#dc2626",
+    700: "#b91c1c",
+    800: "#991b1b",
+    900: "#7f1d1d",
+  },
+  info: {
+    50:  "#eff6ff",
+    100: "#dbeafe",
+    200: "#bfdbfe",
+    300: "#93c5fd",
+    400: "#60a5fa",
+    500: "#3b82f6",
+    600: "#2563eb",
+    700: "#1d4ed8",
+    800: "#1e40af",
+    900: "#1e3a8a",
+  },
+};
+
+// Semantic tokens for theming
+const semanticTokens = {
+  colors: {
+    // Page / layout backgrounds
+    "bg.page": {
+      default: "neutral.50",
+      _dark: "neutral.900",
+    },
+    "bg.card": {
+      default: "white",
+      _dark: "neutral.800",
+    },
+    "bg.subtle": {
+      default: "neutral.100",
+      _dark: "neutral.700",
+    },
+
+    // Borders
+    "border.subtle": {
+      default: "neutral.200",
+      _dark: "neutral.700",
+    },
+
+    // Text
+    "text.main": {
+      default: "neutral.800",
+      _dark: "neutral.50",
+    },
+    "text.muted": {
+      default: "neutral.500",
+      _dark: "neutral.300",
+    },
+    "text.invert": {
+      default: "white",
+      _dark: "neutral.900",
+    },
+
+    // Buttons
+    "btn.primary.bg": {
+      default: "brand.500",
+      _dark: "brand.400",
+    },
+    "btn.primary.hover": {
+      default: "brand.600",
+      _dark: "brand.300",
+    },
+    "btn.primary.text": {
+      default: "white",
+      _dark: "neutral.900",
+    },
+
+    "btn.secondary.bg": {
+      default: "secondary.500",
+      _dark: "secondary.400",
+    },
+    "btn.secondary.hover": {
+      default: "secondary.600",
+      _dark: "secondary.300",
+    },
+
+    // Inputs
+    "input.bg": {
+      default: "white",
+      _dark: "neutral.800",
+    },
+    "input.border": {
+      default: "neutral.300",
+      _dark: "neutral.600",
+    },
+    "input.placeholder": {
+      default: "neutral.400",
+      _dark: "neutral.500",
+    },
+  },
+};
+
 // Custom theme with responsive design focus
 const theme = extendTheme({
+  config,
+  colors,
+  semanticTokens,
+  
   // Responsive breakpoints
   breakpoints: {
     base: '0em',     // 0px
@@ -17,7 +191,8 @@ const theme = extendTheme({
     global: {
       // Responsive body styles
       body: {
-        bg: 'gray.50',
+        bg: 'bg.page',
+        color: 'text.main',
         fontSize: { base: 'sm', md: 'md' },
         lineHeight: '1.6',
         overflowX: 'hidden'
@@ -28,19 +203,19 @@ const theme = extendTheme({
         width: { base: '4px', md: '6px' },
       },
       '*::-webkit-scrollbar-track': {
-        bg: 'gray.100',
+        bg: 'bg.subtle',
       },
       '*::-webkit-scrollbar-thumb': {
-        bg: 'gray.300',
+        bg: 'neutral.300',
         borderRadius: 'full',
       },
       '*::-webkit-scrollbar-thumb:hover': {
-        bg: 'gray.400',
+        bg: 'neutral.400',
       },
     },
   },
 
-  // Component styles with responsive defaults
+  // Component styles with enhanced theming
   components: {
     // Container component
     Container: {
@@ -50,11 +225,16 @@ const theme = extendTheme({
       },
     },
     
-    // Card component
+    // Card component with new theme
     Card: {
       baseStyle: {
+        container: {
+          bg: 'bg.card',
+          borderRadius: 'xl',
+          borderWidth: '1px',
+          borderColor: 'border.subtle',
+        },
         shadow: { base: 'sm', md: 'md' },
-        borderRadius: { base: 'md', md: 'lg' },
         overflow: 'hidden',
       },
       variants: {
@@ -69,14 +249,37 @@ const theme = extendTheme({
       },
     },
     
-    // Button component
+    // Button component with new theme
     Button: {
       baseStyle: {
-        fontWeight: 'medium',
-        borderRadius: { base: 'md', md: 'lg' },
+        borderRadius: 'xl',
+        fontWeight: 'semibold',
         fontSize: { base: 'sm', md: 'md' },
         _focus: {
           boxShadow: 'outline',
+        },
+      },
+      variants: {
+        solid: {
+          bg: 'btn.primary.bg',
+          color: 'btn.primary.text',
+          _hover: {
+            bg: 'btn.primary.hover',
+          },
+        },
+        outline: {
+          borderColor: 'border.subtle',
+          color: 'text.main',
+          _hover: {
+            bg: 'bg.subtle',
+          },
+        },
+        secondary: {
+          bg: 'btn.secondary.bg',
+          color: 'btn.primary.text',
+          _hover: {
+            bg: 'btn.secondary.hover',
+          },
         },
       },
       sizes: {
@@ -181,8 +384,26 @@ const theme = extendTheme({
       },
     },
     
-    // Input component
+    // Input component with new theme
     Input: {
+      variants: {
+        outline: {
+          field: {
+            bg: 'input.bg',
+            borderColor: 'input.border',
+            _placeholder: {
+              color: 'input.placeholder',
+            },
+            _hover: {
+              borderColor: 'brand.400',
+            },
+            _focusVisible: {
+              borderColor: 'brand.500',
+              boxShadow: '0 0 0 1px var(--chakra-colors-brand-500)',
+            },
+          },
+        },
+      },
       sizes: {
         responsive: {
           field: {
@@ -243,22 +464,6 @@ const theme = extendTheme({
     72: '18rem',
     80: '20rem',
     96: '24rem',
-  },
-
-  // Enhanced color palette
-  colors: {
-    brand: {
-      50: '#e8f5e8',
-      100: '#c1e4c1',
-      200: '#97d297',
-      300: '#6cbf6c',
-      400: '#4cb04c',
-      500: '#2d9b2d',
-      600: '#258b25',
-      700: '#1c7a1c',
-      800: '#136913',
-      900: '#0a4d0a',
-    },
   },
 
   // Responsive font sizes

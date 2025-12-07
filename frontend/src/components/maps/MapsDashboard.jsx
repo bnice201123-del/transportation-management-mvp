@@ -6,6 +6,7 @@ import {
   VStack,
   HStack,
   Button,
+  ButtonGroup,
   Card,
   CardBody,
   CardHeader,
@@ -29,7 +30,8 @@ const MapsDashboard = () => {
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [routeInfo, setRouteInfo] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     fetchTrips();
@@ -95,10 +97,44 @@ const MapsDashboard = () => {
       <Container maxW="8xl" py={8}>
         <VStack spacing={6} align="stretch">
           <Box>
-            <Heading size="lg" mb={2}>Trip Maps Dashboard</Heading>
-            <Text color="gray.600">
-              View and track transportation trips with real-time mapping and routing
-            </Text>
+            <Flex justify="space-between" align="center" direction={{ base: "column", md: "row" }} gap={4}>
+              <Box>
+                <Heading size="lg" mb={2}>Trip Maps Dashboard</Heading>
+                <Text color="gray.600">
+                  View and track transportation trips with real-time mapping and routing
+                </Text>
+              </Box>
+              
+              {/* View Mode Toggle */}
+              <HStack spacing={2}>
+                <Text fontSize="sm" color="gray.600">View:</Text>
+                <ButtonGroup size="sm" isAttached variant="outline">
+                  <IconButton
+                    icon={<ViewIcon />}
+                    aria-label="Split view"
+                    colorScheme={viewMode === 'split' ? 'blue' : 'gray'}
+                    onClick={() => setViewMode('split')}
+                    title="Split View"
+                  />
+                  <Button
+                    size="sm"
+                    variant={viewMode === 'map-only' ? 'solid' : 'outline'}
+                    colorScheme={viewMode === 'map-only' ? 'blue' : 'gray'}
+                    onClick={() => setViewMode('map-only')}
+                  >
+                    Map Only
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={viewMode === 'list-only' ? 'solid' : 'outline'}
+                    colorScheme={viewMode === 'list-only' ? 'blue' : 'gray'}
+                    onClick={() => setViewMode('list-only')}
+                  >
+                    List Only
+                  </Button>
+                </ButtonGroup>
+              </HStack>
+            </Flex>
           </Box>
 
           {error && (
@@ -108,100 +144,110 @@ const MapsDashboard = () => {
             </Alert>
           )}
 
-          <Grid templateColumns={{ base: "1fr", xl: "300px 1fr" }} gap={6}>
-            {/* Trip List Sidebar */}
-            <GridItem>
-              <Card>
-                <CardHeader>
-                  <HStack justify="space-between">
-                    <Heading size="md">Trips</Heading>
-                    <Button size="sm" leftIcon={<RepeatIcon />} onClick={fetchTrips}>
-                      Refresh
-                    </Button>
-                  </HStack>
-                </CardHeader>
-                <CardBody>
-                  <VStack spacing={3} align="stretch">
-                    {trips.length === 0 ? (
-                      <Text color="gray.500" textAlign="center" py={4}>
-                        No trips with coordinates found
-                      </Text>
-                    ) : (
-                      trips.map((trip) => (
-                        <Card
-                          key={trip._id}
-                          variant={selectedTrip?._id === trip._id ? "filled" : "outline"}
-                          cursor="pointer"
-                          onClick={() => handleTripSelect(trip)}
-                          _hover={{ shadow: "md" }}
-                          size="sm"
-                        >
-                          <CardBody p={3}>
-                            <VStack align="start" spacing={1}>
-                              <HStack justify="space-between" w="100%">
-                                <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
-                                  {trip.riderName}
-                                </Text>
-                                <Badge 
-                                  colorScheme={getStatusColor(trip.status)} 
-                                  size="xs"
-                                >
-                                  {trip.status}
-                                </Badge>
-                              </HStack>
-                              
-                              <Text fontSize="xs" color="gray.600" noOfLines={1}>
-                                📍 {trip.pickupLocation.address}
-                              </Text>
-                              
-                              <Text fontSize="xs" color="gray.600" noOfLines={1}>
-                                🏁 {trip.dropoffLocation.address}
-                              </Text>
-                              
-                              {trip.scheduledDateTime && (
-                                <Text fontSize="xs" color="blue.600">
-                                  {new Date(trip.scheduledDateTime).toLocaleDateString()} at{' '}
-                                  {new Date(trip.scheduledDateTime).toLocaleTimeString([], {
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
-                                </Text>
-                              )}
-                            </VStack>
-                          </CardBody>
-                        </Card>
-                      ))
-                    )}
-                  </VStack>
-                </CardBody>
-              </Card>
-            </GridItem>
-
-            {/* Map Area */}
-            <GridItem>
-              {selectedTrip ? (
-                <TripMap
-                  trip={selectedTrip}
-                  height="600px"
-                  showRoute={true}
-                  showControls={true}
-                  onRouteCalculated={handleRouteCalculated}
-                />
-              ) : (
+          <Grid 
+            templateColumns={{
+              base: viewMode === 'list-only' ? "1fr" : viewMode === 'map-only' ? "1fr" : "1fr",
+              xl: viewMode === 'split' ? "300px 1fr" : "1fr"
+            }} 
+            gap={6}
+          >
+            {/* Trip List Sidebar - Hide in map-only mode */}
+            {(viewMode === 'split' || viewMode === 'list-only') && (
+              <GridItem display={{ base: viewMode === 'map-only' ? 'none' : 'block', xl: 'block' }}>
                 <Card>
+                  <CardHeader>
+                    <HStack justify="space-between">
+                      <Heading size="md">Trips</Heading>
+                      <Button size="sm" leftIcon={<RepeatIcon />} onClick={fetchTrips}>
+                        Refresh
+                      </Button>
+                    </HStack>
+                  </CardHeader>
                   <CardBody>
-                    <Center h="600px">
-                      <VStack>
-                        <ViewIcon boxSize={12} color="gray.400" />
-                        <Text color="gray.500" textAlign="center">
-                          Select a trip from the list to view it on the map
+                    <VStack spacing={3} align="stretch" maxH={{ base: "300px", md: "500px" }} overflowY="auto">
+                      {trips.length === 0 ? (
+                        <Text color="gray.500" textAlign="center" py={4}>
+                          No trips with coordinates found
                         </Text>
-                      </VStack>
-                    </Center>
+                      ) : (
+                        trips.map((trip) => (
+                          <Card
+                            key={trip._id}
+                            variant={selectedTrip?._id === trip._id ? "filled" : "outline"}
+                            cursor="pointer"
+                            onClick={() => handleTripSelect(trip)}
+                            _hover={{ shadow: "md" }}
+                            size="sm"
+                          >
+                            <CardBody p={3}>
+                              <VStack align="start" spacing={1}>
+                                <HStack justify="space-between" w="100%">
+                                  <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
+                                    {trip.riderName}
+                                  </Text>
+                                  <Badge 
+                                    colorScheme={getStatusColor(trip.status)} 
+                                    size="xs"
+                                  >
+                                    {trip.status}
+                                  </Badge>
+                                </HStack>
+                                
+                                <Text fontSize="xs" color="gray.600" noOfLines={1}>
+                                  📍 {trip.pickupLocation.address}
+                                </Text>
+                                
+                                <Text fontSize="xs" color="gray.600" noOfLines={1}>
+                                  🏁 {trip.dropoffLocation.address}
+                                </Text>
+                                
+                                {trip.scheduledDateTime && (
+                                  <Text fontSize="xs" color="blue.600">
+                                    {new Date(trip.scheduledDateTime).toLocaleDateString()} at{' '}
+                                    {new Date(trip.scheduledDateTime).toLocaleTimeString([], {
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </Text>
+                                )}
+                              </VStack>
+                            </CardBody>
+                          </Card>
+                        ))
+                      )}
+                    </VStack>
                   </CardBody>
                 </Card>
-              )}
-            </GridItem>
+              </GridItem>
+            )}
+
+            {/* Map Area - Hide in list-only mode */}
+            {(viewMode === 'split' || viewMode === 'map-only') && (
+              <GridItem display={{ base: viewMode === 'list-only' ? 'none' : 'block', xl: 'block' }}>
+                {selectedTrip ? (
+                  <TripMap
+                    trip={selectedTrip}
+                    height={{ base: "400px", md: "600px" }}
+                    showRoute={true}
+                    showControls={true}
+                    onRouteCalculated={handleRouteCalculated}
+                  />
+                ) : (
+                  <Card>
+                    <CardBody>
+                      <Center h={{ base: "400px", md: "600px" }}>
+                        <VStack>
+                          <ViewIcon boxSize={12} color="gray.400" />
+                          <Text color="gray.500" textAlign="center">
+                            Select a trip from the list to view it on the map
+                          </Text>
+                        </VStack>
+                      </Center>
+                    </CardBody>
+                  </Card>
+                )}
+              </GridItem>
+            )}
           </Grid>
 
           {/* Route Statistics */}

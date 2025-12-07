@@ -87,18 +87,38 @@ const TripMap = ({
 
   // Calculate route when markers are set and showRoute is true
   useEffect(() => {
-    if (showRoute && markers.length === 2 && trip?.pickupLocation?.coordinates && trip?.dropoffLocation?.coordinates) {
-      const [pickupLng, pickupLat] = trip.pickupLocation.coordinates;
-      const [dropoffLng, dropoffLat] = trip.dropoffLocation.coordinates;
-      
-      calculateRoute(
-        { lat: pickupLat, lng: pickupLng },
-        { lat: dropoffLat, lng: dropoffLng }
-      );
-    } else {
-      clearRoute();
+    // Only calculate route if directionsRenderer is initialized
+    if (!directionsRenderer) {
+      return;
     }
-  }, [markers, showRoute, trip, calculateRoute, clearRoute]);
+
+    // Validate we have the required data
+    if (!showRoute || markers.length !== 2 || !trip?.pickupLocation?.coordinates || !trip?.dropoffLocation?.coordinates) {
+      clearRoute();
+      return;
+    }
+
+    // Check if Google Maps API is fully loaded
+    if (!window.google || !window.google.maps || !window.google.maps.TravelMode) {
+      console.warn('Google Maps API not fully loaded, skipping route calculation');
+      return;
+    }
+
+    const [pickupLng, pickupLat] = trip.pickupLocation.coordinates;
+    const [dropoffLng, dropoffLat] = trip.dropoffLocation.coordinates;
+    
+    // Validate coordinates are numbers
+    if (typeof pickupLat !== 'number' || typeof pickupLng !== 'number' || 
+        typeof dropoffLat !== 'number' || typeof dropoffLng !== 'number') {
+      console.warn('Invalid coordinates:', { pickupLat, pickupLng, dropoffLat, dropoffLng });
+      return;
+    }
+    
+    calculateRoute(
+      { lat: pickupLat, lng: pickupLng },
+      { lat: dropoffLat, lng: dropoffLng }
+    );
+  }, [markers, showRoute, trip, calculateRoute, clearRoute, directionsRenderer]);
 
   // Notify parent when route is calculated
   useEffect(() => {
@@ -116,11 +136,29 @@ const TripMap = ({
   };
 
   const handleToggleRoute = () => {
+    // Don't toggle if directions service isn't ready
+    if (!directionsRenderer) {
+      return;
+    }
+
+    // Check if Google Maps API is fully loaded
+    if (!window.google || !window.google.maps || !window.google.maps.TravelMode) {
+      console.warn('Google Maps API not fully loaded');
+      return;
+    }
+
     if (route) {
       clearRoute();
-    } else if (markers.length === 2) {
+    } else if (markers.length === 2 && trip?.pickupLocation?.coordinates && trip?.dropoffLocation?.coordinates) {
       const [pickupLng, pickupLat] = trip.pickupLocation.coordinates;
       const [dropoffLng, dropoffLat] = trip.dropoffLocation.coordinates;
+      
+      // Validate coordinates
+      if (typeof pickupLat !== 'number' || typeof pickupLng !== 'number' || 
+          typeof dropoffLat !== 'number' || typeof dropoffLng !== 'number') {
+        console.warn('Invalid coordinates for route calculation');
+        return;
+      }
       
       calculateRoute(
         { lat: pickupLat, lng: pickupLng },
@@ -143,23 +181,50 @@ const TripMap = ({
     );
   }
 
+  // Show loading state while Google Maps is initializing
+  if (!directionsRenderer && routeError) {
+    return (
+      <Card>
+        <CardBody>
+          <Alert status="error">
+            <AlertIcon />
+            {routeError}
+          </Alert>
+        </CardBody>
+      </Card>
+    );
+  }
+
+  if (!directionsRenderer) {
+    return (
+      <Card>
+        <CardBody>
+          <Box display="flex" alignItems="center" justifyContent="center" py={4}>
+            <Spinner size="md" mr={3} />
+            <Text>Initializing Google Maps...</Text>
+          </Box>
+        </CardBody>
+      </Card>
+    );
+  }
+
   return (
     <Box>
-      <VStack spacing={4} align="stretch">
-        {/* Trip Info Header */}
+      <VStack spacing={{ base: 3, md: 4 }} align="stretch">
+        {/* Trip Info Header - Responsive */}
         <Card>
-          <CardBody>
-            <HStack justify="space-between" align="center">
-              <VStack align="start" spacing={1}>
-                <Text fontWeight="bold" fontSize="lg">
+          <CardBody p={{ base: 3, md: 4 }}>
+            <HStack justify="space-between" align="center" flexWrap="wrap" gap={2}>
+              <VStack align="start" spacing={1} flex="1" minW={{ base: "200px", md: "auto" }}>
+                <Text fontWeight="bold" fontSize={{ base: "md", md: "lg" }} noOfLines={1}>
                   {trip.riderName || 'Unknown Rider'}
                 </Text>
-                <HStack>
-                  <Badge colorScheme={trip.status === 'scheduled' ? 'blue' : 'gray'}>
+                <HStack flexWrap="wrap" gap={2}>
+                  <Badge colorScheme={trip.status === 'scheduled' ? 'blue' : 'gray'} fontSize={{ base: "xs", md: "sm" }}>
                     {trip.status}
                   </Badge>
                   {trip.scheduledDateTime && (
-                    <Text fontSize="sm" color="gray.600">
+                    <Text fontSize={{ base: "xs", md: "sm" }} color="gray.600" noOfLines={1}>
                       {new Date(trip.scheduledDateTime).toLocaleString()}
                     </Text>
                   )}
@@ -167,17 +232,17 @@ const TripMap = ({
               </VStack>
 
               {showControls && (
-                <HStack>
-                  <Button size="sm" onClick={handleRecenterMap}>
+                <HStack spacing={{ base: 1, md: 2 }}>
+                  <Button size={{ base: "xs", md: "sm" }} onClick={handleRecenterMap}>
                     Recenter
                   </Button>
                   <Button 
-                    size="sm" 
+                    size={{ base: "xs", md: "sm" }}
                     variant="outline" 
                     onClick={handleToggleRoute}
                     isLoading={routeLoading}
                   >
-                    {route ? 'Hide Route' : 'Show Route'}
+                    {route ? 'Hide' : 'Show'}
                   </Button>
                 </HStack>
               )}
@@ -185,22 +250,22 @@ const TripMap = ({
           </CardBody>
         </Card>
 
-        {/* Route Info */}
+        {/* Route Info - Responsive */}
         {routeInfo && (
           <Card>
-            <CardBody>
-              <HStack justify="space-around" textAlign="center">
-                <VStack spacing={1}>
-                  <Text fontSize="2xl" fontWeight="bold" color="blue.500">
+            <CardBody p={{ base: 3, md: 4 }}>
+              <HStack justify="space-around" textAlign="center" spacing={{ base: 2, md: 4 }}>
+                <VStack spacing={1} flex="1">
+                  <Text fontSize={{ base: "lg", md: "2xl" }} fontWeight="bold" color="blue.500">
                     {routeInfo.distance}
                   </Text>
-                  <Text fontSize="sm" color="gray.600">Distance</Text>
+                  <Text fontSize={{ base: "xs", md: "sm" }} color="gray.600">Distance</Text>
                 </VStack>
-                <VStack spacing={1}>
-                  <Text fontSize="2xl" fontWeight="bold" color="green.500">
+                <VStack spacing={1} flex="1">
+                  <Text fontSize={{ base: "lg", md: "2xl" }} fontWeight="bold" color="green.500">
                     {routeInfo.duration}
                   </Text>
-                  <Text fontSize="sm" color="gray.600">Duration</Text>
+                  <Text fontSize={{ base: "xs", md: "sm" }} color="gray.600">Duration</Text>
                 </VStack>
               </HStack>
             </CardBody>
@@ -234,33 +299,33 @@ const TripMap = ({
           />
         </Box>
 
-        {/* Location Details */}
+        {/* Location Details - Responsive */}
         {trip.pickupLocation && trip.dropoffLocation && (
           <Card>
-            <CardBody>
-              <VStack spacing={3} align="stretch">
+            <CardBody p={{ base: 3, md: 4 }}>
+              <VStack spacing={{ base: 2, md: 3 }} align="stretch">
                 <Box>
-                  <Text fontWeight="semibold" color="blue.600" fontSize="sm">
+                  <Text fontWeight="semibold" color="blue.600" fontSize={{ base: "xs", md: "sm" }}>
                     PICKUP
                   </Text>
-                  <Text fontSize="sm">
+                  <Text fontSize={{ base: "xs", md: "sm" }} noOfLines={2}>
                     {trip.pickupLocation.address}
                   </Text>
                 </Box>
                 <Box>
-                  <Text fontWeight="semibold" color="orange.600" fontSize="sm">
+                  <Text fontWeight="semibold" color="orange.600" fontSize={{ base: "xs", md: "sm" }}>
                     DROPOFF
                   </Text>
-                  <Text fontSize="sm">
+                  <Text fontSize={{ base: "xs", md: "sm" }} noOfLines={2}>
                     {trip.dropoffLocation.address}
                   </Text>
                 </Box>
                 {trip.specialInstructions && (
                   <Box>
-                    <Text fontWeight="semibold" color="gray.600" fontSize="sm">
+                    <Text fontWeight="semibold" color="gray.600" fontSize={{ base: "xs", md: "sm" }}>
                       NOTES
                     </Text>
-                    <Text fontSize="sm" color="gray.600">
+                    <Text fontSize={{ base: "xs", md: "sm" }} color="gray.600" noOfLines={3}>
                       {trip.specialInstructions}
                     </Text>
                   </Box>

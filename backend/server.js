@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import connectDB from './config/database.js';
+import passport from './config/passport.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -12,6 +13,33 @@ import userRoutes from './routes/users.js';
 import analyticsRoutes from './routes/analytics.js';
 import recurringTripsRoutes from './routes/recurringTrips.js';
 import vehiclesRoutes from './routes/vehicles.js';
+import locationRoutes from './routes/locations.js';
+import activitiesRoutes from './routes/activities.js';
+import ridersRoutes from './routes/riders.js';
+import gpsTrackingRoutes from './routes/gpsTracking.js';
+import notificationsRoutes from './routes/notifications.js';
+import departureMonitoringRoutes from './routes/departureMonitoring.js';
+import tripMonitoringRoutes from './routes/tripMonitoring.js';
+import workScheduleRoutes from './routes/workSchedule.js';
+import adminRoutes from './routes/admin.js';
+import holidaysRoutes from './routes/holidays.js';
+import twoFactorRoutes from './routes/twoFactor.js';
+import phoneVerificationRoutes from './routes/phoneVerification.js';
+import oauthRoutes from './routes/oauth.js';
+import auditRoutes from './routes/audit.js';
+import gdprRoutes from './routes/gdpr.js';
+import rateLimitRoutes from './routes/rateLimit.js';
+import sessionsRoutes from './routes/sessions.js';
+import encryptionRoutes from './routes/encryption.js';
+import permissionsRoutes from './routes/permissions.js';
+import securityRoutes from './routes/security.js';
+import { globalLimiter } from './middleware/rateLimiter.js';
+
+// Import services
+import departureMonitoringService from './services/departureMonitoringService.js';
+import unassignedTripMonitoringService from './services/unassignedTripMonitoringService.js';
+import driverProgressMonitoringService from './services/driverProgressMonitoringService.js';
+import securityAlertingService from './services/securityAlertingService.js';
 
 // Load environment variables
 dotenv.config();
@@ -52,6 +80,12 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Initialize Passport
+app.use(passport.initialize());
+
+// Apply global rate limiter to all routes
+app.use(globalLimiter);
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/trips', tripRoutes);
@@ -59,6 +93,26 @@ app.use('/api/users', userRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/recurring-trips', recurringTripsRoutes);
 app.use('/api/vehicles', vehiclesRoutes);
+app.use('/api/locations', locationRoutes);
+app.use('/api/activities', activitiesRoutes);
+app.use('/api/riders', ridersRoutes);
+app.use('/api/gps', gpsTrackingRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/departure-monitoring', departureMonitoringRoutes);
+app.use('/api/trip-monitoring', tripMonitoringRoutes);
+app.use('/api/work-schedule', workScheduleRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/holidays', holidaysRoutes);
+app.use('/api/2fa', twoFactorRoutes);
+app.use('/api/phone-verification', phoneVerificationRoutes);
+app.use('/api/auth', oauthRoutes);
+app.use('/api/audit', auditRoutes);
+app.use('/api/gdpr', gdprRoutes);
+app.use('/api/rate-limit', rateLimitRoutes);
+app.use('/api/sessions', sessionsRoutes);
+app.use('/api/encryption', encryptionRoutes);
+app.use('/api/permissions', permissionsRoutes);
+app.use('/api/security', securityRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -134,6 +188,58 @@ process.on('uncaughtException', (err) => {
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
+  
+  // Start monitoring services
+  try {
+    departureMonitoringService.start();
+    console.log('✓ Departure monitoring service started');
+  } catch (error) {
+    console.error('Failed to start departure monitoring service:', error);
+  }
+  
+  try {
+    unassignedTripMonitoringService.start();
+    console.log('✓ Unassigned trip monitoring service started');
+  } catch (error) {
+    console.error('Failed to start unassigned trip monitoring service:', error);
+  }
+  
+  try {
+    driverProgressMonitoringService.start();
+    console.log('✓ Driver progress monitoring service started');
+  } catch (error) {
+    console.error('Failed to start driver progress monitoring service:', error);
+  }
+  
+  try {
+    securityAlertingService.start();
+    console.log('✓ Security alerting service started');
+  } catch (error) {
+    console.error('Failed to start security alerting service:', error);
+  }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  departureMonitoringService.stop();
+  unassignedTripMonitoringService.stop();
+  driverProgressMonitoringService.stop();
+  securityAlertingService.stop();
+  server.close(() => {
+    console.log('HTTP server closed');
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT signal received: closing HTTP server');
+  departureMonitoringService.stop();
+  unassignedTripMonitoringService.stop();
+  driverProgressMonitoringService.stop();
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
 });
 
 export { io };

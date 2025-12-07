@@ -229,3 +229,81 @@ html, body {
 .toast-container {
   z-index: 10000;
 }
+
+/* Safari-specific date picker fixes */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific styles */
+  input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 8px 12px;
+    background-color: white;
+    border: 1px solid #cbd5e0;
+    border-radius: 0.375rem;
+  }
+
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
+    padding-left: 4px;
+  }
+
+  /* Ensure calendar icon is visible and clickable */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 1;
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    padding: 4px;
+    background-size: 20px;
+  }
+
+  /* Fix date picker positioning on iOS */
+  input[type="date"]:focus {
+    outline: none;
+    border-color: #3182ce;
+    box-shadow: 0 0 0 1px #3182ce;
+  }
+}
+
+/* Safari desktop date picker fixes */
+@media not all and (hover: none) {
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 1;
+    cursor: pointer;
+    filter: brightness(0.8);
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    filter: brightness(0.6);
+  }
+}
+
+/* Fix for Safari date input layout issues */
+input[type="date"] {
+  display: block;
+  width: 100%;
+  position: relative;
+}
+
+/* Ensure date inputs work properly on all Safari versions */
+@supports (-webkit-hyphens:none) {
+  input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+  }
+
+  input[type="date"]::-webkit-datetime-edit {
+    padding: 0;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-text {
+    padding: 0 4px;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-month-field,
+  input[type="date"]::-webkit-datetime-edit-day-field,
+  input[type="date"]::-webkit-datetime-edit-year-field {
+    padding: 0 2px;
+  }
+}

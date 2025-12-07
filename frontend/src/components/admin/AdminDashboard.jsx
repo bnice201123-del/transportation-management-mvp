@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Container,
   Grid,
   Card,
   CardBody,
@@ -13,38 +12,17 @@ import {
   StatNumber,
   StatHelpText,
   StatArrow,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
   Spinner,
   Center,
   useToast,
-  useDisclosure,
   VStack,
   HStack,
   Badge,
-  Progress,
   Button,
-  ButtonGroup,
   IconButton,
   Flex,
-  Spacer,
-  Select,
-  Input,
-  InputGroup,
-  InputLeftElement,
   useColorModeValue,
   SimpleGrid,
-  Divider,
   Alert,
   AlertIcon,
   AlertTitle,
@@ -53,87 +31,72 @@ import {
   CircularProgressLabel,
   Tooltip,
   useBreakpointValue,
-  Stack,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  MenuDivider,
-  Icon
+  Icon,
+  Divider
 } from '@chakra-ui/react';
 import {
-  CalendarIcon,
-  SearchIcon,
-  DownloadIcon,
   RepeatIcon,
+  ExternalLinkIcon,
   SettingsIcon,
-  ViewIcon,
-  InfoIcon,
-  WarningIcon,
-  CheckCircleIcon,
-  TimeIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-  ChevronDownIcon,
-  ExternalLinkIcon
+  ViewIcon
 } from '@chakra-ui/icons';
 import {
-  FaCar,
-  FaUser,
   FaRoute,
-  FaChartLine,
-  FaExclamationTriangle,
-  FaClock,
-  FaMapMarkerAlt,
-  FaCalendarAlt,
   FaUsers,
   FaMoneyBillWave,
+  FaChartLine,
+  FaTachometerAlt,
+  FaCheckCircle,
+  FaClock,
+  FaExclamationTriangle,
+  FaCarAlt,
+  FaUserShield,
+  FaCalendarCheck,
   FaArrowUp,
   FaArrowDown,
-  FaEye,
-  FaFilter,
-  FaFileExport
+  FaFileAlt,
+  FaChartPie,
+  FaChartBar
 } from 'react-icons/fa';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../shared/Navbar';
-import TripManagementModal from '../scheduler/TripManagementModal';
+import UnifiedTripManagement from '../shared/UnifiedTripManagement';
 
 const AdminDashboard = () => {
   const [analytics, setAnalytics] = useState(null);
-  const [driverStats, setDriverStats] = useState([]);
-  const [recentTrips, setRecentTrips] = useState([]);
-  const [systemAlerts, setSystemAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [dateRange, setDateRange] = useState('7d');
-  const [activeTab, setActiveTab] = useState(0);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [lastRefresh, setLastRefresh] = useState(new Date());
-  
-  const { 
-    isOpen: isTripManagementOpen, 
-    onOpen: onTripManagementOpen, 
-    onClose: onTripManagementClose 
-  } = useDisclosure();
+  const [isManageView, setIsManageView] = useState(false);
+  const [trips, setTrips] = useState([]);
   
   const toast = useToast();
-  const cardBg = useColorModeValue('white', 'gray.700');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const navigate = useNavigate();
+  
+  // Theme colors
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
   const textColor = useColorModeValue('gray.600', 'gray.300');
+  const headingColor = useColorModeValue('gray.800', 'white');
+  const hoverBg = useColorModeValue('gray.50', 'gray.700');
+  
+  // Responsive values
   const isMobile = useBreakpointValue({ base: true, md: false });
+  const cardSpacing = useBreakpointValue({ base: 3, md: 4 });
 
   const fetchAnalytics = useCallback(async (showLoading = true) => {
     if (showLoading) setRefreshing(true);
     try {
-      const response = await axios.get(`/analytics/dashboard?range=${dateRange}`);
+      const response = await axios.get('/api/analytics/dashboard');
       setAnalytics(response.data);
       setLastRefresh(new Date());
     } catch (error) {
       console.error('Error fetching analytics:', error);
       toast({
         title: 'Error',
-        description: 'Failed to fetch analytics data',
+        description: 'Failed to fetch dashboard data',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -141,483 +104,566 @@ const AdminDashboard = () => {
     } finally {
       if (showLoading) setRefreshing(false);
     }
-  }, [dateRange, toast]);
-
-  const fetchDriverStats = useCallback(async () => {
-    try {
-      const response = await axios.get('/analytics/drivers');
-      setDriverStats(response.data);
-    } catch (error) {
-      console.error('Error fetching driver stats:', error);
-    }
-  }, []);
-
-  const fetchRecentTrips = useCallback(async () => {
-    try {
-      const response = await axios.get('/api/trips/recent?limit=10');
-      setRecentTrips(response.data);
-    } catch (error) {
-      console.error('Error fetching recent trips:', error);
-    }
-  }, []);
-
-  const fetchSystemAlerts = useCallback(async () => {
-    try {
-      const response = await axios.get('/admin/alerts');
-      setSystemAlerts(response.data);
-    } catch (error) {
-      console.error('Error fetching system alerts:', error);
-    }
-  }, []);
-
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await Promise.all([
-        fetchAnalytics(false),
-        fetchDriverStats(),
-        fetchRecentTrips(),
-        fetchSystemAlerts()
-      ]);
-      toast({
-        title: 'Success',
-        description: 'Dashboard data refreshed successfully',
-        status: 'success',
-        duration: 2000,
-        isClosable: true,
-      });
-    } finally {
-      setRefreshing(false);
-    }
-  }, [fetchAnalytics, fetchDriverStats, fetchRecentTrips, fetchSystemAlerts, toast]);
-
-  const exportData = useCallback(async (type) => {
-    try {
-      const response = await axios.get(`/admin/export/${type}`, {
-        responseType: 'blob'
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${type}-export-${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      
-      toast({
-        title: 'Success',
-        description: `${type} data exported successfully`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (error) {
-      console.error('Export error:', error);
-      toast({
-        title: 'Error',
-        description: `Failed to export ${type} data`,
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-    }
   }, [toast]);
+
+  const fetchTrips = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/trips');
+      setTrips(response.data?.data?.trips || response.data?.trips || []);
+    } catch (error) {
+      console.error('Error fetching trips:', error);
+    }
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        await Promise.all([
-          fetchAnalytics(false),
-          fetchDriverStats(),
-          fetchRecentTrips(),
-          fetchSystemAlerts()
-        ]);
+        await fetchAnalytics(false);
       } finally {
         setLoading(false);
       }
     };
     loadData();
-  }, [fetchAnalytics, fetchDriverStats, fetchRecentTrips, fetchSystemAlerts]);
-
-  useEffect(() => {
-    fetchAnalytics();
-  }, [dateRange, fetchAnalytics]);
+  }, [fetchAnalytics]);
 
   // Auto-refresh every 5 minutes
   useEffect(() => {
     const interval = setInterval(() => {
-      handleRefresh();
-    }, 300000); // 5 minutes
-
+      fetchAnalytics(false);
+    }, 300000);
     return () => clearInterval(interval);
-  }, [handleRefresh]);
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const formatTime = (dateString) => {
-    return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  }, [fetchAnalytics]);
 
   const formatDateTime = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now - date;
     const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
+    
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      completed: 'green',
-      'in-progress': 'blue',
-      pending: 'orange',
-      cancelled: 'red',
-      scheduled: 'purple'
-    };
-    return colors[status] || 'gray';
-  };
+  // Quick Stat Card Component - Compact & Modern
+  const QuickStatCard = ({ title, value, subtitle, icon, color, trend, onClick, isClickable = true }) => (
+    <Card
+      bg={cardBg}
+      borderColor={borderColor}
+      borderWidth="1px"
+      borderRadius="lg"
+      overflow="hidden"
+      transition="all 0.2s"
+      _hover={isClickable ? { 
+        shadow: 'lg', 
+        transform: 'translateY(-2px)',
+        borderColor: `${color}.400`
+      } : {}}
+      cursor={isClickable ? 'pointer' : 'default'}
+      onClick={isClickable ? onClick : undefined}
+      height="100%"
+    >
+      <CardBody p={{ base: 3, md: 4 }}>
+        <VStack align="stretch" spacing={2}>
+          <HStack justify="space-between">
+            <Box
+              p={2}
+              borderRadius="md"
+              bg={`${color}.50`}
+              color={`${color}.600`}
+            >
+              <Icon as={icon} boxSize={{ base: 4, md: 5 }} />
+            </Box>
+            {trend && (
+              <HStack spacing={1}>
+                <Icon
+                  as={trend.direction === 'up' ? FaArrowUp : FaArrowDown}
+                  color={trend.direction === 'up' ? 'green.500' : 'red.500'}
+                  boxSize={3}
+                />
+                <Text
+                  fontSize="xs"
+                  color={trend.direction === 'up' ? 'green.500' : 'red.500'}
+                  fontWeight="bold"
+                >
+                  {trend.value}%
+                </Text>
+              </HStack>
+            )}
+          </HStack>
+          <VStack align="start" spacing={0}>
+            <Text fontSize={{ base: '2xl', md: '3xl' }} fontWeight="bold" color={headingColor} lineHeight="1.2">
+              {value}
+            </Text>
+            <Text fontSize="xs" color={textColor} fontWeight="semibold" textTransform="uppercase" letterSpacing="wide">
+              {title}
+            </Text>
+            {subtitle && (
+              <Text fontSize="xs" color={textColor} mt={1}>
+                {subtitle}
+              </Text>
+            )}
+          </VStack>
+        </VStack>
+      </CardBody>
+    </Card>
+  );
 
-  const getPriorityColor = (priority) => {
-    const colors = {
-      high: 'red',
-      medium: 'orange',
-      low: 'green'
-    };
-    return colors[priority] || 'gray';
-  };
+  // Navigation Card Component - Enhanced Design
+  const NavigationCard = ({ title, description, icon, color, path, count, onClick }) => (
+    <Card
+      bg={cardBg}
+      borderColor={borderColor}
+      borderWidth="1px"
+      borderRadius="lg"
+      overflow="hidden"
+      transition="all 0.3s"
+      _hover={{
+        shadow: 'xl',
+        transform: 'translateY(-4px)',
+        borderColor: `${color}.500`,
+        bg: `${color}.50`
+      }}
+      cursor="pointer"
+      onClick={onClick || (() => navigate(path))}
+      height="100%"
+    >
+      <CardBody p={{ base: 4, md: 5 }}>
+        <VStack align="start" spacing={3} height="100%">
+          <HStack justify="space-between" w="full">
+            <Box
+              p={3}
+              borderRadius="lg"
+              bg={`${color}.50`}
+              color={`${color}.600`}
+              transition="all 0.3s"
+              _groupHover={{ bg: `${color}.100` }}
+            >
+              <Icon as={icon} boxSize={{ base: 5, md: 6 }} />
+            </Box>
+            {count !== undefined && (
+              <Badge 
+                colorScheme={color} 
+                fontSize={{ base: 'sm', md: 'md' }} 
+                px={3} 
+                py={1} 
+                borderRadius="full"
+                fontWeight="bold"
+              >
+                {count}
+              </Badge>
+            )}
+          </HStack>
+          <VStack align="start" spacing={1} w="full" flex="1">
+            <Heading size={{ base: 'sm', md: 'md' }} color={headingColor}>
+              {title}
+            </Heading>
+            <Text fontSize={{ base: 'xs', md: 'sm' }} color={textColor} lineHeight="1.4">
+              {description}
+            </Text>
+          </VStack>
+          <HStack w="full" justify="space-between" pt={2} borderTop="1px" borderColor={borderColor}>
+            <Text fontSize="xs" color={`${color}.600`} fontWeight="semibold">
+              View Details
+            </Text>
+            <Icon as={ExternalLinkIcon} color={`${color}.500`} boxSize={4} />
+          </HStack>
+        </VStack>
+      </CardBody>
+    </Card>
+  );
 
-  const calculateTrend = (current, previous) => {
-    if (!previous || previous === 0) return { value: 0, direction: 'neutral' };
-    const change = ((current - previous) / previous) * 100;
-    return {
-      value: Math.abs(change),
-      direction: change > 0 ? 'increase' : change < 0 ? 'decrease' : 'neutral'
-    };
-  };
+  // System Status Card
+  const SystemStatusCard = () => (
+    <Card bg={cardBg} borderColor={borderColor} borderWidth="1px" borderRadius="xl">
+      <CardHeader pb={2}>
+        <HStack justify="space-between">
+          <HStack>
+            <Icon as={FaTachometerAlt} color="green.500" boxSize={5} />
+            <Heading size="md">System Status</Heading>
+          </HStack>
+          <Badge colorScheme="green" px={3} py={1} borderRadius="full">
+            Operational
+          </Badge>
+        </HStack>
+      </CardHeader>
+      <CardBody pt={2}>
+        <VStack align="stretch" spacing={3}>
+          <HStack justify="space-between">
+            <Text fontSize="sm" color={textColor}>Active Trips</Text>
+            <Text fontSize="sm" fontWeight="bold" color="blue.500">
+              {analytics?.tripStats?.inProgress || 0}
+            </Text>
+          </HStack>
+          <HStack justify="space-between">
+            <Text fontSize="sm" color={textColor}>Active Drivers</Text>
+            <Text fontSize="sm" fontWeight="bold" color="green.500">
+              {analytics?.driverStats?.active || 0}
+            </Text>
+          </HStack>
+          <HStack justify="space-between">
+            <Text fontSize="sm" color={textColor}>Pending Trips</Text>
+            <Text fontSize="sm" fontWeight="bold" color="orange.500">
+              {analytics?.tripStats?.pending || 0}
+            </Text>
+          </HStack>
+          <Divider />
+          <HStack justify="space-between">
+            <Text fontSize="xs" color={textColor}>Last Updated</Text>
+            <Text fontSize="xs" color={textColor}>
+              {formatDateTime(lastRefresh)}
+            </Text>
+          </HStack>
+        </VStack>
+      </CardBody>
+    </Card>
+  );
 
-  const filteredDrivers = driverStats.filter(driver => {
-    const matchesSearch = searchTerm === '' || 
-      `${driver.driver?.firstName} ${driver.driver?.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    if (filterStatus === 'all') return matchesSearch;
-    if (filterStatus === 'active') return matchesSearch && driver.totalTrips > 0;
-    if (filterStatus === 'inactive') return matchesSearch && driver.totalTrips === 0;
-    return matchesSearch;
-  });
-
-
+  // Quick Actions Card
+  const QuickActionsCard = () => (
+    <Card bg={cardBg} borderColor={borderColor} borderWidth="1px" borderRadius="xl">
+      <CardHeader pb={2}>
+        <HStack>
+          <Icon as={FaTachometerAlt} color="purple.500" boxSize={5} />
+          <Heading size="md">Quick Actions</Heading>
+        </HStack>
+      </CardHeader>
+      <CardBody pt={2}>
+        <VStack spacing={2}>
+          <Button
+            w="full"
+            leftIcon={<Icon as={FaUsers} />}
+            colorScheme="blue"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/admin/register')}
+          >
+            Add New User
+          </Button>
+          <Button
+            w="full"
+            leftIcon={<Icon as={FaRoute} />}
+            colorScheme="green"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/scheduler')}
+          >
+            Schedule Trip
+          </Button>
+          <Button
+            w="full"
+            leftIcon={<Icon as={FaFileAlt} />}
+            colorScheme="orange"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/admin/reports')}
+          >
+            Generate Report
+          </Button>
+          <Button
+            w="full"
+            leftIcon={<Icon as={SettingsIcon} />}
+            colorScheme="gray"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/admin/settings')}
+          >
+            System Settings
+          </Button>
+        </VStack>
+      </CardBody>
+    </Card>
+  );
 
   if (loading) {
     return (
-      <Box bg="gray.50">
-        <Navbar title="Transportation Management - Admin Dashboard" />
-        <Box pt={{ base: 4, md: 0 }}>
-          <Container maxW="container.xl" py={8}>
-            <Center h="60vh">
-              <VStack spacing={4}>
-                <Spinner size="xl" color="blue.500" thickness="4px" />
-                <Text>Loading dashboard data...</Text>
-              </VStack>
-            </Center>
-          </Container>
-        </Box>
+      <Box display="flex" flexDirection="column" minHeight="100vh" bg={bgColor}>
+        <Navbar />
+        <Center flex="1">
+          <VStack spacing={4}>
+            <Spinner size="xl" color="blue.500" thickness="4px" />
+            <Text color={textColor}>Loading dashboard...</Text>
+          </VStack>
+        </Center>
       </Box>
     );
   }
 
   return (
-    <Box bg="gray.50">
-      <Navbar title="Transportation Management - Admin Dashboard" />
-      
-      <Box pt={{ base: 4, md: 0 }}>
-        <Container maxW="container.xl" py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>
-        {analytics && (
-          <>
-            {/* Overview Statistics - Responsive Grid */}
-            <Grid 
-              templateColumns={{ 
-                base: "1fr", 
-                sm: "repeat(2, 1fr)", 
-                lg: "repeat(3, 1fr)",
-                xl: "repeat(4, 1fr)"
-              }} 
-              gap={{ base: 4, md: 6 }} 
-              mb={{ base: 6, md: 8 }}
+    <Box display="flex" flexDirection="column" minHeight="100vh" bg={bgColor}>
+      <Navbar />
+      <Box flex="1" w="100%" overflowX="hidden">
+        {/* Conditional rendering for different views */}
+        {isManageView ? (
+          <Box px={{ base: 3, md: 4, lg: 6 }} py={{ base: 4, md: 6 }}>
+            <UnifiedTripManagement onTripUpdate={fetchTrips} initialTrips={trips} />
+            <Button 
+              mt={4} 
+              onClick={() => setIsManageView(false)}
+              leftIcon={<RepeatIcon />}
+              variant="outline"
+              colorScheme="blue"
             >
-              <Card>
-                <CardBody>
-                  <Stat>
-                    <StatLabel>Total Trips</StatLabel>
-                    <StatNumber>{analytics.tripStats.total}</StatNumber>
-                    <StatHelpText>
-                      {analytics.tripStats.today} today
-                    </StatHelpText>
-                  </Stat>
-                </CardBody>
-              </Card>
-
-              <Card>
-                <CardBody>
-                  <Stat>
-                    <StatLabel>Completed Trips</StatLabel>
-                    <StatNumber>{analytics.tripStats.completed}</StatNumber>
-                    <StatHelpText>
-                      <StatArrow type="increase" />
-                      Success rate: {analytics.tripStats.total > 0 ? 
-                        Math.round((analytics.tripStats.completed / analytics.tripStats.total) * 100) : 0}%
-                    </StatHelpText>
-                  </Stat>
-                </CardBody>
-              </Card>
-
-              <Card>
-                <CardBody>
-                  <Stat>
-                    <StatLabel>Active Trips</StatLabel>
-                    <StatNumber>
-                      {analytics.tripStats.pending + analytics.tripStats.inProgress}
-                    </StatNumber>
-                    <StatHelpText>
-                      {analytics.tripStats.pending} pending, {analytics.tripStats.inProgress} in progress
-                    </StatHelpText>
-                  </Stat>
-                </CardBody>
-              </Card>
-
-              <Card>
-                <CardBody>
-                  <Stat>
-                    <StatLabel>Total Drivers</StatLabel>
-                    <StatNumber>{analytics.driverStats.total}</StatNumber>
-                    <StatHelpText>
-                      {analytics.driverStats.available} available, {analytics.driverStats.active} active
-                    </StatHelpText>
-                  </Stat>
-                </CardBody>
-              </Card>
-            </Grid>
-
-            {/* Quick Actions */}
-            <HStack spacing={4} mb={6}>
-              <Button
-                leftIcon={<SearchIcon />}
-                colorScheme="blue"
-                onClick={onTripManagementOpen}
-                size="md"
-              >
-                Manage Trips
-              </Button>
-              <Button
-                leftIcon={<RepeatIcon />}
-                variant="outline"
-                onClick={() => fetchAnalytics(true)}
-                isLoading={refreshing}
-                size="md"
-              >
-                Refresh Data
-              </Button>
+              Back to Admin Dashboard
+            </Button>
+          </Box>
+        ) : (
+          <Box p={{ base: 3, md: 4 }}>
+            <VStack align="stretch" spacing={{ base: 4, md: 5 }}>
+          {/* Header */}
+          <Box>
+            <HStack justify="space-between" mb={2} flexWrap="wrap" gap={3}>
+              <VStack align="start" spacing={0}>
+                <Heading size={{ base: 'lg', md: 'xl' }} color={headingColor}>
+                  Admin Dashboard
+                </Heading>
+                <Text color={textColor} fontSize="sm">
+                  System overview and management center • Last updated: {formatDateTime(lastRefresh)}
+                </Text>
+              </VStack>
+              <HStack spacing={2}>
+                <Tooltip label="Refresh Data">
+                  <IconButton
+                    icon={<RepeatIcon />}
+                    onClick={() => fetchAnalytics(true)}
+                    isLoading={refreshing}
+                    colorScheme="blue"
+                    variant="outline"
+                    size={{ base: 'sm', md: 'md' }}
+                    aria-label="Refresh data"
+                  />
+                </Tooltip>
+                <Button
+                  leftIcon={<Icon as={SettingsIcon} />}
+                  variant="outline"
+                  size={{ base: 'sm', md: 'md' }}
+                  onClick={() => navigate('/admin/settings')}
+                  display={{ base: 'none', md: 'flex' }}
+                >
+                  Settings
+                </Button>
+                <IconButton
+                  icon={<SettingsIcon />}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/admin/settings')}
+                  display={{ base: 'flex', md: 'none' }}
+                  aria-label="Settings"
+                />
+              </HStack>
             </HStack>
+          </Box>
 
-            <Tabs>
-              <TabList>
-                <Tab>Trip Analytics</Tab>
-                <Tab>Driver Performance</Tab>
-                <Tab>Recent Activity</Tab>
-              </TabList>
+          {/* Key Metrics - Compact Design */}
+          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: 3, md: 4 }}>
+            <QuickStatCard
+              title="Total Trips"
+              value={analytics?.tripStats?.total || 0}
+              subtitle={`${analytics?.tripStats?.today || 0} today`}
+              icon={FaRoute}
+              color="blue"
+              trend={{ direction: 'up', value: 12 }}
+              onClick={() => navigate('/scheduler')}
+            />
+            <QuickStatCard
+              title="Active Users"
+              value={analytics?.userStats?.active || 0}
+              subtitle={`${analytics?.userStats?.total || 0} total`}
+              icon={FaUsers}
+              color="green"
+              trend={{ direction: 'up', value: 8 }}
+              onClick={() => navigate('/admin/overview')}
+            />
+            <QuickStatCard
+              title="Success Rate"
+              value={`${analytics?.tripStats?.total > 0 ?
+                Math.round((analytics.tripStats.completed / analytics.tripStats.total) * 100) : 0}%`}
+              subtitle={`${analytics?.tripStats?.completed || 0} completed`}
+              icon={FaCheckCircle}
+              color="purple"
+              trend={{ direction: 'up', value: 5 }}
+              onClick={() => navigate('/admin/analytics')}
+            />
+            <QuickStatCard
+              title="Revenue"
+              value={`$${(analytics?.financialStats?.totalRevenue || 0).toLocaleString()}`}
+              subtitle="This month"
+              icon={FaMoneyBillWave}
+              color="orange"
+              trend={{ direction: 'up', value: 15 }}
+              onClick={() => navigate('/admin/reports')}
+            />
+          </SimpleGrid>
 
-              <TabPanels>
-                {/* Trip Analytics Tab */}
-                <TabPanel>
-                  <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={6}>
-                    {/* Weekly Stats Chart (Simple display) */}
-                    <Card>
-                      <CardHeader>
-                        <Heading size="md">Weekly Trip Statistics</Heading>
-                      </CardHeader>
-                      <CardBody>
-                        <VStack align="stretch" spacing={4}>
-                          {analytics.weeklyStats.map((stat) => (
-                            <Box key={stat._id}>
-                              <HStack justify="space-between" mb={2}>
-                                <Text>{formatDate(stat._id)}</Text>
-                                <Text fontWeight="bold">
-                                  {stat.completed}/{stat.count} completed
-                                </Text>
-                              </HStack>
-                              <Progress 
-                                value={stat.count > 0 ? (stat.completed / stat.count) * 100 : 0}
-                                colorScheme="green"
-                                size="sm"
-                              />
-                            </Box>
-                          ))}
+          {/* Section Heading */}
+          <Box>
+            <Heading size="md" color={headingColor} mb={1}>
+              Management Sections
+            </Heading>
+            <Text fontSize="sm" color={textColor}>
+              Navigate to different areas of the admin panel
+            </Text>
+          </Box>
+
+          {/* Main Navigation Grid - Enhanced */}
+          <Grid
+            templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }}
+            gap={{ base: 3, md: 4 }}
+          >
+            <NavigationCard
+              title="Trip Management"
+              description="Create, schedule, edit, and manage all transportation trips"
+              icon={FaRoute}
+              color="purple"
+              onClick={() => setIsManageView(true)}
+              count={analytics?.tripStats?.total}
+            />
+            <NavigationCard
+              title="Analytics Dashboard"
+              description="Performance metrics, trends analysis, and data visualization"
+              icon={FaChartLine}
+              color="cyan"
+              path="/admin/analytics"
+            />
+            <NavigationCard
+              title="Reports Center"
+              description="Generate detailed reports, export data, and access archives"
+              icon={FaFileAlt}
+              color="orange"
+              path="/admin/reports"
+            />
+            <NavigationCard
+              title="Statistical Analysis"
+              description="Comprehensive stats, comparative data, and insights"
+              icon={FaChartBar}
+              color="teal"
+              path="/admin/statistics"
+            />
+            <NavigationCard
+              title="Live GPS Tracking"
+              description="Real-time vehicle monitoring and trip progress tracking"
+              icon={FaCarAlt}
+              color="green"
+              path="/admin/live-tracking"
+              count={analytics?.tripStats?.inProgress}
+            />
+            <NavigationCard
+              title="User Management"
+              description="Manage users, assign roles, configure permissions and access"
+              icon={FaUserShield}
+              color="red"
+              path="/system-admin"
+              count={analytics?.userStats?.total}
+            />
+            <NavigationCard
+              title="System Settings"
+              description="Configure system preferences, security, and global settings"
+              icon={SettingsIcon}
+              color="gray"
+              path="/admin/settings"
+            />
+          </Grid>
+
+          {/* Bottom Row - Activity Feed & Quick Actions */}
+          <Grid
+            templateColumns={{ base: '1fr', lg: '2fr 1fr' }}
+            gap={{ base: 3, md: 4 }}
+          >
+            {/* Recent Activity Feed */}
+            <Card bg={cardBg} borderColor={borderColor} borderWidth="1px" borderRadius="xl" shadow="sm">
+              <CardHeader pb={3}>
+                <HStack justify="space-between">
+                  <HStack>
+                    <Icon as={FaClock} color="blue.500" boxSize={5} />
+                    <Heading size="md">Recent Activity</Heading>
+                  </HStack>
+                  <Badge colorScheme="blue" fontSize="xs">Live</Badge>
+                </HStack>
+              </CardHeader>
+              <CardBody pt={0}>
+                <VStack align="stretch" spacing={2} maxH="280px" overflowY="auto">
+                  {analytics?.recentActivity?.slice(0, 6).map((activity, index) => (
+                    <Box
+                      key={index}
+                      p={3}
+                      bg={hoverBg}
+                      borderRadius="md"
+                      borderLeft="3px solid"
+                      borderLeftColor="blue.400"
+                      transition="all 0.2s"
+                      _hover={{ shadow: 'sm', borderLeftColor: 'blue.600' }}
+                    >
+                      <HStack justify="space-between" align="start">
+                        <VStack align="start" spacing={0} flex="1">
+                          <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>
+                            {activity.description || 'System Activity'}
+                          </Text>
+                          <Text fontSize="xs" color={textColor}>
+                            {activity.userId ? 
+                              `${activity.userId.firstName} ${activity.userId.lastName}` : 
+                              'System'}
+                          </Text>
                         </VStack>
-                      </CardBody>
-                    </Card>
-
-                    {/* Status Breakdown */}
-                    <Card>
-                      <CardHeader>
-                        <Heading size="md">Trip Status Breakdown</Heading>
-                      </CardHeader>
-                      <CardBody>
-                        <VStack align="stretch" spacing={4}>
-                          <HStack justify="space-between">
-                            <Text>Completed</Text>
-                            <Badge colorScheme="green" variant="solid">
-                              {analytics.tripStats.completed}
-                            </Badge>
-                          </HStack>
-                          <HStack justify="space-between">
-                            <Text>In Progress</Text>
-                            <Badge colorScheme="blue" variant="solid">
-                              {analytics.tripStats.inProgress}
-                            </Badge>
-                          </HStack>
-                          <HStack justify="space-between">
-                            <Text>Pending</Text>
-                            <Badge colorScheme="orange" variant="solid">
-                              {analytics.tripStats.pending}
-                            </Badge>
-                          </HStack>
-                          <HStack justify="space-between">
-                            <Text>Cancelled</Text>
-                            <Badge colorScheme="red" variant="solid">
-                              {analytics.tripStats.cancelled}
-                            </Badge>
-                          </HStack>
-                        </VStack>
-                      </CardBody>
-                    </Card>
-                  </Grid>
-                </TabPanel>
-
-                {/* Driver Performance Tab */}
-                <TabPanel>
-                  <Card>
-                    <CardHeader>
-                      <Heading size="md">Driver Performance Metrics</Heading>
-                    </CardHeader>
-                    <CardBody>
-                      <TableContainer>
-                        <Table variant="simple">
-                          <Thead>
-                            <Tr>
-                              <Th>Driver</Th>
-                              <Th>Total Trips</Th>
-                              <Th>Completed</Th>
-                              <Th>Completion Rate</Th>
-                              <Th>Vehicle</Th>
-                              <Th>Rating</Th>
-                            </Tr>
-                          </Thead>
-                          <Tbody>
-                            {driverStats.map((driver) => (
-                              <Tr key={driver._id}>
-                                <Td>
-                                  <VStack align="start" spacing={0}>
-                                    <Text fontWeight="bold">
-                                      {driver.driver.firstName} {driver.driver.lastName}
-                                    </Text>
-                                    <Text fontSize="sm" color="gray.500">
-                                      {driver.driver.phone}
-                                    </Text>
-                                  </VStack>
-                                </Td>
-                                <Td>{driver.totalTrips}</Td>
-                                <Td>{driver.completedTrips}</Td>
-                                <Td>
-                                  <HStack>
-                                    <Text>{Math.round(driver.completionRate)}%</Text>
-                                    <Progress
-                                      value={driver.completionRate}
-                                      size="sm"
-                                      colorScheme={driver.completionRate > 90 ? 'green' : 
-                                                driver.completionRate > 70 ? 'yellow' : 'red'}
-                                      width="60px"
-                                    />
-                                  </HStack>
-                                </Td>
-                                <Td>
-                                  <Text fontSize="sm">
-                                    {driver.driver.vehicleInfo?.make} {driver.driver.vehicleInfo?.model}
-                                  </Text>
-                                </Td>
-                                <Td>
-                                  {driver.averageRating ? (
-                                    <Badge colorScheme="yellow">
-                                      ⭐ {driver.averageRating}
-                                    </Badge>
-                                  ) : (
-                                    <Text fontSize="sm" color="gray.500">No ratings</Text>
-                                  )}
-                                </Td>
-                              </Tr>
-                            ))}
-                          </Tbody>
-                        </Table>
-                      </TableContainer>
-                    </CardBody>
-                  </Card>
-                </TabPanel>
-
-                {/* Recent Activity Tab */}
-                <TabPanel>
-                  <Card>
-                    <CardHeader>
-                      <Heading size="md">Recent System Activity</Heading>
-                    </CardHeader>
-                    <CardBody>
-                      <VStack align="stretch" spacing={4}>
-                        {analytics.recentActivity.map((activity) => (
-                          <Box key={activity._id} p={4} bg="gray.50" rounded="md">
-                            <HStack justify="space-between">
-                              <VStack align="start" spacing={0}>
-                                <Text fontWeight="bold">
-                                  {activity.userId ? 
-                                    `${activity.userId.firstName} ${activity.userId.lastName}` : 
-                                    'System'}
-                                </Text>
-                                <Text fontSize="sm">{activity.description}</Text>
-                              </VStack>
-                              <VStack align="end" spacing={0}>
-                                <Badge colorScheme="blue">
-                                  {activity.action.replace('_', ' ').toUpperCase()}
-                                </Badge>
-                                <Text fontSize="xs" color="gray.500">
-                                  {new Date(activity.createdAt).toLocaleString()}
-                                </Text>
-                              </VStack>
-                            </HStack>
-                          </Box>
-                        ))}
+                        <Text fontSize="xs" color={textColor} whiteSpace="nowrap" ml={2}>
+                          {formatDateTime(activity.createdAt)}
+                        </Text>
+                      </HStack>
+                    </Box>
+                  )) || (
+                    <Center py={10}>
+                      <VStack spacing={2}>
+                        <Icon as={FaClock} boxSize={8} color="gray.300" />
+                        <Text fontSize="sm" color={textColor}>No recent activity</Text>
                       </VStack>
-                    </CardBody>
-                  </Card>
-                </TabPanel>
-              </TabPanels>
-            </Tabs>
-          </>
-        )}
+                    </Center>
+                  )}
+                </VStack>
+              </CardBody>
+            </Card>
 
-        {/* Trip Management Modal */}
-        <TripManagementModal
-          isOpen={isTripManagementOpen}
-          onClose={onTripManagementClose}
-          onTripUpdate={() => fetchAnalytics(false)}
-        />
-        </Container>
+            {/* Right Sidebar - Status & Actions */}
+            <VStack spacing={{ base: 3, md: 4 }}>
+              <SystemStatusCard />
+              <QuickActionsCard />
+            </VStack>
+          </Grid>
+
+          {/* Alert Banners */}
+          <VStack spacing={2}>
+            {analytics?.tripStats?.pending > 10 && (
+              <Alert status="warning" borderRadius="xl" variant="left-accent">
+                <AlertIcon />
+                <Box flex="1">
+                  <AlertTitle fontSize="sm" fontWeight="bold">High Pending Trips</AlertTitle>
+                  <AlertDescription fontSize="xs">
+                    {analytics.tripStats.pending} trips are pending assignment and need immediate attention
+                  </AlertDescription>
+                </Box>
+                <Button size="sm" colorScheme="orange" onClick={() => navigate('/dispatcher')}>
+                  Review Now
+                </Button>
+              </Alert>
+            )}
+            
+            {analytics?.tripStats?.inProgress > 15 && (
+              <Alert status="info" borderRadius="xl" variant="left-accent">
+                <AlertIcon />
+                <Box flex="1">
+                  <AlertTitle fontSize="sm" fontWeight="bold">High Activity</AlertTitle>
+                  <AlertDescription fontSize="xs">
+                    {analytics.tripStats.inProgress} trips currently in progress across the system
+                  </AlertDescription>
+                </Box>
+                <Button size="sm" variant="outline" onClick={() => navigate('/admin/live-tracking')}>
+                  Track Live
+                </Button>
+              </Alert>
+            )}
+          </VStack>
+            </VStack>
+          </Box>
+        )}
       </Box>
     </Box>
   );

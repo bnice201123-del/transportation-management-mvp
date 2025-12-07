@@ -55,11 +55,12 @@ import {
   CalendarIcon,
   TimeIcon,
   InfoIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  SettingsIcon
 } from '@chakra-ui/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
+import VehicleQuickView from '../shared/VehicleQuickView';
 
 const VehicleProfile = () => {
   const [vehicle, setVehicle] = useState(null);
@@ -75,7 +76,6 @@ const VehicleProfile = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
   const { vehicleId } = useParams();
-  const { user } = useAuth();
   const toast = useToast();
 
   // Edit form state
@@ -102,8 +102,8 @@ const VehicleProfile = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setVehicle(response.data);
-      setRideHistory(response.data.trips || []);
-      setFilteredHistory(response.data.trips || []);
+      setRideHistory(response.data.data?.trips || []);
+      setFilteredHistory(response.data.data?.trips || []);
 
       // Set edit form data
       setEditForm({
@@ -256,6 +256,9 @@ const VehicleProfile = () => {
           />
           <Heading size="lg">Vehicle Profile</Heading>
           <Spacer />
+          <Button leftIcon={<SettingsIcon />} colorScheme="green" mr={3} onClick={() => navigate(`/vehicles/${vehicleId}/maintenance`)}>
+            Maintenance
+          </Button>
           <Button leftIcon={<EditIcon />} colorScheme="blue" onClick={onOpen}>
             Edit Vehicle
           </Button>
@@ -346,9 +349,13 @@ const VehicleProfile = () => {
                 <VStack align="start" spacing={3}>
                   <HStack>
                     <InfoIcon />
-                    <Text fontWeight="bold">{vehicle.currentDriver.name}</Text>
+                    <Text fontWeight="bold">
+                      {typeof vehicle.currentDriver === 'object'
+                        ? `${vehicle.currentDriver.firstName || ''} ${vehicle.currentDriver.lastName || ''}`.trim() || vehicle.currentDriver.email || 'Unknown'
+                        : vehicle.currentDriver}
+                    </Text>
                   </HStack>
-                  <Text>Driver ID: {vehicle.currentDriver.id}</Text>
+                  <Text>Driver ID: {vehicle.currentDriver._id || vehicle.currentDriver.id || vehicle.currentDriver}</Text>
                   <Text>Assigned: {formatDate(vehicle.assignedDate)}</Text>
                 </VStack>
               ) : (

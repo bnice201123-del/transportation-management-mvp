@@ -2,6 +2,8 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Box, Spinner, Center } from '@chakra-ui/react';
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { SidebarProvider } from "./contexts/SidebarContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 
 // Import components
 import Dashboard from './components/Dashboard';
@@ -15,6 +17,7 @@ import RiderHistory from './components/riders/RiderHistory';
 import DispatcherDashboard from './components/dispatcher/DispatcherDashboard';
 import DriverLanding from './components/driver/DriverLanding';
 import DriverReport from './components/driver/DriverReport';
+import ComprehensiveDriverDashboard from './components/driver/ComprehensiveDriverDashboard';
 import VehicleLog from './components/vehicles/VehicleLog';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminOverview from './components/admin/AdminOverview';
@@ -24,23 +27,43 @@ import AdminRegistration from './components/admin/AdminRegistration';
 import AdminStatistics from './components/admin/AdminStatistics';
 import AdminSettings from './components/admin/AdminSettings';
 import OperationsLanding from './components/admin/OperationsLanding';
+import LiveTrackingDashboard from './components/admin/LiveTrackingDashboard';
+import SystemAdministration from './components/admin/SystemAdministration';
+import ManageUsers from './components/admin/ManageUsers';
+import UserRolesPermissions from './components/admin/UserRolesPermissionsSimple';
+import ManageUserRoles from './components/admin/ManageUserRoles';
+import TimeOffManagement from './components/admin/TimeOffManagement';
+import Security from './components/admin/SecuritySimple';
+import BackupRestore from './components/admin/BackupRestore';
+import AdminPlaceholder from './components/admin/AdminPlaceholder';
 import ErrorBoundary from './components/shared/ErrorBoundary';
+import ReactObjectErrorBoundary from './components/shared/ReactObjectErrorBoundary';
 import Layout from './components/shared/Layout';
 import ScrollTestPage from './components/test/ScrollTestPage';
+import ComprehensiveRiderDashboard from './components/riders/ComprehensiveRiderDashboard';
 import RidersDashboard from './components/riders/RidersDashboard';
 import RidersLanding from './components/riders/RidersLanding';
 import RiderProfile from './components/riders/RiderProfile';
 import NewRider from './components/riders/NewRider';
+import ComprehensiveVehicleDashboard from './components/vehicles/ComprehensiveVehicleDashboard';
+import DebugVehicleDashboard from './components/vehicles/DebugVehicleDashboard';
 import VehiclesDashboard from './components/vehicles/VehiclesDashboard';
 import VehiclesLanding from './components/vehicles/VehiclesLanding';
 import VehicleProfile from './components/vehicles/VehicleProfile';
+import VehicleProfilePage from './components/vehicles/VehicleProfilePage';
 import NewVehicle from './components/vehicles/NewVehicle';
+import VehicleAssignment from './components/vehicles/VehicleAssignment';
+import VehicleMaintenance from './components/vehicles/VehicleMaintenance';
 import MapsDashboard from './components/maps/MapsDashboard';
+import TripMaps from './components/maps/TripMaps';
+import LiveTracking from './components/maps/LiveTracking';
+import RoutePlanning from './components/maps/RoutePlanning';
+import DriverLocationTracking from './components/driver/DriverLocationTracking';
+import UserProfile from './components/shared/UserProfile';
+import NotificationsPage from './components/shared/NotificationsPage';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { isAuthenticated, user, loading } = useAuth();
-
-  console.log('ProtectedRoute - isAuthenticated:', isAuthenticated, 'user:', user, 'loading:', loading, 'allowedRoles:', allowedRoles);
 
   if (loading) {
     return (
@@ -51,30 +74,29 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   }
 
   if (!isAuthenticated) {
-    console.log('ProtectedRoute - Not authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
-    console.log('ProtectedRoute - User role not allowed:', user?.role, 'allowed:', allowedRoles);
-    return <Navigate to="/unauthorized" replace />;
+  if (allowedRoles.length > 0) {
+    const userRoles = user?.roles || [user?.role];
+    const hasAccess = allowedRoles.some(role => userRoles.includes(role));
+    if (!hasAccess) {
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
-  console.log('ProtectedRoute - Access granted');
   return children;
 };
 
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
 
-  console.log('AppRoutes - isAuthenticated:', isAuthenticated);
-
   return (
     <Routes>
       {/* Public routes */}
       <Route 
         path="/login" 
-        element={!isAuthenticated ? <Login /> : <Dashboard />} 
+        element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} 
       />
 
       {/* Dashboard route - automatically redirects to appropriate role dashboard */}
@@ -311,8 +333,16 @@ const AppRoutes = () => {
       <Route 
         path="/driver" 
         element={
-          <ProtectedRoute allowedRoles={['driver', 'admin']}>
-            <DriverLanding />
+          <ProtectedRoute allowedRoles={['driver', 'scheduler', 'dispatcher', 'admin']}>
+            <ComprehensiveDriverDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver/tracking" 
+        element={
+          <ProtectedRoute allowedRoles={['driver', 'scheduler', 'dispatcher', 'admin']}>
+            <DriverLocationTracking />
           </ProtectedRoute>
         } 
       />
@@ -330,9 +360,11 @@ const AppRoutes = () => {
         path="/admin/overview" 
         element={
           <ProtectedRoute allowedRoles={['admin']}>
-            <ErrorBoundary fallbackMessage="Failed to load Admin Overview. Please try refreshing the page.">
-              <AdminOverview />
-            </ErrorBoundary>
+            <ReactObjectErrorBoundary>
+              <ErrorBoundary fallbackMessage="Failed to load Admin Overview. Please try refreshing the page.">
+                <AdminOverview />
+              </ErrorBoundary>
+            </ReactObjectErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -342,6 +374,16 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={['admin']}>
             <ErrorBoundary fallbackMessage="Failed to load Admin Analytics. Please try refreshing the page.">
               <AdminAnalytics />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/live-tracking" 
+        element={
+          <ProtectedRoute allowedRoles={['admin', 'dispatcher']}>
+            <ErrorBoundary fallbackMessage="Failed to load Live Tracking Dashboard. Please try refreshing the page.">
+              <LiveTrackingDashboard />
             </ErrorBoundary>
           </ProtectedRoute>
         } 
@@ -386,6 +428,41 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+      
+      {/* User Profile Route - Available to all authenticated users */}
+      <Route 
+        path="/profile" 
+        element={
+          <ProtectedRoute>
+            <ErrorBoundary fallbackMessage="Failed to load User Profile. Please try refreshing the page.">
+              <UserProfile />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* Notifications Page - Available to all authenticated users */}
+      <Route 
+        path="/notifications" 
+        element={
+          <ProtectedRoute>
+            <ErrorBoundary fallbackMessage="Failed to load Notifications. Please try refreshing the page.">
+              <NotificationsPage />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      
+      <Route 
+        path="/admin/system" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load System Administration. Please try refreshing the page.">
+              <SystemAdministration />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
       <Route 
         path="/admin/operations" 
         element={
@@ -396,11 +473,81 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/admin/users" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load User Management. Please try refreshing the page.">
+              <ManageUsers />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/roles" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load User Roles & Permissions. Please try refreshing the page.">
+              <UserRolesPermissions />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/manage-roles" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load Manage User Roles. Please try refreshing the page.">
+              <ManageUserRoles />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/time-off" 
+        element={
+          <ProtectedRoute allowedRoles={['admin', 'dispatcher', 'scheduler']}>
+            <ErrorBoundary fallbackMessage="Failed to load Time-Off Management. Please try refreshing the page.">
+              <TimeOffManagement />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/security" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load Security Dashboard. Please try refreshing the page.">
+              <Security />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/backup" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load Backup & Restore. Please try refreshing the page.">
+              <BackupRestore />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/activity" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load User Activity Monitor. Please try refreshing the page.">
+              <AdminPlaceholder />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
       <Route
         path="/riders"
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
-            <RidersLanding />
+            <ComprehensiveRiderDashboard />
           </ProtectedRoute>
         }
       />
@@ -439,7 +586,7 @@ const AppRoutes = () => {
       <Route 
         path="/driver/report" 
         element={
-          <ProtectedRoute allowedRoles={['driver', 'admin']}>
+          <ProtectedRoute allowedRoles={['driver', 'scheduler', 'dispatcher', 'admin']}>
             <DriverReport />
           </ProtectedRoute>
         } 
@@ -448,7 +595,9 @@ const AppRoutes = () => {
         path="/vehicles"
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
-            <VehiclesLanding />
+            <ErrorBoundary fallbackMessage="Failed to load Vehicle Dashboard. Please check console for details.">
+              <ComprehensiveVehicleDashboard />
+            </ErrorBoundary>
           </ProtectedRoute>
         }
       />
@@ -461,26 +610,18 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/vehicles/:vehicleId"
-        element={
-          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
-            <VehicleProfile />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/vehicles/:vehicleId/edit"
-        element={
-          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
-            <VehicleProfile />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/vehicles/assignment"
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
-            <VehiclesLanding />
+            <VehicleAssignment />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vehicles/:vehicleId/maintenance"
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <VehicleMaintenance />
           </ProtectedRoute>
         }
       />
@@ -500,11 +641,47 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+      <Route
+        path="/vehicles/:id"
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin', 'driver']}>
+            <VehicleProfilePage />
+          </ProtectedRoute>
+        }
+      />
       <Route 
         path="/maps" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
             <MapsDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/maps/trips" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <TripMaps />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/maps/tracking" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load live tracking. Please check your internet connection and try again.">
+              <LiveTracking />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/maps/routes" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load route planning. Please check your internet connection and try again.">
+              <RoutePlanning />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -538,18 +715,22 @@ const AppRoutes = () => {
 function App() {
   return (
     <AuthProvider>
-      <Box 
-        minWidth="320px"
-        minHeight="100vh"
-        width="100%" 
-        bg="gray.50" 
-        position="relative"
-        overflowX="hidden"
-      >
-        <Layout>
-          <AppRoutes />
-        </Layout>
-      </Box>
+      <NotificationProvider>
+        <SidebarProvider>
+          <Box 
+            minWidth="320px"
+            minHeight="100vh"
+            width="100%" 
+            bg="gray.50" 
+            position="relative"
+            overflowX="hidden"
+          >
+            <Layout>
+              <AppRoutes />
+            </Layout>
+          </Box>
+        </SidebarProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

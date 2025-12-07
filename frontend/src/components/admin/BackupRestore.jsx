@@ -10,6 +10,7 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
+  InputRightElement,
   Select,
   Table,
   Thead,
@@ -25,6 +26,8 @@ import {
   Stat,
   StatLabel,
   StatNumber,
+  StatHelpText,
+  StatArrow,
   Flex,
   Spacer,
   Alert,
@@ -32,12 +35,17 @@ import {
   AlertTitle,
   AlertDescription,
   useColorModeValue,
+  useBreakpointValue,
   IconButton,
   Menu,
   MenuButton,
   MenuList,
   MenuItem,
+  MenuDivider,
+  useDisclosure,
   Progress,
+  CircularProgress,
+  CircularProgressLabel,
   Divider,
   Grid,
   GridItem,
@@ -72,9 +80,29 @@ import {
   Radio,
   Stack,
   Checkbox,
+  CheckboxGroup,
   Tag,
   TagLabel,
-  TagCloseButton
+  TagCloseButton,
+  Wrap,
+  WrapItem,
+  Icon,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  ButtonGroup,
+  Center,
+  Spinner,
+  Skeleton,
+  SkeletonText,
+  Avatar,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
+  Code,
+  Kbd
 } from '@chakra-ui/react';
 import {
   SearchIcon,
@@ -82,21 +110,72 @@ import {
   DownloadIcon,
   DeleteIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon,
   WarningIcon,
   CheckCircleIcon,
   InfoIcon,
   TimeIcon,
   CalendarIcon,
   RepeatIcon,
-  DatabaseIcon,
-  FileIcon,
-  CloudIcon,
-  ShieldIcon,
   AddIcon,
   ViewIcon,
-  EditIcon
+  EditIcon,
+  CheckIcon,
+  CloseIcon,
+  CopyIcon,
+  SmallCloseIcon,
+  ExternalLinkIcon,
+  AttachmentIcon,
+  LockIcon,
+  UnlockIcon
 } from '@chakra-ui/icons';
-import { FaShieldAlt, FaDatabase, FaFile, FaCloud, FaHistory, FaCog, FaFilter, FaPlay, FaPause, FaStop } from 'react-icons/fa';
+import {
+  HiCloudDownload,
+  HiCloudUpload,
+  HiDatabase,
+  HiDocumentDuplicate,
+  HiFolder,
+  HiFolderOpen,
+  HiServer,
+  HiShieldCheck,
+  HiShieldExclamation,
+  HiClock,
+  HiRefresh,
+  HiPlay,
+  HiPause,
+  HiStop,
+  HiFilter,
+  HiCog,
+  HiEye,
+  HiEyeOff,
+  HiCheckCircle,
+  HiXCircle,
+  HiPlus,
+  HiPencil,
+  HiTrash,
+  HiDownload,
+  HiUpload,
+  HiHome,
+  HiSearch,
+  HiAdjustments,
+  HiClipboard,
+  HiClipboardCheck,
+  HiExclamation,
+  HiInformationCircle,
+  HiChartBar,
+  HiViewGrid,
+  HiViewList,
+  HiSortAscending,
+  HiSortDescending,
+  HiDotsVertical,
+  HiSave,
+  HiX,
+  HiCheck,
+  HiArchive,
+  HiCollection,
+  HiShare
+} from 'react-icons/hi';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../shared/Navbar';
 
@@ -104,27 +183,56 @@ const BackupRestore = () => {
   const navigate = useNavigate();
   const toast = useToast();
 
-  // Color mode values
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  // Enhanced modal management
+  const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
+  const { isOpen: isRestoreModalOpen, onOpen: onRestoreModalOpen, onClose: onRestoreModalClose } = useDisclosure();
+  const { isOpen: isSettingsModalOpen, onOpen: onSettingsModalOpen, onClose: onSettingsModalClose } = useDisclosure();
 
-  // State management
+  // Responsive design
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const containerMaxW = useBreakpointValue({ base: 'full', md: 'full' });
+  const tableSize = useBreakpointValue({ base: 'sm', md: 'md' });
+  const tableVariant = useBreakpointValue({ base: 'simple', md: 'striped' });
+
+  // Color mode values
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const textColor = useColorModeValue('gray.700', 'gray.100');
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const accentColor = useColorModeValue('blue.500', 'blue.300');
+  const hoverBg = useColorModeValue('gray.100', 'gray.700');
+  const selectedRowBg = useColorModeValue('blue.50', 'blue.900');
+  const headerBg = useColorModeValue('linear-gradient(135deg, #4299e1 0%, #3182ce 100%)', 'linear-gradient(135deg, #2b6cb0 0%, #2c5282 100%)');
+  const successColor = useColorModeValue('green.500', 'green.300');
+  const errorColor = useColorModeValue('red.500', 'red.300');
+  const tableHeaderBg = useColorModeValue('gray.50', 'gray.700');
+  const statIconBg = useColorModeValue('gray.50', 'gray.700');
+
+  // Enhanced state management
   const [activeTab, setActiveTab] = useState(0);
   const [backups, setBackups] = useState([]);
   const [filteredBackups, setFilteredBackups] = useState([]);
   const [restoreHistory, setRestoreHistory] = useState([]);
   const [backupSchedules, setBackupSchedules] = useState([]);
   const [selectedBackup, setSelectedBackup] = useState(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [processingBackup] = useState(null);
+  const [restoringBackup] = useState(null);
+  const [viewMode, setViewMode] = useState('table');
 
-  // Filter states
+  // Enhanced filter and sorting states
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState('all');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [bulkAction, setBulkAction] = useState('');
+  const [processingItems, setProcessingItems] = useState([]);
 
   // Form states
   const [newBackupName, setNewBackupName] = useState('');
@@ -140,6 +248,61 @@ const BackupRestore = () => {
   const [backupFrequency, setBackupFrequency] = useState('daily');
   const [retentionDays, setRetentionDays] = useState(30);
   const [maxBackups, setMaxBackups] = useState(10);
+
+  // Filter and sort handlers
+  const handleSortChange = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const handleBulkAction = async () => {
+    if (!bulkAction || selectedItems.length === 0) return;
+    
+    setProcessingItems(selectedItems);
+    try {
+      // Simulate bulk operation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      if (bulkAction === 'delete') {
+        setBackups(prev => prev.filter(backup => !selectedItems.includes(backup.id)));
+        toast({
+          title: 'Items Deleted',
+          description: `${selectedItems.length} backup(s) deleted successfully.`,
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+      
+      setSelectedItems([]);
+      setBulkAction('');
+    } catch (err) {
+      console.error('Bulk action failed:', err);
+      toast({
+        title: 'Bulk Action Failed',
+        description: 'Failed to complete bulk operation.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setProcessingItems([]);
+    }
+  };
+
+  // Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const getPaginatedData = (data) => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return data.slice(startIndex, startIndex + itemsPerPage);
+  };
 
   // Mock data for demonstration
   useEffect(() => {
@@ -243,6 +406,7 @@ const BackupRestore = () => {
     setFilteredBackups(mockBackups);
     setRestoreHistory(mockRestoreHistory);
     setBackupSchedules(mockSchedules);
+    setLoading(false);
   }, []);
 
   // Filter backups based on search and filters
@@ -299,16 +463,17 @@ const BackupRestore = () => {
 
   const getTypeIcon = (type) => {
     switch (type) {
-      case 'full': return DatabaseIcon;
-      case 'database': return FaDatabase;
-      case 'incremental': return FileIcon;
-      case 'files': return FaFile;
-      default: return DatabaseIcon;
+      case 'full': return HiDatabase;
+      case 'database': return HiServer;
+      case 'incremental': return HiDocumentDuplicate;
+      case 'files': return HiFolder;
+      case 'configuration': return HiCog;
+      default: return HiDatabase;
     }
   };
 
   const handleCreateBackup = async () => {
-    setIsLoading(true);
+    setLoading(true);
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -340,7 +505,7 @@ const BackupRestore = () => {
         isClosable: true,
       });
 
-      setIsCreateModalOpen(false);
+      onCreateModalClose();
       resetCreateForm();
 
       // Simulate completion after 30 seconds
@@ -352,7 +517,8 @@ const BackupRestore = () => {
         ));
       }, 30000);
 
-    } catch (error) {
+    } catch (err) {
+      console.error('Backup creation failed:', err);
       toast({
         title: 'Backup Failed',
         description: 'Failed to create backup. Please try again.',
@@ -361,14 +527,14 @@ const BackupRestore = () => {
         isClosable: true,
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   const handleRestoreBackup = async () => {
     if (!selectedBackup) return;
 
-    setIsLoading(true);
+    setLoading(true);
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 3000));
@@ -393,10 +559,11 @@ const BackupRestore = () => {
         isClosable: true,
       });
 
-      setIsRestoreModalOpen(false);
+      onRestoreModalClose();
       setSelectedBackup(null);
 
-    } catch (error) {
+    } catch (err) {
+      console.error('Restore failed:', err);
       toast({
         title: 'Restore Failed',
         description: 'Failed to restore backup. Please try again.',
@@ -405,7 +572,7 @@ const BackupRestore = () => {
         isClosable: true,
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -423,7 +590,8 @@ const BackupRestore = () => {
         duration: 3000,
         isClosable: true,
       });
-    } catch (error) {
+    } catch (err) {
+      console.error('Delete failed:', err);
       toast({
         title: 'Delete Failed',
         description: 'Failed to delete backup. Please try again.',
@@ -446,7 +614,8 @@ const BackupRestore = () => {
       });
 
       // In a real app, this would trigger a file download
-    } catch (error) {
+    } catch (err) {
+      console.error('Download failed:', err);
       toast({
         title: 'Download Failed',
         description: 'Failed to download backup. Please try again.',
@@ -491,67 +660,222 @@ const BackupRestore = () => {
 
   const stats = getStorageStats();
 
+  if (loading) {
+    return (
+      <Box minHeight="100vh" bg={bgColor}>
+        <Navbar />
+        <Center height="60vh">
+          <VStack spacing={4}>
+            <Spinner size="xl" color={accentColor} />
+            <Text color={textColor} fontSize="lg">Loading backup and restore data...</Text>
+          </VStack>
+        </Center>
+      </Box>
+    );
+  }
+
   return (
-    <Box minH="100vh" bg={useColorModeValue('gray.50', 'gray.900')}>
+    <Box minHeight="100vh" bg={bgColor} pb={8}>
       <Navbar />
-      <Container maxW="container.xl" py={8}>
-        <VStack spacing={6} align="stretch">
-          {/* Header */}
-          <Box>
-            <Heading size="lg" mb={2} color={useColorModeValue('gray.800', 'white')}>
-              Backup and Restore
-            </Heading>
-            <Text color={useColorModeValue('gray.600', 'gray.400')}>
-              Manage system backups, restore operations, and backup schedules
-            </Text>
-          </Box>
+      
+      {/* Enhanced Header with Breadcrumbs */}
+      <Container maxW={containerMaxW} pt={6} pb={4}>
+        <VStack spacing={4} align="stretch">
+          <Breadcrumb spacing="8px" separator={<ChevronRightIcon color={mutedColor} />}>
+            <BreadcrumbItem>
+              <BreadcrumbLink onClick={() => navigate('/admin')} color={mutedColor}>
+                <HiHome style={{ display: 'inline', marginRight: '4px' }} />
+                Admin
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbItem isCurrentPage>
+              <BreadcrumbLink color={textColor} fontWeight="semibold">
+                Backup & Restore
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+          </Breadcrumb>
 
-          {/* Statistics Cards */}
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
-            <Card bg={cardBg} shadow="md">
-              <CardBody>
-                <Stat>
-                  <StatLabel>Total Backups</StatLabel>
-                  <StatNumber>{stats.totalBackups}</StatNumber>
-                </Stat>
-              </CardBody>
-            </Card>
-            <Card bg={cardBg} shadow="md">
-              <CardBody>
-                <Stat>
-                  <StatLabel>Completed</StatLabel>
-                  <StatNumber color="green.500">{stats.completedBackups}</StatNumber>
-                </Stat>
-              </CardBody>
-            </Card>
-            <Card bg={cardBg} shadow="md">
-              <CardBody>
-                <Stat>
-                  <StatLabel>Failed</StatLabel>
-                  <StatNumber color="red.500">{stats.failedBackups}</StatNumber>
-                </Stat>
-              </CardBody>
-            </Card>
-            <Card bg={cardBg} shadow="md">
-              <CardBody>
-                <Stat>
-                  <StatLabel>Storage Used</StatLabel>
-                  <StatNumber>{stats.totalSize}</StatNumber>
-                </Stat>
-              </CardBody>
-            </Card>
-          </SimpleGrid>
+          {/* Enhanced Header Section */}
+          <Card
+            bg={headerBg}
+            borderRadius="xl"
+            overflow="hidden"
+            shadow="2xl"
+          >
+            <CardBody p={8} textAlign="center" color="white">
+              <VStack spacing={4}>
+                <Icon as={HiShieldCheck} boxSize={12} />
+                <VStack spacing={2}>
+                  <Heading 
+                    size={{ base: 'lg', md: 'xl' }} 
+                    fontWeight="bold"
+                  >
+                    Backup & Restore Management
+                  </Heading>
+                  <Text 
+                    fontSize={{ base: 'md', md: 'lg' }} 
+                    opacity={0.9}
+                    maxW="600px"
+                  >
+                    Comprehensive data protection with automated backups, instant recovery, and intelligent scheduling
+                  </Text>
+                </VStack>
+              </VStack>
+            </CardBody>
+          </Card>
+        </VStack>
+      </Container>
 
-          {/* Main Content Tabs */}
-          <Card bg={cardBg} shadow="md">
-            <CardBody p={0}>
-              <Tabs variant="enclosed" colorScheme="blue" onChange={setActiveTab}>
-                <TabList px={6} pt={4}>
-                  <Tab>Backups</Tab>
-                  <Tab>Restore History</Tab>
-                  <Tab>Schedule</Tab>
-                  <Tab>Settings</Tab>
-                </TabList>
+      <Container maxW={containerMaxW} px={6}>
+        <VStack spacing={8} align="stretch">
+
+          {/* Enhanced Statistics Dashboard */}
+          <Card bg={cardBg} shadow="lg" borderRadius="xl">
+            <CardHeader>
+              <Flex align="center" justify="space-between">
+                <VStack align="flex-start" spacing={1}>
+                  <Heading size="md" color={textColor}>
+                    System Health & Statistics
+                  </Heading>
+                  <Text fontSize="sm" color={mutedColor}>
+                    Real-time backup system metrics and performance indicators
+                  </Text>
+                </VStack>
+                <Icon as={HiChartBar} boxSize={6} color={accentColor} />
+              </Flex>
+            </CardHeader>
+            <CardBody pt={0}>
+              <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={6}>
+                <Card
+                  bg={statIconBg}
+                  borderRadius="lg"
+                  shadow="md"
+                  transition="all 0.2s"
+                  _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }}
+                  border="1px solid"
+                  borderColor={borderColor}
+                >
+                  <CardBody p={6} textAlign="center">
+                    <Stat>
+                      <StatLabel display="flex" alignItems="center" justifyContent="center" gap={2}>
+                        <Icon as={HiDatabase} color="blue.500" />
+                        Total Backups
+                      </StatLabel>
+                      <StatNumber fontSize="3xl" color={textColor}>
+                        {stats.totalBackups}
+                      </StatNumber>
+                      <StatHelpText>
+                        <StatArrow type="increase" />
+                        Active system
+                      </StatHelpText>
+                    </Stat>
+                  </CardBody>
+                </Card>
+
+                <Card
+                  bg={statIconBg}
+                  borderRadius="lg"
+                  shadow="md"
+                  transition="all 0.2s"
+                  _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }}
+                  border="1px solid"
+                  borderColor={borderColor}
+                >
+                  <CardBody p={6} textAlign="center">
+                    <Stat>
+                      <StatLabel display="flex" alignItems="center" justifyContent="center" gap={2}>
+                        <Icon as={HiCheckCircle} color={successColor} />
+                        Success Rate
+                      </StatLabel>
+                      <StatNumber fontSize="3xl" color={successColor}>
+                        {Math.round((stats.completedBackups / stats.totalBackups) * 100) || 0}%
+                      </StatNumber>
+                      <StatHelpText>
+                        {stats.completedBackups} completed
+                      </StatHelpText>
+                    </Stat>
+                  </CardBody>
+                </Card>
+
+                <Card
+                  bg={statIconBg}
+                  borderRadius="lg"
+                  shadow="md"
+                  transition="all 0.2s"
+                  _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }}
+                  border="1px solid"
+                  borderColor={borderColor}
+                >
+                  <CardBody p={6} textAlign="center">
+                    <Stat>
+                      <StatLabel display="flex" alignItems="center" justifyContent="center" gap={2}>
+                        <Icon as={HiCloudDownload} color="purple.500" />
+                        Storage Used
+                      </StatLabel>
+                      <StatNumber fontSize="3xl" color={textColor}>
+                        {stats.totalSize}
+                      </StatNumber>
+                      <StatHelpText>
+                        System storage
+                      </StatHelpText>
+                    </Stat>
+                  </CardBody>
+                </Card>
+
+                <Card
+                  bg={statIconBg}
+                  borderRadius="lg"
+                  shadow="md"
+                  transition="all 0.2s"
+                  _hover={{ shadow: 'lg', transform: 'translateY(-2px)' }}
+                  border="1px solid"
+                  borderColor={borderColor}
+                >
+                  <CardBody p={6} textAlign="center">
+                    <Stat>
+                      <StatLabel display="flex" alignItems="center" justifyContent="center" gap={2}>
+                        <Icon as={HiClock} color="orange.500" />
+                        Failed Backups
+                      </StatLabel>
+                      <StatNumber fontSize="3xl" color={stats.failedBackups > 0 ? errorColor : textColor}>
+                        {stats.failedBackups}
+                      </StatNumber>
+                      <StatHelpText>
+                        Requires attention
+                      </StatHelpText>
+                    </Stat>
+                  </CardBody>
+                </Card>
+              </SimpleGrid>
+            </CardBody>
+          </Card>
+
+          {/* Enhanced Tabs Interface */}
+          <Card bg={cardBg} shadow="lg" borderRadius="xl">
+            <Tabs 
+              index={activeTab} 
+              onChange={setActiveTab} 
+              variant="enclosed"
+              colorScheme="blue"
+            >
+              <TabList mb={4} borderColor={borderColor}>
+                <Tab _selected={{ color: accentColor, borderColor: accentColor }}>
+                  <HiDatabase style={{ marginRight: '8px' }} />
+                  {!isMobile && 'Backup Management'}
+                </Tab>
+                <Tab _selected={{ color: accentColor, borderColor: accentColor }}>
+                  <HiRefresh style={{ marginRight: '8px' }} />
+                  {!isMobile && 'Restore History'}  
+                </Tab>
+                <Tab _selected={{ color: accentColor, borderColor: accentColor }}>
+                  <HiClock style={{ marginRight: '8px' }} />
+                  {!isMobile && 'Schedules'}
+                </Tab>
+                <Tab _selected={{ color: accentColor, borderColor: accentColor }}>
+                  <HiCog style={{ marginRight: '8px' }} />
+                  {!isMobile && 'Settings'}
+                </Tab>
+              </TabList>
 
                 <TabPanels>
                   {/* Backups Tab */}
@@ -601,29 +925,155 @@ const BackupRestore = () => {
                         <Button
                           leftIcon={<AddIcon />}
                           colorScheme="blue"
-                          onClick={() => setIsCreateModalOpen(true)}
+                          onClick={onCreateModalOpen}
                         >
                           Create Backup
                         </Button>
                       </Flex>
 
-                      {/* Backups Table */}
+                      {/* Enhanced Toolbar */}
+                      <Flex
+                        direction={{ base: 'column', md: 'row' }}
+                        gap={4}
+                        align={{ base: 'stretch', md: 'center' }}
+                        justify="space-between"
+                        mb={4}
+                      >
+                        <HStack spacing={2}>
+                          <Checkbox
+                            isChecked={selectedItems.length === filteredBackups.length && filteredBackups.length > 0}
+                            isIndeterminate={selectedItems.length > 0 && selectedItems.length < filteredBackups.length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedItems(filteredBackups.map(b => b.id));
+                              } else {
+                                setSelectedItems([]);
+                              }
+                            }}
+                          >
+                            {selectedItems.length > 0 ? `${selectedItems.length} selected` : 'Select all'}
+                          </Checkbox>
+                          {selectedItems.length > 0 && (
+                            <HStack spacing={2}>
+                              <Select
+                                placeholder="Bulk actions"
+                                value={bulkAction}
+                                onChange={(e) => setBulkAction(e.target.value)}
+                                size="sm"
+                                maxW="150px"
+                              >
+                                <option value="delete">Delete</option>
+                                <option value="download">Download</option>
+                              </Select>
+                              <Button
+                                size="sm"
+                                colorScheme="blue"
+                                onClick={handleBulkAction}
+                                isDisabled={!bulkAction}
+                                isLoading={processingItems.length > 0}
+                              >
+                                Apply
+                              </Button>
+                            </HStack>
+                          )}
+                        </HStack>
+                        
+                        <HStack spacing={2}>
+                          <IconButton
+                            icon={viewMode === 'table' ? <HiViewList /> : <HiViewGrid />}
+                            onClick={() => setViewMode(viewMode === 'table' ? 'grid' : 'table')}
+                            variant="outline"
+                            aria-label="Toggle view"
+                          />
+                          <Text fontSize="sm" color={mutedColor}>
+                            {filteredBackups.length} backup{filteredBackups.length !== 1 ? 's' : ''}
+                          </Text>
+                        </HStack>
+                      </Flex>
+
+                      {/* Enhanced Backups Table */}
                       <Box overflowX="auto">
-                        <Table variant="simple">
-                          <Thead>
+                        <Table variant={tableVariant} size={tableSize}>
+                          <Thead bg={tableHeaderBg}>
                             <Tr>
-                              <Th>Name</Th>
-                              <Th>Type</Th>
-                              <Th>Status</Th>
-                              <Th>Size</Th>
-                              <Th>Created</Th>
+                              <Th>
+                                <Checkbox
+                                  isChecked={selectedItems.length === filteredBackups.length && filteredBackups.length > 0}
+                                  isIndeterminate={selectedItems.length > 0 && selectedItems.length < filteredBackups.length}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedItems(filteredBackups.map(b => b.id));
+                                    } else {
+                                      setSelectedItems([]);
+                                    }
+                                  }}
+                                />
+                              </Th>
+                              <Th cursor="pointer" onClick={() => handleSortChange('name')}>
+                                <HStack spacing={1}>
+                                  <Text>Name</Text>
+                                  {sortBy === 'name' && (
+                                    <Icon as={sortOrder === 'asc' ? HiSortAscending : HiSortDescending} />
+                                  )}
+                                </HStack>
+                              </Th>
+                              <Th cursor="pointer" onClick={() => handleSortChange('type')}>
+                                <HStack spacing={1}>
+                                  <Text>Type</Text>
+                                  {sortBy === 'type' && (
+                                    <Icon as={sortOrder === 'asc' ? HiSortAscending : HiSortDescending} />
+                                  )}
+                                </HStack>
+                              </Th>
+                              <Th cursor="pointer" onClick={() => handleSortChange('status')}>
+                                <HStack spacing={1}>
+                                  <Text>Status</Text>
+                                  {sortBy === 'status' && (
+                                    <Icon as={sortOrder === 'asc' ? HiSortAscending : HiSortDescending} />
+                                  )}
+                                </HStack>
+                              </Th>
+                              <Th cursor="pointer" onClick={() => handleSortChange('size')}>
+                                <HStack spacing={1}>
+                                  <Text>Size</Text>
+                                  {sortBy === 'size' && (
+                                    <Icon as={sortOrder === 'asc' ? HiSortAscending : HiSortDescending} />
+                                  )}
+                                </HStack>
+                              </Th>
+                              <Th cursor="pointer" onClick={() => handleSortChange('createdAt')}>
+                                <HStack spacing={1}>
+                                  <Text>Created</Text>
+                                  {sortBy === 'createdAt' && (
+                                    <Icon as={sortOrder === 'asc' ? HiSortAscending : HiSortDescending} />
+                                  )}
+                                </HStack>
+                              </Th>
                               <Th>Duration</Th>
                               <Th>Actions</Th>
                             </Tr>
                           </Thead>
                           <Tbody>
-                            {filteredBackups.map((backup) => (
-                              <Tr key={backup.id}>
+                            {getPaginatedData(filteredBackups).map((backup) => (
+                              <Tr 
+                                key={backup.id}
+                                bg={selectedItems.includes(backup.id) ? selectedRowBg : 'transparent'}
+                                _hover={{ bg: hoverBg }}
+                                opacity={processingItems.includes(backup.id) ? 0.6 : 1}
+                              >
+                                <Td>
+                                  <Checkbox
+                                    isChecked={selectedItems.includes(backup.id)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedItems(prev => [...prev, backup.id]);
+                                      } else {
+                                        setSelectedItems(prev => prev.filter(id => id !== backup.id));
+                                      }
+                                    }}
+                                    isDisabled={processingItems.includes(backup.id)}
+                                  />
+                                </Td>
                                 <Td>
                                   <VStack align="start" spacing={1}>
                                     <Text fontWeight="medium">{backup.name}</Text>
@@ -665,7 +1115,7 @@ const BackupRestore = () => {
                                             icon={<RepeatIcon />}
                                             onClick={() => {
                                               setSelectedBackup(backup);
-                                              setIsRestoreModalOpen(true);
+                                              onRestoreModalOpen();
                                             }}
                                           >
                                             Restore
@@ -687,6 +1137,57 @@ const BackupRestore = () => {
                           </Tbody>
                         </Table>
                       </Box>
+
+                      {/* Enhanced Pagination */}
+                      {filteredBackups.length > itemsPerPage && (
+                        <Flex
+                          justify="space-between"
+                          align="center"
+                          mt={6}
+                          direction={{ base: 'column', md: 'row' }}
+                          gap={4}
+                        >
+                          <Text fontSize="sm" color={mutedColor}>
+                            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredBackups.length)} of {filteredBackups.length} results
+                          </Text>
+                          <ButtonGroup size="sm" isAttached variant="outline">
+                            <Button
+                              onClick={() => handlePageChange(currentPage - 1)}
+                              isDisabled={currentPage === 1}
+                              leftIcon={<ChevronLeftIcon />}
+                            >
+                              Previous
+                            </Button>
+                            {Array.from({ length: Math.ceil(filteredBackups.length / itemsPerPage) }, (_, i) => i + 1)
+                              .filter(page => 
+                                page === 1 || 
+                                page === Math.ceil(filteredBackups.length / itemsPerPage) || 
+                                Math.abs(page - currentPage) <= 1
+                              )
+                              .map((page, index, array) => (
+                                <React.Fragment key={page}>
+                                  {index > 0 && array[index - 1] !== page - 1 && (
+                                    <Button isDisabled>...</Button>
+                                  )}
+                                  <Button
+                                    onClick={() => handlePageChange(page)}
+                                    variant={currentPage === page ? 'solid' : 'outline'}
+                                    colorScheme={currentPage === page ? 'blue' : 'gray'}
+                                  >
+                                    {page}
+                                  </Button>
+                                </React.Fragment>
+                              ))}
+                            <Button
+                              onClick={() => handlePageChange(currentPage + 1)}
+                              isDisabled={currentPage === Math.ceil(filteredBackups.length / itemsPerPage)}
+                              rightIcon={<ChevronRightIcon />}
+                            >
+                              Next
+                            </Button>
+                          </ButtonGroup>
+                        </Flex>
+                      )}
                     </VStack>
                   </TabPanel>
 
@@ -847,21 +1348,20 @@ const BackupRestore = () => {
                       </SimpleGrid>
 
                       <Flex justify="end">
-                        <Button colorScheme="blue" onClick={() => setIsSettingsModalOpen(true)}>
+                        <Button colorScheme="blue" onClick={onSettingsModalOpen}>
                           Advanced Settings
                         </Button>
                       </Flex>
                     </VStack>
                   </TabPanel>
                 </TabPanels>
-              </Tabs>
-            </CardBody>
+            </Tabs>
           </Card>
         </VStack>
       </Container>
 
       {/* Create Backup Modal */}
-      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} size="lg">
+      <Modal isOpen={isCreateModalOpen} onClose={onCreateModalClose} size="lg">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Create New Backup</ModalHeader>
@@ -950,13 +1450,13 @@ const BackupRestore = () => {
             </VStack>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={() => setIsCreateModalOpen(false)}>
+            <Button variant="ghost" mr={3} onClick={onCreateModalClose}>
               Cancel
             </Button>
             <Button
               colorScheme="blue"
               onClick={handleCreateBackup}
-              isLoading={isLoading}
+              isLoading={processingBackup === 'creating'}
               loadingText="Creating Backup..."
             >
               Create Backup
@@ -966,7 +1466,7 @@ const BackupRestore = () => {
       </Modal>
 
       {/* Restore Modal */}
-      <Modal isOpen={isRestoreModalOpen} onClose={() => setIsRestoreModalOpen(false)} size="lg">
+      <Modal isOpen={isRestoreModalOpen} onClose={onRestoreModalClose} size="lg">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Restore from Backup</ModalHeader>
@@ -1008,13 +1508,13 @@ const BackupRestore = () => {
             )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={() => setIsRestoreModalOpen(false)}>
+            <Button variant="ghost" mr={3} onClick={onRestoreModalClose}>
               Cancel
             </Button>
             <Button
               colorScheme="red"
               onClick={handleRestoreBackup}
-              isLoading={isLoading}
+              isLoading={restoringBackup !== null}
               loadingText="Restoring..."
             >
               Start Restore
@@ -1024,7 +1524,7 @@ const BackupRestore = () => {
       </Modal>
 
       {/* Settings Modal */}
-      <Modal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} size="lg">
+      <Modal isOpen={isSettingsModalOpen} onClose={onSettingsModalClose} size="lg">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Advanced Backup Settings</ModalHeader>
@@ -1099,10 +1599,10 @@ const BackupRestore = () => {
             </VStack>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={() => setIsSettingsModalOpen(false)}>
+            <Button variant="ghost" mr={3} onClick={onSettingsModalClose}>
               Cancel
             </Button>
-            <Button colorScheme="blue" onClick={() => setIsSettingsModalOpen(false)}>
+            <Button colorScheme="blue" onClick={onSettingsModalClose}>
               Save Settings
             </Button>
           </ModalFooter>

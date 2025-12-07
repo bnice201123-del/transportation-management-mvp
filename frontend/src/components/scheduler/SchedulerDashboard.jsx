@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -54,28 +54,91 @@ import {
   InputGroup,
   InputLeftElement,
   Flex,
-  Spacer
+  Spacer,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  StatArrow,
+  Progress,
+  Divider,
+  SimpleGrid,
+  useBreakpointValue,
+  useColorModeValue,
+  CircularProgress,
+  CircularProgressLabel,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider,
+  Tooltip,
+  Wrap,
+  WrapItem
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, ViewIcon, DeleteIcon, RepeatIcon, SearchIcon, CalendarIcon } from '@chakra-ui/icons';
+import {
+  PlusIcon,
+  PencilIcon,
+  EyeIcon,
+  TrashIcon,
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  MapPinIcon,
+  TruckIcon,
+  UserGroupIcon,
+  ChartBarIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  BellIcon,
+  FunnelIcon,
+  ArrowDownTrayIcon,
+  Cog6ToothIcon,
+  ChatBubbleLeftRightIcon,
+  ChevronDownIcon,
+  HomeIcon,
+  AdjustmentsHorizontalIcon,
+  DocumentTextIcon,
+  ArrowRightIcon,
+  QueueListIcon,
+  PresentationChartLineIcon
+} from '@heroicons/react/24/outline';
+import {
+  ClockIcon as ClockIconSolid,
+  MapPinIcon as MapPinIconSolid,
+  TruckIcon as TruckIconSolid,
+  UserGroupIcon as UserGroupIconSolid,
+  CheckCircleIcon as CheckCircleIconSolid,
+  XCircleIcon as XCircleIconSolid,
+  CalendarDaysIcon as CalendarDaysIconSolid
+} from '@heroicons/react/24/solid';
 import axios from 'axios';
 import '../../config/axios';
 import Navbar from '../shared/Navbar';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
-import TripManagement from './TripManagement';
+import UnifiedTripManagement from '../shared/UnifiedTripManagement';
 import TripManagementModal from './TripManagementModal';
 import CalendarOverview from './CalendarOverview';
 
 const SchedulerDashboard = ({ view }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  
   const isManageView = view === 'manage' || location.pathname.includes('/manage') || location.search.includes('view=manage');
   const isCalendarView = view === 'calendar' || location.pathname.includes('/calendar') || location.search.includes('view=calendar');
   
+  // Core state management
   const [trips, setTrips] = useState([]);
   const [dispatchers, setDispatchers] = useState([]);
-  // Fixed: removed drivers state as schedulers now only assign to dispatchers
   const [loading, setLoading] = useState(true);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [formData, setFormData] = useState({
+    rider: '',
     riderName: '',
     riderPhone: '',
     pickupLocation: { address: '', lat: 0, lng: 0, placeId: '' },
@@ -83,11 +146,41 @@ const SchedulerDashboard = ({ view }) => {
     scheduledDate: '',
     scheduledTime: '',
     notes: '',
-    assignedDriver: '',
-
+    assignedDriver: ''
   });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Rider selection state
+  const [riders, setRiders] = useState([]);
+  const [ridersLoading, setRidersLoading] = useState(false);
+  const [riderSearchTerm, setRiderSearchTerm] = useState('');
+
+  // Enhanced filtering and display state
+  const [activeTab, setActiveTab] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('today');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  
+  // Responsive design variables
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const isTablet = useBreakpointValue({ base: false, md: true, lg: false });
+  const cardDirection = useBreakpointValue({ base: 'column', lg: 'row' });
+  const statsColumns = useBreakpointValue({ base: 1, sm: 2, lg: 4 });
+  const tableSize = useBreakpointValue({ base: 'sm', md: 'md' });
+  
+  // Color mode values
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const textColor = useColorModeValue('gray.800', 'white');
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  const successColor = useColorModeValue('green.500', 'green.300');
+  const warningColor = useColorModeValue('orange.500', 'orange.300');
+  const errorColor = useColorModeValue('red.500', 'red.300');
+  const primaryColor = useColorModeValue('green.600', 'green.300');
   
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
@@ -111,22 +204,29 @@ const SchedulerDashboard = ({ view }) => {
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
   
-  // Filtering state
-  const [activeTab, setActiveTab] = useState(0); // 0: Today, 1: Upcoming, 2: Past, 3: All
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  // Additional filtering state (removing duplicates)
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [filteredTrips, setFilteredTrips] = useState([]);
   
   const cancelRef = React.useRef();
   const toast = useToast();
 
-
+  // Auto-open modal if URL parameter is present
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('openModal') === 'true') {
+      onOpen();
+      // Clean the URL by removing the openModal parameter
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.delete('openModal');
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [location.search, onOpen]);
 
   const fetchTrips = useCallback(async () => {
     try {
       const response = await axios.get('/api/trips');
-      setTrips(response.data.trips);
+      setTrips(response.data.data?.trips || []);
     } catch (error) {
       console.error('Error fetching trips:', error);
       toast({
@@ -150,15 +250,163 @@ const SchedulerDashboard = ({ view }) => {
     }
   }, []);
 
+  const fetchRiders = useCallback(async () => {
+    setRidersLoading(true);
+    try {
+      const response = await axios.get('/api/users/riders');
+      setRiders(response.data.data || response.data || []);
+    } catch (error) {
+      console.error('Error fetching riders:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch riders',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setRidersLoading(false);
+    }
+  }, [toast]);
+
+  // Filter riders based on search term
+  const filteredRiders = useMemo(() => {
+    if (!riderSearchTerm) return riders;
+    
+    const searchLower = riderSearchTerm.toLowerCase();
+    return riders.filter(rider => 
+      rider.firstName?.toLowerCase().includes(searchLower) ||
+      rider.lastName?.toLowerCase().includes(searchLower) ||
+      rider.email?.toLowerCase().includes(searchLower) ||
+      rider._id?.toLowerCase().includes(searchLower)
+    );
+  }, [riders, riderSearchTerm]);
+
 
 
   useEffect(() => {
     const loadData = async () => {
       await fetchTrips();
       await fetchDispatchers();
+      await fetchRiders();
     };
     loadData();
-  }, [fetchTrips, fetchDispatchers]);
+  }, [fetchTrips, fetchDispatchers, fetchRiders]);
+
+  // Enhanced statistics calculations with memoization
+  const schedulerStats = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todaysTrips = trips.filter(trip => {
+      const tripDate = new Date(trip.scheduledDate);
+      tripDate.setHours(0, 0, 0, 0);
+      return tripDate.getTime() === today.getTime();
+    });
+    
+    const upcomingTrips = trips.filter(trip => {
+      const tripDate = new Date(trip.scheduledDate);
+      return tripDate > today;
+    });
+    
+    const completedTrips = trips.filter(trip => trip.status === 'completed');
+    const scheduledTrips = trips.filter(trip => 
+      ['pending', 'confirmed', 'assigned'].includes(trip.status)
+    );
+    
+    const assignedTrips = trips.filter(trip => trip.assignedDriver);
+    const unassignedTrips = trips.filter(trip => !trip.assignedDriver);
+    
+    const completionRate = trips.length > 0 
+      ? ((completedTrips.length / trips.length) * 100).toFixed(1)
+      : 0;
+    
+    const todayCompletionRate = todaysTrips.length > 0
+      ? ((todaysTrips.filter(t => t.status === 'completed').length / todaysTrips.length) * 100).toFixed(1)
+      : 0;
+    
+    const assignmentRate = trips.length > 0
+      ? ((assignedTrips.length / trips.length) * 100).toFixed(1)
+      : 0;
+    
+    return {
+      totalTrips: trips.length,
+      todaysTrips: todaysTrips.length,
+      upcomingTrips: upcomingTrips.length,
+      completedTrips: completedTrips.length,
+      scheduledTrips: scheduledTrips.length,
+      assignedTrips: assignedTrips.length,
+      unassignedTrips: unassignedTrips.length,
+      completionRate: parseFloat(completionRate),
+      todayCompletionRate: parseFloat(todayCompletionRate),
+      assignmentRate: parseFloat(assignmentRate),
+      totalDispatchers: dispatchers.length,
+      activeDispatchers: dispatchers.filter(d => d.isActive).length
+    };
+  }, [trips, dispatchers]);
+  
+  // Paginated and filtered trips calculation
+  const processedTrips = useMemo(() => {
+    let filtered = trips;
+    
+    // Apply search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(trip =>
+        trip.riderName?.toLowerCase().includes(searchLower) ||
+        trip.riderPhone?.includes(searchTerm) ||
+        trip.pickupLocation?.address?.toLowerCase().includes(searchLower) ||
+        trip.dropoffLocation?.address?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(trip => trip.status === statusFilter);
+    }
+    
+    // Apply tab filter
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    switch (activeTab) {
+      case 0: // Today
+        filtered = filtered.filter(trip => {
+          const tripDate = new Date(trip.scheduledDate);
+          tripDate.setHours(0, 0, 0, 0);
+          return tripDate.getTime() === today.getTime();
+        });
+        break;
+      case 1: // Upcoming
+        filtered = filtered.filter(trip => {
+          const tripDate = new Date(trip.scheduledDate);
+          return tripDate > today;
+        });
+        break;
+      case 2: // Completed
+        filtered = filtered.filter(trip => trip.status === 'completed');
+        break;
+      case 3: // All trips - no additional filter
+        break;
+    }
+    
+    // Sort by scheduled date
+    filtered.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
+    
+    // Calculate pagination
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedTrips = filtered.slice(startIndex, endIndex);
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    
+    return {
+      filteredTrips: filtered,
+      paginatedTrips,
+      totalPages,
+      currentPage,
+      totalItems: filtered.length
+    };
+  }, [trips, searchTerm, statusFilter, activeTab, currentPage, itemsPerPage]);
 
   // Update date and time every minute
   useEffect(() => {
@@ -247,8 +495,8 @@ const SchedulerDashboard = ({ view }) => {
 
   // Trips Table Component
   const TripsTable = ({ trips, showPattern, onView, onEdit, onDelete, formatDate, getStatusColor }) => (
-    <TableContainer overflowX="auto">
-      <Table variant="simple" size={{ base: "sm", md: "md" }}>
+    <TableContainer w="100%" overflowX="auto">
+      <Table variant="simple" size={{ base: "sm", md: "md" }} w="100%">
         <Thead>
           <Tr>
             <Th>Trip ID</Th>
@@ -305,19 +553,19 @@ const SchedulerDashboard = ({ view }) => {
                 <Td>
                   <HStack spacing={{ base: 1, md: 2 }}>
                     <IconButton
-                      icon={<ViewIcon />}
+                      icon={<Box as={EyeIcon} w={4} h={4} />}
                       size="sm"
                       onClick={() => onView(trip)}
                       aria-label="View trip"
                     />
                     <IconButton
-                      icon={<EditIcon />}
+                      icon={<Box as={PencilIcon} w={4} h={4} />}
                       size="sm"
                       onClick={() => onEdit(trip)}
                       aria-label="Edit trip"
                     />
                     <IconButton
-                      icon={<DeleteIcon />}
+                      icon={<Box as={TrashIcon} w={4} h={4} />}
                       size="sm"
                       colorScheme="red"
                       onClick={() => onDelete(trip)}
@@ -370,7 +618,7 @@ const SchedulerDashboard = ({ view }) => {
       };
 
       if (selectedTrip) {
-        await axios.put(`/trips/${selectedTrip._id}`, tripData);
+        await axios.put(`/api/trips/${selectedTrip._id}`, tripData);
         toast({
           title: 'Success',
           description: 'Trip updated successfully',
@@ -379,7 +627,7 @@ const SchedulerDashboard = ({ view }) => {
           isClosable: true,
         });
       } else {
-        await axios.post('/trips', tripData);
+        await axios.post('/api/trips', tripData);
         toast({
           title: 'Success',
           description: 'Trip created successfully',
@@ -392,7 +640,14 @@ const SchedulerDashboard = ({ view }) => {
       fetchTrips();
       handleCloseModal();
     } catch (error) {
-      setError(error.response?.data?.message || 'Error saving trip');
+      const errorMessage = error.response?.data?.message || 'Error saving trip';
+      const errorCode = error.response?.data?.error;
+      
+      if (errorCode === 'RIDER_NOT_FOUND') {
+        setError('Rider not found. Please select a valid registered rider from the system.');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -403,6 +658,7 @@ const SchedulerDashboard = ({ view }) => {
   const handleCloseModal = () => {
     setSelectedTrip(null);
     setFormData({
+      rider: '',
       riderName: '',
       riderPhone: '',
       pickupLocation: { address: '', lat: 0, lng: 0, placeId: '' },
@@ -420,6 +676,7 @@ const SchedulerDashboard = ({ view }) => {
     setSelectedTrip(trip);
     const scheduledDate = new Date(trip.scheduledDate);
     setFormData({
+      rider: trip.rider?._id || trip.rider || '',
       riderName: trip.riderName,
       riderPhone: trip.riderPhone,
       pickupLocation: trip.pickupLocation,
@@ -447,7 +704,7 @@ const SchedulerDashboard = ({ view }) => {
     
     setIsDeleting(true);
     try {
-      await axios.delete(`/trips/${tripToDelete._id}`);
+      await axios.delete(`/api/trips/${tripToDelete._id}`);
       toast({
         title: 'Success',
         description: 'Trip cancelled successfully',
@@ -516,303 +773,710 @@ const SchedulerDashboard = ({ view }) => {
   const completedTrips = (trips || []).filter(trip => trip.status === 'completed');
 
   return (
-    <Box minH="100vh" bg="gray.50">
+    <Box minH="100vh" bg="green.25" overflowX="hidden">
       <Navbar title="Scheduler Dashboard" />
       
-      <Box ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} pt={{ base: 4, md: 0 }}>
-        <Container 
-          maxW="container.xl" 
-          py={{ base: 4, md: 6 }} 
-          px={{ base: 4, md: 6, lg: 8 }}
-        >
-          {/* Conditional rendering for different views */}
-          {isManageView ? (
-            <TripManagement onTripUpdate={fetchTrips} />
-          ) : isCalendarView ? (
+      <Box pt={{ base: 4, md: 0 }} w="100%">
+        {/* Conditional rendering for different views */}
+        {isManageView ? (
+          <Box px={{ base: 3, md: 4, lg: 6 }} py={{ base: 4, md: 6 }}>
+            <UnifiedTripManagement onTripUpdate={fetchTrips} initialTrips={trips} />
+          </Box>
+        ) : isCalendarView ? (
+          <Box 
+            w="100%"
+            py={{ base: 4, md: 6 }} 
+            px={{ base: 3, md: 4, lg: 6 }}
+          >
             <CalendarOverview onTripUpdate={fetchTrips} />
-          ) : (
+          </Box>
+        ) : (
+          <Box 
+            w="100%"
+            py={{ base: 4, md: 6 }} 
+            px={{ base: 3, md: 4, lg: 6 }}
+          >
             <>
-          {/* Scheduler Landing Page Header */}
-          <Card mb={6} bg="green.50" borderLeft="4px solid" borderLeftColor="green.500">
-            <CardBody>
-              <VStack align="start" spacing={3}>
-                <Heading size="lg" color="green.700">
-                  Scheduler Control Center
-                </Heading>
-                <Text color="gray.600" fontSize="sm">
-                  Create, schedule, and manage all transportation trips. Access recurring trips and ride history from here.
-                </Text>
+          {/* Enhanced Breadcrumb Navigation */}
+          <Breadcrumb 
+            mb={{ base: 4, md: 6 }} 
+            fontSize={{ base: "sm", md: "md" }}
+            maxW="100%"
+          >
+            <BreadcrumbItem>
+              <BreadcrumbLink display="flex" alignItems="center" gap={2}>
+                <Box as={HomeIcon} w={4} h={4} />
+                Operations
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbItem isCurrentPage>
+              <BreadcrumbLink>Scheduler</BreadcrumbLink>
+            </BreadcrumbItem>
+          </Breadcrumb>
+
+          {/* Enhanced Scheduler Dashboard Header */}
+          <Card 
+            mb={{ base: 6, md: 8 }} 
+            bg={cardBg}
+            shadow="lg"
+            _hover={{ shadow: "xl", transform: "translateY(-2px)" }}
+            transition="all 0.3s ease"
+            borderLeft="6px solid"
+            borderLeftColor="green.500"
+            w="100%"
+            maxW="100%"
+          >
+            <CardBody p={{ base: 4, md: 6 }}>
+              <VStack align="start" spacing={{ base: 3, md: 4 }}>
+                <HStack spacing={3}>
+                  <Box 
+                    bg="green.100" 
+                    p={3} 
+                    borderRadius="lg"
+                    color="green.600"
+                  >
+                    <Box as={CalendarDaysIconSolid} w={8} h={8} />
+                  </Box>
+                  <VStack align="start" spacing={1}>
+                    <Heading 
+                      size={{ base: "lg", md: "xl" }} 
+                      color={primaryColor}
+                      fontWeight="bold"
+                    >
+                      Scheduler Control Center
+                    </Heading>
+                    <Text 
+                      color={mutedColor}
+                      fontSize={{ base: "sm", md: "md" }}
+                      fontWeight="medium"
+                    >
+                      Comprehensive trip scheduling and management hub
+                    </Text>
+                  </VStack>
+                </HStack>
+                
+                {/* Current Date/Time Display */}
+                <HStack spacing={2} color={mutedColor}>
+                  <Box as={ClockIconSolid} w={4} h={4} />
+                  <Text fontSize={{ base: "sm", md: "md" }} fontWeight="medium">
+                    {formatDateTime(currentDateTime)}
+                  </Text>
+                </HStack>
               </VStack>
             </CardBody>
           </Card>
-          
-          {/* Date and Time Display */}
-          <Heading 
-            as="h3" 
-            size={{ base: "sm", sm: "md", lg: "lg" }} 
-            textAlign="center" 
-            mb={{ base: 4, md: 6 }} 
-            color="gray.600"
-            fontWeight="medium"
-          >
-            {formatDateTime(currentDateTime)}
-          </Heading>
-          
-          {/* Statistics Cards - Responsive Grid */}
-          <Grid 
-            templateColumns={{ 
-              base: "1fr", 
-              sm: "repeat(2, 1fr)", 
-              lg: "repeat(3, 1fr)",
-              xl: "repeat(4, 1fr)"
-            }} 
-            gap={{ base: 3, md: 6 }} 
-            mb={{ base: 6, md: 8 }}
-          >
-            <Card shadow="md" _hover={{ shadow: "lg" }} transition="all 0.2s">
-              <CardBody p={{ base: 4, md: 6 }}>
-                <VStack align="start" spacing={2}>
-                  <Text 
-                    fontSize={{ base: "xl", md: "2xl", lg: "3xl" }} 
-                    fontWeight="bold" 
-                    color="blue.500"
-                  >
-                    {todayTrips.length}
-                  </Text>
-                  <Text 
-                    fontSize={{ base: "sm", md: "md" }}
-                    color="gray.600"
-                    fontWeight="medium"
-                  >
-                    Today's Trips
-                  </Text>
-                </VStack>
-              </CardBody>
-            </Card>
-            
-            <Card shadow="md" _hover={{ shadow: "lg" }} transition="all 0.2s">
-              <CardBody p={{ base: 4, md: 6 }}>
-                <VStack align="start" spacing={2}>
-                  <Text 
-                    fontSize={{ base: "xl", md: "2xl", lg: "3xl" }} 
-                    fontWeight="bold" 
-                    color="orange.500"
-                  >
-                    {pendingTrips.length}
-                  </Text>
-                  <Text 
-                    fontSize={{ base: "sm", md: "md" }}
-                    color="gray.600"
-                    fontWeight="medium"
-                  >
-                    Pending Trips
-                  </Text>
-                </VStack>
-              </CardBody>
-            </Card>
-            
-            <Card shadow="md" _hover={{ shadow: "lg" }} transition="all 0.2s">
-              <CardBody p={{ base: 4, md: 6 }}>
-                <VStack align="start" spacing={2}>
-                  <Text 
-                    fontSize={{ base: "xl", md: "2xl", lg: "3xl" }} 
-                    fontWeight="bold" 
-                    color="green.500"
-                  >
-                    {completedTrips.length}
-                  </Text>
-                  <Text 
-                    fontSize={{ base: "sm", md: "md" }}
-                    color="gray.600"
-                    fontWeight="medium"
-                  >
-                    Completed Trips
-                  </Text>
-                </VStack>
-              </CardBody>
-            </Card>
-            
-            <Card shadow="md" _hover={{ shadow: "lg" }} transition="all 0.2s">
-              <CardBody p={{ base: 4, md: 6 }}>
-                <VStack align="start" spacing={2}>
-                  <Text 
-                    fontSize={{ base: "xl", md: "2xl", lg: "3xl" }} 
-                    fontWeight="bold" 
-                    color="purple.500"
-                  >
-                    {dispatchers.length}
-                  </Text>
-                  <Text 
-                    fontSize={{ base: "sm", md: "md" }}
-                    color="gray.600"
-                    fontWeight="medium"
-                  >
-                    Available Dispatchers
-                  </Text>
-                </VStack>
-              </CardBody>
-            </Card>
-        </Grid>
 
-          {/* Action Buttons - Responsive Stack */}
-          <Flex 
-            direction={{ base: "column", sm: "row" }}
-            gap={{ base: 3, md: 4 }}
-            mb={{ base: 6, md: 8 }}
-            wrap="wrap"
-          >
-            <Button 
-              leftIcon={<AddIcon />} 
-              colorScheme="blue" 
-              onClick={onOpen}
-              size={{ base: "md", md: "lg" }}
-              flex={{ base: "1", sm: "none" }}
-            >
-              <Text display={{ base: "none", sm: "block" }}>Create New Trip</Text>
-              <Text display={{ base: "block", sm: "none" }}>New Trip</Text>
-            </Button>
-
-            <Button 
-              leftIcon={<SearchIcon />} 
-              colorScheme="green" 
-              variant="outline"
-              onClick={onTripManagementOpen}
-              size={{ base: "md", md: "lg" }}
-              flex={{ base: "1", sm: "none" }}
-            >
-              <Text display={{ base: "none", sm: "block" }}>Manage Trips</Text>
-              <Text display={{ base: "block", sm: "none" }}>Manage</Text>
-            </Button>
-
-            <Button 
-              leftIcon={<RepeatIcon />} 
-              colorScheme="purple" 
-              variant="outline"
-              onClick={() => window.location.href = '/scheduler/recurring'}
-              size={{ base: "md", md: "lg" }}
-              flex={{ base: "1", sm: "none" }}
-            >
-              <Text display={{ base: "none", sm: "block" }}>Recurring Trips</Text>
-              <Text display={{ base: "block", sm: "none" }}>Recurring</Text>
-            </Button>
-
-            <Button 
-              leftIcon={<CalendarIcon />} 
-              colorScheme="orange" 
-              variant="outline"
-              onClick={() => window.location.href = '/scheduler/history'}
-              size={{ base: "md", md: "lg" }}
-              flex={{ base: "1", sm: "none" }}
-            >
-              <Text display={{ base: "none", sm: "block" }}>Ride History</Text>
-              <Text display={{ base: "block", sm: "none" }}>History</Text>
-            </Button>
-
-          </Flex>
-
-          {/* Enhanced Trips Management with Filtering */}
-          <Card shadow="md">
-            <CardHeader pb={{ base: 2, md: 4 }}>
-              <Flex 
-                direction={{ base: "column", lg: "row" }}
-                justify="space-between" 
-                align={{ base: "start", lg: "center" }}
-                gap={{ base: 3, lg: 4 }}
+          {/* Quick Actions Dropdown */}
+          <Box mb={{ base: 6, md: 8 }}>
+            <Menu>
+              <MenuButton
+                as={Button}
+                rightIcon={<Box as={ChevronDownIcon} w={5} h={5} />}
+                leftIcon={<Box as={AdjustmentsHorizontalIcon} w={5} h={5} />}
+                size="md"
+                variant="solid"
+                colorScheme="green"
               >
-                <Heading size={{ base: "md", md: "lg" }}>Trip Management</Heading>
-                
-                {/* Search and Filters - Responsive Layout */}
-              <HStack spacing={4} flexWrap="wrap">
-                <InputGroup maxW="300px">
-                  <InputLeftElement pointerEvents="none">
-                    <SearchIcon color="gray.300" />
-                  </InputLeftElement>
-                  <Input
-                    placeholder="Search trips..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </InputGroup>
-                
-                <Select
-                  placeholder="All Statuses"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  maxW="150px"
+                Quick Actions
+              </MenuButton>
+              <MenuList>
+                <MenuItem 
+                  icon={<Box as={PlusIcon} w={5} h={5} />}
+                  onClick={onOpen}
                 >
-                  <option value="all">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="assigned">Assigned</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </Select>
-              </HStack>
-            </Flex>
+                  Schedule Trip
+                </MenuItem>
+                <MenuItem 
+                  icon={<Box as={MagnifyingGlassIcon} w={5} h={5} />}
+                  onClick={() => navigate('/scheduler?view=manage')}
+                  fontWeight={isManageView ? "bold" : "normal"}
+                  bg={isManageView ? "blue.50" : "transparent"}
+                >
+                  Trip Management
+                </MenuItem>
+                <MenuItem 
+                  icon={<Box as={CalendarDaysIcon} w={5} h={5} />}
+                  onClick={() => navigate('/scheduler?view=calendar')}
+                  fontWeight={isCalendarView ? "bold" : "normal"}
+                  bg={isCalendarView ? "blue.50" : "transparent"}
+                >
+                  Calendar View
+                </MenuItem>
+                <MenuItem 
+                  icon={<Box as={DocumentTextIcon} w={5} h={5} />}
+                  onClick={() => navigate('/scheduler/recurring-trips')}
+                >
+                  Recurring Trips
+                </MenuItem>
+                
+                <MenuDivider />
+                
+                <MenuItem 
+                  icon={<Box as={UserGroupIconSolid} w={5} h={5} />}
+                  onClick={() => navigate('/riders?tab=all-riders')}
+                >
+                  All Riders
+                </MenuItem>
+                <MenuItem 
+                  icon={<Box as={ChartBarIcon} w={5} h={5} />}
+                  onClick={() => navigate('/admin/analytics')}
+                >
+                  Analytics Dashboard
+                </MenuItem>
+                
+                <MenuDivider />
+                
+                <MenuItem 
+                  icon={<Box as={ArrowDownTrayIcon} w={5} h={5} />}
+                >
+                  Export Schedule
+                </MenuItem>
+                <MenuItem 
+                  icon={<Box as={Cog6ToothIcon} w={5} h={5} />}
+                >
+                  Settings
+                </MenuItem>
+              </MenuList>
+            </Menu>
+          </Box>
+
+          {/* Statistics Dashboard */}
+          <SimpleGrid 
+            columns={{ base: 2, md: 4 }}
+            spacing={{ base: 3, md: 4 }} 
+            mb={{ base: 6, md: 8 }}
+            w="100%"
+          >
+            {/* Today's Trips */}
+            <Card 
+              bg={cardBg}
+              shadow="md" 
+              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
+              transition="all 0.2s"
+              borderTop="4px solid"
+              borderTopColor="green.500"
+            >
+              <CardBody p={4} textAlign="center">
+                <Box as={CalendarDaysIconSolid} w={6} h={6} color="green.500" mx="auto" mb={2} />
+                <Text fontSize="3xl" fontWeight="bold" color="green.600" mb={1}>
+                  {schedulerStats.todaysTrips}
+                </Text>
+                <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                  Today's Trips
+                </Text>
+              </CardBody>
+            </Card>
             
-            {/* Date Range Filter */}
-            <HStack mt={4} spacing={4} flexWrap="wrap">
-              <HStack>
-                <CalendarIcon color="gray.500" />
-                <Text fontSize="sm" color="gray.600">Date Range:</Text>
-                <Input
-                  type="date"
-                  value={dateRange.start}
-                  onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
-                  size="sm"
-                  maxW="150px"
-                />
-                <Text fontSize="sm" color="gray.500">to</Text>
-                <Input
-                  type="date"
-                  value={dateRange.end}
-                  onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
-                  size="sm"
-                  maxW="150px"
-                />
-              </HStack>
-              
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setSearchTerm('');
-                  setStatusFilter('all');
-                  setDateRange({ start: '', end: '' });
-                }}
+            {/* Pending Trips */}
+            <Card 
+              bg={cardBg}
+              shadow="md" 
+              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
+              transition="all 0.2s"
+              borderTop="4px solid"
+              borderTopColor="orange.500"
+            >
+              <CardBody p={4} textAlign="center">
+                <Box as={ClockIconSolid} w={6} h={6} color="orange.500" mx="auto" mb={2} />
+                <Text fontSize="3xl" fontWeight="bold" color="orange.600" mb={1}>
+                  {pendingTrips.length}
+                </Text>
+                <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                  Pending Trips
+                </Text>
+              </CardBody>
+            </Card>
+
+            {/* Completed Trips */}
+            <Card 
+              bg={cardBg}
+              shadow="md" 
+              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
+              transition="all 0.2s"
+              borderTop="4px solid"
+              borderTopColor="green.400"
+            >
+              <CardBody p={4} textAlign="center">
+                <Box as={CheckCircleIconSolid} w={6} h={6} color="green.400" mx="auto" mb={2} />
+                <Text fontSize="3xl" fontWeight="bold" color="green.500" mb={1}>
+                  {completedTrips.length}
+                </Text>
+                <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                  Completed Trips
+                </Text>
+              </CardBody>
+            </Card>
+
+            {/* Available Dispatchers */}
+            <Card 
+              bg={cardBg}
+              shadow="md" 
+              _hover={{ shadow: "lg", transform: "translateY(-2px)" }} 
+              transition="all 0.2s"
+              borderTop="4px solid"
+              borderTopColor="blue.500"
+            >
+              <CardBody p={4} textAlign="center">
+                <Box as={UserGroupIconSolid} w={6} h={6} color="blue.500" mx="auto" mb={2} />
+                <Text fontSize="3xl" fontWeight="bold" color="blue.600" mb={1}>
+                  {dispatchers.length}
+                </Text>
+                <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                  Available Dispatchers
+                </Text>
+              </CardBody>
+            </Card>
+          </SimpleGrid>
+
+          {/* Enhanced Action Buttons - Mobile-First Design */}
+          <Card 
+            mb={{ base: 6, md: 8 }}
+            bg="white"
+            shadow="md"
+            borderRadius="xl"
+            border="1px solid"
+            borderColor="green.100"
+            w="100%"
+            maxW="100%"
+          >
+            <CardBody p={{ base: 4, md: 6 }}>
+              <Grid 
+                templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }}
+                gap={{ base: 3, md: 4 }}
               >
-                Clear Filters
-              </Button>
-            </HStack>
-          </CardHeader>
+                {/* Create New Trip - Primary Action */}
+                <Button 
+                  leftIcon={<Box as={PlusIcon} w={5} h={5} />} 
+                  colorScheme="green" 
+                  onClick={onOpen}
+                  size={{ base: "lg", md: "lg" }}
+                  height={{ base: "50px", md: "56px" }}
+                  fontSize={{ base: "sm", md: "md" }}
+                  fontWeight="semibold"
+                  _hover={{ transform: "translateY(-1px)", shadow: "lg" }}
+                  transition="all 0.2s ease"
+                >
+                  <VStack spacing={0}>
+                    <Text>➕ Create Trip</Text>
+                    <Text fontSize="xs" opacity={0.8} display={{ base: "none", md: "block" }}>
+                      New Schedule
+                    </Text>
+                  </VStack>
+                </Button>
+
+                {/* Manage Trips */}
+                <Button 
+                  leftIcon={<Box as={MagnifyingGlassIcon} w={5} h={5} />} 
+                  colorScheme="green" 
+                  variant="outline"
+                  onClick={onTripManagementOpen}
+                  size={{ base: "lg", md: "lg" }}
+                  height={{ base: "50px", md: "56px" }}
+                  fontSize={{ base: "sm", md: "md" }}
+                  fontWeight="semibold"
+                  _hover={{ transform: "translateY(-1px)", shadow: "lg", bg: "green.50" }}
+                  transition="all 0.2s ease"
+                  borderWidth="2px"
+                >
+                  <VStack spacing={0}>
+                    <Text>🔍 Manage Trips</Text>
+                    <Text fontSize="xs" opacity={0.7} display={{ base: "none", md: "block" }}>
+                      Edit & Update
+                    </Text>
+                  </VStack>
+                </Button>
+
+                {/* Quick Access to Calendar View */}
+                <Button 
+                  leftIcon={<Box as={CalendarDaysIcon} w={5} h={5} />} 
+                  colorScheme="green" 
+                  variant="outline"
+                  onClick={() => setActiveTab(4)} // Switch to Calendar tab
+                  size={{ base: "lg", md: "lg" }}
+                  height={{ base: "50px", md: "56px" }}
+                  fontSize={{ base: "sm", md: "md" }}
+                  fontWeight="semibold"
+                  _hover={{ transform: "translateY(-1px)", shadow: "lg", bg: "green.50" }}
+                  transition="all 0.2s ease"
+                  borderWidth="2px"
+                >
+                  <VStack spacing={0}>
+                    <Text>� Calendar</Text>
+                    <Text fontSize="xs" opacity={0.7} display={{ base: "none", md: "block" }}>
+                      Visual Schedule
+                    </Text>
+                  </VStack>
+                </Button>
+
+                {/* Quick Access to Analytics */}
+                <Button 
+                  leftIcon={<Box as={EyeIcon} w={5} h={5} />} 
+                  colorScheme="green" 
+                  variant="outline"
+                  onClick={() => setActiveTab(6)} // Switch to Analytics tab
+                  size={{ base: "lg", md: "lg" }}
+                  height={{ base: "50px", md: "56px" }}
+                  fontSize={{ base: "sm", md: "md" }}
+                  fontWeight="semibold"
+                  _hover={{ transform: "translateY(-1px)", shadow: "lg", bg: "green.50" }}
+                  transition="all 0.2s ease"
+                  borderWidth="2px"
+                >
+                  <VStack spacing={0}>
+                    <Text>� Analytics</Text>
+                    <Text fontSize="xs" opacity={0.7} display={{ base: "none", md: "block" }}>
+                      Performance
+                    </Text>
+                  </VStack>
+                </Button>
+              </Grid>
+            </CardBody>
+          </Card>
+
+          {/* Enhanced Trips Management with Advanced Filtering */}
+          <Card 
+            shadow="xl"
+            borderRadius="xl"
+            border="1px solid"
+            borderColor="green.200"
+            bg="white"
+            w="100%"
+            maxW="100%"
+            overflowX="auto"
+          >
+            <CardHeader pb={{ base: 2, md: 4 }} bg="green.50" borderTopRadius="xl">
+              <VStack spacing={{ base: 3, lg: 4 }} align="stretch">
+                {/* Header Section */}
+                <Flex 
+                  direction={{ base: "column", lg: "row" }}
+                  justify="space-between" 
+                  align={{ base: "start", lg: "center" }}
+                  gap={{ base: 3, lg: 4 }}
+                >
+                  <Heading 
+                    size={{ base: "md", md: "lg" }} 
+                    color="green.700"
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
+                  >
+                    📋 Trip Management & Analytics
+                  </Heading>
+                </Flex>
+                
+                {/* Enhanced Search and Filters */}
+                <Card bg="white" shadow="sm" borderRadius="lg">
+                  <CardBody p={{ base: 3, md: 4 }}>
+                    <VStack spacing={4} align="stretch">
+                      {/* Search and Status Filter Row */}
+                      <Flex
+                        direction={{ base: "column", md: "row" }}
+                        gap={{ base: 3, md: 4 }}
+                        align={{ base: "stretch", md: "center" }}
+                      >
+                        <InputGroup flex="1" maxW={{ base: "full", md: "300px" }}>
+                          <InputLeftElement pointerEvents="none">
+                            <Box as={MagnifyingGlassIcon} w={5} h={5} color="green.400" />
+                          </InputLeftElement>
+                          <Input
+                            placeholder="🔍 Search trips by rider, location, or notes..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            borderColor="green.200"
+                            _hover={{ borderColor: "green.300" }}
+                            _focus={{ borderColor: "green.500", boxShadow: "0 0 0 1px var(--chakra-colors-green-500)" }}
+                          />
+                        </InputGroup>
+                        
+                        <Select
+                          placeholder="🎯 All Statuses"
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                          maxW={{ base: "full", md: "180px" }}
+                          borderColor="green.200"
+                          _hover={{ borderColor: "green.300" }}
+                          _focus={{ borderColor: "green.500" }}
+                        >
+                          <option value="all">All Statuses</option>
+                          <option value="pending">⏳ Pending</option>
+                          <option value="assigned">👤 Assigned</option>
+                          <option value="in_progress">🚗 In Progress</option>
+                          <option value="completed">✅ Completed</option>
+                          <option value="cancelled">❌ Cancelled</option>
+                        </Select>
+                      </Flex>
+                      
+                      {/* Date Range Filter Row */}
+                      <Flex
+                        direction={{ base: "column", sm: "row" }}
+                        gap={{ base: 3, sm: 2 }}
+                        align={{ base: "stretch", sm: "center" }}
+                        flexWrap="wrap"
+                      >
+                        <Flex align="center" gap={2} minW="fit-content">
+                          <Box as={CalendarDaysIcon} w={4} h={4} color="green.500" />
+                          <Text fontSize="sm" color="gray.700" fontWeight="semibold">
+                            Date Range:
+                          </Text>
+                        </Flex>
+                        
+                        <Flex gap={2} align="center" flex="1">
+                          <Input
+                            type="date"
+                            value={dateRange.start}
+                            onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
+                            size="sm"
+                            maxW={{ base: "full", sm: "150px" }}
+                            borderColor="green.200"
+                            _hover={{ borderColor: "green.300" }}
+                          />
+                          <Text fontSize="sm" color="gray.500" fontWeight="medium">to</Text>
+                          <Input
+                            type="date"
+                            value={dateRange.end}
+                            onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
+                            size="sm"
+                            maxW={{ base: "full", sm: "150px" }}
+                            borderColor="green.200"
+                            _hover={{ borderColor: "green.300" }}
+                          />
+                        </Flex>
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          colorScheme="green"
+                          onClick={() => {
+                            setSearchTerm('');
+                            setStatusFilter('all');
+                            setDateRange({ start: '', end: '' });
+                          }}
+                          _hover={{ bg: "green.50" }}
+                        >
+                          🗑️ Clear Filters
+                        </Button>
+                      </Flex>
+                    </VStack>
+                  </CardBody>
+                </Card>
+              </VStack>
+            </CardHeader>
           
-          <CardBody>
-            <Tabs index={activeTab} onChange={setActiveTab} variant="enclosed">
-              <TabList>
-                <Tab>Today ({(trips || []).filter(trip => {
-                  const tripDate = new Date(trip.scheduledDate);
-                  const today = new Date();
-                  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                  const todayEnd = new Date(todayStart);
-                  todayEnd.setDate(todayEnd.getDate() + 1);
-                  return tripDate >= todayStart && tripDate < todayEnd;
-                }).length})</Tab>
-                <Tab>Upcoming ({(trips || []).filter(trip => {
-                  const tripDate = new Date(trip.scheduledDate);
-                  const tomorrow = new Date();
-                  tomorrow.setDate(tomorrow.getDate() + 1);
-                  return tripDate >= tomorrow;
-                }).length})</Tab>
-                <Tab>Past ({(trips || []).filter(trip => {
-                  const tripDate = new Date(trip.scheduledDate);
-                  const today = new Date();
-                  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                  return tripDate < todayStart;
-                }).length})</Tab>
-                <Tab>All Trips ({(trips || []).length})</Tab>
+          <CardBody p={{ base: 3, md: 4 }}>
+            <Tabs 
+              index={activeTab} 
+              onChange={setActiveTab} 
+              variant="soft-rounded" 
+              colorScheme="green"
+              size={{ base: "sm", md: "md" }}
+            >
+              <TabList 
+                mb={4}
+                gap={{ base: 1, md: 2 }}
+                flexWrap="wrap"
+                justifyContent={{ base: "center", md: "flex-start" }}
+                bg="green.50"
+                p={2}
+                borderRadius="lg"
+              >
+                {/* Trip Management Tabs - Enhanced with HeroIcons */}
+                <Tab 
+                  fontSize={{ base: "xs", md: "sm" }}
+                  fontWeight="semibold"
+                  _selected={{ 
+                    bg: "green.600", 
+                    color: "white",
+                    shadow: "md"
+                  }}
+                  _hover={{ bg: "green.100" }}
+                  transition="all 0.2s ease"
+                >
+                  <HStack spacing={1}>
+                    <Box as={ClockIcon} w={3} h={3} />
+                    <Text>
+                      Today ({(trips || []).filter(trip => {
+                        const tripDate = new Date(trip.scheduledDate);
+                        const today = new Date();
+                        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                        const todayEnd = new Date(todayStart);
+                        todayEnd.setDate(todayEnd.getDate() + 1);
+                        return tripDate >= todayStart && tripDate < todayEnd;
+                      }).length})
+                    </Text>
+                  </HStack>
+                </Tab>
+                <Tab 
+                  fontSize={{ base: "xs", md: "sm" }}
+                  fontWeight="semibold"
+                  _selected={{ 
+                    bg: "green.600", 
+                    color: "white",
+                    shadow: "md"
+                  }}
+                  _hover={{ bg: "green.100" }}
+                  transition="all 0.2s ease"
+                >
+                  <HStack spacing={1}>
+                    <Box as={ArrowRightIcon} w={3} h={3} />
+                    <Text>
+                      Upcoming ({(trips || []).filter(trip => {
+                        const tripDate = new Date(trip.scheduledDate);
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        return tripDate >= tomorrow;
+                      }).length})
+                    </Text>
+                  </HStack>
+                </Tab>
+                <Tab 
+                  fontSize={{ base: "xs", md: "sm" }}
+                  fontWeight="semibold"
+                  _selected={{ 
+                    bg: "green.600", 
+                    color: "white",
+                    shadow: "md"
+                  }}
+                  _hover={{ bg: "green.100" }}
+                  transition="all 0.2s ease"
+                >
+                  <HStack spacing={1}>
+                    <Box as={ChartBarIcon} w={3} h={3} />
+                    <Text>
+                      History ({(trips || []).filter(trip => {
+                        const tripDate = new Date(trip.scheduledDate);
+                        const today = new Date();
+                        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                        return tripDate < todayStart;
+                      }).length})
+                    </Text>
+                  </HStack>
+                </Tab>
+                <Tab 
+                  fontSize={{ base: "xs", md: "sm" }}
+                  fontWeight="semibold"
+                  _selected={{ 
+                    bg: "green.600", 
+                    color: "white",
+                    shadow: "md"
+                  }}
+                  _hover={{ bg: "green.100" }}
+                  transition="all 0.2s ease"
+                >
+                  <HStack spacing={1}>
+                    <Box as={QueueListIcon} w={3} h={3} />
+                    <Text>All Trips ({(trips || []).length})</Text>
+                  </HStack>
+                </Tab>
+                
+                {/* Additional Feature Tabs - Enhanced with HeroIcons */}
+                <Tab 
+                  fontSize={{ base: "xs", md: "sm" }}
+                  fontWeight="semibold"
+                  _selected={{ 
+                    bg: "green.600", 
+                    color: "white",
+                    shadow: "md"
+                  }}
+                  _hover={{ bg: "green.100" }}
+                  transition="all 0.2s ease"
+                >
+                  <HStack spacing={1}>
+                    <Box as={CalendarDaysIcon} w={3} h={3} />
+                    <Text>Calendar</Text>
+                  </HStack>
+                </Tab>
+                <Tab 
+                  fontSize={{ base: "xs", md: "sm" }}
+                  fontWeight="semibold"
+                  _selected={{ 
+                    bg: "green.600", 
+                    color: "white",
+                    shadow: "md"
+                  }}
+                  _hover={{ bg: "green.100" }}
+                  transition="all 0.2s ease"
+                >
+                  <HStack spacing={1}>
+                    <Box as={ArrowPathIcon} w={3} h={3} />
+                    <Text>Recurring</Text>
+                  </HStack>
+                </Tab>
+                <Tab 
+                  fontSize={{ base: "xs", md: "sm" }}
+                  fontWeight="semibold"
+                  _selected={{ 
+                    bg: "green.600", 
+                    color: "white",
+                    shadow: "md"
+                  }}
+                  _hover={{ bg: "green.100" }}
+                  transition="all 0.2s ease"
+                >
+                  <HStack spacing={1}>
+                    <Box as={PresentationChartLineIcon} w={3} h={3} />
+                    <Text>Analytics</Text>
+                  </HStack>
+                </Tab>
               </TabList>
 
               <TabPanels>
+                {/* Today's Trips */}
+                <TabPanel px={0}>
+                  <TripsTable 
+                    trips={filteredTrips.filter(trip => {
+                      const tripDate = new Date(trip.scheduledDate);
+                      const today = new Date();
+                      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                      const todayEnd = new Date(todayStart);
+                      todayEnd.setDate(todayEnd.getDate() + 1);
+                      return tripDate >= todayStart && tripDate < todayEnd;
+                    })} 
+                    showPattern={false}
+                    onView={openViewModal}
+                    onEdit={openEditModal}
+                    onDelete={openDeleteDialog}
+                    formatDate={formatDate}
+                    getStatusColor={getStatusColor}
+                  />
+                </TabPanel>
+                
+                {/* Upcoming Trips */}
+                <TabPanel px={0}>
+                  <TripsTable 
+                    trips={filteredTrips.filter(trip => {
+                      const tripDate = new Date(trip.scheduledDate);
+                      const tomorrow = new Date();
+                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      return tripDate >= tomorrow;
+                    })} 
+                    showPattern={false}
+                    onView={openViewModal}
+                    onEdit={openEditModal}
+                    onDelete={openDeleteDialog}
+                    formatDate={formatDate}
+                    getStatusColor={getStatusColor}
+                  />
+                </TabPanel>
+                
+                {/* Past Trips/History */}
+                <TabPanel px={0}>
+                  <TripsTable 
+                    trips={filteredTrips.filter(trip => {
+                      const tripDate = new Date(trip.scheduledDate);
+                      const today = new Date();
+                      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                      return tripDate < todayStart;
+                    })} 
+                    showPattern={false}
+                    onView={openViewModal}
+                    onEdit={openEditModal}
+                    onDelete={openDeleteDialog}
+                    formatDate={formatDate}
+                    getStatusColor={getStatusColor}
+                  />
+                </TabPanel>
+                
+                {/* All Trips */}
                 <TabPanel px={0}>
                   <TripsTable 
                     trips={filteredTrips} 
@@ -824,46 +1488,94 @@ const SchedulerDashboard = ({ view }) => {
                     getStatusColor={getStatusColor}
                   />
                 </TabPanel>
+                
+                {/* Calendar View */}
                 <TabPanel px={0}>
-                  <TripsTable 
-                    trips={filteredTrips} 
-                    showPattern={false}
-                    onView={openViewModal}
-                    onEdit={openEditModal}
-                    onDelete={openDeleteDialog}
-                    formatDate={formatDate}
-                    getStatusColor={getStatusColor}
-                  />
+                  <Card bg="white" shadow="sm" p={4}>
+                    <VStack spacing={4} align="center">
+                      <Heading size="md" color="green.600">📅 Calendar View</Heading>
+                      <Text color="gray.600" textAlign="center">
+                        Advanced calendar interface for visual trip scheduling and management.
+                      </Text>
+                      <Button 
+                        colorScheme="green" 
+                        size="lg"
+                        onClick={() => window.location.href = '/scheduler/calendar'}
+                      >
+                        Open Full Calendar View
+                      </Button>
+                    </VStack>
+                  </Card>
                 </TabPanel>
+                
+                {/* Recurring Trips */}
                 <TabPanel px={0}>
-                  <TripsTable 
-                    trips={filteredTrips} 
-                    showPattern={false}
-                    onView={openViewModal}
-                    onEdit={openEditModal}
-                    onDelete={openDeleteDialog}
-                    formatDate={formatDate}
-                    getStatusColor={getStatusColor}
-                  />
+                  <Card bg="white" shadow="sm" p={4}>
+                    <VStack spacing={4} align="center">
+                      <Heading size="md" color="green.600">🔄 Recurring Trips</Heading>
+                      <Text color="gray.600" textAlign="center">
+                        Manage scheduled routes, weekly patterns, and recurring transportation schedules.
+                      </Text>
+                      <Button 
+                        colorScheme="green" 
+                        size="lg"
+                        onClick={() => window.location.href = '/scheduler/recurring'}
+                      >
+                        Manage Recurring Trips
+                      </Button>
+                    </VStack>
+                  </Card>
                 </TabPanel>
+                
+                {/* Analytics */}
                 <TabPanel px={0}>
-                  <TripsTable 
-                    trips={filteredTrips} 
-                    showPattern={false}
-                    onView={openViewModal}
-                    onEdit={openEditModal}
-                    onDelete={openDeleteDialog}
-                    formatDate={formatDate}
-                    getStatusColor={getStatusColor}
-                  />
+                  <VStack spacing={6}>
+                    <Card bg="white" shadow="sm" p={6} w="full">
+                      <VStack spacing={4}>
+                        <Heading size="md" color="green.600">📈 Scheduler Analytics</Heading>
+                        
+                        {/* Analytics Summary Cards */}
+                        <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={4} w="full">
+                          <Card bg="green.50" p={4}>
+                            <VStack>
+                              <Text fontSize="2xl" fontWeight="bold" color="green.600">
+                                {Math.round((completedTrips.length / (trips.length || 1)) * 100)}%
+                              </Text>
+                              <Text fontSize="sm" color="gray.600">Completion Rate</Text>
+                            </VStack>
+                          </Card>
+                          <Card bg="orange.50" p={4}>
+                            <VStack>
+                              <Text fontSize="2xl" fontWeight="bold" color="orange.500">
+                                {pendingTrips.length}
+                              </Text>
+                              <Text fontSize="sm" color="gray.600">Pending Assignments</Text>
+                            </VStack>
+                          </Card>
+                          <Card bg="blue.50" p={4}>
+                            <VStack>
+                              <Text fontSize="2xl" fontWeight="bold" color="blue.500">
+                                {Math.round(trips.length / 7)}
+                              </Text>
+                              <Text fontSize="sm" color="gray.600">Avg Daily Trips</Text>
+                            </VStack>
+                          </Card>
+                        </Grid>
+                        
+                        <Text color="gray.600" textAlign="center" mt={4}>
+                          Detailed analytics and reporting features for scheduling optimization and performance tracking.
+                        </Text>
+                      </VStack>
+                    </Card>
+                  </VStack>
                 </TabPanel>
               </TabPanels>
             </Tabs>
           </CardBody>
         </Card>
             </>
-          )}
-        </Container>
+          </Box>
+        )}
       </Box>
 
       {/* Create/Edit Trip Modal */}
@@ -884,72 +1596,112 @@ const SchedulerDashboard = ({ view }) => {
               )}
               
               <VStack spacing={4}>
+                <FormControl isRequired>
+                  <FormLabel>Search and Select Rider</FormLabel>
+                  <Input
+                    placeholder="Search by name, email, or ID..."
+                    value={riderSearchTerm}
+                    onChange={(e) => setRiderSearchTerm(e.target.value)}
+                    mb={2}
+                  />
+                  <Select
+                    placeholder={ridersLoading ? "Loading riders..." : "Select a rider"}
+                    value={formData.rider}
+                    onChange={(e) => {
+                      const selectedRider = riders.find(r => r._id === e.target.value);
+                      setFormData(prev => ({
+                        ...prev,
+                        rider: e.target.value,
+                        riderName: selectedRider ? `${selectedRider.firstName} ${selectedRider.lastName}` : '',
+                        riderPhone: selectedRider?.phone || ''
+                      }));
+                    }}
+                    isDisabled={ridersLoading}
+                  >
+                    {filteredRiders.map((rider) => (
+                      <option key={rider._id} value={rider._id}>
+                        {rider.firstName} {rider.lastName} ({rider.email})
+                      </option>
+                    ))}
+                  </Select>
+                  <Text fontSize="xs" color="gray.500" mt={1}>
+                    {filteredRiders.length} rider{filteredRiders.length !== 1 ? 's' : ''} found
+                  </Text>
+                </FormControl>
+
+                {formData.rider && (
+                  <Button
+                    colorScheme="purple"
+                    width="100%"
+                    onClick={() => {
+                      const selectedRider = riders.find(r => r._id === formData.rider);
+                      if (selectedRider) {
+                        navigate('/scheduler/recurring', {
+                          state: {
+                            riderId: selectedRider._id,
+                            riderName: `${selectedRider.firstName} ${selectedRider.lastName}`,
+                            riderEmail: selectedRider.email,
+                            riderPhone: selectedRider.phone,
+                            fromCreateTrip: true
+                          }
+                        });
+                        handleCloseModal();
+                      }
+                    }}
+                  >
+                    Create Recurring Trip Instead
+                  </Button>
+                )}
+                
                 <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} width="100%">
                   <GridItem>
                     <FormControl isRequired>
-                      <FormLabel>Rider Name</FormLabel>
-                      <Input
-                        value={formData.riderName}
-                        onChange={(e) => setFormData(prev => ({ ...prev, riderName: e.target.value }))}
-                        placeholder="Enter rider name"
+                      <FormLabel>Pickup Location</FormLabel>
+                      <PlacesAutocomplete
+                        value={formData.pickupLocation.address}
+                        onChange={(address) => setFormData(prev => ({ 
+                          ...prev, 
+                          pickupLocation: { ...prev.pickupLocation, address }
+                        }))}
+                        onPlaceSelected={(place) => setFormData(prev => ({ 
+                          ...prev, 
+                          pickupLocation: { 
+                            address: place.address,
+                            lat: place.location.lat,
+                            lng: place.location.lng,
+                            placeId: place.placeId
+                          }
+                        }))}
+                        placeholder="Enter pickup address"
+                        isRequired
                       />
                     </FormControl>
                   </GridItem>
+
                   <GridItem>
-                    <FormControl>
-                      <FormLabel>Rider Phone</FormLabel>
-                      <Input
-                        value={formData.riderPhone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, riderPhone: e.target.value }))}
-                        placeholder="Enter phone number"
+                    <FormControl isRequired>
+                      <FormLabel>Dropoff Location</FormLabel>
+                      <PlacesAutocomplete
+                        value={formData.dropoffLocation.address}
+                        onChange={(address) => setFormData(prev => ({ 
+                          ...prev, 
+                          dropoffLocation: { ...prev.dropoffLocation, address }
+                        }))}
+                        onPlaceSelected={(place) => setFormData(prev => ({ 
+                          ...prev, 
+                          dropoffLocation: { 
+                            address: place.address,
+                            lat: place.location.lat,
+                            lng: place.location.lng,
+                            placeId: place.placeId
+                          }
+                        }))}
+                        placeholder="Enter dropoff address"
+                        isRequired
                       />
                     </FormControl>
                   </GridItem>
                 </Grid>
-
-                <FormControl isRequired>
-                  <FormLabel>Pickup Location</FormLabel>
-                  <PlacesAutocomplete
-                    value={formData.pickupLocation.address}
-                    onChange={(address) => setFormData(prev => ({ 
-                      ...prev, 
-                      pickupLocation: { ...prev.pickupLocation, address }
-                    }))}
-                    onPlaceSelected={(place) => setFormData(prev => ({ 
-                      ...prev, 
-                      pickupLocation: { 
-                        address: place.address,
-                        lat: place.location.lat,
-                        lng: place.location.lng,
-                        placeId: place.placeId
-                      }
-                    }))}
-                    placeholder="Enter pickup address"
-                    isRequired
-                  />
-                </FormControl>
-
-                <FormControl isRequired>
-                  <FormLabel>Dropoff Location</FormLabel>
-                  <PlacesAutocomplete
-                    value={formData.dropoffLocation.address}
-                    onChange={(address) => setFormData(prev => ({ 
-                      ...prev, 
-                      dropoffLocation: { ...prev.dropoffLocation, address }
-                    }))}
-                    onPlaceSelected={(place) => setFormData(prev => ({ 
-                      ...prev, 
-                      dropoffLocation: { 
-                        address: place.address,
-                        lat: place.location.lat,
-                        lng: place.location.lng,
-                        placeId: place.placeId
-                      }
-                    }))}
-                    placeholder="Enter dropoff address"
-                    isRequired
-                  />
-                </FormControl>
 
                 <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} width="100%">
                   <GridItem>

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
   Grid,
+  GridItem,
   Card,
   CardBody,
   CardHeader,
@@ -26,26 +28,134 @@ import {
   Divider,
   IconButton,
   Alert,
-  AlertIcon
+  AlertIcon,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  SimpleGrid,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  Flex,
+  Spacer,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useColorModeValue,
+  Wrap,
+  WrapItem
 } from '@chakra-ui/react';
-import { SearchIcon, ExternalLinkIcon, PhoneIcon, CheckCircleIcon } from '@chakra-ui/icons';
+import {
+  MagnifyingGlassIcon,
+  ArrowTopRightOnSquareIcon,
+  PhoneIcon,
+  CheckCircleIcon,
+  TruckIcon,
+  MapPinIcon,
+  ArrowPathIcon,
+  ClockIcon,
+  MapIcon,
+  PlayIcon,
+  StopIcon,
+  UserIcon,
+  UserGroupIcon,
+  BellIcon,
+  HomeIcon,
+  Cog6ToothIcon,
+  ExclamationTriangleIcon,
+  ChevronRightIcon
+} from '@heroicons/react/24/outline';
+import {
+  CheckCircleIcon as CheckCircleIconSolid,
+  TruckIcon as TruckIconSolid,
+  MapPinIcon as MapPinIconSolid,
+  ClockIcon as ClockIconSolid,
+  UserIcon as UserIconSolid,
+  UserGroupIcon as UserGroupIconSolid,
+  BellIcon as BellIconSolid
+} from '@heroicons/react/24/solid';
 import axios from 'axios';
 import { useAuth } from "../../contexts/AuthContext";
 import Navbar from '../shared/Navbar';
+import GoogleMap from '../maps/GoogleMap';
+import TripMap from '../maps/TripMap';
+import DriveMode from './DriveMode';
+import VehicleQuickView from '../shared/VehicleQuickView';
 
 const DriverDashboard = () => {
+  const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
+  const [assignedVehicle, setAssignedVehicle] = useState(null);
   const [isAvailable, setIsAvailable] = useState(true);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
+  const [activeDriveTrip, setActiveDriveTrip] = useState(null);
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
   const { user } = useAuth();
   const toast = useToast();
 
+  // Responsive design variables
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  const headerBg = useColorModeValue('blue.50', 'blue.900');
+  const cardSpacing = { base: 4, md: 6 };
+  const buttonSize = { base: "md", md: "lg" };
+
+  const fetchAssignedVehicle = useCallback(async () => {
+    try {
+      console.log('Fetching assigned vehicle for driver:', user._id);
+      // Use dedicated endpoint for driver's assigned vehicle
+      const response = await axios.get('/api/vehicles/driver/assigned', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      console.log('Assigned vehicle response:', response.data);
+      setAssignedVehicle(response.data.vehicle || null);
+      if (response.data.vehicle) {
+        console.log('Vehicle assigned successfully:', response.data.vehicle);
+      } else {
+        console.log('No vehicle assigned to this driver');
+      }
+    } catch (error) {
+      console.error('Error fetching assigned vehicle:', error);
+      console.error('Error details:', error.response?.data);
+      // Fallback to old method if new endpoint fails
+      try {
+        console.log('Trying fallback method to fetch vehicles');
+        const fallbackResponse = await axios.get('/api/vehicles', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        const vehicles = fallbackResponse.data.vehicles || [];
+        console.log('All vehicles:', vehicles);
+        const myVehicle = vehicles.find(v => {
+          const isMatch = v.currentDriver?._id === user._id || v.currentDriver === user._id;
+          if (isMatch) console.log('Found matching vehicle:', v);
+          return isMatch;
+        });
+        setAssignedVehicle(myVehicle || null);
+        if (myVehicle) {
+          console.log('Vehicle found via fallback:', myVehicle);
+        } else {
+          console.log('No matching vehicle found in fallback');
+        }
+      } catch (fallbackError) {
+        console.error('Fallback vehicle fetch also failed:', fallbackError);
+      }
+    }
+  }, [user._id]);
+
   const fetchTrips = useCallback(async () => {
     try {
-      const response = await axios.get('/trips');
-      setTrips(response.data.trips);
+      const response = await axios.get('/api/trips');
+      setTrips(response.data.data?.trips || []);
     } catch (error) {
       console.error('Error fetching trips:', error);
       toast({
@@ -63,13 +173,13 @@ const DriverDashboard = () => {
   const updateAvailability = async (available) => {
     setUpdating(true);
     try {
-      await axios.patch(`/users/${user._id}/availability`, { 
+      await axios.patch(`/api/users/${user._id}/availability`, { 
         isAvailable: available 
       });
       setIsAvailable(available);
       toast({
         title: 'Success',
-        description: `You are now ${available ? 'available' : 'unavailable'} for trips`,
+        description: `You are now ${available ? 'Available' : 'Busy'} for trips`,
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -87,16 +197,40 @@ const DriverDashboard = () => {
     }
   };
 
-  const updateTripStatus = async (tripId, status) => {
+  const updateTripStatus = async (tripId, status, tripData = null) => {
     try {
-      await axios.patch(`/trips/${tripId}/status`, { 
+      console.log('updateTripStatus called with:', { tripId, status, tripData });
+      
+      const payload = { 
         status,
-        location: currentLocation 
-      });
+        location: currentLocation
+      };
+
+      // If trip data is provided (from Drive Mode), include it
+      if (tripData) {
+        payload.tripMetrics = {
+          completionTime: tripData.completionTime,
+          startTime: tripData.startTime,
+          durationMinutes: tripData.durationMinutes,
+          distanceTraveled: tripData.distanceTraveled,
+          averageSpeed: tripData.averageSpeed,
+          finalLocation: tripData.currentLocation,
+          finalHeading: tripData.finalHeading,
+          cancellationReason: tripData.cancellationReason || null
+        };
+      }
+
+      console.log('Sending payload to backend:', payload);
+      
+      const response = await axios.patch(`/trips/${tripId}/status`, payload);
+      
+      console.log('Backend response:', response.data);
       
       toast({
         title: 'Success',
-        description: `Trip status updated to ${status.replace('_', ' ')}`,
+        description: tripData 
+          ? `Trip ${status}: ${tripData.durationMinutes} min, ${tripData.distanceTraveled} mi`
+          : `Trip status updated to ${status.replace('_', ' ')}`,
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -104,19 +238,22 @@ const DriverDashboard = () => {
       
       fetchTrips();
     } catch (error) {
+      console.error('Error in updateTripStatus:', error);
+      console.error('Error response:', error.response?.data);
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update trip status',
+        description: error.response?.data?.message || error.message || 'Failed to update trip status',
         status: 'error',
         duration: 3000,
         isClosable: true,
       });
+      throw error; // Re-throw so DriveMode can catch it
     }
   };
 
   const updateDriverLocation = useCallback(async (location) => {
     try {
-      await axios.patch(`/users/${user._id}/location`, location);
+      await axios.patch(`/api/users/${user._id}/location`, location);
     } catch (err) {
       console.error('Error updating location:', err);
     }
@@ -149,6 +286,7 @@ const DriverDashboard = () => {
 
   useEffect(() => {
     fetchTrips();
+    fetchAssignedVehicle();
     getCurrentLocation();
     
     // Update location every 2 minutes when available
@@ -165,13 +303,7 @@ const DriverDashboard = () => {
       clearInterval(locationInterval);
       clearInterval(tripsInterval);
     };
-  }, [fetchTrips, isAvailable, user._id]);
-
-  const openGoogleMaps = (address) => {
-    const encodedAddress = encodeURIComponent(address);
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-    window.open(url, '_blank');
-  };
+  }, [fetchTrips, fetchAssignedVehicle, isAvailable, user._id, getCurrentLocation]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -214,238 +346,558 @@ const DriverDashboard = () => {
   const completedTrips = myTrips.filter(trip => trip.status === 'completed');
 
   return (
-    <Box>
+    <Box minH="100vh" bg="gray.50">
       <Navbar title="Driver Dashboard" />
       
-      <Container maxW="container.xl" py={6}>
-        {/* Driver Status Card */}
-        <Card mb={6}>
-          <CardBody>
-            <Grid templateColumns={{ base: '1fr', md: 'repeat(4, 1fr)' }} gap={6}>
-              <VStack>
-                <Text fontSize="2xl" fontWeight="bold" color={isAvailable ? 'green.500' : 'red.500'}>
-                  {isAvailable ? 'AVAILABLE' : 'UNAVAILABLE'}
-                </Text>
-                <FormControl display="flex" alignItems="center">
-                  <FormLabel htmlFor="availability" mb="0">
-                    Available for trips
-                  </FormLabel>
-                  <Switch
-                    id="availability"
-                    isChecked={isAvailable}
-                    onChange={(e) => updateAvailability(e.target.checked)}
-                    isDisabled={updating}
-                    colorScheme="green"
-                  />
-                </FormControl>
-              </VStack>
-              
-              <VStack>
-                <Text fontSize="2xl" fontWeight="bold" color="blue.500">
-                  {activeTrips.length}
-                </Text>
-                <Text color="gray.600">Active Trips</Text>
-              </VStack>
-              
-              <VStack>
-                <Text fontSize="2xl" fontWeight="bold" color="green.500">
-                  {completedTrips.length}
-                </Text>
-                <Text color="gray.600">Completed Today</Text>
-              </VStack>
-              
-              <VStack>
-                <Button
-                  leftIcon={<ExternalLinkIcon />}
-                  colorScheme="blue"
-                  onClick={getCurrentLocation}
-                  size="sm"
-                >
-                  Update Location
-                </Button>
-                {currentLocation && (
-                  <Text fontSize="xs" color="gray.500">
-                    Last updated: {new Date().toLocaleTimeString()}
-                  </Text>
-                )}
-              </VStack>
-            </Grid>
-          </CardBody>
-        </Card>
-
-        {/* Active Trips */}
-        <Card mb={6}>
-          <CardHeader>
-            <Heading size="md">Active Trips ({activeTrips.length})</Heading>
-          </CardHeader>
-          <CardBody>
-            {activeTrips.length === 0 ? (
-              <Center py={8}>
-                <VStack>
-                  <Text color="gray.500">No active trips assigned</Text>
-                  {!isAvailable && (
-                    <Alert status="info" rounded="md">
-                      <AlertIcon />
-                      Set your status to available to receive trip assignments
-                    </Alert>
-                  )}
-                </VStack>
-              </Center>
-            ) : (
-              <Accordion allowMultiple>
-                {activeTrips.map((trip) => (
-                  <AccordionItem key={trip._id}>
-                    <AccordionButton>
-                      <Box flex="1" textAlign="left">
-                        <HStack justify="space-between">
-                          <VStack align="start" spacing={0}>
-                            <Text fontWeight="bold">{trip.tripId}</Text>
-                            <Text fontSize="sm" color="gray.600">
-                              {trip.riderName}
-                            </Text>
-                          </VStack>
-                          <VStack align="end" spacing={0}>
-                            <Badge colorScheme={getStatusColor(trip.status)}>
-                              {trip.status.replace('_', ' ').toUpperCase()}
-                            </Badge>
-                            <Text fontSize="sm" color="gray.600">
-                              {formatDate(trip.scheduledDate)}
-                            </Text>
-                          </VStack>
-                        </HStack>
-                      </Box>
-                      <AccordionIcon />
-                    </AccordionButton>
-                    <AccordionPanel pb={4}>
-                      <VStack align="stretch" spacing={4}>
-                        {/* Trip Details */}
-                        <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                          <Box>
-                            <Text fontWeight="bold" color="green.600" mb={2}>
-                              Pickup Location
-                            </Text>
-                            <Text fontSize="sm" mb={2}>
-                              {trip.pickupLocation.address}
-                            </Text>
-                            <Button
-                              leftIcon={<SearchIcon />}
-                              size="sm"
-                              colorScheme="green"
-                              onClick={() => openGoogleMaps(trip.pickupLocation.address)}
-                            >
-                              Navigate
-                            </Button>
-                          </Box>
-                          
-                          <Box>
-                            <Text fontWeight="bold" color="red.600" mb={2}>
-                              Dropoff Location
-                            </Text>
-                            <Text fontSize="sm" mb={2}>
-                              {trip.dropoffLocation.address}
-                            </Text>
-                            <Button
-                              leftIcon={<SearchIcon />}
-                              size="sm"
-                              colorScheme="red"
-                              onClick={() => openGoogleMaps(trip.dropoffLocation.address)}
-                            >
-                              Navigate
-                            </Button>
-                          </Box>
-                        </Grid>
-
-                        <Divider />
-
-                        {/* Rider Information */}
-                        <Box>
-                          <Text fontWeight="bold" mb={2}>Rider Information</Text>
-                          <HStack>
-                            <Text>Name: {trip.riderName}</Text>
-                            {trip.riderPhone && (
-                              <HStack>
-                                <Text>Phone: {trip.riderPhone}</Text>
-                                <IconButton
-                                  icon={<PhoneIcon />}
-                                  size="sm"
-                                  colorScheme="blue"
-                                  aria-label="Call rider"
-                                  onClick={() => window.open(`tel:${trip.riderPhone}`)}
-                                />
-                              </HStack>
-                            )}
-                          </HStack>
-                          {trip.notes && (
-                            <Text mt={2} fontSize="sm" color="gray.600">
-                              <strong>Notes:</strong> {trip.notes}
-                            </Text>
-                          )}
-                        </Box>
-
-                        <Divider />
-
-                        {/* Action Buttons */}
-                        <HStack spacing={4}>
-                          {trip.status === 'assigned' && (
-                            <Button
-                              colorScheme="blue"
-                              onClick={() => updateTripStatus(trip._id, 'in_progress')}
-                            >
-                              Start Trip
-                            </Button>
-                          )}
-                          
-                          {trip.status === 'in_progress' && (
-                            <Button
-                              colorScheme="green"
-                              leftIcon={<CheckCircleIcon />}
-                              onClick={() => updateTripStatus(trip._id, 'completed')}
-                            >
-                              Complete Trip
-                            </Button>
-                          )}
-                        </HStack>
-                      </VStack>
-                    </AccordionPanel>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            )}
-          </CardBody>
-        </Card>
-
-        {/* Recent Completed Trips */}
-        {completedTrips.length > 0 && (
-          <Card>
-            <CardHeader>
-              <Heading size="md">Recent Completed Trips</Heading>
-            </CardHeader>
-            <CardBody>
-              <VStack align="stretch" spacing={4}>
-                {completedTrips.slice(0, 5).map((trip) => (
-                  <Box key={trip._id} p={4} bg="green.50" rounded="md">
-                    <HStack justify="space-between">
+      {/* Enhanced Driver Dashboard Layout */}
+      <Box pt={{ base: 4, md: 0 }}>
+        <Container maxW="full" py={cardSpacing} px={cardSpacing}>
+          {/* Enhanced Header with Breadcrumbs */}
+          <Card 
+            mb={cardSpacing} 
+            shadow="lg"
+            bg={cardBg}
+            borderRadius="xl"
+            border="1px solid"
+            borderColor={borderColor}
+          >
+            <CardHeader bg={headerBg} borderTopRadius="xl">
+              <VStack spacing={4} align="stretch">
+                {/* Header with User Greeting and Status */}
+                <Flex direction={{ base: 'column', lg: 'row' }} gap={4} align={{ base: 'start', lg: 'center' }}>
+                  <VStack align="start" spacing={2} flex={1}>
+                    <HStack spacing={3}>
+                      <Box as={UserIconSolid} w={8} h={8} color="blue.600" />
                       <VStack align="start" spacing={0}>
-                        <Text fontWeight="bold">{trip.tripId}</Text>
-                        <Text fontSize="sm">{trip.riderName}</Text>
-                        <Text fontSize="xs" color="gray.600">
-                          {trip.pickupLocation.address} → {trip.dropoffLocation.address}
-                        </Text>
-                      </VStack>
-                      <VStack align="end" spacing={0}>
-                        <Badge colorScheme="green">COMPLETED</Badge>
-                        <Text fontSize="sm" color="gray.600">
-                          {formatDate(trip.actualDropoffTime || trip.scheduledDate)}
+                        <Heading size={{ base: "md", md: "lg" }} color="blue.700">
+                          Welcome back, {user?.firstName || 'Driver'}!
+                        </Heading>
+                        <Text color={mutedColor} fontSize={{ base: "sm", md: "md" }}>
+                          Your personalized driver dashboard and trip management
                         </Text>
                       </VStack>
                     </HStack>
-                  </Box>
-                ))}
+                    
+                    {/* Enhanced Status Display */}
+                    <HStack spacing={6} fontSize="sm" flexWrap="wrap">
+                      <HStack>
+                        <Box 
+                          as={isAvailable ? CheckCircleIconSolid : ExclamationTriangleIcon} 
+                          w={4} h={4} 
+                          color={isAvailable ? 'green.500' : 'orange.500'} 
+                        />
+                        <Text fontWeight="medium" color={isAvailable ? 'green.600' : 'orange.600'}>
+                          {isAvailable ? 'Available' : 'Busy'}
+                        </Text>
+                      </HStack>
+                      <HStack>
+                        <Box as={ClockIconSolid} w={4} h={4} color="blue.500" />
+                        <Text fontWeight="medium">{activeTrips.length} Active Trips</Text>
+                      </HStack>
+                      <HStack>
+                        <Box as={CheckCircleIconSolid} w={4} h={4} color="green.500" />
+                        <Text fontWeight="medium">{completedTrips.length} Completed</Text>
+                      </HStack>
+                    </HStack>
+                  </VStack>
+                </Flex>
               </VStack>
+            </CardHeader>
+
+            {/* Enhanced Statistics Dashboard */}
+            <CardBody>
+            
+            {/* DEBUG INFO - Remove after testing */}
+            <Alert status="info" mb={4} fontSize="xs">
+              <AlertIcon />
+              <VStack align="start" spacing={1} flex="1">
+                <Text fontWeight="bold">Debug Info:</Text>
+                <Text>User ID: {user?._id}</Text>
+                <Text>User Email: {user?.email}</Text>
+                <Text>User Role: {user?.role}</Text>
+                <Text>User Roles: {user?.roles?.join(', ') || 'none'}</Text>
+                <Text>Assigned Vehicle: {assignedVehicle ? `${assignedVehicle.licensePlate} - ${assignedVehicle.make} ${assignedVehicle.model}` : 'NULL'}</Text>
+                <Button size="xs" colorScheme="blue" onClick={() => {
+                  console.log('=== MANUAL FETCH ===');
+                  console.log('User:', user);
+                  fetchAssignedVehicle();
+                }}>
+                  Refetch Vehicle
+                </Button>
+              </VStack>
+            </Alert>
+            
+            <SimpleGrid columns={{ base: 2, md: 5 }} spacing={6}>
+              <Stat>
+                <StatLabel>Status</StatLabel>
+                <StatNumber fontSize="lg" color={isAvailable ? 'green.500' : 'orange.500'}>
+                  {isAvailable ? 'Available' : 'Busy'}
+                </StatNumber>
+                <StatHelpText>
+                  <FormControl display="flex" alignItems="center">
+                    <Switch
+                      id="availability"
+                      isChecked={isAvailable}
+                      onChange={(e) => updateAvailability(e.target.checked)}
+                      isDisabled={updating}
+                      colorScheme="green"
+                      size="sm"
+                    />
+                    <FormLabel htmlFor="availability" mb="0" ml={2} fontSize="sm">
+                      Available
+                    </FormLabel>
+                  </FormControl>
+                </StatHelpText>
+              </Stat>
+              
+              <Stat>
+                <StatLabel>Active Trips</StatLabel>
+                <StatNumber color="blue.500">{activeTrips.length}</StatNumber>
+                <StatHelpText>Currently assigned</StatHelpText>
+              </Stat>
+              
+              <Stat>
+                <StatLabel>Completed Today</StatLabel>
+                <StatNumber color="green.500">{completedTrips.length}</StatNumber>
+                <StatHelpText>Total completed</StatHelpText>
+              </Stat>
+              
+              <Stat>
+                <StatLabel>Location</StatLabel>
+                <StatNumber fontSize="sm">
+                  {currentLocation ? 'GPS Active' : 'No Signal'}
+                </StatNumber>
+                <StatHelpText>
+                  <Button
+                    leftIcon={<Box as={MapIcon} w={3} h={3} />}
+                    size="xs"
+                    colorScheme="blue"
+                    onClick={getCurrentLocation}
+                  >
+                    Update
+                  </Button>
+                </StatHelpText>
+              </Stat>
+
+              <Stat>
+                <StatLabel>Assigned Vehicle</StatLabel>
+                <StatNumber fontSize="sm" color={assignedVehicle ? 'green.500' : 'gray.500'}>
+                  {assignedVehicle ? (
+                    <VehicleQuickView vehicle={assignedVehicle}>
+                      {`${assignedVehicle.year} ${assignedVehicle.make} ${assignedVehicle.model}`}
+                    </VehicleQuickView>
+                  ) : (
+                    'Not Assigned'
+                  )}
+                </StatNumber>
+                <StatHelpText>
+                  {assignedVehicle ? (
+                    <Text 
+                      fontSize="xs" 
+                      color="blue.500"
+                      cursor="pointer"
+                      _hover={{ textDecoration: 'underline' }}
+                      onClick={() => navigate(`/vehicles/${assignedVehicle._id}`)}
+                    >
+                      {assignedVehicle.licensePlate}
+                    </Text>
+                  ) : (
+                    <Text fontSize="xs">Contact dispatcher</Text>
+                  )}
+                </StatHelpText>
+              </Stat>
+              
+              <Stat>
+                <StatLabel>Total Trips</StatLabel>
+                <StatNumber color="purple.500">{myTrips.length}</StatNumber>
+                <StatHelpText>All time</StatHelpText>
+              </Stat>
+            </SimpleGrid>
+          </CardBody>
+        </Card>
+
+        {/* Quick Actions Section - Conditional for admins/dispatchers/schedulers */}
+        {user?.role && ['admin', 'dispatcher', 'scheduler'].includes(user.role) && (
+          <Card mb={cardSpacing} bg={cardBg}>
+            <CardHeader>
+              <Heading size="md" display="flex" alignItems="center" gap={3}>
+                <Box as={Cog6ToothIcon} w={5} h={5} color="blue.500" />
+                Quick Actions
+              </Heading>
+            </CardHeader>
+            <CardBody pt={0}>
+              <Wrap spacing={4}>
+                <WrapItem>
+                  <Button
+                    leftIcon={<Box as={UserGroupIconSolid} w={4} h={4} />}
+                    colorScheme="purple"
+                    variant="outline"
+                    onClick={() => navigate('/riders')}
+                    size={{ base: "md", md: "md" }}
+                  >
+                    All Riders
+                  </Button>
+                </WrapItem>
+                <WrapItem>
+                  <Button
+                    leftIcon={<Box as={ArrowPathIcon} w={4} h={4} />}
+                    onClick={fetchTrips}
+                    size={{ base: "md", md: "md" }}
+                    variant="outline"
+                  >
+                    Refresh Trips
+                  </Button>
+                </WrapItem>
+              </Wrap>
             </CardBody>
           </Card>
         )}
-      </Container>
+
+        {/* Main Content with Tabs */}
+        <Tabs index={activeTabIndex} onChange={setActiveTabIndex}>
+          <TabList>
+            <Tab>
+              <HStack spacing={2}>
+                <Box as={TruckIconSolid} w={4} h={4} />
+                <Text>Active Trips ({activeTrips.length})</Text>
+              </HStack>
+            </Tab>
+            <Tab>
+              <HStack spacing={2}>
+                <Box as={PlayIcon} w={4} h={4} />
+                <Text>Drive Mode</Text>
+              </HStack>
+            </Tab>
+            <Tab>
+              <HStack spacing={2}>
+                <Box as={MapIcon} w={4} h={4} />
+                <Text>Route Map</Text>
+              </HStack>
+            </Tab>
+            <Tab>
+              <HStack spacing={2}>
+                <CheckCircleIcon />
+                <Text>Completed ({completedTrips.length})</Text>
+              </HStack>
+            </Tab>
+          </TabList>
+
+          <TabPanels>
+            {/* Active Trips Tab */}
+            <TabPanel px={0}>
+              <Card>
+                <CardBody>
+                  {activeTrips.length === 0 ? (
+                    <Center py={8}>
+                      <VStack>
+                        <Text color="gray.500">No active trips assigned</Text>
+                        {!isAvailable && (
+                          <Alert status="info" rounded="md">
+                            <AlertIcon />
+                            Set your status to available to receive trip assignments
+                          </Alert>
+                        )}
+                      </VStack>
+                    </Center>
+                  ) : (
+                    <VStack spacing={4} align="stretch">
+                      {activeTrips.map((trip) => (
+                        <Card key={trip._id} variant="outline">
+                          <CardHeader pb={2}>
+                            <Flex justify="space-between" align="center">
+                              <VStack align="start" spacing={0}>
+                                <Heading size="md">{trip.tripId}</Heading>
+                                <Text color="gray.600">{trip.riderName}</Text>
+                              </VStack>
+                              <HStack spacing={2}>
+                                <VStack align="end" spacing={1}>
+                                  <Badge colorScheme={getStatusColor(trip.status)} fontSize="sm" p={1}>
+                                    {trip.status.replace('_', ' ').toUpperCase()}
+                                  </Badge>
+                                  <Text fontSize="sm" color="gray.600">
+                                    {formatDate(trip.scheduledDate)}
+                                  </Text>
+                                </VStack>
+                                <IconButton
+                                  icon={<Box as={ChevronRightIcon} w={7} h={7} />}
+                                  colorScheme="green"
+                                  variant="solid"
+                                  size="lg"
+                                  aria-label="Enter Drive Mode"
+                                  onClick={() => {
+                                    setActiveDriveTrip(trip);
+                                    setActiveTabIndex(1);
+                                  }}
+                                  _hover={{
+                                    bg: 'green.600',
+                                    transform: 'translateX(3px) scale(1.05)',
+                                    boxShadow: 'lg'
+                                  }}
+                                  transition="all 0.2s"
+                                  boxShadow="md"
+                                />
+                              </HStack>
+                            </Flex>
+                          </CardHeader>
+                          
+                          <CardBody pt={0}>
+                            <VStack align="stretch" spacing={4}>
+                              {/* Route Map for this trip */}
+                              {trip.pickupLocation?.coordinates && trip.dropoffLocation?.coordinates && (
+                                <Box borderRadius="md" overflow="hidden" border="1px" borderColor="gray.200">
+                                  <TripMap
+                                    trip={trip}
+                                    height="200px"
+                                    showRoute={true}
+                                    showControls={false}
+                                  />
+                                </Box>
+                              )}
+
+                              {/* Location Details */}
+                              <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={4}>
+                                <Box>
+                                  <HStack spacing={2} mb={2}>
+                                    <FaMapMarkerAlt color="green" />
+                                    <Text fontWeight="bold" color="green.600">
+                                      Pickup Location
+                                    </Text>
+                                  </HStack>
+                                  <Text fontSize="sm" mb={3} color="gray.700">
+                                    {trip.pickupLocation.address}
+                                  </Text>
+                                  <HStack spacing={2}>
+                                    <Button
+                                      leftIcon={<PhoneIcon />}
+                                      size="sm"
+                                      variant="outline"
+                                      colorScheme="green"
+                                      onClick={() => window.open(`tel:${trip.riderPhone || ''}`)}
+                                      isDisabled={!trip.riderPhone}
+                                    >
+                                      Call
+                                    </Button>
+                                  </HStack>
+                                </Box>
+                                
+                                <Box>
+                                  <HStack spacing={2} mb={2}>
+                                    <FaMapMarkerAlt color="red" />
+                                    <Text fontWeight="bold" color="red.600">
+                                      Dropoff Location
+                                    </Text>
+                                  </HStack>
+                                  <Text fontSize="sm" mb={3} color="gray.700">
+                                    {trip.dropoffLocation.address}
+                                  </Text>
+                                </Box>
+                              </Grid>
+
+                              {/* Rider Information */}
+                              <Box bg="gray.50" p={4} borderRadius="md">
+                                <Text fontWeight="bold" mb={2}>Rider Information</Text>
+                                <HStack justify="space-between" wrap="wrap">
+                                  <VStack align="start" spacing={1}>
+                                    <Text fontSize="sm">
+                                      <strong>Name:</strong> {trip.riderName}
+                                    </Text>
+                                    {trip.riderPhone && (
+                                      <Text fontSize="sm">
+                                        <strong>Phone:</strong> {trip.riderPhone}
+                                      </Text>
+                                    )}
+                                    {trip.scheduledDate && (
+                                      <Text fontSize="sm">
+                                        <strong>Scheduled:</strong> {formatDate(trip.scheduledDate)}
+                                      </Text>
+                                    )}
+                                  </VStack>
+                                </HStack>
+                                {trip.notes && (
+                                  <Text mt={2} fontSize="sm" color="gray.600" fontStyle="italic">
+                                    <strong>Notes:</strong> {trip.notes}
+                                  </Text>
+                                )}
+                              </Box>
+
+                              {/* Action Buttons */}
+                              <HStack spacing={4} justify="center">
+                                {trip.status === 'assigned' && (
+                                  <>
+                                    <Button
+                                      colorScheme="blue"
+                                      size="lg"
+                                      onClick={() => updateTripStatus(trip._id, 'in_progress')}
+                                      leftIcon={<Box as={PlayIcon} w={5} h={5} />}
+                                    >
+                                      Start Trip
+                                    </Button>
+                                    <Button
+                                      colorScheme="green"
+                                      variant="outline"
+                                      size="lg"
+                                      onClick={() => {
+                                        setActiveDriveTrip(trip);
+                                        setActiveTabIndex(1); // Switch to Drive Mode tab
+                                      }}
+                                      leftIcon={<Box as={MapIcon} w={5} h={5} />}
+                                    >
+                                      Enter Drive Mode
+                                    </Button>
+                                  </>
+                                )}
+                                
+                                {trip.status === 'in_progress' && (
+                                  <>
+                                    <Button
+                                      colorScheme="green"
+                                      size="lg"
+                                      leftIcon={<CheckCircleIcon />}
+                                      onClick={() => updateTripStatus(trip._id, 'completed')}
+                                    >
+                                      Complete Trip
+                                    </Button>
+                                    <Button
+                                      colorScheme="blue"
+                                      variant="outline"
+                                      size="lg"
+                                      onClick={() => {
+                                        setActiveDriveTrip(trip);
+                                        setActiveTabIndex(1); // Switch to Drive Mode tab
+                                      }}
+                                      leftIcon={<Box as={MapIcon} w={5} h={5} />}
+                                    >
+                                      Enter Drive Mode
+                                    </Button>
+                                  </>
+                                )}
+                              </HStack>
+                            </VStack>
+                          </CardBody>
+                        </Card>
+                      ))}
+                    </VStack>
+                  )}
+                </CardBody>
+              </Card>
+            </TabPanel>
+
+            {/* Drive Mode Tab */}
+            <TabPanel px={0}>
+              <DriveMode 
+                trip={activeDriveTrip}
+                onComplete={async (tripData) => {
+                  if (activeDriveTrip) {
+                    await updateTripStatus(activeDriveTrip._id, 'completed', tripData);
+                    setActiveDriveTrip(null);
+                    // Add delay before tab switch to prevent navigation flooding
+                    setTimeout(() => {
+                      setActiveTabIndex(0);
+                    }, 100);
+                  }
+                }}
+                onCancel={async (tripData) => {
+                  if (activeDriveTrip) {
+                    await updateTripStatus(activeDriveTrip._id, 'cancelled', tripData);
+                    setActiveDriveTrip(null);
+                    // Add delay before tab switch to prevent navigation flooding
+                    setTimeout(() => {
+                      setActiveTabIndex(0);
+                    }, 100);
+                  }
+                }}
+              />
+            </TabPanel>
+
+            {/* Route Map Tab */}
+            <TabPanel px={0}>
+              <Card>
+                <CardHeader>
+                  <Heading size="md">All Active Routes</Heading>
+                </CardHeader>
+                <CardBody>
+                  {activeTrips.length === 0 ? (
+                    <Center py={8}>
+                      <VStack>
+                        <FaMap size={48} color="gray" />
+                        <Text color="gray.500">No active routes to display</Text>
+                      </VStack>
+                    </Center>
+                  ) : (
+                    <Box borderRadius="md" overflow="hidden">
+                      <GoogleMap
+                        center={currentLocation || { lat: 40.7589, lng: -73.9851 }}
+                        zoom={12}
+                        markers={activeTrips.flatMap(trip => {
+                          if (!trip.pickupLocation?.coordinates || !trip.dropoffLocation?.coordinates) return [];
+                          return [
+                            {
+                              position: {
+                                lat: trip.pickupLocation.coordinates[1],
+                                lng: trip.pickupLocation.coordinates[0]
+                              },
+                              title: `Pickup - ${trip.riderName}`,
+                              info: trip.pickupLocation.address
+                            },
+                            {
+                              position: {
+                                lat: trip.dropoffLocation.coordinates[1],
+                                lng: trip.dropoffLocation.coordinates[0]
+                              },
+                              title: `Dropoff - ${trip.riderName}`,
+                              info: trip.dropoffLocation.address
+                            }
+                          ];
+                        })}
+                        height="500px"
+                      />
+                    </Box>
+                  )}
+                </CardBody>
+              </Card>
+            </TabPanel>
+
+            {/* Completed Trips Tab */}
+            <TabPanel px={0}>
+              <Card>
+                <CardHeader>
+                  <Heading size="md">Recent Completed Trips</Heading>
+                </CardHeader>
+                <CardBody>
+                  {completedTrips.length === 0 ? (
+                    <Center py={8}>
+                      <Text color="gray.500">No completed trips yet</Text>
+                    </Center>
+                  ) : (
+                    <VStack align="stretch" spacing={4}>
+                      {completedTrips.slice(0, 10).map((trip) => (
+                        <Box key={trip._id} p={4} bg="green.50" rounded="md" border="1px" borderColor="green.100">
+                          <HStack justify="space-between">
+                            <VStack align="start" spacing={1}>
+                              <Text fontWeight="bold">{trip.tripId}</Text>
+                              <Text fontSize="sm" color="gray.700">{trip.riderName}</Text>
+                              <Text fontSize="xs" color="gray.600">
+                                {trip.pickupLocation.address} → {trip.dropoffLocation.address}
+                              </Text>
+                            </VStack>
+                            <VStack align="end" spacing={1}>
+                              <Badge colorScheme="green" fontSize="sm">COMPLETED</Badge>
+                              <Text fontSize="sm" color="gray.600">
+                                {formatDate(trip.actualDropoffTime || trip.scheduledDate)}
+                              </Text>
+                            </VStack>
+                          </HStack>
+                        </Box>
+                      ))}
+                    </VStack>
+                  )}
+                </CardBody>
+              </Card>
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
+        </Container>
+      </Box>
     </Box>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Box,
   Container,
@@ -44,48 +44,59 @@ const SystemAdministration = () => {
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
   const headerBg = useColorModeValue('linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 'linear-gradient(135deg, #4a5568 0%, #2d3748 100%)');
+  const categoryBg = useColorModeValue('gray.100', 'gray.700');
+  const headingColor = useColorModeValue('gray.800', 'white');
+  const textColor = useColorModeValue('gray.600', 'gray.300');
+  const dividerColor = useColorModeValue('gray.300', 'gray.600');
 
   const adminFunctions = [
     {
-      title: 'User Management',
-      description: 'Manage system users, roles, and permissions',
+      title: 'User Management & Access Control',
+      description: 'Comprehensive user management, roles, permissions, and access control',
       icon: FaUsers,
       color: 'blue.500',
       functions: [
         {
           name: 'Register New User',
-          description: 'Add new users to the system',
+          description: 'Add new users to the system with role assignment',
           icon: FaUserPlus,
           path: '/admin/register',
           color: 'green.500'
         },
         {
           name: 'Manage Users',
-          description: 'View and edit existing users',
+          description: 'View, edit, activate/deactivate existing users',
           icon: FaUserCog,
           path: '/admin/users',
           color: 'blue.500'
         },
         {
           name: 'User Roles & Permissions',
-          description: 'Configure roles and access levels',
+          description: 'Configure roles, permissions, and access levels',
           icon: FaUserShield,
-          path: '/admin/roles', // Link to the new User Roles & Permissions dashboard
+          path: '/admin/roles',
           color: 'purple.500'
         },
         {
           name: 'Access Control',
-          description: 'Manage user access and security',
+          description: 'Manage user access, sessions, and security policies',
           icon: FaKey,
-          path: '/admin/overview', // Using existing admin overview for now
+          path: '/admin/access',
           color: 'orange.500'
         },
         {
-          name: 'Bulk Operations',
-          description: 'Import/export users in bulk',
+          name: 'Bulk User Operations',
+          description: 'Import/export users, bulk updates, and mass operations',
           icon: FaFileImport,
-          path: '/admin/overview', // Using existing admin overview for now
+          path: '/admin/import',
           color: 'teal.500'
+        },
+        {
+          name: 'User Activity Monitor',
+          description: 'Track user login history and activity patterns',
+          icon: FaHistory,
+          path: '/admin/activity',
+          color: 'cyan.500'
         }
       ]
     },
@@ -152,14 +163,14 @@ const SystemAdministration = () => {
   return (
     <Box minHeight="100vh" bg={bgColor}>
       <Navbar />
-      <Container maxW="7xl" py={8}>
-        <VStack spacing={10} align="stretch">
+      <Container maxW="full" py={{ base: 4, md: 6, lg: 8 }} px={{ base: 4, md: 6 }}>
+        <VStack spacing={{ base: 6, md: 8, lg: 10 }} align="stretch">
           {/* Header */}
           <Box
             bg={headerBg}
             borderRadius="xl"
-            p={8}
-            textAlign="center"
+            p={{ base: 6, md: 8, lg: 12 }}
+            textAlign={{ base: "center", md: "center" }}
             color="white"
             boxShadow="2xl"
             position="relative"
@@ -175,68 +186,75 @@ const SystemAdministration = () => {
               borderRadius: 'xl'
             }}
           >
-            <VStack spacing={4} position="relative" zIndex={1}>
-              <Icon as={SettingsIcon} boxSize={12} opacity={0.8} />
-              <Heading size="2xl" fontWeight="bold">
+            <VStack spacing={{ base: 3, md: 4 }} position="relative" zIndex={1}>
+              <Icon as={SettingsIcon} boxSize={{ base: 10, md: 12 }} opacity={0.8} />
+              <Heading 
+                size={{ base: "lg", md: "xl", lg: "2xl" }}
+                fontWeight="bold"
+              >
                 System Administration
               </Heading>
-              <Text fontSize="xl" opacity={0.9} maxW="2xl">
+              <Text 
+                fontSize={{ base: "md", md: "lg", lg: "xl" }}
+                opacity={0.9} 
+                maxW="2xl"
+              >
                 Comprehensive control center for managing users, configuring system settings, and monitoring security
               </Text>
             </VStack>
           </Box>
 
           {/* System Stats */}
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={{ base: 4, md: 6 }}>
             <Card
               bg={cardBg}
-              shadow="lg"
+              shadow="md"
               borderRadius="lg"
-              _hover={{ shadow: 'xl', transform: 'translateY(-2px)' }}
+              _hover={{ shadow: 'xl', transform: 'translateY(-4px)' }}
               transition="all 0.3s"
               border="1px solid"
               borderColor={useColorModeValue('gray.200', 'gray.600')}
             >
-              <CardBody textAlign="center" py={6}>
-                <Icon as={FaUsers} boxSize={8} color="blue.500" mb={3} />
+              <CardBody textAlign="center" py={{ base: 4, md: 6 }}>
+                <Icon as={FaUsers} boxSize={{ base: 6, md: 8 }} color="blue.500" mb={3} />
                 <Stat>
-                  <StatLabel fontSize="sm" color="gray.600" fontWeight="medium">Total Users</StatLabel>
-                  <StatNumber fontSize="3xl" fontWeight="bold" color="blue.600">0</StatNumber>
+                  <StatLabel fontSize={{ base: "xs", md: "sm" }} color="gray.600" fontWeight="medium">Total Users</StatLabel>
+                  <StatNumber fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold" color="blue.600">0</StatNumber>
                 </Stat>
               </CardBody>
             </Card>
             <Card
               bg={cardBg}
-              shadow="lg"
+              shadow="md"
               borderRadius="lg"
-              _hover={{ shadow: 'xl', transform: 'translateY(-2px)' }}
+              _hover={{ shadow: 'xl', transform: 'translateY(-4px)' }}
               transition="all 0.3s"
               border="1px solid"
               borderColor={useColorModeValue('gray.200', 'gray.600')}
             >
-              <CardBody textAlign="center" py={6}>
-                <Icon as={TimeIcon} boxSize={8} color="green.500" mb={3} />
+              <CardBody textAlign="center" py={{ base: 4, md: 6 }}>
+                <Icon as={TimeIcon} boxSize={{ base: 6, md: 8 }} color="green.500" mb={3} />
                 <Stat>
-                  <StatLabel fontSize="sm" color="gray.600" fontWeight="medium">Active Sessions</StatLabel>
-                  <StatNumber fontSize="3xl" fontWeight="bold" color="green.600">0</StatNumber>
+                  <StatLabel fontSize={{ base: "xs", md: "sm" }} color="gray.600" fontWeight="medium">Active Sessions</StatLabel>
+                  <StatNumber fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold" color="green.600">0</StatNumber>
                 </Stat>
               </CardBody>
             </Card>
             <Card
               bg={cardBg}
-              shadow="lg"
+              shadow="md"
               borderRadius="lg"
-              _hover={{ shadow: 'xl', transform: 'translateY(-2px)' }}
+              _hover={{ shadow: 'xl', transform: 'translateY(-4px)' }}
               transition="all 0.3s"
               border="1px solid"
               borderColor={useColorModeValue('gray.200', 'gray.600')}
             >
-              <CardBody textAlign="center" py={6}>
-                <Icon as={FaShieldAlt} boxSize={8} color="purple.500" mb={3} />
+              <CardBody textAlign="center" py={{ base: 4, md: 6 }}>
+                <Icon as={FaShieldAlt} boxSize={{ base: 6, md: 8 }} color="purple.500" mb={3} />
                 <Stat>
-                  <StatLabel fontSize="sm" color="gray.600" fontWeight="medium">System Status</StatLabel>
-                  <StatNumber fontSize="xl" fontWeight="bold">
-                    <Badge colorScheme="green" px={3} py={1} borderRadius="full" fontSize="sm">
+                  <StatLabel fontSize={{ base: "xs", md: "sm" }} color="gray.600" fontWeight="medium">System Status</StatLabel>
+                  <StatNumber fontSize={{ base: "lg", md: "xl" }} fontWeight="bold">
+                    <Badge colorScheme="green" px={3} py={1} borderRadius="full" fontSize={{ base: "xs", md: "sm" }}>
                       Online
                     </Badge>
                   </StatNumber>
@@ -246,29 +264,29 @@ const SystemAdministration = () => {
           </SimpleGrid>
 
           {/* Administration Functions */}
-          <VStack spacing={12} align="stretch">
+          <VStack spacing={{ base: 8, md: 10, lg: 12 }} align="stretch">
             {adminFunctions.map((category, categoryIndex) => (
               <Box key={categoryIndex}>
                 <Box
-                  bg={useColorModeValue('gray.100', 'gray.700')}
-                  p={6}
+                  bg={categoryBg}
+                  p={{ base: 4, md: 6 }}
                   borderRadius="lg"
-                  mb={6}
+                  mb={{ base: 4, md: 6 }}
                   borderLeft="4px solid"
                   borderLeftColor={category.color}
                 >
-                  <Flex align="center" mb={2}>
-                    <Icon as={category.icon} color={category.color} boxSize={7} mr={4} />
-                    <Heading size="lg" color={useColorModeValue('gray.800', 'white')} fontWeight="semibold">
+                  <Flex align="center" mb={3}>
+                    <Icon as={category.icon} color={category.color} boxSize={{ base: 6, md: 8 }} mr={3} />
+                    <Heading size={{ base: "md", md: "lg" }} color="teal.600" fontWeight="semibold">
                       {category.title}
                     </Heading>
                   </Flex>
-                  <Text color={useColorModeValue('gray.600', 'gray.300')} fontSize="md">
+                  <Text color={textColor} fontSize={{ base: "sm", md: "md" }}>
                     {category.description}
                   </Text>
                 </Box>
 
-                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={{ base: 4, md: 6 }}>
                   {category.functions.map((func, funcIndex) => (
                     <Card
                       key={funcIndex}
@@ -276,6 +294,7 @@ const SystemAdministration = () => {
                       shadow="md"
                       borderRadius="xl"
                       cursor="pointer"
+                      transition="all 0.3s"
                       _hover={{
                         shadow: '2xl',
                         transform: 'translateY(-4px) scale(1.02)',
@@ -283,27 +302,33 @@ const SystemAdministration = () => {
                         _before: { opacity: 1 }
                       }}
                     >
-                      <CardBody p={6}>
-                        <VStack spacing={4} align="start" h="full">
-                          <Flex align="center" w="full">
+                      <CardBody p={{ base: 4, md: 5, lg: 6 }}>
+                        <VStack spacing={{ base: 3, md: 4 }} align="start" h="full">
+                          <Flex align="center" w="full" flexWrap="wrap" gap={2}>
                             <Box
-                              p={3}
+                              p={{ base: 2, md: 3 }}
                               borderRadius="lg"
                               bg={`${func.color.split('.')[0]}.50`}
-                              mr={4}
+                              mr={{ base: 2, md: 4 }}
                             >
-                              <Icon as={func.icon} color={func.color} boxSize={6} />
+                              <Icon as={func.icon} color={func.color} boxSize={{ base: 5, md: 6 }} />
                             </Box>
-                            <Heading size="md" color={useColorModeValue('gray.800', 'white')} flex="1" fontWeight="semibold">
+                            <Heading 
+                              size={{ base: "sm", md: "md" }}
+                              color={headingColor} 
+                              flex="1" 
+                              fontWeight="semibold"
+                              minW="150px"
+                            >
                               {func.name}
                             </Heading>
                           </Flex>
-                          <Text color={useColorModeValue('gray.600', 'gray.300')} fontSize="sm" lineHeight="1.5" flex="1">
+                          <Text color={textColor} fontSize={{ base: "xs", md: "sm" }} lineHeight="1.5" flex="1">
                             {func.description}
                           </Text>
                           <Button
-                            size="sm"
-                            colorScheme={func.color.split('.')[0]}
+                            size={{ base: "xs", md: "sm" }}
+                            colorScheme="teal"
                             variant="solid"
                             alignSelf="flex-end"
                             borderRadius="lg"
@@ -313,6 +338,7 @@ const SystemAdministration = () => {
                               shadow: 'md'
                             }}
                             transition="all 0.2s"
+                            onClick={() => navigate(func.path)}
                           >
                             Access →
                           </Button>
@@ -324,8 +350,8 @@ const SystemAdministration = () => {
 
                 {categoryIndex < adminFunctions.length - 1 && (
                   <Divider
-                    my={12}
-                    borderColor={useColorModeValue('gray.300', 'gray.600')}
+                    my={{ base: 8, md: 10, lg: 12 }}
+                    borderColor={dividerColor}
                     borderWidth="1px"
                     opacity={0.5}
                   />

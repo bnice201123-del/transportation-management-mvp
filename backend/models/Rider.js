@@ -142,7 +142,7 @@ const riderSchema = new mongoose.Schema({
 
 // Index for searching
 riderSchema.index({ firstName: 1, lastName: 1 });
-riderSchema.index({ riderId: 1 });
+// Note: riderId already has unique:true which creates an index, no need for explicit index
 riderSchema.index({ phone: 1 });
 
 // Encryption helper methods

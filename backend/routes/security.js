@@ -97,16 +97,20 @@ router.get('/alerts', authenticateToken, requireAdmin, adminLimiter, async (req,
 
     // Log the action
     await AuditLog.create({
+      userId: req.user._id,
+      username: req.user.username || req.user.email,
+      userRole: req.user.role,
       action: 'security_alerts_viewed',
-      performedBy: req.user._id,
-      resourceType: 'security',
+      category: 'security',
+      description: `Viewed security alerts with filters: severity=${severity || 'all'}, type=${type || 'all'}, status=${status || 'all'}`,
+      targetType: null,
       severity: 'low',
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-      metadata: new Map([
-        ['filters', JSON.stringify({ severity, type, status })],
-        ['resultCount', alerts.length.toString()]
-      ])
+      metadata: {
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        filters: { severity, type, status },
+        resultCount: alerts.length
+      }
     });
 
     res.json({
@@ -174,18 +178,23 @@ router.post('/alerts', authenticateToken, requireAdmin, adminLimiter, async (req
 
     // Log the action
     await AuditLog.create({
+      userId: req.user._id,
+      username: req.user.username || req.user.email,
+      userRole: req.user.role,
       action: 'security_alert_created',
-      performedBy: req.user._id,
-      resourceType: 'security',
-      resourceId: alert._id.toString(),
+      category: 'security',
+      description: `Created security alert ${alert.alertId} - Type: ${alert.type}, Severity: ${alert.severity}`,
+      targetType: 'System',
+      targetId: alert._id,
+      targetName: alert.alertId,
       severity: 'medium',
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-      metadata: new Map([
-        ['alertId', alert.alertId],
-        ['type', alert.type],
-        ['severity', alert.severity]
-      ])
+      metadata: {
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        alertId: alert.alertId,
+        type: alert.type,
+        severity: alert.severity
+      }
     });
 
     res.status(201).json({
@@ -218,17 +227,22 @@ router.put('/alerts/:alertId/acknowledge', authenticateToken, requireAdmin, admi
 
     // Log the action
     await AuditLog.create({
+      userId: req.user._id,
+      username: req.user.username || req.user.email,
+      userRole: req.user.role,
       action: 'security_alert_acknowledged',
-      performedBy: req.user._id,
-      resourceType: 'security',
-      resourceId: alert._id.toString(),
+      category: 'security',
+      description: `Acknowledged security alert ${alertId} - Type: ${alert.type}`,
+      targetType: 'System',
+      targetId: alert._id,
+      targetName: alertId,
       severity: 'medium',
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-      metadata: new Map([
-        ['alertId', alertId],
-        ['type', alert.type]
-      ])
+      metadata: {
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        alertId: alertId,
+        type: alert.type
+      }
     });
 
     res.json({
@@ -261,17 +275,22 @@ router.put('/alerts/:alertId/investigate', authenticateToken, requireAdmin, admi
 
     // Log the action
     await AuditLog.create({
+      userId: req.user._id,
+      username: req.user.username || req.user.email,
+      userRole: req.user.role,
       action: 'security_alert_investigation_started',
-      performedBy: req.user._id,
-      resourceType: 'security',
-      resourceId: alert._id.toString(),
+      category: 'security',
+      description: `Started investigation on security alert ${alertId} - Type: ${alert.type}`,
+      targetType: 'System',
+      targetId: alert._id,
+      targetName: alertId,
       severity: 'medium',
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-      metadata: new Map([
-        ['alertId', alertId],
-        ['type', alert.type]
-      ])
+      metadata: {
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        alertId: alertId,
+        type: alert.type
+      }
     });
 
     res.json({
@@ -305,18 +324,23 @@ router.put('/alerts/:alertId/resolve', authenticateToken, requireAdmin, adminLim
 
     // Log the action
     await AuditLog.create({
+      userId: req.user._id,
+      username: req.user.username || req.user.email,
+      userRole: req.user.role,
       action: 'security_alert_resolved',
-      performedBy: req.user._id,
-      resourceType: 'security',
-      resourceId: alert._id.toString(),
+      category: 'security',
+      description: `Resolved security alert ${alertId} - Type: ${alert.type}`,
+      targetType: 'System',
+      targetId: alert._id,
+      targetName: alertId,
       severity: 'medium',
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-      metadata: new Map([
-        ['alertId', alertId],
-        ['type', alert.type],
-        ['hasFindings', !!findings]
-      ])
+      metadata: {
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        alertId: alertId,
+        type: alert.type,
+        hasFindings: !!findings
+      }
     });
 
     res.json({
@@ -354,17 +378,22 @@ router.put('/alerts/:alertId/false-positive', authenticateToken, requireAdmin, a
 
     // Log the action
     await AuditLog.create({
+      userId: req.user._id,
+      username: req.user.username || req.user.email,
+      userRole: req.user.role,
       action: 'security_alert_false_positive',
-      performedBy: req.user._id,
-      resourceType: 'security',
-      resourceId: alert._id.toString(),
+      category: 'security',
+      description: `Marked security alert ${alertId} as false positive - Reason: ${reason}`,
+      targetType: 'System',
+      targetId: alert._id,
+      targetName: alertId,
       severity: 'medium',
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-      metadata: new Map([
-        ['alertId', alertId],
-        ['reason', reason]
-      ])
+      metadata: {
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        alertId: alertId,
+        reason: reason
+      }
     });
 
     res.json({
@@ -431,17 +460,22 @@ router.put('/alerts/:alertId/suppress', authenticateToken, requireAdmin, adminLi
 
     // Log the action
     await AuditLog.create({
+      userId: req.user._id,
+      username: req.user.username || req.user.email,
+      userRole: req.user.role,
       action: 'security_alert_suppressed',
-      performedBy: req.user._id,
-      resourceType: 'security',
-      resourceId: alert._id.toString(),
+      category: 'security',
+      description: `Suppressed security alert ${alertId} for ${durationMinutes} minutes`,
+      targetType: 'System',
+      targetId: alert._id,
+      targetName: alertId,
       severity: 'low',
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-      metadata: new Map([
-        ['alertId', alertId],
-        ['durationMinutes', durationMinutes.toString()]
-      ])
+      metadata: {
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        alertId: alertId,
+        durationMinutes: durationMinutes
+      }
     });
 
     res.json({
@@ -584,15 +618,19 @@ router.post('/detect-anomalies', authenticateToken, requireAdmin, adminLimiter, 
 
     // Log the action
     await AuditLog.create({
+      userId: req.user._id,
+      username: req.user.username || req.user.email,
+      userRole: req.user.role,
       action: 'security_anomaly_detection_triggered',
-      performedBy: req.user._id,
-      resourceType: 'security',
+      category: 'security',
+      description: `Triggered security anomaly detection - Created ${alerts.length} alerts`,
+      targetType: 'System',
       severity: 'medium',
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-      metadata: new Map([
-        ['alertsCreated', alerts.length.toString()]
-      ])
+      metadata: {
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        alertsCreated: alerts.length
+      }
     });
 
     res.json({
@@ -633,17 +671,22 @@ router.delete('/alerts/:alertId', authenticateToken, requireAdmin, adminLimiter,
 
     // Log the action
     await AuditLog.create({
+      userId: req.user._id,
+      username: req.user.username || req.user.email,
+      userRole: req.user.role,
       action: 'security_alert_deleted',
-      performedBy: req.user._id,
-      resourceType: 'security',
-      resourceId: alert._id.toString(),
+      category: 'security',
+      description: `Deleted security alert ${alertId} - Type: ${alert.type}`,
+      targetType: 'System',
+      targetId: alert._id,
+      targetName: alertId,
       severity: 'medium',
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-      metadata: new Map([
-        ['alertId', alertId],
-        ['type', alert.type]
-      ])
+      metadata: {
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        alertId: alertId,
+        type: alert.type
+      }
     });
 
     res.json({
@@ -717,18 +760,22 @@ router.post('/bulk-actions', authenticateToken, requireAdmin, adminLimiter, asyn
 
     // Log the bulk action
     await AuditLog.create({
+      userId: req.user._id,
+      username: req.user.username || req.user.email,
+      userRole: req.user.role,
       action: 'security_bulk_action',
-      performedBy: req.user._id,
-      resourceType: 'security',
+      category: 'security',
+      description: `Performed bulk ${action} on ${alertIds.length} alerts - ${results.success} successful, ${results.failed} failed`,
+      targetType: 'System',
       severity: 'medium',
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-      metadata: new Map([
-        ['action', action],
-        ['totalAlerts', alertIds.length.toString()],
-        ['successful', results.success.toString()],
-        ['failed', results.failed.toString()]
-      ])
+      metadata: {
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        action: action,
+        totalAlerts: alertIds.length,
+        successful: results.success,
+        failed: results.failed
+      }
     });
 
     res.json({

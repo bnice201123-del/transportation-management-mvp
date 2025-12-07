@@ -26,8 +26,8 @@ const gdprRequestSchema = new mongoose.Schema({
   },
   requestedAt: {
     type: Date,
-    default: Date.now,
-    index: true
+    default: Date.now
+    // Removed index: true to avoid duplicate - indexed in compound and standalone indexes below
   },
   processedAt: {
     type: Date

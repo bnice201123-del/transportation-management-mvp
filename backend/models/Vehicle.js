@@ -172,7 +172,7 @@ const vehicleSchema = new mongoose.Schema({
 });
 
 // Indexes for better query performance
-vehicleSchema.index({ licensePlate: 1 });
+// Note: licensePlate already has unique:true which creates an index, no need for explicit index
 vehicleSchema.index({ vin: 1 });
 vehicleSchema.index({ status: 1 });
 vehicleSchema.index({ currentDriver: 1 });

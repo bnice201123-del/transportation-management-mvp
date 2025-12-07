@@ -72,8 +72,8 @@ const rateLimitViolationSchema = new mongoose.Schema({
   // Timestamps
   violatedAt: {
     type: Date,
-    default: Date.now,
-    index: true
+    default: Date.now
+    // Removed index: true to avoid duplicate - indexed in compound indexes below
   }
 }, {
   timestamps: true

@@ -293,8 +293,8 @@ const securityAlertSchema = new mongoose.Schema({
   
   // Tags for categorization
   tags: [{
-    type: String,
-    index: true
+    type: String
+    // Removed index: true to avoid duplicate - indexed separately below
   }],
   
   // Notes and comments

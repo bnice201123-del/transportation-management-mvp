@@ -46,8 +46,8 @@ const phoneVerificationSchema = new mongoose.Schema({
   },
   expiresAt: {
     type: Date,
-    required: true,
-    index: true
+    required: true
+    // Removed index: true to avoid duplicate - indexed in compound and TTL indexes below
   },
   ipAddress: {
     type: String

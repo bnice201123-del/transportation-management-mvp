@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Box, Spinner, Center } from '@chakra-ui/react';
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { SidebarProvider } from "./contexts/SidebarContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 
 // Import components
 import Dashboard from './components/Dashboard';
@@ -714,20 +715,22 @@ const AppRoutes = () => {
 function App() {
   return (
     <AuthProvider>
-      <SidebarProvider>
-        <Box 
-          minWidth="320px"
-          minHeight="100vh"
-          width="100%" 
-          bg="gray.50" 
-          position="relative"
-          overflowX="hidden"
-        >
-          <Layout>
-            <AppRoutes />
-          </Layout>
-        </Box>
-      </SidebarProvider>
+      <NotificationProvider>
+        <SidebarProvider>
+          <Box 
+            minWidth="320px"
+            minHeight="100vh"
+            width="100%" 
+            bg="gray.50" 
+            position="relative"
+            overflowX="hidden"
+          >
+            <Layout>
+              <AppRoutes />
+            </Layout>
+          </Box>
+        </SidebarProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

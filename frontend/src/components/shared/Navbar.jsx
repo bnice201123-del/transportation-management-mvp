@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -29,19 +29,18 @@ import { HamburgerIcon, ChevronDownIcon, SettingsIcon, ChevronLeftIcon, ChevronR
 import { BellIcon as BellIconOutline } from '@heroicons/react/24/outline';
 import { useAuth } from "../../contexts/AuthContext";
 import { useSidebar } from "../../contexts/SidebarContext";
+import { useNotifications } from "../../contexts/NotificationContext";
 import Sidebar from './Sidebar';
-import axios from '../../config/axios';
 
 const Navbar = ({ title }) => {
   const { user, logout } = useAuth();
   const { isSidebarVisible, toggleSidebar } = useSidebar();
+  const { unreadCount } = useNotifications(); // Use notification context
   const { isOpen: isMobileMenuOpen, onOpen: onMobileMenuOpen, onClose: onMobileMenuClose } = useDisclosure();
   const navigate = useNavigate();
   const location = useLocation();
   const navigationTimeoutRef = useRef(null);
   const isNavigatingRef = useRef(false);
-  
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -96,27 +95,6 @@ const Navbar = ({ title }) => {
       }
     };
   }, []);
-
-  // Fetch unread notification count
-  useEffect(() => {
-    const fetchUnreadCount = async () => {
-      if (user) {
-        try {
-          const response = await axios.get('/api/notifications/unread-count');
-          setUnreadNotifications(response.data.count || 0);
-        } catch (error) {
-          console.error('Error fetching unread notifications:', error);
-        }
-      }
-    };
-
-    fetchUnreadCount();
-    
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
-    
-    return () => clearInterval(interval);
-  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -211,7 +189,7 @@ const Navbar = ({ title }) => {
                       size="sm"
                       position="relative"
                     />
-                    {unreadNotifications > 0 && (
+                    {unreadCount > 0 && (
                       <Badge
                         position="absolute"
                         top="0"
@@ -225,7 +203,7 @@ const Navbar = ({ title }) => {
                         alignItems="center"
                         justifyContent="center"
                       >
-                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                        {unreadCount > 9 ? '9+' : unreadCount}
                       </Badge>
                     )}
                   </Box>
@@ -250,7 +228,7 @@ const Navbar = ({ title }) => {
                       size="sm"
                       name={user ? `${user.firstName} ${user.lastName}` : 'User'}
                       src={user?.profileImage}
-                      bg={user?.profileImage ? 'transparent' : `${getRoleBadgeColor(activeRole || user?.role)}.500`}
+                      bg={user?.profileImage ? 'transparent' : `${getRoleBadgeColor(user?.role)}.500`}
                     />
                   </HStack>
                 </HStack>
@@ -331,7 +309,7 @@ const Navbar = ({ title }) => {
                       size="md"
                       position="relative"
                     />
-                    {unreadNotifications > 0 && (
+                    {unreadCount > 0 && (
                       <Badge
                         position="absolute"
                         top="-1"
@@ -345,7 +323,7 @@ const Navbar = ({ title }) => {
                         alignItems="center"
                         justifyContent="center"
                       >
-                        {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                        {unreadCount > 99 ? '99+' : unreadCount}
                       </Badge>
                     )}
                   </Box>

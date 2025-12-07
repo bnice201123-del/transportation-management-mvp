@@ -19,7 +19,7 @@ import {
 } from '@chakra-ui/react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from "../../contexts/AuthContext";
-import { isValidEmail } from '../../utils/inputValidation';
+import { isValidEmail, isEmpty } from '../../utils/inputValidation';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -29,26 +29,36 @@ const Login = () => {
   const { login, loading } = useAuth();
   const navigate = useNavigate();
 
-  // Validation helpers
-  const isEmailInvalid = touched.email && email && !isValidEmail(email);
-  const isPasswordInvalid = touched.password && password && password.length < 6;
+  // Validation helpers using enhanced validation
+  const emailValidation = isValidEmail(email);
+  const isEmailInvalid = touched.email && !emailValidation.isValid;
+  const emailError = isEmailInvalid ? emailValidation.error : '';
+
+  const isPasswordEmpty = isEmpty(password);
+  const isPasswordTooShort = !isPasswordEmpty && password.trim().length < 6;
+  const isPasswordInvalid = touched.password && (isPasswordEmpty || isPasswordTooShort);
+  const passwordError = isPasswordInvalid 
+    ? (isPasswordEmpty ? 'Password is required' : 'Password must be at least 6 characters long')
+    : '';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // Trim whitespace from inputs
-    const trimmedEmail = email.trim();
-    const trimmedPassword = password.trim();
+    // Mark all fields as touched for validation
+    setTouched({ email: true, password: true });
 
-    // Validation
-    if (!trimmedEmail || !trimmedPassword) {
-      setError('Please fill in all fields');
+    // Validate email using enhanced validation
+    const emailValidation = isValidEmail(email);
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error);
       return;
     }
 
-    if (!isValidEmail(trimmedEmail)) {
-      setError('Please enter a valid email address');
+    // Validate password
+    const trimmedPassword = password.trim();
+    if (isEmpty(trimmedPassword)) {
+      setError('Password is required');
       return;
     }
 
@@ -57,6 +67,7 @@ const Login = () => {
       return;
     }
 
+    const trimmedEmail = email.trim();
     const result = await login(trimmedEmail, trimmedPassword);
     
     if (!result.success) {
@@ -122,7 +133,7 @@ const Login = () => {
                       placeholder="Enter your email"
                     />
                     <FormErrorMessage>
-                      Please enter a valid email address
+                      {emailError}
                     </FormErrorMessage>
                   </FormControl>
 
@@ -136,7 +147,7 @@ const Login = () => {
                       placeholder="Enter your password"
                     />
                     <FormErrorMessage>
-                      Password must be at least 6 characters long
+                      {passwordError}
                     </FormErrorMessage>
                   </FormControl>
 

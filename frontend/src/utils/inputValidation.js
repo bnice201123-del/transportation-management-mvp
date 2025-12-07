@@ -1,7 +1,45 @@
 /**
  * Input Validation Utilities
  * Provides validation functions and input handlers for enforcing data type constraints
+ * Enhanced with comprehensive edge case handling
  */
+
+/**
+ * Sanitize input by trimming whitespace and removing multiple spaces
+ * @param {string} value - The input value
+ * @returns {string} - Sanitized value
+ */
+export const sanitizeInput = (value) => {
+  if (typeof value !== 'string') return '';
+  return value.trim().replace(/\s+/g, ' ');
+};
+
+/**
+ * Check if value is empty (null, undefined, empty string, or only whitespace)
+ * @param {any} value - The value to check
+ * @returns {boolean} - True if empty
+ */
+export const isEmpty = (value) => {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'string') return value.trim().length === 0;
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === 'object') return Object.keys(value).length === 0;
+  return false;
+};
+
+/**
+ * Validate required field
+ * @param {any} value - The value to validate
+ * @param {string} fieldName - Name of the field (for error message)
+ * @returns {object} - {isValid: boolean, error: string|null}
+ */
+export const validateRequired = (value, fieldName = 'This field') => {
+  const empty = isEmpty(value);
+  return {
+    isValid: !empty,
+    error: empty ? `${fieldName} is required` : null
+  };
+};
 
 /**
  * Validate and format phone number (digits only, with optional formatting)
@@ -9,6 +47,8 @@
  * @returns {string} - Formatted phone number with only digits
  */
 export const formatPhoneNumber = (value) => {
+  if (!value) return '';
+  
   // Remove all non-digit characters
   const digits = value.replace(/\D/g, '');
   
@@ -32,17 +72,25 @@ export const formatPhoneNumber = (value) => {
  * @returns {string} - Phone number with only digits
  */
 export const getRawPhoneNumber = (value) => {
+  if (!value) return '';
   return value.replace(/\D/g, '');
 };
 
 /**
  * Validate phone number
  * @param {string} value - The phone number to validate
- * @returns {boolean} - True if valid (10 digits)
+ * @returns {object} - {isValid: boolean, error: string|null}
  */
 export const isValidPhoneNumber = (value) => {
+  if (isEmpty(value)) {
+    return { isValid: false, error: 'Phone number is required' };
+  }
   const digits = getRawPhoneNumber(value);
-  return digits.length === 10;
+  const isValid = digits.length === 10;
+  return {
+    isValid,
+    error: isValid ? null : 'Phone number must be 10 digits'
+  };
 };
 
 /**
@@ -51,7 +99,33 @@ export const isValidPhoneNumber = (value) => {
  * @returns {string} - Filtered value with only letters and spaces
  */
 export const formatNameInput = (value) => {
+  if (!value) return '';
+  // Allow letters, spaces, hyphens, and apostrophes for names like "O'Brien" or "Mary-Jane"
   return value.replace(/[^a-zA-Z\s'-]/g, '');
+};
+
+/**
+ * Validate name field
+ * @param {string} value - The name to validate
+ * @param {string} fieldName - Name of the field (for error message)
+ * @returns {object} - {isValid: boolean, error: string|null}
+ */
+export const validateName = (value, fieldName = 'Name') => {
+  const sanitized = sanitizeInput(value);
+  if (isEmpty(sanitized)) {
+    return { isValid: false, error: `${fieldName} is required` };
+  }
+  if (sanitized.length < 2) {
+    return { isValid: false, error: `${fieldName} must be at least 2 characters` };
+  }
+  if (sanitized.length > 50) {
+    return { isValid: false, error: `${fieldName} must be less than 50 characters` };
+  }
+  // Check for only special characters
+  if (!/[a-zA-Z]/.test(sanitized)) {
+    return { isValid: false, error: `${fieldName} must contain at least one letter` };
+  }
+  return { isValid: true, error: null };
 };
 
 /**
@@ -108,11 +182,20 @@ export const formatDecimalInput = (value, decimals = 2) => {
 /**
  * Validate email format
  * @param {string} email - The email to validate
- * @returns {boolean} - True if valid email format
+ * @returns {object} - {isValid: boolean, error: string|null}
  */
 export const isValidEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  const sanitized = sanitizeInput(email);
+  if (isEmpty(sanitized)) {
+    return { isValid: false, error: 'Email is required' };
+  }
+  // More comprehensive email regex
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  const isValid = emailRegex.test(sanitized);
+  return {
+    isValid,
+    error: isValid ? null : 'Please enter a valid email address'
+  };
 };
 
 /**
@@ -321,9 +404,13 @@ export const getValidator = (fieldName) => {
 };
 
 export default {
+  sanitizeInput,
+  isEmpty,
+  validateRequired,
   formatPhoneNumber,
   getRawPhoneNumber,
   isValidPhoneNumber,
+  validateName,
   formatNameInput,
   formatAlphanumeric,
   formatAddressInput,

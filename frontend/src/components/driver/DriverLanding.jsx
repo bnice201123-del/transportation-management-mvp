@@ -132,7 +132,7 @@ const DriverLanding = () => {
       setIsAvailable(available);
       toast({
         title: 'Success',
-        description: `You are now ${available ? 'available' : 'unavailable'} for trips`,
+        description: `You are now ${available ? 'Available' : 'Busy'} for trips`,
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -398,8 +398,8 @@ const DriverLanding = () => {
                     <CardBody>
                       <Grid templateColumns={{ base: '1fr', md: 'repeat(4, 1fr)' }} gap={6}>
                         <VStack>
-                          <Text fontSize="2xl" fontWeight="bold" color={isAvailable ? 'green.500' : 'red.500'}>
-                            {isAvailable ? 'AVAILABLE' : 'UNAVAILABLE'}
+                          <Text fontSize="2xl" fontWeight="bold" color={isAvailable ? 'green.500' : 'orange.500'}>
+                            {isAvailable ? 'Available' : 'Busy'}
                           </Text>
                           <FormControl display="flex" alignItems="center">
                             <FormLabel htmlFor="availability" mb="0">

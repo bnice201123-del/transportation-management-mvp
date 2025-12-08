@@ -58,7 +58,10 @@ import {
   FaClipboardList, 
   FaPrint,
   FaShare,
-  FaMapMarkedAlt
+  FaMapMarkedAlt,
+  FaClock,
+  FaExchangeAlt,
+  FaFileAlt
 } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -310,6 +313,24 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
         ] : []),
         ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [
           { label: 'Search', icon: SearchIcon, action: () => onSearchOpen() }
+        ] : [])
+      ]
+    }] : []),
+
+    // Work Schedule - for schedulers, dispatchers, drivers, and admins
+    ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'driver' || user?.role === 'admin' ? [{
+      id: 'work-schedule',
+      label: 'Work Schedule',
+      icon: FaClock,
+      color: 'teal.500',
+      path: '/schedule',
+      roles: ['scheduler', 'dispatcher', 'driver', 'admin'],
+      subItems: [
+        { label: 'Schedule Calendar', icon: CalendarIcon, action: () => navigate('/schedule/calendar') },
+        { label: 'Time Off Requests', icon: FaCalendarTimes, action: () => navigate('/schedule/time-off') },
+        { label: 'Shift Swaps', icon: FaExchangeAlt, action: () => navigate('/schedule/shift-swaps') },
+        ...(user?.role === 'scheduler' || user?.role === 'admin' ? [
+          { label: 'Templates', icon: FaFileAlt, action: () => navigate('/schedule/templates') }
         ] : [])
       ]
     }] : []),

@@ -53,6 +53,7 @@ import departureMonitoringService from './services/departureMonitoringService.js
 import unassignedTripMonitoringService from './services/unassignedTripMonitoringService.js';
 import driverProgressMonitoringService from './services/driverProgressMonitoringService.js';
 import securityAlertingService from './services/securityAlertingService.js';
+import cronJobService from './services/cronJobService.js';
 
 // Load environment variables
 dotenv.config();
@@ -243,6 +244,14 @@ server.listen(PORT, () => {
   } catch (error) {
     console.error('Failed to start security alerting service:', error);
   }
+  
+  // Start cron jobs
+  try {
+    cronJobService.init();
+    console.log('✓ Cron job service started');
+  } catch (error) {
+    console.error('Failed to start cron job service:', error);
+  }
 });
 
 // Graceful shutdown
@@ -252,6 +261,7 @@ process.on('SIGTERM', () => {
   unassignedTripMonitoringService.stop();
   driverProgressMonitoringService.stop();
   securityAlertingService.stop();
+  cronJobService.stopAll();
   server.close(() => {
     console.log('HTTP server closed');
   });
@@ -262,6 +272,7 @@ process.on('SIGINT', () => {
   departureMonitoringService.stop();
   unassignedTripMonitoringService.stop();
   driverProgressMonitoringService.stop();
+  cronJobService.stopAll();
   server.close(() => {
     console.log('HTTP server closed');
     process.exit(0);

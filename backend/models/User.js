@@ -211,6 +211,23 @@ const userSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
+  // Calendar integrations
+  integrations: {
+    googleCalendar: {
+      enabled: { type: Boolean, default: false },
+      accessToken: { type: String, select: false },
+      refreshToken: { type: String, select: false },
+      expiryDate: { type: Number },
+      lastSync: { type: Date }
+    },
+    outlookCalendar: {
+      enabled: { type: Boolean, default: false },
+      accessToken: { type: String, select: false },
+      refreshToken: { type: String, select: false },
+      expiryDate: { type: Number },
+      lastSync: { type: Date }
+    }
+  },
   // Rider-specific fields
   riderId: {
     type: String,

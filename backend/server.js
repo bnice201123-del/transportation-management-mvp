@@ -42,6 +42,10 @@ import biometricRoutes from './routes/biometric.js';
 import settingsHistoryRoutes from './routes/settingsHistory.js';
 import settingsNotificationsRoutes from './routes/settingsNotifications.js';
 import settingsVersionsRoutes from './routes/settingsVersions.js';
+import schedulesRoutes from './routes/schedules.js';
+import timeOffRoutes from './routes/timeOff.js';
+import shiftSwapsRoutes from './routes/shiftSwaps.js';
+import calendarRoutes from './routes/calendar.js';
 import { globalLimiter } from './middleware/rateLimiter.js';
 
 // Import services
@@ -131,6 +135,10 @@ app.use('/api/biometric', biometricRoutes);
 app.use('/api/settings', settingsHistoryRoutes);
 app.use('/api/admin/settings/notifications', settingsNotificationsRoutes);
 app.use('/api/admin/settings/versions', settingsVersionsRoutes);
+app.use('/api/schedules', schedulesRoutes);
+app.use('/api/time-off', timeOffRoutes);
+app.use('/api/shift-swaps', shiftSwapsRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

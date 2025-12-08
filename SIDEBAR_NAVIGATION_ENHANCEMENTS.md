@@ -14,7 +14,7 @@ This document covers the comprehensive enhancements made to the sidebar navigati
 
 ### 1. **Swipe Gesture Support** 🤳
 
-**Description:** Users can now close the mobile sidebar by swiping left
+**Description:** Users can 7899now close the mobile sidebar by swiping left
 
 **Implementation:**
 - Library: `react-swipeable`

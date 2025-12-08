@@ -40,6 +40,8 @@ import loginAttemptsRoutes from './routes/loginAttempts.js';
 import geoSecurityRoutes from './routes/geoSecurity.js';
 import biometricRoutes from './routes/biometric.js';
 import settingsHistoryRoutes from './routes/settingsHistory.js';
+import settingsNotificationsRoutes from './routes/settingsNotifications.js';
+import settingsVersionsRoutes from './routes/settingsVersions.js';
 import { globalLimiter } from './middleware/rateLimiter.js';
 
 // Import services
@@ -127,6 +129,8 @@ app.use('/api/login-attempts', loginAttemptsRoutes);
 app.use('/api/geo-security', geoSecurityRoutes);
 app.use('/api/biometric', biometricRoutes);
 app.use('/api/settings', settingsHistoryRoutes);
+app.use('/api/admin/settings/notifications', settingsNotificationsRoutes);
+app.use('/api/admin/settings/versions', settingsVersionsRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

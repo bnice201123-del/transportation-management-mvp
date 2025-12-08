@@ -131,6 +131,8 @@ import {
   FaHistory,
   FaUsers,
   FaCog,
+  FaExchangeAlt,
+  FaFileImport,
   FaChartLine,
   FaGlobe,
   FaCloud,
@@ -166,6 +168,13 @@ import LoginAttemptMonitor from './LoginAttemptMonitor';
 import GeoSecurityManager from './GeoSecurityManager';
 import SidebarSettings from '../shared/SidebarSettings';
 import SettingsHistory from './SettingsHistory';
+import SettingsTemplates from './SettingsTemplates';
+import SettingsNotifications from './SettingsNotifications';
+import SettingsRollback from './SettingsRollback';
+import SettingsComparison from './SettingsComparison';
+import SettingsImportExport from './SettingsImportExport';
+import SettingsSearchFilter from './SettingsSearchFilter';
+import settingsValidators from '../../utils/settingsValidation';
 
 const AdminSettings = () => {
   // State management
@@ -183,6 +192,10 @@ const AdminSettings = () => {
   const [expandedSections, setExpandedSections] = useState([0]); // First section expanded by default
   const [systemHealth, setSystemHealth] = useState({ status: 'healthy', score: 95 });
   const [autoSave, setAutoSave] = useState(false);
+  const [disabledCategories, setDisabledCategories] = useState(new Set()); // Track disabled categories
+  const [validationErrors, setValidationErrors] = useState({}); // Track validation errors per field
+  const [filteredSettings, setFilteredSettings] = useState({}); // Track filtered settings from search
+  const [showSearchFilter, setShowSearchFilter] = useState(false); // Toggle search filter visibility
   
   // Refs
   const scrollRef = useRef(null);
@@ -215,6 +228,7 @@ const AdminSettings = () => {
   const successColor = useColorModeValue('green.500', 'green.300');
   const warningColor = useColorModeValue('orange.500', 'orange.300');
   const errorColor = useColorModeValue('red.500', 'red.300');
+  const searchInputBg = useColorModeValue('white', 'gray.700');
 
   // Enhanced settings configuration with validation and integration hooks
   const settingsConfig = {
@@ -544,7 +558,69 @@ const AdminSettings = () => {
     }
   };
 
+  // Validation configuration for settings
+  const validationRules = {
+    system: {
+      supportEmail: settingsValidators.email,
+      apiBaseUrl: settingsValidators.url,
+      maxUsers: (value) => settingsValidators.positiveInteger(value),
+    },
+    security: {
+      passwordMinLength: (value) => {
+        const result = settingsValidators.positiveInteger(value);
+        if (!result.isValid) return result;
+        if (value < 6) return { isValid: false, error: 'Password length must be at least 6' };
+        if (value > 50) return { isValid: false, error: 'Password length cannot exceed 50' };
+        return { isValid: true, error: null };
+      },
+      sessionTimeout: (value) => settingsValidators.positiveInteger(value),
+      maxLoginAttempts: (value) => settingsValidators.positiveInteger(value),
+    },
+    notifications: {
+      adminEmail: settingsValidators.email,
+      fromEmail: settingsValidators.email,
+      smtpPort: settingsValidators.port,
+    },
+    maps: {
+      apiKey: settingsValidators.required,
+      defaultZoom: (value) => {
+        const result = settingsValidators.positiveInteger(value);
+        if (!result.isValid) return result;
+        if (value < 1 || value > 20) return { isValid: false, error: 'Zoom must be between 1-20' };
+        return { isValid: true, error: null };
+      },
+    },
+  };
+
+  // Validate a single setting
+  const validateSettingValue = (category, field, value) => {
+    const validator = validationRules[category]?.[field];
+    if (!validator) return { isValid: true, error: null };
+    return validator(value);
+  };
+
   const handleSettingChange = (category, field, value, subField = null) => {
+    // Validate the value
+    const fieldKey = subField ? `${category}.${field}.${subField}` : `${category}.${field}`;
+    const validation = validateSettingValue(category, field, value);
+    
+    // Update validation errors
+    setValidationErrors(prev => {
+      const newErrors = { ...prev };
+      if (validation.isValid) {
+        delete newErrors[fieldKey];
+      } else {
+        newErrors[fieldKey] = validation.error;
+      }
+      return newErrors;
+    });
+    
+    // Get old value for notification
+    const oldValue = subField 
+      ? settings[category]?.[field]?.[subField]
+      : settings[category]?.[field];
+    
+    // Update settings
     setSettings(prev => {
       const newSettings = { ...prev };
       if (subField) {
@@ -565,6 +641,9 @@ const AdminSettings = () => {
     });
     setHasChanges(true);
     
+    // Send email notification for critical settings
+    sendSettingChangeNotification(category, field, oldValue, value, subField);
+    
     // Add to change history
     const timestamp = new Date().toLocaleString();
     setChangeHistory(prev => [
@@ -573,9 +652,119 @@ const AdminSettings = () => {
         category,
         field: subField ? `${field}.${subField}` : field,
         value,
-        action: 'modified'
+        action: 'modified',
+        valid: validation.isValid
       },
       ...prev.slice(0, 49) // Keep last 50 changes
+    ]);
+  };
+
+  const sendSettingChangeNotification = async (category, field, oldValue, newValue, subField = null) => {
+    try {
+      // Get notification config from localStorage
+      const notificationConfig = JSON.parse(
+        localStorage.getItem('settingsNotificationConfig') || '{"enabled": false}'
+      );
+
+      // Check if notifications are enabled
+      if (!notificationConfig.enabled) return;
+      
+      // Check if this category is being monitored
+      if (!notificationConfig.categories?.[category]) return;
+
+      // Define critical settings
+      const criticalSettings = {
+        security: ['twoFactorAuth', 'sessionTimeout', 'maxLoginAttempts', 'passwordMinLength', 'ipWhitelist'],
+        system: ['maintenanceMode', 'maxUsers'],
+        encryption: ['enabled', 'algorithm']
+      };
+
+      // Check if this is a critical setting
+      const isCritical = criticalSettings[category]?.includes(field);
+      if (notificationConfig.criticalOnly && !isCritical) return;
+
+      // Send notification to backend
+      const fieldName = subField ? `${field}.${subField}` : field;
+      await axios.post('/api/admin/settings/notifications/send', {
+        category,
+        field: fieldName,
+        oldValue: notificationConfig.includeOldValue ? oldValue : undefined,
+        newValue: notificationConfig.includeNewValue ? newValue : undefined,
+        user: notificationConfig.includeUserInfo ? 'admin' : undefined,
+        timestamp: new Date().toISOString(),
+        recipients: notificationConfig.recipients
+      });
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      // Don't show error to user - notifications are non-critical
+    }
+  };
+
+  const handleApplyTemplate = (templateSettings) => {
+    // Apply template settings to current settings
+    const updatedSettings = { ...settings };
+    
+    Object.keys(templateSettings).forEach(category => {
+      if (!updatedSettings[category]) {
+        updatedSettings[category] = {};
+      }
+      Object.keys(templateSettings[category]).forEach(key => {
+        updatedSettings[category][key] = templateSettings[category][key];
+      });
+    });
+    
+    setSettings(updatedSettings);
+    setHasChanges(true);
+    
+    // Add to change history
+    setChangeHistory(prev => [
+      {
+        timestamp: new Date().toISOString(),
+        category: 'template',
+        field: 'Environment Template',
+        oldValue: 'Multiple values',
+        newValue: 'Template applied',
+        user: 'admin'
+      },
+      ...prev.slice(0, 49)
+    ]);
+  };
+
+  const handleRollback = (rolledBackSettings) => {
+    // Apply rolled back settings
+    setSettings(rolledBackSettings);
+    setHasChanges(true);
+    
+    // Add to change history
+    setChangeHistory(prev => [
+      {
+        timestamp: new Date().toISOString(),
+        category: 'rollback',
+        field: 'Settings Rollback',
+        oldValue: 'Current settings',
+        newValue: 'Previous version restored',
+        user: 'admin'
+      },
+      ...prev.slice(0, 49)
+    ]);
+  };
+
+  const handleImport = (importedSettings) => {
+    // Apply imported settings
+    setSettings(importedSettings);
+    setHasChanges(true);
+    
+    // Add to change history
+    setChangeHistory(prev => [
+      {
+        timestamp: new Date().toISOString(),
+        category: 'import',
+        field: 'Bulk Import',
+        oldValue: 'Current settings',
+        newValue: 'Settings imported from file',
+        user: 'admin'
+      },
+      ...prev.slice(0, 49)
     ]);
   };
 
@@ -736,7 +925,53 @@ const AdminSettings = () => {
     scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const filteredTabs = [
+  // Toggle category enabled/disabled state
+  const toggleCategoryEnabled = (categoryKey) => {
+    setDisabledCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryKey)) {
+        newSet.delete(categoryKey);
+        toast({
+          title: 'Category Enabled',
+          description: `${categoryKey} category has been enabled`,
+          status: 'success',
+          duration: 2000
+        });
+      } else {
+        newSet.add(categoryKey);
+        toast({
+          title: 'Category Disabled',
+          description: `${categoryKey} category has been disabled. Settings cannot be modified while disabled.`,
+          status: 'warning',
+          duration: 3000
+        });
+      }
+      // Save to localStorage
+      localStorage.setItem('disabledSettingsCategories', JSON.stringify([...newSet]));
+      return newSet;
+    });
+  };
+
+  // Check if a category is disabled
+  const isCategoryDisabled = (categoryKey) => {
+    return disabledCategories.has(categoryKey);
+  };
+
+  // Load disabled categories from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('disabledSettingsCategories');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setDisabledCategories(new Set(parsed));
+      } catch (error) {
+        console.error('Error loading disabled categories:', error);
+      }
+    }
+  }, []);
+
+  const allTabs = [
+    { label: 'Search', icon: SearchIcon, key: 'search-filter' },
     { label: 'System', icon: FaServer, key: 'system' },
     { label: 'Security', icon: FaShieldAlt, key: 'security' },
     { label: 'Notifications', icon: FaBell, key: 'notifications' },
@@ -753,11 +988,21 @@ const AdminSettings = () => {
     { label: 'Login Attempts', icon: FaShieldAlt, key: 'login-attempts' },
     { label: 'Geo-Security', icon: FaMap, key: 'geo-security' },
     { label: 'Sidebar', icon: FaBars, key: 'sidebar-settings' },
+    { label: 'Templates', icon: FaCog, key: 'templates' },
+    { label: 'Notifications', icon: FaBell, key: 'notifications-config' },
+    { label: 'Rollback', icon: FaHistory, key: 'rollback' },
+    { label: 'Compare', icon: FaExchangeAlt, key: 'comparison' },
+    { label: 'Import/Export', icon: FaFileImport, key: 'import-export' },
     { label: 'History', icon: FaHistory, key: 'settings-history' }
-  ].filter(tab => 
-    tab.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tab.key.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ];
+  
+  // Filter tabs only for display in TabList, but keep all TabPanels rendered
+  const filteredTabs = searchTerm 
+    ? allTabs.filter(tab => 
+        tab.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        tab.key.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : allTabs;
 
   const SettingRow = ({ label, description, children, error }) => (
     <HStack justify="space-between" align="start" spacing={4}>
@@ -981,7 +1226,7 @@ const AdminSettings = () => {
                         placeholder="Search settings..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        bg={useColorModeValue('white', 'gray.700')}
+                        bg={searchInputBg}
                       />
                     </InputGroup>
 
@@ -1060,7 +1305,7 @@ const AdminSettings = () => {
                     px={6}
                     pt={6}
                   >
-                    {filteredTabs.map((tab, index) => (
+                    {filteredTabs.map((tab) => (
                       <Tab key={tab.key} minW="fit-content">
                         <HStack spacing={2}>
                           <Icon as={tab.icon} boxSize={4} />
@@ -1071,11 +1316,53 @@ const AdminSettings = () => {
                   </TabList>
 
                   <TabPanels>
+                    {/* Search & Filter Panel */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <SettingsSearchFilter 
+                          settings={settings}
+                          changeHistory={changeHistory}
+                          onFilteredSettingsChange={setFilteredSettings}
+                        />
+                      </VStack>
+                    </TabPanel>
+
                     {/* System Settings Panel */}
                     <TabPanel p={6}>
                       <VStack spacing={6} align="stretch">
-                        <Heading size="md" color={textColor}>System Configuration</Heading>
-                        <VStack spacing={4} align="stretch">
+                        {/* Category Toggle Control */}
+                        <Card bg={isCategoryDisabled('system') ? 'gray.100' : cardBg} borderWidth={2} borderColor={isCategoryDisabled('system') ? 'orange.300' : borderColor}>
+                          <CardBody>
+                            <HStack justify="space-between" align="center">
+                              <VStack align="start" spacing={1}>
+                                <HStack>
+                                  <Icon as={FaServer} color={isCategoryDisabled('system') ? 'gray.400' : 'blue.500'} />
+                                  <Heading size="md" color={isCategoryDisabled('system') ? 'gray.500' : textColor}>
+                                    System Configuration
+                                  </Heading>
+                                </HStack>
+                                <Text fontSize="sm" color={isCategoryDisabled('system') ? 'gray.500' : mutedTextColor}>
+                                  {isCategoryDisabled('system') 
+                                    ? '⚠️ This category is disabled. Enable it to modify settings.' 
+                                    : 'Core system settings and application configuration'}
+                                </Text>
+                              </VStack>
+                              <HStack spacing={3}>
+                                <Text fontSize="sm" fontWeight="medium" color={isCategoryDisabled('system') ? 'orange.500' : 'green.500'}>
+                                  {isCategoryDisabled('system') ? 'Disabled' : 'Enabled'}
+                                </Text>
+                                <Switch 
+                                  size="lg" 
+                                  colorScheme={isCategoryDisabled('system') ? 'orange' : 'green'}
+                                  isChecked={!isCategoryDisabled('system')}
+                                  onChange={() => toggleCategoryEnabled('system')}
+                                />
+                              </HStack>
+                            </HStack>
+                          </CardBody>
+                        </Card>
+
+                        <VStack spacing={4} align="stretch" opacity={isCategoryDisabled('system') ? 0.5 : 1}>
                           <SettingRow
                             label="Site Name"
                             description="The name of your transportation system"
@@ -1084,6 +1371,7 @@ const AdminSettings = () => {
                               value={settings.system?.siteName || ''}
                               onChange={(e) => handleSettingChange('system', 'siteName', e.target.value)}
                               placeholder="Enter site name"
+                              isDisabled={isCategoryDisabled('system')}
                             />
                           </SettingRow>
 
@@ -1095,18 +1383,22 @@ const AdminSettings = () => {
                               value={settings.system?.companyName || ''}
                               onChange={(e) => handleSettingChange('system', 'companyName', e.target.value)}
                               placeholder="Enter company name"
+                              isDisabled={isCategoryDisabled('system')}
                             />
                           </SettingRow>
 
                           <SettingRow
                             label="Maximum Users"
                             description="Maximum number of concurrent users"
+                            error={validationErrors['system.maxUsers']}
                           >
                             <NumberInput
                               value={settings.system?.maxUsers}
                               onChange={(value) => handleSettingChange('system', 'maxUsers', parseInt(value))}
                               min={1}
                               max={10000}
+                              isInvalid={!!validationErrors['system.maxUsers']}
+                              isDisabled={isCategoryDisabled('system')}
                             >
                               <NumberInputField />
                               <NumberInputStepper>
@@ -1124,6 +1416,7 @@ const AdminSettings = () => {
                               isChecked={settings.system?.maintenanceMode}
                               onChange={(e) => handleSettingChange('system', 'maintenanceMode', e.target.checked)}
                               colorScheme="orange"
+                              isDisabled={isCategoryDisabled('system')}
                             />
                           </SettingRow>
                         </VStack>
@@ -1133,8 +1426,39 @@ const AdminSettings = () => {
                     {/* Security Settings Panel */}
                     <TabPanel p={6}>
                       <VStack spacing={6} align="stretch">
-                        <Heading size="md" color={textColor}>Security & Authentication</Heading>
-                        <VStack spacing={4} align="stretch">
+                        {/* Category Toggle Control */}
+                        <Card bg={isCategoryDisabled('security') ? 'gray.100' : cardBg} borderWidth={2} borderColor={isCategoryDisabled('security') ? 'orange.300' : borderColor}>
+                          <CardBody>
+                            <HStack justify="space-between" align="center">
+                              <VStack align="start" spacing={1}>
+                                <HStack>
+                                  <Icon as={FaShieldAlt} color={isCategoryDisabled('security') ? 'gray.400' : 'red.500'} />
+                                  <Heading size="md" color={isCategoryDisabled('security') ? 'gray.500' : textColor}>
+                                    Security & Authentication
+                                  </Heading>
+                                </HStack>
+                                <Text fontSize="sm" color={isCategoryDisabled('security') ? 'gray.500' : mutedTextColor}>
+                                  {isCategoryDisabled('security') 
+                                    ? '⚠️ This category is disabled. Enable it to modify settings.' 
+                                    : 'Security policies and authentication settings'}
+                                </Text>
+                              </VStack>
+                              <HStack spacing={3}>
+                                <Text fontSize="sm" fontWeight="medium" color={isCategoryDisabled('security') ? 'orange.500' : 'green.500'}>
+                                  {isCategoryDisabled('security') ? 'Disabled' : 'Enabled'}
+                                </Text>
+                                <Switch 
+                                  size="lg" 
+                                  colorScheme={isCategoryDisabled('security') ? 'orange' : 'green'}
+                                  isChecked={!isCategoryDisabled('security')}
+                                  onChange={() => toggleCategoryEnabled('security')}
+                                />
+                              </HStack>
+                            </HStack>
+                          </CardBody>
+                        </Card>
+
+                        <VStack spacing={4} align="stretch" opacity={isCategoryDisabled('security') ? 0.5 : 1}>
                           <SettingRow
                             label="Password Min Length"
                             description="Minimum password length required"
@@ -1143,6 +1467,7 @@ const AdminSettings = () => {
                               value={settings.security?.passwordMinLength}
                               onChange={(value) => handleSettingChange('security', 'passwordMinLength', parseInt(value))}
                               min={6}
+                              isDisabled={isCategoryDisabled('security')}
                               max={50}
                             >
                               <NumberInputField />
@@ -1270,6 +1595,52 @@ const AdminSettings = () => {
                     <TabPanel p={6}>
                       <VStack spacing={6} align="stretch">
                         <SidebarSettings />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Templates Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <SettingsTemplates 
+                          currentSettings={settings}
+                          onApplyTemplate={handleApplyTemplate}
+                        />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Notifications Configuration Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <SettingsNotifications />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Rollback Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <SettingsRollback 
+                          currentSettings={settings}
+                          onRollback={handleRollback}
+                        />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Comparison Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <SettingsComparison 
+                          currentSettings={settings}
+                        />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Import/Export Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <SettingsImportExport 
+                          currentSettings={settings}
+                          onImport={handleImport}
+                        />
                       </VStack>
                     </TabPanel>
 

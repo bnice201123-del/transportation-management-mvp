@@ -1,6 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import { authenticateToken, requireAdmin } from '../middleware/authenticateToken.js';
+import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 import Settings from '../models/Settings.js';
 import {
   trackSettingsChanges,
@@ -86,148 +86,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 /**
- * @route   GET /api/settings/:key
- * @desc    Get specific setting by key
- * @access  Admin
- */
-router.get('/:key(*)', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    // Skip if key is 'history'
-    if (req.params.key === 'history') {
-      return next();
-    }
-    
-    const value = await Settings.getSetting(req.params.key);
-    res.json({
-      success: true,
-      key: req.params.key,
-      value
-    });
-  } catch (error) {
-    console.error('Error fetching setting:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch setting',
-      error: error.message
-    });
-  }
-});
-
-/**
- * @route   PUT /api/settings
- * @desc    Update multiple settings
- * @access  Admin
- */
-router.put('/',
-  authenticateToken,
-  requireSettingsPermission,
-  validateSettings,
-  trackSettingsChanges,
-  alertOnCriticalChanges,
-  async (req, res) => {
-    try {
-      const settings = await Settings.bulkUpdate(req.body, req.user._id, req);
-      
-      res.json({
-        success: true,
-        message: 'Settings updated successfully',
-        settings: settings.toObject()
-      });
-    } catch (error) {
-      console.error('Error updating settings:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to update settings',
-        error: error.message
-      });
-    }
-  }
-);
-
-/**
- * @route   PUT /api/settings/:key
- * @desc    Update single setting
- * @access  Admin
- */
-router.put('/:key(*)',
-  authenticateToken,
-  requireSettingsPermission,
-  validateSettings,
-  trackSettingsChanges,
-  alertOnCriticalChanges,
-  async (req, res) => {
-    try {
-      // Skip if key is 'history'
-      if (req.params.key === 'history') {
-        return next();
-      }
-      
-      const { value, reason } = req.body;
-      const settings = await Settings.updateSetting(
-        req.params.key,
-        value,
-        req.user._id,
-        req
-      );
-      
-      res.json({
-        success: true,
-        message: 'Setting updated successfully',
-        key: req.params.key,
-        value: settings.get(req.params.key)
-      });
-    } catch (error) {
-      console.error('Error updating setting:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to update setting',
-        error: error.message
-      });
-    }
-  }
-);
-
-/**
- * @route   POST /api/settings/reset
- * @desc    Reset all settings to defaults
- * @access  Admin
- */
-router.post('/reset', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    // Delete existing settings
-    await Settings.deleteMany({});
-    
-    // Create new default settings
-    const settings = await Settings.getSingleton();
-    
-    // Log the reset
-    await logSettingChange(
-      'ALL_SETTINGS',
-      'system',
-      'various',
-      'defaults',
-      req.user._id,
-      req,
-      'Settings reset to defaults'
-    );
-    
-    res.json({
-      success: true,
-      message: 'Settings reset to defaults',
-      settings: settings.toObject()
-    });
-  } catch (error) {
-    console.error('Error resetting settings:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to reset settings',
-      error: error.message
-    });
-  }
-});
-
-/**
- * SETTINGS HISTORY ROUTES
+ * SETTINGS HISTORY ROUTES (must come before /:key routes)
  */
 
 /**
@@ -297,6 +156,137 @@ router.get('/history', authenticateToken, requireAdmin, async (req, res) => {
     });
   }
 });
+
+/**
+ * @route   POST /api/settings/reset
+ * @desc    Reset all settings to defaults
+ * @access  Admin
+ */
+router.post('/reset', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    // Delete existing settings
+    await Settings.deleteMany({});
+    
+    // Create new default settings
+    const settings = await Settings.getSingleton();
+    
+    // Log the reset
+    await logSettingChange(
+      'ALL_SETTINGS',
+      'system',
+      'various',
+      'defaults',
+      req.user._id,
+      req,
+      'Settings reset to defaults'
+    );
+    
+    res.json({
+      success: true,
+      message: 'Settings reset to defaults',
+      settings: settings.toObject()
+    });
+  } catch (error) {
+    console.error('Error resetting settings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reset settings',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route   GET /api/settings/:key
+ * @desc    Get specific setting by key
+ * @access  Admin
+ */
+router.get('/:key', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const value = await Settings.getSetting(req.params.key);
+    res.json({
+      success: true,
+      key: req.params.key,
+      value
+    });
+  } catch (error) {
+    console.error('Error fetching setting:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch setting',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route   PUT /api/settings
+ * @desc    Update multiple settings
+ * @access  Admin
+ */
+router.put('/',
+  authenticateToken,
+  requireSettingsPermission,
+  validateSettings,
+  trackSettingsChanges,
+  alertOnCriticalChanges,
+  async (req, res) => {
+    try {
+      const settings = await Settings.bulkUpdate(req.body, req.user._id, req);
+      
+      res.json({
+        success: true,
+        message: 'Settings updated successfully',
+        settings: settings.toObject()
+      });
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update settings',
+        error: error.message
+      });
+    }
+  }
+);
+
+/**
+ * @route   PUT /api/settings/:key
+ * @desc    Update single setting
+ * @access  Admin
+ */
+router.put('/:key',
+  authenticateToken,
+  requireSettingsPermission,
+  validateSettings,
+  trackSettingsChanges,
+  alertOnCriticalChanges,
+  async (req, res) => {
+    try {
+      const { value, reason } = req.body;
+      const settings = await Settings.updateSetting(
+        req.params.key,
+        value,
+        req.user._id,
+        req
+      );
+      
+      res.json({
+        success: true,
+        message: 'Setting updated successfully',
+        key: req.params.key,
+        value: settings.get(req.params.key)
+      });
+    } catch (error) {
+      console.error('Error updating setting:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update setting',
+        error: error.message
+      });
+    }
+  }
+);
 
 /**
  * @route   GET /api/settings/history/:id

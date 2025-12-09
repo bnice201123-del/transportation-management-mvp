@@ -228,6 +228,61 @@ const userSchema = new mongoose.Schema({
       lastSync: { type: Date }
     }
   },
+  // Notification preferences
+  notificationPreferences: {
+    type: {
+      shiftReminders: {
+        enabled: { type: Boolean, default: true },
+        email: { type: Boolean, default: true },
+        sms: { type: Boolean, default: true },
+        timing: { type: Number, default: 60 } // minutes before shift
+      },
+      timeOffApprovals: {
+        enabled: { type: Boolean, default: true },
+        email: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false }
+      },
+      timeOffDenials: {
+        enabled: { type: Boolean, default: true },
+        email: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false }
+      },
+      shiftSwapRequests: {
+        enabled: { type: Boolean, default: true },
+        email: { type: Boolean, default: true },
+        sms: { type: Boolean, default: true }
+      },
+      overtimeAlerts: {
+        enabled: { type: Boolean, default: true },
+        email: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false }
+      },
+      coverageGapAlerts: {
+        enabled: { type: Boolean, default: true },
+        email: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false }
+      },
+      scheduleChanges: {
+        enabled: { type: Boolean, default: true },
+        email: { type: Boolean, default: true },
+        sms: { type: Boolean, default: true }
+      },
+      calendarSync: {
+        enabled: { type: Boolean, default: true },
+        email: { type: Boolean, default: false },
+        sms: { type: Boolean, default: false }
+      }
+    },
+    default: {}
+  },
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  phoneVerified: {
+    type: Boolean,
+    default: false
+  },
   // Rider-specific fields
   riderId: {
     type: String,

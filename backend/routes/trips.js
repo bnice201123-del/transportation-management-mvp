@@ -18,6 +18,8 @@ import {
   handleTripStarted,
   handleDriverLocationUpdate
 } from '../utils/tripLifecycleHooks.js';
+import { optimizeRoute, estimateTripCost } from '../utils/routeOptimization.js';
+import { getTrafficInfo, calculateTrafficSurge } from '../services/trafficService.js';
 
 const router = express.Router();
 
@@ -1219,6 +1221,344 @@ router.delete('/bulk-delete', authenticateToken, authorizeRoles('admin', 'schedu
   } catch (error) {
     console.error('Bulk delete trips error:', error);
     res.status(500).json({ message: 'Server error deleting trips' });
+  }
+});
+
+// Optimize multi-stop trip route
+router.post('/optimize-route', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'admin'), async (req, res) => {
+  try {
+    const { origin, destination, waypoints, algorithm = 'google_maps' } = req.body;
+
+    if (!origin || !destination) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Origin and destination are required' 
+      });
+    }
+
+    if (!waypoints || waypoints.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one waypoint is required for optimization'
+      });
+    }
+
+    const optimizationResult = await optimizeRoute(origin, destination, waypoints, {
+      algorithm,
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
+    });
+
+    res.json({
+      success: true,
+      optimization: optimizationResult
+    });
+  } catch (error) {
+    console.error('Route optimization error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error optimizing route',
+      error: error.message 
+    });
+  }
+});
+
+// Estimate trip cost with multi-stop support
+router.post('/estimate-cost', authenticateToken, async (req, res) => {
+  try {
+    const { distance, duration, options = {} } = req.body;
+
+    if (!distance || !duration) {
+      return res.status(400).json({
+        success: false,
+        message: 'Distance and duration are required'
+      });
+    }
+
+    const costEstimate = estimateTripCost(distance, duration, options);
+
+    res.json({
+      success: true,
+      estimate: costEstimate
+    });
+  } catch (error) {
+    console.error('Cost estimation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error estimating cost',
+      error: error.message
+    });
+  }
+});
+
+// Create multi-stop trip with automatic route optimization
+router.post('/multi-stop', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'admin'), async (req, res) => {
+  try {
+    const {
+      rider,
+      riderName,
+      riderPhone,
+      riderEmail,
+      pickupLocation,
+      dropoffLocation,
+      waypoints = [],
+      scheduledDate,
+      scheduledTime,
+      timezone,
+      tripType = 'regular',
+      specialInstructions,
+      optimizeRoute: shouldOptimize = true,
+      estimateCost = true
+    } = req.body;
+
+    // Validate required fields
+    if (!rider || !riderName || !pickupLocation || !dropoffLocation || !scheduledDate || !scheduledTime) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Missing required fields' 
+      });
+    }
+
+    // Validate waypoints structure
+    if (waypoints.length > 0) {
+      const invalidWaypoint = waypoints.find(wp => 
+        !wp.location || !wp.location.address || !wp.location.lat || !wp.location.lng
+      );
+      if (invalidWaypoint) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid waypoint structure. Each waypoint must have location with address, lat, and lng'
+        });
+      }
+    }
+
+    // Fetch real-time traffic data for the route
+    let trafficData = null;
+    try {
+      const trafficInfo = await getTrafficInfo(
+        pickupLocation,
+        dropoffLocation,
+        waypoints.map(wp => wp.location)
+      );
+      
+      if (trafficInfo.success) {
+        trafficData = trafficInfo.trafficData;
+      }
+    } catch (trafficError) {
+      console.error('Traffic fetch failed, continuing without traffic data:', trafficError);
+    }
+
+    // Optimize route if requested and waypoints exist
+    let routeOptimizationData = null;
+    let optimizedWaypoints = waypoints;
+
+    if (shouldOptimize && waypoints.length > 0) {
+      try {
+        const optimizationResult = await optimizeRoute(
+          pickupLocation,
+          dropoffLocation,
+          waypoints,
+          { algorithm: 'google_maps' }
+        );
+
+        // Reorder waypoints according to optimization
+        optimizedWaypoints = optimizationResult.optimizedSequence.map((idx, newIdx) => ({
+          ...waypoints[idx],
+          sequence: newIdx
+        }));
+
+        routeOptimizationData = {
+          isOptimized: true,
+          optimizedAt: new Date(),
+          algorithm: optimizationResult.algorithm,
+          originalSequence: optimizationResult.originalSequence,
+          optimizedSequence: optimizationResult.optimizedSequence,
+          timeSaved: optimizationResult.savings?.timeSaved || 0,
+          distanceSaved: optimizationResult.savings?.distanceSaved || 0,
+          costSaved: optimizationResult.savings?.costSaved || 0,
+          trafficConsidered: !!trafficData,
+          trafficData: trafficData || null
+        };
+      } catch (optError) {
+        console.error('Route optimization failed, proceeding without optimization:', optError);
+        // Continue with original waypoint order
+        optimizedWaypoints = waypoints.map((wp, idx) => ({ ...wp, sequence: idx }));
+      }
+    } else {
+      // Assign sequence numbers to waypoints
+      optimizedWaypoints = waypoints.map((wp, idx) => ({ ...wp, sequence: idx }));
+      
+      // Still add traffic data even if not optimizing
+      if (trafficData) {
+        routeOptimizationData = {
+          isOptimized: false,
+          trafficConsidered: true,
+          trafficData
+        };
+      }
+    }
+
+    // Calculate estimated distance and duration
+    let estimatedDistance = 0;
+    let estimatedDuration = 0;
+
+    if (routeOptimizationData && routeOptimizationData.totalDistance) {
+      estimatedDistance = routeOptimizationData.totalDistance;
+      estimatedDuration = routeOptimizationData.totalDuration || estimatedDistance / 50 * 60;
+    } else if (trafficData && trafficData.estimatedDurationInTraffic) {
+      // Use traffic-adjusted duration if available
+      estimatedDuration = trafficData.estimatedDurationInTraffic;
+      estimatedDistance = trafficData.totalDistance || 0;
+    } else {
+      // Fallback distance calculation
+      const { calculateDistance } = await import('../utils/routeOptimization.js');
+      estimatedDistance = calculateDistance(pickupLocation, dropoffLocation);
+      
+      // Add waypoint distances
+      if (optimizedWaypoints.length > 0) {
+        let current = pickupLocation;
+        for (const wp of optimizedWaypoints) {
+          estimatedDistance += calculateDistance(current, wp.location);
+          current = wp.location;
+        }
+        estimatedDistance += calculateDistance(current, dropoffLocation);
+      }
+      
+      estimatedDuration = (estimatedDistance / 50) * 60; // Assume 50 km/h average
+    }
+
+    // Estimate cost if requested
+    let costData = null;
+    if (estimateCost) {
+      let costEstimate = estimateTripCost(estimatedDistance, estimatedDuration);
+      
+      // Apply traffic surge pricing if applicable
+      if (trafficData && trafficData.trafficLevel && trafficData.trafficDelay) {
+        const surgePricing = calculateTrafficSurge(trafficData.trafficLevel, trafficData.trafficDelay);
+        costEstimate.total = costEstimate.total * surgePricing.surgeMultiplier;
+        costEstimate.breakdown.surge = {
+          multiplier: surgePricing.surgeMultiplier,
+          reason: surgePricing.reason
+        };
+      }
+      
+      costData = {
+        estimatedCost: costEstimate.total,
+        costBreakdown: costEstimate.breakdown
+      };
+    }
+
+    // Create the trip
+    const tripData = {
+      rider,
+      riderName,
+      riderPhone,
+      riderEmail,
+      pickupLocation,
+      dropoffLocation,
+      waypoints: optimizedWaypoints,
+      scheduledDate,
+      scheduledTime,
+      timezone: timezone || getDefaultTimezone(),
+      estimatedDistance,
+      estimatedDuration,
+      tripType,
+      specialInstructions,
+      createdBy: req.user._id,
+      status: 'pending',
+      ...(routeOptimizationData && { routeOptimization: routeOptimizationData }),
+      ...(costData && { estimatedCost: costData.estimatedCost })
+    };
+
+    const trip = new Trip(tripData);
+    await trip.save();
+
+    // Log activity
+    await logActivity(
+      req.user._id,
+      'trip_created',
+      `Created multi-stop trip ${trip.tripId} with ${waypoints.length} waypoints`,
+      { 
+        tripId: trip.tripId,
+        waypointCount: waypoints.length,
+        optimized: !!routeOptimizationData
+      },
+      trip._id
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Multi-stop trip created successfully',
+      trip,
+      optimization: routeOptimizationData,
+      costEstimate: costData
+    });
+  } catch (error) {
+    console.error('Create multi-stop trip error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error creating multi-stop trip',
+      error: error.message 
+    });
+  }
+});
+
+// Update waypoint completion status
+router.patch('/:id/waypoints/:waypointSequence/complete', authenticateToken, async (req, res) => {
+  try {
+    const { id, waypointSequence } = req.params;
+    const { notes, actualArrivalTime, actualDepartureTime, waitTime } = req.body;
+
+    const trip = await Trip.findById(id);
+    if (!trip) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Trip not found' 
+      });
+    }
+
+    // Find the waypoint
+    const waypointIndex = trip.waypoints.findIndex(wp => wp.sequence === parseInt(waypointSequence));
+    if (waypointIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Waypoint not found'
+      });
+    }
+
+    // Update waypoint
+    trip.waypoints[waypointIndex].completed = true;
+    trip.waypoints[waypointIndex].completedAt = new Date();
+    if (actualArrivalTime) trip.waypoints[waypointIndex].actualArrivalTime = actualArrivalTime;
+    if (actualDepartureTime) trip.waypoints[waypointIndex].actualDepartureTime = actualDepartureTime;
+    if (waitTime) trip.waypoints[waypointIndex].waitTime = waitTime;
+    if (notes) trip.waypoints[waypointIndex].notes = notes;
+
+    await trip.save();
+
+    // Log activity
+    await logActivity(
+      req.user._id,
+      'waypoint_completed',
+      `Completed waypoint ${waypointSequence} for trip ${trip.tripId}`,
+      { 
+        tripId: trip.tripId,
+        waypointSequence 
+      },
+      trip._id
+    );
+
+    res.json({
+      success: true,
+      message: 'Waypoint marked as complete',
+      trip
+    });
+  } catch (error) {
+    console.error('Update waypoint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating waypoint',
+      error: error.message
+    });
   }
 });
 

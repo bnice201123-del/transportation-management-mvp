@@ -34,7 +34,16 @@ const activityLogSchema = new mongoose.Schema({
       'user_created',
       'user_updated',
       'user_deleted',
-      'role_changed'
+      'role_changed',
+      'waypoint_completed',
+      'route_optimized',
+      'bulk_cancel_trips',
+      'template_created',
+      'template_updated',
+      'template_deleted',
+      'template_shared',
+      'traffic_alert',
+      'trip_traffic_updated'
     ]
   },
   description: {

@@ -28,7 +28,7 @@ const tripSchema = new mongoose.Schema({
     lowercase: true
   },
   
-  // Locations
+  // Locations - Support for multi-stop trips
   pickupLocation: {
     address: { type: String, required: true },
     lat: { type: Number, required: true },
@@ -40,6 +40,71 @@ const tripSchema = new mongoose.Schema({
     lat: { type: Number, required: true },
     lng: { type: Number, required: true },
     notes: String
+  },
+  
+  // Multi-stop waypoints (for trips with intermediate stops)
+  waypoints: [{
+    sequence: {
+      type: Number,
+      required: true
+    },
+    location: {
+      address: { type: String, required: true },
+      lat: { type: Number, required: true },
+      lng: { type: Number, required: true },
+      notes: String
+    },
+    stopType: {
+      type: String,
+      enum: ['pickup', 'dropoff', 'both', 'waypoint'],
+      default: 'waypoint'
+    },
+    estimatedArrivalTime: Date,
+    actualArrivalTime: Date,
+    estimatedDepartureTime: Date,
+    actualDepartureTime: Date,
+    waitTime: Number, // minutes
+    passengers: [{
+      name: String,
+      action: {
+        type: String,
+        enum: ['pickup', 'dropoff']
+      }
+    }],
+    completed: {
+      type: Boolean,
+      default: false
+    },
+    completedAt: Date,
+    notes: String
+  }],
+  
+  // Route optimization metadata
+  routeOptimization: {
+    isOptimized: {
+      type: Boolean,
+      default: false
+    },
+    optimizedAt: Date,
+    algorithm: {
+      type: String,
+      enum: ['nearest_neighbor', 'genetic', 'google_maps', 'manual'],
+      default: 'google_maps'
+    },
+    originalSequence: [Number], // Original waypoint order
+    optimizedSequence: [Number], // Optimized waypoint order
+    timeSaved: Number, // minutes
+    distanceSaved: Number, // kilometers
+    costSaved: Number, // currency
+    trafficConsidered: {
+      type: Boolean,
+      default: false
+    },
+    trafficData: {
+      fetchedAt: Date,
+      conditions: String, // 'light', 'moderate', 'heavy'
+      incidents: [String]
+    }
   },
   
   // Scheduling
@@ -282,7 +347,20 @@ const tripSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
-  cancelledAt: Date
+  cancelledAt: Date,
+  
+  // Template reference (if created from template)
+  metadata: {
+    templateId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'TripTemplate'
+    },
+    templateName: String,
+    createdFromTemplate: {
+      type: Boolean,
+      default: false
+    }
+  }
 }, {
   timestamps: true
 });

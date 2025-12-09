@@ -478,6 +478,51 @@ const AppRoutes = () => {
         } 
       />
       
+      {/* Work Schedule Routes - Available to authenticated users */}
+      <Route 
+        path="/schedule/calendar" 
+        element={
+          <ProtectedRoute>
+            <ErrorBoundary fallbackMessage="Failed to load Schedule Calendar. Please try refreshing the page.">
+              <AdminPlaceholder title="Schedule Calendar" description="View and manage your work schedule in a calendar format. See upcoming shifts, request time off, and coordinate with your team." />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      
+      <Route 
+        path="/schedule/time-off" 
+        element={
+          <ProtectedRoute>
+            <ErrorBoundary fallbackMessage="Failed to load Time Off Requests. Please try refreshing the page.">
+              <AdminPlaceholder title="Time Off Requests" description="Submit and manage time off requests. View approval status and upcoming approved time off." />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      
+      <Route 
+        path="/schedule/shift-swaps" 
+        element={
+          <ProtectedRoute>
+            <ErrorBoundary fallbackMessage="Failed to load Shift Swaps. Please try refreshing the page.">
+              <AdminPlaceholder title="Shift Swaps" description="Request to swap shifts with other drivers. Browse available swap opportunities and manage your swap requests." />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      
+      <Route 
+        path="/schedule/templates" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load Schedule Templates. Please try refreshing the page.">
+              <AdminPlaceholder title="Schedule Templates" description="Create and manage schedule templates for recurring shifts and assignments." />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      
       <Route 
         path="/admin/system" 
         element={

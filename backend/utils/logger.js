@@ -4,10 +4,10 @@ export const logActivity = async (userId, action, description, metadata = {}, tr
   try {
     const log = new ActivityLog({
       userId,
-      tripId,
       action,
       description,
-      metadata
+      metadata,
+      ...(tripId && { tripId })
     });
     await log.save();
   } catch (error) {

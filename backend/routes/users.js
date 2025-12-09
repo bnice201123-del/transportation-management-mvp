@@ -158,6 +158,168 @@ router.get('/riders', authenticateToken, authorizeRoles('scheduler', 'dispatcher
   }
 });
 
+// Get notification preferences
+router.get('/notification-preferences', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('email phone emailVerified phoneVerified notificationPreferences');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      email: user.email,
+      phone: user.phone,
+      emailVerified: user.emailVerified || false,
+      phoneVerified: user.phoneVerified || false,
+      preferences: user.notificationPreferences || {}
+    });
+  } catch (error) {
+    console.error('Get notification preferences error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching notification preferences',
+      error: error.message
+    });
+  }
+});
+
+// Update notification preferences
+router.put('/notification-preferences', authenticateToken, async (req, res) => {
+  try {
+    const { preferences, email, phone } = req.body;
+
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Update contact info if provided
+    if (email && email !== user.email) {
+      user.email = email;
+      user.emailVerified = false; // Reset verification if email changes
+    }
+    
+    if (phone && phone !== user.phone) {
+      user.phone = phone;
+      user.phoneVerified = false; // Reset verification if phone changes
+    }
+
+    // Update notification preferences
+    if (preferences) {
+      user.notificationPreferences = preferences;
+    }
+
+    await user.save();
+
+    await logActivity(
+      req.user.id,
+      'notification_preferences_update',
+      'Updated notification preferences',
+      { userId: user._id }
+    );
+
+    res.json({
+      success: true,
+      message: 'Notification preferences updated successfully',
+      preferences: user.notificationPreferences
+    });
+  } catch (error) {
+    console.error('Update notification preferences error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error updating notification preferences',
+      error: error.message
+    });
+  }
+});
+
+// Test notification
+router.post('/test-notification', authenticateToken, async (req, res) => {
+  try {
+    const { channel } = req.body; // 'email' or 'sms'
+
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Import notification service dynamically
+    const { default: notificationService } = await import('../services/notificationService.js');
+
+    if (channel === 'email') {
+      if (!user.email) {
+        return res.status(400).json({
+          success: false,
+          message: 'No email address configured'
+        });
+      }
+
+      const result = await notificationService.sendEmail({
+        to: user.email,
+        subject: 'Test Notification - Transportation System',
+        html: `
+          <h2>Test Email Notification</h2>
+          <p>Hello ${user.firstName},</p>
+          <p>This is a test email from the Transportation Management System.</p>
+          <p>If you received this message, your email notifications are working correctly!</p>
+          <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+        `,
+        text: `Test Email Notification\n\nHello ${user.firstName},\n\nThis is a test email from the Transportation Management System.\n\nIf you received this message, your email notifications are working correctly!\n\nDate: ${new Date().toLocaleString()}`
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send email');
+      }
+    } else if (channel === 'sms') {
+      if (!user.phone) {
+        return res.status(400).json({
+          success: false,
+          message: 'No phone number configured'
+        });
+      }
+
+      const result = await notificationService.sendSMS({
+        to: user.phone,
+        body: `Test SMS from Transportation System: Hello ${user.firstName}! If you received this, your SMS notifications are working. Time: ${new Date().toLocaleTimeString()}`
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send SMS');
+      }
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid channel. Use "email" or "sms"'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Test ${channel} sent successfully`
+    });
+  } catch (error) {
+    console.error('Test notification error:', error);
+    res.status(500).json({
+      success: false,
+      message: `Failed to send test ${req.body.channel}`,
+      error: error.message
+    });
+  }
+});
+
 // Get single user by ID
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
@@ -742,169 +904,6 @@ router.delete('/:id/profile-image', authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error deleting profile image',
-      error: error.message
-    });
-  }
-});
-
-// Get notification preferences
-router.get('/notification-preferences', authenticateToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select('email phone emailVerified phoneVerified notificationPreferences');
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      email: user.email,
-      phone: user.phone,
-      emailVerified: user.emailVerified || false,
-      phoneVerified: user.phoneVerified || false,
-      preferences: user.notificationPreferences || {}
-    });
-  } catch (error) {
-    console.error('Get notification preferences error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching notification preferences',
-      error: error.message
-    });
-  }
-});
-
-// Update notification preferences
-router.put('/notification-preferences', authenticateToken, async (req, res) => {
-  try {
-    const { preferences, email, phone } = req.body;
-
-    const user = await User.findById(req.user.id);
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // Update contact info if provided
-    if (email && email !== user.email) {
-      user.email = email;
-      user.emailVerified = false; // Reset verification if email changes
-    }
-    
-    if (phone && phone !== user.phone) {
-      user.phone = phone;
-      user.phoneVerified = false; // Reset verification if phone changes
-    }
-
-    // Update notification preferences
-    if (preferences) {
-      user.notificationPreferences = preferences;
-    }
-
-    await user.save();
-
-    await logActivity(
-      req.user.id,
-      req.user.role,
-      'notification_preferences_update',
-      'Updated notification preferences',
-      { userId: user._id }
-    );
-
-    res.json({
-      success: true,
-      message: 'Notification preferences updated successfully',
-      preferences: user.notificationPreferences
-    });
-  } catch (error) {
-    console.error('Update notification preferences error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error updating notification preferences',
-      error: error.message
-    });
-  }
-});
-
-// Test notification
-router.post('/test-notification', authenticateToken, async (req, res) => {
-  try {
-    const { channel } = req.body; // 'email' or 'sms'
-
-    const user = await User.findById(req.user.id);
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // Import notification service dynamically
-    const { default: notificationService } = await import('../services/notificationService.js');
-
-    if (channel === 'email') {
-      if (!user.email) {
-        return res.status(400).json({
-          success: false,
-          message: 'No email address configured'
-        });
-      }
-
-      const result = await notificationService.sendEmail({
-        to: user.email,
-        subject: 'Test Notification - Transportation System',
-        html: `
-          <h2>Test Email Notification</h2>
-          <p>Hello ${user.firstName},</p>
-          <p>This is a test email from the Transportation Management System.</p>
-          <p>If you received this message, your email notifications are working correctly!</p>
-          <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
-        `,
-        text: `Test Email Notification\n\nHello ${user.firstName},\n\nThis is a test email from the Transportation Management System.\n\nIf you received this message, your email notifications are working correctly!\n\nDate: ${new Date().toLocaleString()}`
-      });
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to send email');
-      }
-    } else if (channel === 'sms') {
-      if (!user.phone) {
-        return res.status(400).json({
-          success: false,
-          message: 'No phone number configured'
-        });
-      }
-
-      const result = await notificationService.sendSMS({
-        to: user.phone,
-        body: `Test SMS from Transportation System: Hello ${user.firstName}! If you received this, your SMS notifications are working. Time: ${new Date().toLocaleTimeString()}`
-      });
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to send SMS');
-      }
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid channel. Use "email" or "sms"'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: `Test ${channel} sent successfully`
-    });
-  } catch (error) {
-    console.error('Test notification error:', error);
-    res.status(500).json({
-      success: false,
-      message: `Failed to send test ${req.body.channel}`,
       error: error.message
     });
   }

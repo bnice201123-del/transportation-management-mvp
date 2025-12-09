@@ -61,6 +61,7 @@ import RoutePlanning from './components/maps/RoutePlanning';
 import DriverLocationTracking from './components/driver/DriverLocationTracking';
 import UserProfile from './components/shared/UserProfile';
 import NotificationsPage from './components/shared/NotificationsPage';
+import NotificationSettings from './components/shared/NotificationSettings';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { isAuthenticated, user, loading } = useAuth();
@@ -448,6 +449,30 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <ErrorBoundary fallbackMessage="Failed to load Notifications. Please try refreshing the page.">
               <NotificationsPage />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* Notification Settings - Available to all authenticated users */}
+      <Route 
+        path="/settings/notifications" 
+        element={
+          <ProtectedRoute>
+            <ErrorBoundary fallbackMessage="Failed to load Notification Settings. Please try refreshing the page.">
+              <NotificationSettings />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* Notification Settings - Available to all authenticated users */}
+      <Route 
+        path="/settings/notifications" 
+        element={
+          <ProtectedRoute>
+            <ErrorBoundary fallbackMessage="Failed to load Notification Settings. Please try refreshing the page.">
+              <NotificationSettings />
             </ErrorBoundary>
           </ProtectedRoute>
         } 

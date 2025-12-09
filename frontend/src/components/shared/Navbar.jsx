@@ -365,7 +365,7 @@ const Navbar = ({ title }) => {
                     <MenuItem _hover={{ bg: "green.50" }}>
                       Account Preferences
                     </MenuItem>
-                    <MenuItem _hover={{ bg: "green.50" }}>
+                    <MenuItem _hover={{ bg: "green.50" }} onClick={() => navigate('/settings/notifications')}>
                       Notification Settings
                     </MenuItem>
                     <MenuDivider />

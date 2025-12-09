@@ -35,6 +35,7 @@ import {
 import { EmailIcon, PhoneIcon, BellIcon, CheckCircleIcon, WarningIcon } from '@chakra-ui/icons';
 import axios from '../../config/axios';
 import { useAuth } from '../../contexts/AuthContext';
+import Navbar from './Navbar';
 
 const NotificationSettings = () => {
   const { user } = useAuth();
@@ -290,18 +291,23 @@ const NotificationSettings = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minH="400px">
-        <VStack spacing={4}>
-          <Spinner size="xl" color="blue.500" />
-          <Text>Loading notification settings...</Text>
-        </VStack>
-      </Box>
+      <>
+        <Navbar title="Notification Settings" />
+        <Box display="flex" justifyContent="center" alignItems="center" minH="400px">
+          <VStack spacing={4}>
+            <Spinner size="xl" color="blue.500" />
+            <Text>Loading notification settings...</Text>
+          </VStack>
+        </Box>
+      </>
     );
   }
 
   return (
-    <Box maxW="1200px" mx="auto" p={6}>
-      <VStack spacing={6} align="stretch">
+    <>
+      <Navbar title="Notification Settings" />
+      <Box maxW="1200px" mx="auto" p={6}>
+        <VStack spacing={6} align="stretch">
         {/* Header */}
         <Box>
           <Heading size="lg" color={headingColor} mb={2}>
@@ -545,7 +551,8 @@ const NotificationSettings = () => {
           </Button>
         </HStack>
       </VStack>
-    </Box>
+      </Box>
+    </>
   );
 };
 

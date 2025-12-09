@@ -24,7 +24,17 @@ const activityLogSchema = new mongoose.Schema({
       'status_updated',
       'location_updated',
       'user_login',
-      'user_logout'
+      'user_logout',
+      'profile_updated',
+      'password_changed',
+      'password_reset',
+      'notification_preferences_update',
+      'profile_image_uploaded',
+      'profile_image_deleted',
+      'user_created',
+      'user_updated',
+      'user_deleted',
+      'role_changed'
     ]
   },
   description: {

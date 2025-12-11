@@ -124,6 +124,7 @@ import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 import UnifiedTripManagement from '../shared/UnifiedTripManagement';
 import TripManagementModal from './TripManagementModal';
 import CalendarOverview from './CalendarOverview';
+import useCloseOnScroll from '../../hooks/useCloseOnScroll';
 
 const SchedulerDashboard = ({ view }) => {
   const location = useLocation();
@@ -163,6 +164,7 @@ const SchedulerDashboard = ({ view }) => {
   const [dateFilter, setDateFilter] = useState('today');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
   
   // Responsive design variables
   const isMobile = useBreakpointValue({ base: true, md: false });
@@ -209,6 +211,9 @@ const SchedulerDashboard = ({ view }) => {
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [exportFormat, setExportFormat] = useState('csv');
   const [exportScope, setExportScope] = useState('filtered');
+  
+  // Close Quick Actions dropdown on scroll
+  useCloseOnScroll(isQuickActionsOpen, () => setIsQuickActionsOpen(false));
 
   
   // Additional filtering state (removing duplicates)
@@ -1188,7 +1193,13 @@ const SchedulerDashboard = ({ view }) => {
 
           {/* Quick Actions Dropdown */}
           <Box mb={{ base: 6, md: 8 }}>
-            <Menu>
+            <Menu
+              isOpen={isQuickActionsOpen}
+              onClose={() => setIsQuickActionsOpen(false)}
+              onOpen={() => setIsQuickActionsOpen(true)}
+              closeOnBlur={true}
+              closeOnSelect={true}
+            >
               <MenuButton
                 as={Button}
                 rightIcon={<Box as={ChevronDownIcon} w={5} h={5} />}

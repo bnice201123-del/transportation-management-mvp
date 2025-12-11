@@ -48,7 +48,6 @@ import {
   CalendarIcon,
   SettingsIcon,
   LockIcon,
-  GlobeIcon,
   ViewIcon
 } from '@chakra-ui/icons';
 import Navbar from '../shared/Navbar';

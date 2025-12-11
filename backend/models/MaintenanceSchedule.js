@@ -37,141 +37,163 @@ const maintenanceScheduleSchema = new mongoose.Schema({
     default: false
   },
   recurrence: {
-    basedOn: {
-      type: String,
-      enum: ['mileage', 'time', 'both', 'condition'],
-      default: 'time'
-    },
-    // Mileage-based recurrence
-    mileageInterval: Number, // e.g., every 5000 miles
-    mileageTolerance: {
-      type: Number,
-      default: 500 // +/- tolerance before alert
-    },
-    // Time-based recurrence
-    timeInterval: {
-      value: Number,
-      unit: {
+    type: {
+      basedOn: {
         type: String,
-        enum: ['days', 'weeks', 'months', 'years']
-      }
-    },
-    timeTolerance: {
-      value: {
-        type: Number,
-        default: 7 // days
+        enum: ['mileage', 'time', 'both', 'condition'],
+        default: 'time'
       },
-      unit: {
-        type: String,
-        enum: ['days', 'weeks']
+      // Mileage-based recurrence
+      mileageInterval: Number, // e.g., every 5000 miles
+      mileageTolerance: {
+        type: Number,
+        default: 500 // +/- tolerance before alert
+      },
+      // Time-based recurrence
+      timeInterval: {
+        value: Number,
+        unit: {
+          type: String,
+          enum: ['days', 'weeks', 'months', 'years']
+        }
+      },
+      timeTolerance: {
+        value: {
+          type: Number,
+          default: 7 // days
+        },
+        unit: {
+          type: String,
+          enum: ['days', 'weeks']
+        }
       }
-    }
+    },
+    default: {}
   },
 
   // Next scheduled maintenance
   nextDue: {
-    date: Date,
-    mileage: Number,
-    estimatedDate: Date, // Calculated based on average usage
-    daysUntilDue: Number,
-    milesUntilDue: Number,
-    isOverdue: {
-      type: Boolean,
-      default: false
+    type: {
+      date: Date,
+      mileage: Number,
+      estimatedDate: Date, // Calculated based on average usage
+      daysUntilDue: Number,
+      milesUntilDue: Number,
+      isOverdue: {
+        type: Boolean,
+        default: false
+      },
+      overdueBy: {
+        days: Number,
+        miles: Number
+      }
     },
-    overdueBy: {
-      days: Number,
-      miles: Number
-    }
+    default: {}
   },
 
   // Last maintenance
   lastCompleted: {
-    date: Date,
-    mileage: Number,
-    maintenanceRecordId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'MaintenanceRecord'
-    }
+    type: {
+      date: Date,
+      mileage: Number,
+      maintenanceRecordId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'MaintenanceRecord'
+      }
+    },
+    default: {}
   },
 
   // Service details
   serviceDetails: {
-    category: {
-      type: String,
-      enum: ['engine', 'transmission', 'brakes', 'tires', 'electrical', 'hvac', 'body', 'interior', 'suspension', 'exhaust', 'fuel_system', 'cooling_system', 'fluids', 'filters', 'safety', 'other'],
-      required: true
-    },
-    description: String,
-    estimatedDuration: Number, // minutes
-    estimatedCost: {
-      min: Number,
-      max: Number,
-      currency: {
+    type: {
+      category: {
         type: String,
-        default: 'USD'
-      }
+        enum: ['engine', 'transmission', 'brakes', 'tires', 'electrical', 'hvac', 'body', 'interior', 'suspension', 'exhaust', 'fuel_system', 'cooling_system', 'fluids', 'filters', 'safety', 'other'],
+        required: true
+      },
+      description: String,
+      estimatedDuration: Number, // minutes
+      estimatedCost: {
+        min: Number,
+        max: Number,
+        currency: {
+          type: String,
+          default: 'USD'
+        }
+      },
+      partsRequired: [{
+        partName: String,
+        partNumber: String,
+        quantity: Number,
+        estimatedCost: Number
+      }],
+      laborHours: Number,
+      specialTools: [String],
+      specialInstructions: String
     },
-    partsRequired: [{
-      partName: String,
-      partNumber: String,
-      quantity: Number,
-      estimatedCost: Number
-    }],
-    laborHours: Number,
-    specialTools: [String],
-    specialInstructions: String
+    default: {}
   },
 
   // Service provider preferences
   preferredProvider: {
-    name: String,
     type: {
-      type: String,
-      enum: ['in_house', 'dealership', 'independent_shop', 'mobile_mechanic', 'warranty_center']
+      name: String,
+      type: {
+        type: String,
+        enum: ['in_house', 'dealership', 'independent_shop', 'mobile_mechanic', 'warranty_center']
+      },
+      address: String,
+      phoneNumber: String,
+      email: String,
+      notes: String
     },
-    address: String,
-    phoneNumber: String,
-    email: String,
-    notes: String
+    default: {}
   },
 
   // Notifications
   notifications: {
-    enabled: {
-      type: Boolean,
-      default: true
-    },
-    recipients: [{
-      user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-      },
-      role: {
-        type: String,
-        enum: ['admin', 'dispatcher', 'driver', 'mechanic']
-      },
-      email: String,
-      phone: String
-    }],
-    reminderSchedule: [{
-      type: {
-        type: String,
-        enum: ['days_before', 'miles_before', 'at_due', 'overdue'],
-        required: true
-      },
-      value: Number, // Days or miles before due
-      sent: {
+    type: {
+      enabled: {
         type: Boolean,
-        default: false
+        default: true
       },
-      sentAt: Date,
-      channels: [{
-        type: String,
-        enum: ['email', 'sms', 'push', 'in_app']
-      }]
-    }],
-    lastNotificationSent: Date
+      recipients: [{
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User'
+        },
+        role: {
+          type: String,
+          enum: ['admin', 'dispatcher', 'driver', 'mechanic']
+        },
+        email: String,
+        phone: String
+      }],
+      reminderSchedule: [{
+        type: {
+          type: String,
+          enum: ['days_before', 'miles_before', 'at_due', 'overdue'],
+          required: true
+        },
+        value: Number, // Days or miles before due
+        sent: {
+          type: Boolean,
+          default: false
+        },
+        sentAt: Date,
+        channels: [{
+          type: String,
+          enum: ['email', 'sms', 'push', 'in_app']
+        }]
+      }],
+      lastNotificationSent: Date
+    },
+    default: {
+      enabled: true,
+      recipients: [],
+      reminderSchedule: []
+    }
   },
 
   // History of scheduled instances
@@ -194,20 +216,26 @@ const maintenanceScheduleSchema = new mongoose.Schema({
 
   // Compliance and regulations
   compliance: {
-    isRegulatory: {
-      type: Boolean,
-      default: false
+    type: {
+      isRegulatory: {
+        type: Boolean,
+        default: false
+      },
+      regulationType: {
+        type: String,
+        enum: ['dot', 'epa', 'osha', 'state', 'local', 'manufacturer', 'other']
+      },
+      regulationReference: String,
+      certificateRequired: {
+        type: Boolean,
+        default: false
+      },
+      certificateExpiration: Date
     },
-    regulationType: {
-      type: String,
-      enum: ['dot', 'epa', 'osha', 'state', 'local', 'manufacturer', 'other']
-    },
-    regulationReference: String,
-    certificateRequired: {
-      type: Boolean,
-      default: false
-    },
-    certificateExpiration: Date
+    default: {
+      isRegulatory: false,
+      certificateRequired: false
+    }
   },
 
   // Status
@@ -220,63 +248,82 @@ const maintenanceScheduleSchema = new mongoose.Schema({
 
   // Auto-scheduling
   autoSchedule: {
-    enabled: {
-      type: Boolean,
-      default: false
+    type: {
+      enabled: {
+        type: Boolean,
+        default: false
+      },
+      preferredDayOfWeek: {
+        type: String,
+        enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+      },
+      preferredTimeSlot: {
+        start: String, // HH:MM
+        end: String
+      },
+      avoidDates: [Date], // Holidays or blackout dates
+      bufferDays: {
+        type: Number,
+        default: 3 // Days of flexibility for scheduling
+      }
     },
-    preferredDayOfWeek: {
-      type: String,
-      enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-    },
-    preferredTimeSlot: {
-      start: String, // HH:MM
-      end: String
-    },
-    avoidDates: [Date], // Holidays or blackout dates
-    bufferDays: {
-      type: Number,
-      default: 3 // Days of flexibility for scheduling
+    default: {
+      enabled: false,
+      bufferDays: 3
     }
   },
 
   // Dependencies
   dependencies: {
-    prerequisiteMaintenance: [{
-      scheduleId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'MaintenanceSchedule'
-      },
-      description: String
-    }],
-    blockingMaintenance: [{
-      scheduleId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'MaintenanceSchedule'
-      },
-      description: String
-    }]
+    type: {
+      prerequisiteMaintenance: [{
+        scheduleId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'MaintenanceSchedule'
+        },
+        description: String
+      }],
+      blockingMaintenance: [{
+        scheduleId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'MaintenanceSchedule'
+        },
+        description: String
+      }]
+    },
+    default: {
+      prerequisiteMaintenance: [],
+      blockingMaintenance: []
+    }
   },
 
   // Performance tracking
   performance: {
-    totalCompletions: {
-      type: Number,
-      default: 0
+    type: {
+      totalCompletions: {
+        type: Number,
+        default: 0
+      },
+      onTimeCompletions: {
+        type: Number,
+        default: 0
+      },
+      lateCompletions: {
+        type: Number,
+        default: 0
+      },
+      averageCost: Number,
+      averageDelay: Number, // days
+      lastCost: Number,
+      costTrend: {
+        type: String,
+        enum: ['increasing', 'stable', 'decreasing']
+      }
     },
-    onTimeCompletions: {
-      type: Number,
-      default: 0
-    },
-    lateCompletions: {
-      type: Number,
-      default: 0
-    },
-    averageCost: Number,
-    averageDelay: Number, // days
-    lastCost: Number,
-    costTrend: {
-      type: String,
-      enum: ['increasing', 'stable', 'decreasing']
+    default: {
+      totalCompletions: 0,
+      onTimeCompletions: 0,
+      lateCompletions: 0
     }
   },
 

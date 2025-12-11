@@ -39,6 +39,7 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
+  Portal,
   useColorModeValue,
   Skeleton,
   SkeletonText,
@@ -67,7 +68,9 @@ import {
   ChevronDownIcon,
   AddIcon,
   RepeatIcon,
-  ExternalLinkIcon
+  ExternalLinkIcon,
+  CheckCircleIcon,
+  CheckIcon
 } from '@chakra-ui/icons';
 import { 
   FaUsers, 
@@ -102,15 +105,18 @@ import {
 } from 'react-icons/fa';
 import axios from '../../config/axios';
 import Navbar from '../shared/Navbar';
+import useCloseOnScroll from '../../hooks/useCloseOnScroll';
 
 const AdminOverview = () => {
   const [overviewData, setOverviewData] = useState(null);
   const [systemHealth, setSystemHealth] = useState(null);
+  const [onlineStatus, setOnlineStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [filterView, setFilterView] = useState('all'); // 'all', 'active', 'pending', 'completed'
   const [isExporting, setIsExporting] = useState(false);
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -126,7 +132,24 @@ const AdminOverview = () => {
   
   const columnsCount = useBreakpointValue({ base: 1, sm: 2, md: 2, lg: 4 });
   const cardSpacing = useBreakpointValue({ base: 3, md: 4 });
-  const containerPadding = useBreakpointValue({ base: 3, md: 4 });
+
+  // Close Actions dropdown on scroll (desktop only)
+  useCloseOnScroll(isActionsMenuOpen, () => setIsActionsMenuOpen(false));
+
+  const fetchOnlineStatus = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await axios.get('/api/users/online-status');
+      if (response.data.success) {
+        setOnlineStatus(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching online status:', error);
+      // Don't show error toast for this non-critical feature
+    }
+  }, []);
 
   const fetchOverviewData = useCallback(async () => {
     if (!loading) setRefreshing(true);
@@ -147,6 +170,9 @@ const AdminOverview = () => {
       const users = Array.isArray(usersRes.data.users) ? usersRes.data.users : [];
       const trips = Array.isArray(tripsRes.data.trips) ? tripsRes.data.trips : [];
       const analytics = analyticsRes.data || {};
+
+      // Fetch online status separately (non-blocking)
+      fetchOnlineStatus();
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -254,11 +280,18 @@ const AdminOverview = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [toast, loading]);
+  }, [toast, loading, fetchOnlineStatus]);
 
   useEffect(() => {
     fetchOverviewData();
-  }, [fetchOverviewData]);
+    
+    // Refresh online status every 30 seconds
+    const onlineInterval = setInterval(() => {
+      fetchOnlineStatus();
+    }, 30000);
+
+    return () => clearInterval(onlineInterval);
+  }, [fetchOverviewData, fetchOnlineStatus]);
 
   // Export Data Function
   const handleExportData = async () => {
@@ -396,6 +429,186 @@ const AdminOverview = () => {
   };
 
   const filteredData = getFilteredData();
+
+  // Online Presence Widget Component
+  const OnlinePresenceWidget = () => {
+    const onlineData = [
+      {
+        label: 'Total Users Online',
+        value: onlineStatus?.totalOnline || 0,
+        icon: FaUsers,
+        color: 'blue',
+        bgGradient: 'linear(to-br, blue.400, blue.600)'
+      },
+      {
+        label: 'Drivers Online',
+        value: onlineStatus?.driversOnline || 0,
+        icon: FaCar,
+        color: 'green',
+        bgGradient: 'linear(to-br, green.400, green.600)'
+      },
+      {
+        label: 'Schedulers Online',
+        value: onlineStatus?.schedulersOnline || 0,
+        icon: FaCalendarAlt,
+        color: 'purple',
+        bgGradient: 'linear(to-br, purple.400, purple.600)'
+      },
+      {
+        label: 'Dispatchers Online',
+        value: onlineStatus?.dispatchersOnline || 0,
+        icon: FaMapMarkedAlt,
+        color: 'orange',
+        bgGradient: 'linear(to-br, orange.400, orange.600)'
+      }
+    ];
+
+    return (
+      <Card 
+        bg={cardBg} 
+        border="1px solid" 
+        borderColor={borderColor} 
+        shadow="lg"
+        borderRadius="2xl"
+        overflow="hidden"
+      >
+        <Box 
+          bgGradient="linear(to-r, cyan.500, blue.500)"
+          p={4}
+        >
+          <HStack justify="space-between" color="white">
+            <HStack spacing={3}>
+              <Box position="relative">
+                <Icon as={FaUsers} boxSize={6} />
+                <Box 
+                  position="absolute" 
+                  top="-1" 
+                  right="-1" 
+                  w={3} 
+                  h={3} 
+                  bg="green.400" 
+                  borderRadius="full"
+                  border="2px solid white"
+                  animation="pulse 2s infinite"
+                />
+              </Box>
+              <VStack align="start" spacing={0}>
+                <Heading size="sm">Online Presence</Heading>
+                <Text fontSize="xs" opacity={0.9}>
+                  Real-time user status
+                </Text>
+              </VStack>
+            </HStack>
+            <HStack spacing={2}>
+              <Box 
+                w={2} 
+                h={2} 
+                bg="green.300" 
+                borderRadius="full"
+                animation="pulse 2s infinite"
+              />
+              <Text fontSize="xs" fontWeight="medium">Live</Text>
+            </HStack>
+          </HStack>
+        </Box>
+        
+        <CardBody p={5}>
+          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+            {onlineData.map((item) => (
+              <VStack
+                key={item.label}
+                p={4}
+                bg={statBg}
+                borderRadius="xl"
+                border="1px solid"
+                borderColor={borderColor}
+                spacing={3}
+                position="relative"
+                overflow="hidden"
+                transition="all 0.3s"
+                _hover={{
+                  transform: 'translateY(-2px)',
+                  shadow: 'md',
+                  borderColor: `${item.color}.300`
+                }}
+              >
+                <Box 
+                  position="absolute" 
+                  top="-10px" 
+                  right="-10px" 
+                  opacity="0.1"
+                >
+                  <Icon as={item.icon} boxSize="60px" />
+                </Box>
+                
+                <Box 
+                  p={2} 
+                  bgGradient={item.bgGradient}
+                  borderRadius="lg"
+                  position="relative"
+                  zIndex="1"
+                >
+                  <Icon as={item.icon} color="white" boxSize={5} />
+                </Box>
+                
+                <VStack spacing={1} zIndex="1">
+                  <Text 
+                    fontSize="2xl" 
+                    fontWeight="bold" 
+                    color={headingColor}
+                  >
+                    {item.value}
+                  </Text>
+                  <Text 
+                    fontSize="xs" 
+                    color={textColor} 
+                    textAlign="center"
+                    noOfLines={2}
+                    lineHeight="1.2"
+                  >
+                    {item.label}
+                  </Text>
+                </VStack>
+              </VStack>
+            ))}
+          </SimpleGrid>
+          
+          <HStack 
+            mt={4} 
+            pt={4} 
+            borderTop="1px solid"
+            borderColor={borderColor}
+            justify="space-between"
+          >
+            <HStack spacing={2}>
+              <Icon as={FaClock} color={textColor} boxSize={3} />
+              <Text fontSize="xs" color={textColor}>
+                Last updated: {onlineStatus?.timestamp 
+                  ? new Date(onlineStatus.timestamp).toLocaleTimeString()
+                  : 'Loading...'}
+              </Text>
+            </HStack>
+            <Badge colorScheme="green" fontSize="xs" px={2} py={1} borderRadius="full">
+              Auto-refresh: 30s
+            </Badge>
+          </HStack>
+        </CardBody>
+        
+        <style>
+          {`
+            @keyframes pulse {
+              0%, 100% {
+                opacity: 1;
+              }
+              50% {
+                opacity: 0.5;
+              }
+            }
+          `}
+        </style>
+      </Card>
+    );
+  };
 
   // Modern Enhanced Stat Card Component
   const StatCard = ({ 
@@ -1300,44 +1513,110 @@ const AdminOverview = () => {
                       aria-label="Refresh dashboard data"
                     />
                   </Tooltip>
-                  <Menu>
+                  <Menu 
+                    isOpen={isActionsMenuOpen} 
+                    onClose={() => setIsActionsMenuOpen(false)}
+                    onOpen={() => setIsActionsMenuOpen(true)}
+                    closeOnBlur={true}
+                    closeOnSelect={true}
+                  >
                     <MenuButton 
                       as={Button} 
                       rightIcon={<ChevronDownIcon />} 
-                      colorScheme="whiteAlpha"
-                      bg="whiteAlpha.200"
+                      colorScheme="purple"
+                      bg="purple.500"
                       color="white"
-                      _hover={{ bg: 'whiteAlpha.300' }}
+                      _hover={{ bg: 'purple.600' }}
+                      _active={{ bg: 'purple.700' }}
                       size="lg"
                       borderRadius="full"
+                      fontWeight="semibold"
+                      px={6}
                     >
                       Actions
                     </MenuButton>
-                    <MenuList>
-                      <MenuItem 
-                        icon={<FaDownload />} 
-                        onClick={handleExportData}
-                        isDisabled={isExporting}
+                    <Portal>
+                      <MenuList 
+                        bg="white" 
+                        borderColor="gray.200" 
+                        shadow="xl" 
+                        p={2}
+                        zIndex={9999}
                       >
-                        {isExporting ? 'Exporting...' : 'Export Data'}
+                        {/* Export Section */}
+                        <MenuItem 
+                          icon={<Icon as={FaDownload} />} 
+                          onClick={handleExportData}
+                          isDisabled={isExporting}
+                          bg={isExporting ? 'gray.50' : 'transparent'}
+                          _hover={{ bg: 'purple.50', color: 'purple.700' }}
+                          borderRadius="md"
+                          fontWeight="medium"
+                          mb={2}
+                        >
+                          {isExporting ? 'Exporting Data...' : 'Export Data'}
+                        </MenuItem>
+                        
+                        <Divider my={2} />
+                        
+                        {/* Filter Section */}
+                      <Text fontSize="xs" fontWeight="bold" color="gray.500" px={3} py={1}>
+                        FILTER VIEW
+                      </Text>
+                      <MenuItem 
+                        icon={<ViewIcon />} 
+                        onClick={() => handleFilterView('all')}
+                        _hover={{ bg: 'blue.50', color: 'blue.700' }}
+                        borderRadius="md"
+                        bg={filterView === 'all' ? 'blue.50' : 'transparent'}
+                        fontWeight={filterView === 'all' ? 'semibold' : 'normal'}
+                      >
+                        All Items
                       </MenuItem>
-                      <MenuItem icon={<FaFilter />} onClick={() => handleFilterView('all')}>
-                        Show All
+                      <MenuItem 
+                        icon={<CheckCircleIcon color="green.500" />} 
+                        onClick={() => handleFilterView('active')}
+                        _hover={{ bg: 'green.50', color: 'green.700' }}
+                        borderRadius="md"
+                        bg={filterView === 'active' ? 'green.50' : 'transparent'}
+                        fontWeight={filterView === 'active' ? 'semibold' : 'normal'}
+                      >
+                        Active Only
                       </MenuItem>
-                      <MenuItem icon={<FaFilter />} onClick={() => handleFilterView('active')}>
-                        Show Active Only
+                      <MenuItem 
+                        icon={<TimeIcon color="orange.500" />} 
+                        onClick={() => handleFilterView('pending')}
+                        _hover={{ bg: 'orange.50', color: 'orange.700' }}
+                        borderRadius="md"
+                        bg={filterView === 'pending' ? 'orange.50' : 'transparent'}
+                        fontWeight={filterView === 'pending' ? 'semibold' : 'normal'}
+                      >
+                        Pending Only
                       </MenuItem>
-                      <MenuItem icon={<FaFilter />} onClick={() => handleFilterView('pending')}>
-                        Show Pending Only
+                      <MenuItem 
+                        icon={<CheckIcon color="blue.500" />} 
+                        onClick={() => handleFilterView('completed')}
+                        _hover={{ bg: 'blue.50', color: 'blue.700' }}
+                        borderRadius="md"
+                        bg={filterView === 'completed' ? 'blue.50' : 'transparent'}
+                        fontWeight={filterView === 'completed' ? 'semibold' : 'normal'}
+                      >
+                        Completed Only
                       </MenuItem>
-                      <MenuItem icon={<FaFilter />} onClick={() => handleFilterView('completed')}>
-                        Show Completed Only
-                      </MenuItem>
-                      <Divider />
-                      <MenuItem icon={<FaCog />} onClick={() => navigate('/admin/settings')}>
+                      
+                      <Divider my={2} />
+                      
+                      {/* Settings Section */}
+                      <MenuItem 
+                        icon={<Icon as={FaCog} />} 
+                        onClick={() => navigate('/admin/settings')}
+                        _hover={{ bg: 'gray.50', color: 'gray.700' }}
+                        borderRadius="md"
+                      >
                         Settings
                       </MenuItem>
                     </MenuList>
+                    </Portal>
                   </Menu>
                 </HStack>
               </HStack>
@@ -1396,37 +1675,36 @@ const AdminOverview = () => {
                 subtitle={`${overviewData?.totalTrips || 0} total trips`}
                 icon={FaRoute}
                 color="green"
-                trend="up"
-                trendValue="8%"
                 isClickable
-                onClick={() => navigate('/scheduler')}
+                onClick={() => navigate('/admin/trips')}
                 loading={loading}
               />
               <StatCard
                 title="Active Drivers"
-                value={`${overviewData?.activeDrivers || 0}/${overviewData?.totalDrivers || 0}`}
-                subtitle="Available now"
+                value={overviewData?.activeDrivers || 0}
+                subtitle={`${overviewData?.totalDrivers || 0} total drivers`}
                 icon={FaCar}
                 color="purple"
-                trend="down"
-                trendValue="3%"
                 isClickable
                 onClick={() => navigate('/admin/drivers')}
                 loading={loading}
               />
               <StatCard
-                title="System Health"
-                value={systemHealth?.status === 'OK' ? '100%' : '75%'}
-                subtitle={`${overviewData?.pendingTrips || 0} pending`}
-                icon={FaShieldAlt}
+                title="Pending Trips"
+                value={overviewData?.pendingTrips || 0}
+                subtitle={`${overviewData?.inProgressTrips || 0} in progress`}
+                icon={FaClock}
                 color="orange"
-                trend="up"
-                trendValue="5%"
+                trend="down"
+                trendValue="8%"
                 isClickable
-                onClick={() => navigate('/admin/system')}
+                onClick={() => handleFilterView('pending')}
                 loading={loading}
               />
             </SimpleGrid>
+
+            {/* Online Presence Widget */}
+            <OnlinePresenceWidget />
 
             {/* Modern Three-Column Layout */}
             <Grid 

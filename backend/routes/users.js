@@ -87,6 +87,50 @@ router.get('/drivers', authenticateToken, authorizeRoles('scheduler', 'dispatche
   }
 });
 
+// Get online users count by role
+router.get('/online-status', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+  try {
+    // Consider users online if they logged in within the last 5 minutes
+    const onlineThreshold = new Date(Date.now() - 5 * 60 * 1000);
+    
+    const [totalOnline, driversOnline, schedulersOnline, dispatchersOnline] = await Promise.all([
+      User.countDocuments({ 
+        isActive: true,
+        lastLogin: { $gte: onlineThreshold }
+      }),
+      User.countDocuments({ 
+        role: 'driver',
+        isActive: true,
+        lastLogin: { $gte: onlineThreshold }
+      }),
+      User.countDocuments({ 
+        role: 'scheduler',
+        isActive: true,
+        lastLogin: { $gte: onlineThreshold }
+      }),
+      User.countDocuments({ 
+        role: 'dispatcher',
+        isActive: true,
+        lastLogin: { $gte: onlineThreshold }
+      })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalOnline,
+        driversOnline,
+        schedulersOnline,
+        dispatchersOnline,
+        timestamp: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('Get online status error:', error);
+    res.status(500).json({ message: 'Server error fetching online status' });
+  }
+});
+
 // Get available drivers
 router.get('/drivers/available', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'admin'), async (req, res) => {
   try {

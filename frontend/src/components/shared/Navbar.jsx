@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -42,6 +42,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { useSidebar } from "../../contexts/SidebarContext";
 import { useNotifications } from "../../contexts/NotificationContext";
+import useCloseOnScroll from "../../hooks/useCloseOnScroll";
 import Sidebar from './Sidebar';
 
 const Navbar = ({ title }) => {
@@ -49,10 +50,14 @@ const Navbar = ({ title }) => {
   const { isSidebarVisible, toggleSidebar } = useSidebar();
   const { unreadCount } = useNotifications(); // Use notification context
   const { isOpen: isMobileMenuOpen, onOpen: onMobileMenuOpen, onClose: onMobileMenuClose } = useDisclosure();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const navigationTimeoutRef = useRef(null);
   const isNavigatingRef = useRef(false);
+
+  // Close user menu dropdown on scroll (desktop only)
+  useCloseOnScroll(isUserMenuOpen, () => setIsUserMenuOpen(false));
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -342,7 +347,13 @@ const Navbar = ({ title }) => {
                 </Tooltip>
 
                 {/* Account Settings Menu */}
-                <Menu>
+                <Menu 
+                  isOpen={isUserMenuOpen} 
+                  onClose={() => setIsUserMenuOpen(false)}
+                  onOpen={() => setIsUserMenuOpen(true)}
+                  closeOnBlur={true}
+                  closeOnSelect={true}
+                >
                   <MenuButton
                     as={Button}
                     leftIcon={<SettingsIcon />}

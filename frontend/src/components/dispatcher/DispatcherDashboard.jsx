@@ -126,6 +126,7 @@ import DispatcherProfile from './DispatcherProfile';
 import DispatcherSchedule from './DispatcherSchedule';
 import DispatcherSearch from './DispatcherSearch';
 import { DriverInfoDisplay } from '../driver/shared';
+import useCloseOnScroll from '../../hooks/useCloseOnScroll';
 
 const DispatcherDashboard = () => {
   // Navigation
@@ -151,6 +152,7 @@ const DispatcherDashboard = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tripToDelete, setTripToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
   
   // View state for Trip Management
   const [isManageView, setIsManageView] = useState(false);
@@ -178,6 +180,9 @@ const DispatcherDashboard = () => {
   const textColor = useColorModeValue('gray.800', 'white');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
   const successColor = useColorModeValue('green.500', 'green.300');
+  
+  // Close Quick Actions dropdown on scroll
+  useCloseOnScroll(isQuickActionsOpen, () => setIsQuickActionsOpen(false));
   const warningColor = useColorModeValue('orange.500', 'orange.300');
   const errorColor = useColorModeValue('red.500', 'red.300');
   const primaryColor = useColorModeValue('blue.600', 'blue.300');
@@ -699,7 +704,13 @@ const getLocationText = (location) => {
               
               {/* Quick Actions Dropdown - Compact Design */}
               <Box mt={4}>
-                <Menu>
+                <Menu
+                  isOpen={isQuickActionsOpen}
+                  onClose={() => setIsQuickActionsOpen(false)}
+                  onOpen={() => setIsQuickActionsOpen(true)}
+                  closeOnBlur={true}
+                  closeOnSelect={true}
+                >
                   <Tooltip label="Quick Actions" placement="right">
                     <MenuButton
                       as={Button}

@@ -235,9 +235,26 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
     };
   }, [isSidebarVisible, hideSidebar, currentBreakpoint]);
 
+  // Helper function to determine if user has admin access
+  const hasAdminAccess = () => {
+    const userRoles = user?.roles || [user?.role];
+    return userRoles.includes('admin');
+  };
+
+  // Helper function to check if user is dispatcher or scheduler only (no admin)
+  const isDispatcherOrSchedulerOnly = () => {
+    const userRoles = user?.roles || [user?.role];
+    const hasAdmin = userRoles.includes('admin');
+    const hasDispatcher = userRoles.includes('dispatcher');
+    const hasScheduler = userRoles.includes('scheduler');
+    
+    // Return true if they have dispatcher or scheduler role but NOT admin
+    return (hasDispatcher || hasScheduler) && !hasAdmin;
+  };
+
   const menuItems = [
-    // Dashboard for non-admin users only
-    ...(user?.role !== 'admin' ? [{
+    // Dashboard for non-admin users only (but not for dispatcher/scheduler-only users)
+    ...(!hasAdminAccess() && !isDispatcherOrSchedulerOnly() && user?.role !== 'admin' ? [{
       id: 'dashboard',
       label: 'Dashboard',
       icon: ViewIcon,
@@ -252,8 +269,9 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
         { label: 'Settings', icon: SettingsIcon, action: () => navigate('/dashboard/settings') }
       ]
     }] : []),
-    // Admin Dashboard - comprehensive for admin users
-    ...((user?.role === 'admin') ? [{
+    
+    // Admin Dashboard - comprehensive for admin users ONLY
+    ...(hasAdminAccess() ? [{
       id: 'admin-dashboard',
       label: 'Admin Dashboard',
       icon: ViewIcon,
@@ -261,15 +279,16 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       path: '/admin',
       roles: ['admin'],
       subItems: [
-        { label: 'Overview', icon: ViewIcon, action: () => navigate('/admin/overview') },
-        { label: 'Analytics', icon: InfoIcon, action: () => navigate('/admin/analytics') },
-        { label: 'Statistics', icon: StarIcon, action: () => navigate('/admin/statistics') },
+        { label: 'Dashboard', icon: FaClipboardList, action: () => navigate('/admin') },
+        { label: 'Overview', icon: InfoIcon, action: () => navigate('/admin/overview') },
+        { label: 'Analytics', icon: StarIcon, action: () => navigate('/admin/analytics') },
+        { label: 'Statistics', icon: CalendarIcon, action: () => navigate('/admin/statistics') },
         { label: 'Reports', icon: SearchIcon, action: () => navigate('/admin/reports') }
       ]
     }] : []),
 
-    // System Administration - for admin users only
-    ...(user?.role === 'admin' ? [{
+    // System Administration - for admin users ONLY
+    ...(hasAdminAccess() ? [{
       id: 'system-admin',
       label: 'System Administration',
       icon: SettingsIcon,
@@ -317,8 +336,8 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       ]
     }] : []),
 
-    // Work Schedule - for schedulers, dispatchers, drivers, and admins
-    ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'driver' || user?.role === 'admin' ? [{
+    // Work Schedule - for schedulers, dispatchers, drivers, and admins (but hidden for dispatcher/scheduler-only users)
+    ...(!isDispatcherOrSchedulerOnly() && (user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'driver' || hasAdminAccess()) ? [{
       id: 'work-schedule',
       label: 'Work Schedule',
       icon: FaClock,
@@ -357,8 +376,8 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
 
   // Mobile-specific menu items (simplified for mobile UX)
   const mobileMenuItems = [
-    // Admin Dashboard Overview - for users with admin role
-    ...((user?.roles?.includes('admin') || user?.role === 'admin') ? [{
+    // Admin Dashboard Overview - for users with admin role ONLY
+    ...(hasAdminAccess() ? [{
       id: 'admin-overview-mobile',
       label: 'Admin Dashboard',
       icon: ViewIcon,
@@ -397,8 +416,8 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       roles: ['driver']
     }] : []),
     
-    // Reports - for admin users
-    ...((user?.roles?.includes('admin') || user?.role === 'admin') ? [{
+    // Reports - for admin users ONLY
+    ...(hasAdminAccess() ? [{
       id: 'reports-mobile',
       label: 'Reports',
       icon: SearchIcon,
@@ -407,8 +426,8 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       roles: ['admin']
     }] : []),
     
-    // Register New User - for admin users
-    ...((user?.roles?.includes('admin') || user?.role === 'admin') ? [{
+    // Register New User - for admin users ONLY
+    ...(hasAdminAccess() ? [{
       id: 'register-mobile',
       label: 'Register New User',
       icon: UnlockIcon,
@@ -417,8 +436,8 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       roles: ['admin']
     }] : []),
     
-    // Manage Users - for admin users
-    ...((user?.roles?.includes('admin') || user?.role === 'admin') ? [{
+    // Manage Users - for admin users ONLY
+    ...(hasAdminAccess() ? [{
       id: 'users-mobile',
       label: 'Manage Users',
       icon: SettingsIcon,

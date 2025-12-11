@@ -738,19 +738,19 @@ const getLocationText = (location) => {
                     {/* Secondary Actions */}
                     <MenuItem 
                       icon={<Box as={UserGroupIconSolid} w={5} h={5} />}
-                      onClick={() => navigate('/riders?tab=all-riders')}
+                      onClick={() => navigate('/riders')}
                     >
                       All Riders
                     </MenuItem>
                     <MenuItem 
                       icon={<Box as={TruckIcon} w={5} h={5} />}
-                      onClick={() => navigate('/dispatcher/drivers')}
+                      onClick={() => navigate('/admin/users')}
                     >
-                      All Drivers
+                      All Users
                     </MenuItem>
                     <MenuItem 
                       icon={<Box as={CalendarIcon} w={5} h={5} />}
-                      onClick={() => navigate('/dispatcher/recurring-trips')}
+                      onClick={() => navigate('/scheduler/recurring')}
                     >
                       Recurring Trips
                     </MenuItem>

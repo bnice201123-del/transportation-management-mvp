@@ -12,7 +12,10 @@ import {
   Icon,
   SimpleGrid,
   useColorModeValue,
-  useDisclosure
+  useDisclosure,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink
 } from '@chakra-ui/react';
 import {
   MagnifyingGlassIcon,
@@ -21,9 +24,11 @@ import {
   TruckIcon,
   MapPinIcon,
   ClockIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  HomeIcon
 } from '@heroicons/react/24/outline';
 import AdvancedSearchModal from '../search/AdvancedSearchModal';
+import ReturnToDispatchButton from './ReturnToDispatchButton';
 
 const DispatcherSearch = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -79,6 +84,22 @@ const DispatcherSearch = () => {
 
   return (
     <VStack spacing={6} align="stretch">
+      {/* Breadcrumb and Return Button */}
+      <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
+        <Breadcrumb fontSize={{ base: "sm", md: "md" }}>
+          <BreadcrumbItem>
+            <BreadcrumbLink display="flex" alignItems="center" gap={2} href="/dispatcher">
+              <Box as={HomeIcon} w={4} h={4} />
+              Dispatch Control Center
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbItem isCurrentPage>
+            <BreadcrumbLink>Trip Search</BreadcrumbLink>
+          </BreadcrumbItem>
+        </Breadcrumb>
+        <ReturnToDispatchButton size="sm" />
+      </HStack>
+
       {/* Header Card */}
       <Card bg={cardBg} borderWidth={1} borderColor={borderColor}>
         <CardBody textAlign="center" py={8}>

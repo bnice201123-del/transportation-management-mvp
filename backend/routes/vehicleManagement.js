@@ -703,4 +703,441 @@ router.get('/reports/utilization', authenticateToken, authorizeRoles('admin', 'd
   }
 });
 
+// ============================================
+// MAINTENANCE SCHEDULING ROUTES
+// ============================================
+
+import MaintenanceSchedule from '../models/MaintenanceSchedule.js';
+import MaintenanceScheduleService from '../services/maintenanceScheduleService.js';
+import VehicleDocument from '../models/VehicleDocument.js';
+import VehicleAssignment from '../models/VehicleAssignment.js';
+import VehicleAssignmentService from '../services/vehicleAssignmentService.js';
+import VehicleAnalyticsService from '../services/vehicleAnalyticsService.js';
+
+/**
+ * @route   POST /api/vehicle-management/maintenance-schedules
+ * @desc    Create a new maintenance schedule
+ * @access  Admin, Dispatcher
+ */
+router.post('/maintenance-schedules', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+  try {
+    const schedule = await MaintenanceScheduleService.createSchedule(req.body, req.user._id);
+    res.status(201).json(schedule);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   POST /api/vehicle-management/maintenance-schedules/bulk
+ * @desc    Create schedules for multiple vehicles
+ * @access  Admin, Dispatcher
+ */
+router.post('/maintenance-schedules/bulk', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+  try {
+    const { vehicleIds, scheduleTemplate } = req.body;
+    const schedules = await MaintenanceScheduleService.createBulkSchedules(
+      vehicleIds,
+      scheduleTemplate,
+      req.user._id
+    );
+    res.status(201).json(schedules);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   GET /api/vehicle-management/maintenance-schedules
+ * @desc    Get all maintenance schedules with filters
+ * @access  Admin, Dispatcher
+ */
+router.get('/maintenance-schedules', authenticateToken, async (req, res) => {
+  try {
+    const { vehicle, status, scheduleType, isOverdue, priority } = req.query;
+    
+    const query = {};
+    if (vehicle) query.vehicle = vehicle;
+    if (status) query.status = status;
+    if (scheduleType) query.scheduleType = scheduleType;
+    if (isOverdue === 'true') query['nextDue.isOverdue'] = true;
+    if (priority) query.priority = priority;
+
+    const schedules = await MaintenanceSchedule.find(query)
+      .populate('vehicle', 'make model year licensePlate mileage')
+      .populate('createdBy', 'firstName lastName')
+      .sort({ 'nextDue.date': 1 });
+
+    res.json(schedules);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   GET /api/vehicle-management/:vehicleId/schedules/due
+ * @desc    Get due schedules for a vehicle
+ * @access  Admin, Dispatcher
+ */
+router.get('/:vehicleId/schedules/due', authenticateToken, async (req, res) => {
+  try {
+    const { includeUpcoming = true, upcomingDays = 30, upcomingMiles = 1000 } = req.query;
+    
+    const schedules = await MaintenanceScheduleService.getDueSchedules(
+      req.params.vehicleId,
+      { includeUpcoming: includeUpcoming === 'true', upcomingDays: Number(upcomingDays), upcomingMiles: Number(upcomingMiles) }
+    );
+    
+    res.json(schedules);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   PUT /api/vehicle-management/maintenance-schedules/:id/complete
+ * @desc    Mark schedule as completed
+ * @access  Admin, Dispatcher
+ */
+router.put('/maintenance-schedules/:id/complete', authenticateToken, async (req, res) => {
+  try {
+    const schedule = await MaintenanceScheduleService.completeSchedule(
+      req.params.id,
+      req.body,
+      req.user._id
+    );
+    res.json(schedule);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   GET /api/vehicle-management/maintenance-schedules/overdue
+ * @desc    Get all overdue schedules
+ * @access  Admin, Dispatcher
+ */
+router.get('/maintenance-schedules/status/overdue', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+  try {
+    const schedules = await MaintenanceScheduleService.getOverdueSchedules();
+    res.json(schedules);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   GET /api/vehicle-management/maintenance-schedules/calendar
+ * @desc    Get maintenance calendar
+ * @access  Admin, Dispatcher
+ */
+router.get('/maintenance-schedules/calendar', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+  try {
+    const { startDate, endDate, vehicleIds } = req.query;
+    const calendar = await MaintenanceScheduleService.getMaintenanceCalendar(
+      new Date(startDate),
+      new Date(endDate),
+      vehicleIds ? vehicleIds.split(',') : null
+    );
+    res.json(calendar);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ============================================
+// VEHICLE DOCUMENTS ROUTES
+// ============================================
+
+/**
+ * @route   POST /api/vehicle-management/:vehicleId/documents
+ * @desc    Upload vehicle document
+ * @access  Admin, Dispatcher
+ */
+router.post('/:vehicleId/documents', authenticateToken, authorizeRoles('admin', 'dispatcher'), upload.single('file'), async (req, res) => {
+  try {
+    const documentData = JSON.parse(req.body.documentData || '{}');
+    
+    const document = new VehicleDocument({
+      ...documentData,
+      vehicle: req.params.vehicleId,
+      file: {
+        fileName: req.file.filename,
+        originalName: req.file.originalname,
+        fileUrl: `/uploads/vehicles/${req.file.filename}`,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype,
+        storageLocation: 'local',
+        storagePath: req.file.path
+      },
+      uploadedBy: req.user._id,
+      auditLog: [{
+        action: 'uploaded',
+        performedBy: req.user._id,
+        details: 'Document uploaded'
+      }]
+    });
+
+    await document.save();
+    res.status(201).json(document);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   GET /api/vehicle-management/:vehicleId/documents
+ * @desc    Get all documents for a vehicle
+ * @access  Admin, Dispatcher
+ */
+router.get('/:vehicleId/documents', authenticateToken, async (req, res) => {
+  try {
+    const documents = await VehicleDocument.find({ 
+      vehicle: req.params.vehicleId,
+      status: { $ne: 'deleted' }
+    })
+      .populate('uploadedBy', 'firstName lastName')
+      .sort({ 'dates.uploadedAt': -1 });
+
+    res.json(documents);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   GET /api/vehicle-management/documents/expiring
+ * @desc    Get expiring documents
+ * @access  Admin, Dispatcher
+ */
+router.get('/documents/expiring', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    
+    const documents = await VehicleDocument.find({ status: 'active' })
+      .populate('vehicle', 'make model licensePlate');
+
+    const expiringDocs = documents.filter(doc => doc.isExpiringSoon(Number(days)));
+
+    res.json(expiringDocs);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ============================================
+// VEHICLE ASSIGNMENT ROUTES
+// ============================================
+
+/**
+ * @route   POST /api/vehicle-management/assignments
+ * @desc    Create vehicle assignment
+ * @access  Admin, Dispatcher
+ */
+router.post('/assignments', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+  try {
+    const assignment = await VehicleAssignmentService.createAssignment(req.body, req.user._id);
+    res.status(201).json(assignment);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   POST /api/vehicle-management/assignments/auto-assign
+ * @desc    Auto-assign optimal vehicle to trip
+ * @access  Admin, Dispatcher
+ */
+router.post('/assignments/auto-assign', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+  try {
+    const { tripId, options } = req.body;
+    const result = await VehicleAssignmentService.autoAssignVehicle(tripId, req.user._id, options);
+    res.status(201).json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   POST /api/vehicle-management/assignments/find-optimal
+ * @desc    Find optimal vehicle for requirements
+ * @access  Admin, Dispatcher
+ */
+router.post('/assignments/find-optimal', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+  try {
+    const { requirements, options } = req.body;
+    const result = await VehicleAssignmentService.findOptimalVehicle(requirements, options);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   GET /api/vehicle-management/assignments
+ * @desc    Get all assignments with filters
+ * @access  Admin, Dispatcher
+ */
+router.get('/assignments', authenticateToken, async (req, res) => {
+  try {
+    const { vehicle, driver, trip, status, assignmentType, startDate, endDate } = req.query;
+    
+    const query = {};
+    if (vehicle) query.vehicle = vehicle;
+    if (driver) query.driver = driver;
+    if (trip) query.trip = trip;
+    if (status) query.status = status;
+    if (assignmentType) query.assignmentType = assignmentType;
+    if (startDate && endDate) {
+      query.startDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    }
+
+    const assignments = await VehicleAssignment.find(query)
+      .populate('vehicle', 'make model year licensePlate')
+      .populate('driver', 'firstName lastName')
+      .populate('trip')
+      .sort({ startDate: -1 });
+
+    res.json(assignments);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   PUT /api/vehicle-management/assignments/:id/complete
+ * @desc    Mark assignment as completed
+ * @access  Admin, Dispatcher, Driver
+ */
+router.put('/assignments/:id/complete', authenticateToken, async (req, res) => {
+  try {
+    const assignment = await VehicleAssignment.findById(req.params.id);
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+
+    await assignment.markCompleted(req.body);
+    res.json(assignment);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   GET /api/vehicle-management/:vehicleId/availability
+ * @desc    Check vehicle availability
+ * @access  Admin, Dispatcher
+ */
+router.get('/:vehicleId/availability', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const availability = await VehicleAssignmentService.checkVehicleAvailability(
+      req.params.vehicleId,
+      new Date(startDate),
+      new Date(endDate)
+    );
+    res.json(availability);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ============================================
+// VEHICLE ANALYTICS ROUTES
+// ============================================
+
+/**
+ * @route   GET /api/vehicle-management/analytics/downtime
+ * @desc    Get downtime analytics
+ * @access  Admin, Dispatcher
+ */
+router.get('/analytics/downtime', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+  try {
+    const { vehicleId, startDate, endDate } = req.query;
+    const analytics = await VehicleAnalyticsService.getDowntimeAnalytics(
+      vehicleId || null,
+      new Date(startDate),
+      new Date(endDate)
+    );
+    res.json(analytics);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   GET /api/vehicle-management/analytics/fuel
+ * @desc    Get fuel consumption analytics
+ * @access  Admin, Dispatcher
+ */
+router.get('/analytics/fuel', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+  try {
+    const { vehicleId, startDate, endDate } = req.query;
+    const analytics = await VehicleAnalyticsService.getFuelAnalytics(
+      vehicleId || null,
+      new Date(startDate),
+      new Date(endDate)
+    );
+    res.json(analytics);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   GET /api/vehicle-management/analytics/performance/:vehicleId
+ * @desc    Get performance metrics for a vehicle
+ * @access  Admin, Dispatcher
+ */
+router.get('/analytics/performance/:vehicleId', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const metrics = await VehicleAnalyticsService.getPerformanceMetrics(
+      req.params.vehicleId,
+      new Date(startDate),
+      new Date(endDate)
+    );
+    res.json(metrics);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   GET /api/vehicle-management/analytics/fleet-comparison
+ * @desc    Get fleet-wide comparison
+ * @access  Admin
+ */
+router.get('/analytics/fleet-comparison', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const comparison = await VehicleAnalyticsService.getFleetComparison(
+      new Date(startDate),
+      new Date(endDate)
+    );
+    res.json(comparison);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * @route   GET /api/vehicle-management/analytics/utilization
+ * @desc    Get utilization analytics
+ * @access  Admin, Dispatcher
+ */
+router.get('/analytics/utilization', authenticateToken, authorizeRoles('admin', 'dispatcher'), async (req, res) => {
+  try {
+    const { vehicleIds, startDate, endDate } = req.query;
+    const analytics = await VehicleAssignmentService.getUtilizationAnalytics(
+      vehicleIds ? vehicleIds.split(',') : null,
+      new Date(startDate),
+      new Date(endDate)
+    );
+    res.json(analytics);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;

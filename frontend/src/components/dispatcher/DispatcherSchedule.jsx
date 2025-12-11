@@ -31,7 +31,10 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  Avatar
+  Avatar,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink
 } from '@chakra-ui/react';
 import {
   CalendarDaysIcon,
@@ -42,9 +45,11 @@ import {
   MapPinIcon,
   ClockIcon,
   EyeIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  HomeIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
+import ReturnToDispatchButton from './ReturnToDispatchButton';
 
 const DispatcherSchedule = ({ onViewTrip, onAssignDriver }) => {
   const toast = useToast();
@@ -153,6 +158,22 @@ const DispatcherSchedule = ({ onViewTrip, onAssignDriver }) => {
 
   return (
     <VStack spacing={6} align="stretch">
+      {/* Navigation Breadcrumb */}
+      <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
+        <Breadcrumb fontSize={{ base: "sm", md: "md" }}>
+          <BreadcrumbItem>
+            <BreadcrumbLink display="flex" alignItems="center" gap={2} href="/dispatcher">
+              <Box as={HomeIcon} w={4} h={4} />
+              Dispatch Control Center
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbItem isCurrentPage>
+            <BreadcrumbLink>Schedule</BreadcrumbLink>
+          </BreadcrumbItem>
+        </Breadcrumb>
+        <ReturnToDispatchButton size="sm" />
+      </HStack>
+
       {/* Filter Controls */}
       <Card bg={cardBg} borderWidth={1} borderColor={borderColor}>
         <CardHeader>

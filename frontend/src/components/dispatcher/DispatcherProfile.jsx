@@ -24,7 +24,10 @@ import {
   StatHelpText,
   Grid,
   GridItem,
-  useColorModeValue
+  useColorModeValue,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink
 } from '@chakra-ui/react';
 import {
   UserIcon,
@@ -33,10 +36,12 @@ import {
   BellIcon,
   ClockIcon,
   ShieldCheckIcon,
-  CalendarDaysIcon
+  CalendarDaysIcon,
+  HomeIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
+import ReturnToDispatchButton from './ReturnToDispatchButton';
 
 const DispatcherProfile = () => {
   const { user } = useAuth();
@@ -135,6 +140,22 @@ const DispatcherProfile = () => {
 
   return (
     <VStack spacing={6} align="stretch">
+      {/* Navigation Breadcrumb */}
+      <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
+        <Breadcrumb fontSize={{ base: "sm", md: "md" }}>
+          <BreadcrumbItem>
+            <BreadcrumbLink display="flex" alignItems="center" gap={2} href="/dispatcher">
+              <Box as={HomeIcon} w={4} h={4} />
+              Dispatch Control Center
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbItem isCurrentPage>
+            <BreadcrumbLink>Profile</BreadcrumbLink>
+          </BreadcrumbItem>
+        </Breadcrumb>
+        <ReturnToDispatchButton size="sm" />
+      </HStack>
+
       {/* Profile Header Card */}
       <Card bg={cardBg} borderWidth={1} borderColor={borderColor}>
         <CardBody>

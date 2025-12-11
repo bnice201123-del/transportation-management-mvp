@@ -48,6 +48,10 @@ import shiftSwapsRoutes from './routes/shiftSwaps.js';
 import calendarRoutes from './routes/calendar.js';
 import tripTemplatesRoutes from './routes/tripTemplates.js';
 import trafficRoutes from './routes/traffic.js';
+import mapsRoutes from './routes/maps.js';
+import driverPreferencesRoutes from './routes/driverPreferences.js';
+import fleetManagementRoutes from './routes/fleetManagement.js';
+import driverManagementRoutes from './routes/driverManagement.js';
 import { globalLimiter } from './middleware/rateLimiter.js';
 
 // Import services
@@ -144,6 +148,10 @@ app.use('/api/shift-swaps', shiftSwapsRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/trip-templates', tripTemplatesRoutes);
 app.use('/api/traffic', trafficRoutes);
+app.use('/api/maps', mapsRoutes);
+app.use('/api/driver-preferences', driverPreferencesRoutes);
+app.use('/api/fleet-management', fleetManagementRoutes);
+app.use('/api/driver-management', driverManagementRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

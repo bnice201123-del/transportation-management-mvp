@@ -47,7 +47,8 @@ import {
   Checkbox,
   Tfoot,
   IconButton,
-  Flex
+  Flex,
+  Stack
 } from '@chakra-ui/react';
 import {
   ClockIcon,
@@ -59,13 +60,16 @@ import {
   CheckIcon,
   XMarkIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  ArrowLeftIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState(null);
   const [timeOffRequests, setTimeOffRequests] = useState([]);
@@ -73,8 +77,15 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
   const [submitting, setSubmitting] = useState(false);
   const [editMode, setEditMode] = useState(false);
   
-  // Week navigation state
-  const [currentWeekStart, setCurrentWeekStart] = useState(null);
+  // Week navigation state - initialize with current week
+  const [currentWeekStart, setCurrentWeekStart] = useState(() => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const sunday = new Date(now);
+    sunday.setDate(now.getDate() - dayOfWeek);
+    sunday.setHours(0, 0, 0, 0);
+    return sunday;
+  });
   
   // Form state for time-off request
   const [startDate, setStartDate] = useState('');
@@ -291,7 +302,7 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, userId]);
+  }, [isOpen, userId, isAdmin]);
 
   const initializeScheduleData = () => {
     const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -674,34 +685,37 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
                               <Heading size="sm" mb={3}>
                                 Daily Records
                               </Heading>
-                              <Box overflowX="auto">
-                                <Table size="sm" variant="simple">
+                              <Box overflowX="auto" width="100%">
+                                <Table size={{ base: "sm", md: "md" }} variant="simple">
                                   <Thead>
                                     <Tr>
-                                      <Th>Date</Th>
-                                      <Th>Status</Th>
-                                      <Th isNumeric>Hours</Th>
-                                      <Th isNumeric>Earnings</Th>
+                                      <Th minW={{ base: "80px", md: "100px" }}>Date</Th>
+                                      <Th minW={{ base: "70px", md: "90px" }}>Status</Th>
+                                      <Th isNumeric minW={{ base: "60px", md: "80px" }}>Hours</Th>
+                                      <Th isNumeric minW={{ base: "80px", md: "100px" }}>Earnings</Th>
                                     </Tr>
                                   </Thead>
                                   <Tbody>
                                     {summary.records.slice(0, 10).map((record, index) => (
                                       <Tr key={index}>
-                                        <Td>{formatDate(record.date)}</Td>
+                                        <Td fontSize={{ base: "sm", md: "md" }}>{formatDate(record.date)}</Td>
                                         <Td>
-                                          <Badge colorScheme={
-                                            record.status === 'worked' ? 'green' :
-                                            record.status === 'missed' ? 'red' :
-                                            record.status === 'time-off' ? 'blue' :
-                                            'gray'
-                                          }>
+                                          <Badge 
+                                            colorScheme={
+                                              record.status === 'worked' ? 'green' :
+                                              record.status === 'missed' ? 'red' :
+                                              record.status === 'time-off' ? 'blue' :
+                                              'gray'
+                                            }
+                                            fontSize={{ base: "xs", md: "sm" }}
+                                          >
                                             {record.status}
                                           </Badge>
                                         </Td>
-                                        <Td isNumeric>
+                                        <Td isNumeric fontSize={{ base: "sm", md: "md" }}>
                                           {record.hoursWorked ? record.hoursWorked.toFixed(1) : '-'}
                                         </Td>
-                                        <Td isNumeric>
+                                        <Td isNumeric fontSize={{ base: "sm", md: "md" }}>
                                           {record.earnings ? formatCurrency(record.earnings) : '-'}
                                         </Td>
                                       </Tr>
@@ -735,11 +749,11 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
                         aria-label="Previous week"
                         onClick={handlePreviousWeek}
                         variant="ghost"
-                        size="sm"
+                        size={{ base: "md", md: "sm" }}
                       />
                       
                       <VStack spacing={0}>
-                        <Text fontSize="lg" fontWeight="bold">
+                        <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" textAlign="center">
                           {currentWeekStart && formatWeekRange(currentWeekStart)}
                         </Text>
                         {!isCurrentWeek(currentWeekStart) && (
@@ -759,7 +773,7 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
                         aria-label="Next week"
                         onClick={handleNextWeek}
                         variant="ghost"
-                        size="sm"
+                        size={{ base: "md", md: "sm" }}
                       />
                     </Flex>
 
@@ -914,40 +928,49 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
                       </Heading>
                       <form onSubmit={handleSubmitTimeOff}>
                         <VStack spacing={4}>
-                          <HStack spacing={4} w="full">
+                          <Stack 
+                            direction={{ base: "column", md: "row" }} 
+                            spacing={4} 
+                            w="full"
+                          >
                             <FormControl isRequired>
-                              <FormLabel fontSize="sm">Start Date</FormLabel>
+                              <FormLabel fontSize={{ base: "sm", md: "md" }}>Start Date</FormLabel>
                               <Input
                                 type="date"
+                                size={{ base: "md", md: "lg" }}
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
                                 min={new Date().toISOString().split('T')[0]}
                               />
                             </FormControl>
                             <FormControl isRequired>
-                              <FormLabel fontSize="sm">End Date</FormLabel>
+                              <FormLabel fontSize={{ base: "sm", md: "md" }}>End Date</FormLabel>
                               <Input
                                 type="date"
+                                size={{ base: "md", md: "lg" }}
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
                                 min={startDate || new Date().toISOString().split('T')[0]}
                               />
                             </FormControl>
-                          </HStack>
+                          </Stack>
                           <FormControl>
-                            <FormLabel fontSize="sm">Reason (Optional)</FormLabel>
+                            <FormLabel fontSize={{ base: "sm", md: "md" }}>Reason (Optional)</FormLabel>
                             <Textarea
                               value={reason}
                               onChange={(e) => setReason(e.target.value)}
                               placeholder="Vacation, personal day, medical, etc."
                               rows={3}
                               maxLength={500}
+                              size={{ base: "md", md: "lg" }}
+                              fontSize={{ base: "sm", md: "md" }}
                             />
                           </FormControl>
                           <Button
                             type="submit"
                             colorScheme="blue"
                             w="full"
+                            size={{ base: "md", md: "lg" }}
                             isLoading={submitting}
                             loadingText="Submitting..."
                           >
@@ -1025,9 +1048,24 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
                         borderColor="blue.300"
                       >
                         <VStack align="stretch" spacing={3}>
-                          <Heading size="sm" color="blue.800">
-                            Select Employee to Manage
-                          </Heading>
+                          <Flex justify="space-between" align="center" mb={2}>
+                            <Heading size="sm" color="blue.800">
+                              Select Employee to Manage
+                            </Heading>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              leftIcon={<ArrowLeftIcon className="h-4 w-4" />}
+                              onClick={() => {
+                                onClose();
+                                navigate('/admin');
+                              }}
+                              colorScheme="gray"
+                              _hover={{ bg: 'gray.100' }}
+                            >
+                              Back to Admin Dashboard
+                            </Button>
+                          </Flex>
                           <FormControl>
                             <Select
                               placeholder="Choose an employee..."
@@ -1073,86 +1111,123 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
                             borderWidth="1px"
                             borderColor={borderColor}
                           >
-                            <Flex justify="space-between" align="center" mb={4}>
-                              <Heading size="md">Manage Schedule for {selectedEmployeeName}</Heading>
-                              <HStack>
+                            <Flex 
+                              direction={{ base: "column", md: "row" }}
+                              justify="space-between" 
+                              align={{ base: "stretch", md: "center" }}
+                              gap={3}
+                              mb={2}
+                            >
+                              <Heading size={{ base: "sm", md: "md" }}>
+                                Manage Schedule for {selectedEmployeeName}
+                              </Heading>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                leftIcon={<ArrowLeftIcon className="h-4 w-4" />}
+                                onClick={() => {
+                                  onClose();
+                                  navigate('/admin');
+                                }}
+                                colorScheme="gray"
+                                _hover={{ bg: 'gray.100' }}
+                                display={{ base: "none", md: "flex" }}
+                              >
+                                Back to Admin Dashboard
+                              </Button>
+                            </Flex>
+                            <Flex 
+                              direction={{ base: "column", md: "row" }}
+                              justify="space-between" 
+                              align={{ base: "stretch", md: "center" }}
+                              gap={3}
+                              mb={4}
+                            >
+                              <Box />
+                              <Stack direction={{ base: "row", md: "row" }} spacing={2}>
                                 {editMode ? (
                                   <>
                                     <Button
-                                      size="sm"
+                                      size={{ base: "sm", md: "md" }}
                                       leftIcon={<CheckIcon className="h-4 w-4" />}
                                       colorScheme="green"
                                       onClick={handleSaveSchedule}
                                       isLoading={submitting}
+                                      flex={{ base: 1, md: "initial" }}
                                     >
                                       Save
                                     </Button>
                                     <Button
-                                      size="sm"
+                                      size={{ base: "sm", md: "md" }}
                                       leftIcon={<XMarkIcon className="h-4 w-4" />}
                                       onClick={() => {
                                         setEditMode(false);
                                         handleEmployeeSelect(selectedEmployeeId);
                                       }}
+                                      flex={{ base: 1, md: "initial" }}
                                     >
                                       Cancel
                                     </Button>
                                   </>
                                 ) : (
                                   <Button
-                                    size="sm"
+                                    size={{ base: "sm", md: "md" }}
                                     leftIcon={<PencilIcon className="h-4 w-4" />}
                                     colorScheme="blue"
                                     onClick={() => setEditMode(true)}
+                                    w={{ base: "full", md: "auto" }}
                                   >
                                     Edit Schedule
                                   </Button>
                                 )}
-                              </HStack>
+                              </Stack>
                             </Flex>
 
                             {scheduleData && (
-                              <Box overflowX="auto">
-                                <Table variant="simple" size="sm">
+                              <Box overflowX="auto" width="100%">
+                                <Table variant="simple" size={{ base: "sm", md: "md" }}>
                               <Thead>
                                 <Tr>
-                                  <Th>Day</Th>
-                                  <Th>Work Day</Th>
-                                  <Th>Shift Start</Th>
-                                  <Th>Shift End</Th>
-                                  <Th isNumeric>Hours</Th>
+                                  <Th minW={{ base: "80px", md: "100px" }}>Day</Th>
+                                  <Th minW={{ base: "80px", md: "100px" }}>Work Day</Th>
+                                  <Th minW={{ base: "100px", md: "120px" }}>Shift Start</Th>
+                                  <Th minW={{ base: "100px", md: "120px" }}>Shift End</Th>
+                                  <Th isNumeric minW={{ base: "60px", md: "80px" }}>Hours</Th>
                                 </Tr>
                               </Thead>
                               <Tbody>
                                 {scheduleData.map((day, index) => (
                                   <Tr key={index}>
-                                    <Td fontWeight="bold">{day.dayName}</Td>
+                                    <Td fontWeight="bold" fontSize={{ base: "sm", md: "md" }}>{day.dayName}</Td>
                                     <Td>
                                       <Checkbox
                                         isChecked={day.isWorkDay}
                                         onChange={() => handleToggleWorkDay(index)}
                                         isDisabled={!editMode}
+                                        size={{ base: "sm", md: "md" }}
                                       />
                                     </Td>
                                     <Td>
                                       <Input
                                         type="time"
-                                        size="sm"
+                                        size={{ base: "sm", md: "md" }}
                                         value={day.shiftStart || ''}
                                         onChange={(e) => handleShiftChange(index, 'shiftStart', e.target.value)}
                                         isDisabled={!editMode || !day.isWorkDay}
+                                        width={{ base: "100px", md: "120px" }}
                                       />
                                     </Td>
                                     <Td>
                                       <Input
                                         type="time"
-                                        size="sm"
+                                        size={{ base: "sm", md: "md" }}
                                         value={day.shiftEnd || ''}
                                         onChange={(e) => handleShiftChange(index, 'shiftEnd', e.target.value)}
                                         isDisabled={!editMode || !day.isWorkDay}
+                                        width={{ base: "100px", md: "120px" }}
                                       />
                                     </Td>
-                                    <Td isNumeric>
+                                    <Td isNumeric fontSize={{ base: "sm", md: "md" }}>
                                       {day.isWorkDay && day.hoursScheduled > 0 ? day.hoursScheduled.toFixed(1) : '-'}
                                     </Td>
                                   </Tr>
@@ -1181,9 +1256,25 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
                         borderWidth="1px"
                         borderColor={borderColor}
                       >
-                        <Heading size="md" mb={4}>
-                          Pending Time-Off Requests
-                        </Heading>
+                        <Flex justify="space-between" align="center" mb={4}>
+                          <Heading size="md">
+                            Pending Time-Off Requests
+                          </Heading>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            leftIcon={<ArrowLeftIcon className="h-4 w-4" />}
+                            onClick={() => {
+                              onClose();
+                              navigate('/admin');
+                            }}
+                            colorScheme="gray"
+                            _hover={{ bg: 'gray.100' }}
+                            display={{ base: "none", md: "flex" }}
+                          >
+                            Back to Admin Dashboard
+                          </Button>
+                        </Flex>
 
                         {pendingTimeOffRequests.length === 0 ? (
                           <Alert status="success" borderRadius="md">
@@ -1231,13 +1322,14 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
                                         value={reviewNotes}
                                         onChange={(e) => setReviewNotes(e.target.value)}
                                         placeholder="Add notes about this request..."
-                                        size="sm"
+                                        size={{ base: "md", md: "sm" }}
+                                        fontSize={{ base: "sm", md: "md" }}
                                         rows={3}
                                       />
                                     </FormControl>
-                                    <HStack spacing={2}>
+                                    <Stack direction={{ base: "column", sm: "row" }} spacing={2}>
                                       <Button
-                                        size="sm"
+                                        size={{ base: "md", md: "sm" }}
                                         colorScheme="green"
                                         leftIcon={<CheckIcon className="h-4 w-4" />}
                                         onClick={() => handleReviewTimeOff(request._id, 'approved')}
@@ -1247,7 +1339,7 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
                                         Approve
                                       </Button>
                                       <Button
-                                        size="sm"
+                                        size={{ base: "md", md: "sm" }}
                                         colorScheme="red"
                                         leftIcon={<XMarkIcon className="h-4 w-4" />}
                                         onClick={() => handleReviewTimeOff(request._id, 'denied')}
@@ -1257,20 +1349,21 @@ const WorkScheduleModal = ({ isOpen, onClose, userId, userName }) => {
                                         Deny
                                       </Button>
                                       <Button
-                                        size="sm"
+                                        size={{ base: "md", md: "sm" }}
                                         variant="ghost"
                                         onClick={() => {
                                           setReviewingRequest(null);
                                           setReviewNotes('');
                                         }}
+                                        flex={{ base: 1, sm: "initial" }}
                                       >
                                         Cancel
                                       </Button>
-                                    </HStack>
+                                    </Stack>
                                   </VStack>
                                 ) : (
                                   <Button
-                                    size="sm"
+                                    size={{ base: "md", md: "sm" }}
                                     colorScheme="blue"
                                     onClick={() => setReviewingRequest(request._id)}
                                     w="full"

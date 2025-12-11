@@ -198,10 +198,17 @@ const SchedulerDashboard = ({ view }) => {
     onOpen: onTripManagementOpen,
     onClose: onTripManagementClose
   } = useDisclosure();
+  const {
+    isOpen: isExportOpen,
+    onOpen: onExportOpen,
+    onClose: onExportClose
+  } = useDisclosure();
   
   const [tripToDelete, setTripToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [exportFormat, setExportFormat] = useState('csv');
+  const [exportScope, setExportScope] = useState('filtered');
 
   
   // Additional filtering state (removing duplicates)
@@ -749,6 +756,319 @@ const SchedulerDashboard = ({ view }) => {
            new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Get trips based on export scope selection
+  const getTripsForExport = (scope) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    switch (scope) {
+      case 'today':
+        return trips.filter(trip => {
+          const tripDate = new Date(trip.scheduledDate);
+          tripDate.setHours(0, 0, 0, 0);
+          return tripDate.getTime() === today.getTime();
+        });
+      case 'upcoming':
+        return trips.filter(trip => {
+          const tripDate = new Date(trip.scheduledDate);
+          return tripDate >= tomorrow;
+        });
+      case 'all':
+        return trips;
+      case 'filtered':
+        return filteredTrips.length > 0 ? filteredTrips : trips;
+      case 'pending':
+        return trips.filter(trip => trip.status === 'pending');
+      case 'completed':
+        return trips.filter(trip => trip.status === 'completed');
+      case 'assigned':
+        return trips.filter(trip => trip.status === 'assigned');
+      default:
+        return filteredTrips.length > 0 ? filteredTrips : trips;
+    }
+  };
+
+  // Open export dialog
+  const openExportDialog = (format) => {
+    setExportFormat(format);
+    onExportOpen();
+  };
+
+  // Execute export with selected options
+  const executeExport = () => {
+    try {
+      const tripsToExport = getTripsForExport(exportScope);
+      
+      if (tripsToExport.length === 0) {
+        toast({
+          title: 'No Data',
+          description: 'No trips available to export for the selected criteria',
+          status: 'warning',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      if (exportFormat === 'csv') {
+        exportToCSV(tripsToExport);
+      } else if (exportFormat === 'json') {
+        exportToJSON(tripsToExport);
+      } else if (exportFormat === 'print') {
+        exportToPrint(tripsToExport);
+      }
+
+      toast({
+        title: 'Success',
+        description: `${tripsToExport.length} trip(s) exported successfully as ${exportFormat.toUpperCase()}`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+
+      onExportClose();
+    } catch (error) {
+      console.error('Error exporting schedule:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to export schedule',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  // Legacy export function (kept for backwards compatibility)
+  const handleExportSchedule = (format = 'csv') => {
+    try {
+      const tripsToExport = filteredTrips.length > 0 ? filteredTrips : trips;
+      
+      if (tripsToExport.length === 0) {
+        toast({
+          title: 'No Data',
+          description: 'No trips available to export',
+          status: 'warning',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      if (format === 'csv') {
+        exportToCSV(tripsToExport);
+      } else if (format === 'json') {
+        exportToJSON(tripsToExport);
+      } else if (format === 'print') {
+        exportToPrint(tripsToExport);
+      }
+
+      toast({
+        title: 'Success',
+        description: `Schedule exported successfully as ${format.toUpperCase()}`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Error exporting schedule:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to export schedule',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const exportToCSV = (tripsData) => {
+    const headers = [
+      'Trip ID',
+      'Date/Time',
+      'Rider Name',
+      'Pickup Location',
+      'Dropoff Location',
+      'Status',
+      'Driver',
+      'Notes'
+    ];
+
+    const rows = tripsData.map(trip => [
+      trip.tripId || trip._id,
+      formatDate(trip.scheduledDate),
+      trip.riderName || `${trip.rider?.firstName || ''} ${trip.rider?.lastName || ''}`.trim() || 'N/A',
+      trip.pickupLocation?.address || trip.pickupAddress || 'N/A',
+      trip.dropoffLocation?.address || trip.dropoffAddress || 'N/A',
+      trip.status || 'N/A',
+      trip.driver?.name || trip.driverName || 'Unassigned',
+      trip.notes || ''
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `schedule_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportToJSON = (tripsData) => {
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      totalTrips: tripsData.length,
+      trips: tripsData.map(trip => ({
+        tripId: trip.tripId || trip._id,
+        scheduledDate: trip.scheduledDate,
+        riderName: trip.riderName || `${trip.rider?.firstName || ''} ${trip.rider?.lastName || ''}`.trim(),
+        riderId: trip.rider?._id || trip.rider,
+        pickupLocation: trip.pickupLocation?.address || trip.pickupAddress,
+        pickupCoordinates: trip.pickupLocation?.coordinates,
+        dropoffLocation: trip.dropoffLocation?.address || trip.dropoffAddress,
+        dropoffCoordinates: trip.dropoffLocation?.coordinates,
+        status: trip.status,
+        driver: trip.driver?.name || trip.driverName || 'Unassigned',
+        driverId: trip.driver?._id || trip.driver,
+        notes: trip.notes,
+        distance: trip.distance,
+        duration: trip.duration,
+        estimatedCost: trip.estimatedCost
+      }))
+    };
+
+    const jsonContent = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonContent], { type: 'application/json' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `schedule_export_${new Date().toISOString().split('T')[0]}.json`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportToPrint = (tripsData) => {
+    const printWindow = window.open('', '_blank');
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Schedule Export - ${new Date().toLocaleDateString()}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 20px;
+              max-width: 1200px;
+              margin: 0 auto;
+            }
+            h1 {
+              color: #2D3748;
+              border-bottom: 3px solid #48BB78;
+              padding-bottom: 10px;
+            }
+            .export-info {
+              background: #F7FAFC;
+              padding: 15px;
+              border-radius: 5px;
+              margin-bottom: 20px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            th {
+              background-color: #48BB78;
+              color: white;
+              padding: 12px;
+              text-align: left;
+              font-weight: bold;
+            }
+            td {
+              padding: 10px;
+              border-bottom: 1px solid #E2E8F0;
+            }
+            tr:nth-child(even) {
+              background-color: #F7FAFC;
+            }
+            tr:hover {
+              background-color: #EDF2F7;
+            }
+            .status-badge {
+              padding: 4px 8px;
+              border-radius: 4px;
+              font-size: 12px;
+              font-weight: bold;
+            }
+            .status-completed { background: #C6F6D5; color: #22543D; }
+            .status-in_progress { background: #BEE3F8; color: #2C5282; }
+            .status-assigned { background: #FEEBC8; color: #7C2D12; }
+            .status-pending { background: #E2E8F0; color: #2D3748; }
+            .status-cancelled { background: #FED7D7; color: #742A2A; }
+            @media print {
+              body { padding: 0; }
+              button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Transportation Schedule Report</h1>
+          <div class="export-info">
+            <p><strong>Export Date:</strong> ${new Date().toLocaleString()}</p>
+            <p><strong>Total Trips:</strong> ${tripsData.length}</p>
+            <p><strong>Period:</strong> ${activeTab === 0 ? 'Today' : activeTab === 1 ? 'Upcoming' : 'All Trips'}</p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Trip ID</th>
+                <th>Date/Time</th>
+                <th>Rider</th>
+                <th>Pickup</th>
+                <th>Dropoff</th>
+                <th>Status</th>
+                <th>Driver</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tripsData.map(trip => `
+                <tr>
+                  <td>${trip.tripId || trip._id}</td>
+                  <td>${formatDate(trip.scheduledDate)}</td>
+                  <td>${trip.riderName || `${trip.rider?.firstName || ''} ${trip.rider?.lastName || ''}`.trim() || 'N/A'}</td>
+                  <td>${trip.pickupLocation?.address || trip.pickupAddress || 'N/A'}</td>
+                  <td>${trip.dropoffLocation?.address || trip.dropoffAddress || 'N/A'}</td>
+                  <td><span class="status-badge status-${trip.status}">${trip.status || 'N/A'}</span></td>
+                  <td>${trip.driver?.name || trip.driverName || 'Unassigned'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div style="margin-top: 30px; text-align: center;">
+            <button onclick="window.print()" style="background: #48BB78; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px;">Print Schedule</button>
+            <button onclick="window.close()" style="background: #E2E8F0; color: #2D3748; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; margin-left: 10px;">Close</button>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+  };
+
   if (loading) {
     return (
       <Box>
@@ -928,13 +1248,21 @@ const SchedulerDashboard = ({ view }) => {
                 
                 <MenuItem 
                   icon={<Box as={ArrowDownTrayIcon} w={5} h={5} />}
+                  onClick={() => openExportDialog('csv')}
                 >
-                  Export Schedule
+                  Export as CSV
                 </MenuItem>
                 <MenuItem 
-                  icon={<Box as={Cog6ToothIcon} w={5} h={5} />}
+                  icon={<Box as={ArrowDownTrayIcon} w={5} h={5} />}
+                  onClick={() => openExportDialog('json')}
                 >
-                  Settings
+                  Export as JSON
+                </MenuItem>
+                <MenuItem 
+                  icon={<Box as={DocumentTextIcon} w={5} h={5} />}
+                  onClick={() => openExportDialog('print')}
+                >
+                  Print Schedule
                 </MenuItem>
               </MenuList>
             </Menu>
@@ -1340,29 +1668,6 @@ const SchedulerDashboard = ({ view }) => {
                   transition="all 0.2s ease"
                 >
                   <HStack spacing={1}>
-                    <Box as={ChartBarIcon} w={3} h={3} />
-                    <Text>
-                      History ({(trips || []).filter(trip => {
-                        const tripDate = new Date(trip.scheduledDate);
-                        const today = new Date();
-                        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                        return tripDate < todayStart;
-                      }).length})
-                    </Text>
-                  </HStack>
-                </Tab>
-                <Tab 
-                  fontSize={{ base: "xs", md: "sm" }}
-                  fontWeight="semibold"
-                  _selected={{ 
-                    bg: "green.600", 
-                    color: "white",
-                    shadow: "md"
-                  }}
-                  _hover={{ bg: "green.100" }}
-                  transition="all 0.2s ease"
-                >
-                  <HStack spacing={1}>
                     <Box as={QueueListIcon} w={3} h={3} />
                     <Text>All Trips ({(trips || []).length})</Text>
                   </HStack>
@@ -1448,24 +1753,6 @@ const SchedulerDashboard = ({ view }) => {
                       const tomorrow = new Date();
                       tomorrow.setDate(tomorrow.getDate() + 1);
                       return tripDate >= tomorrow;
-                    })} 
-                    showPattern={false}
-                    onView={openViewModal}
-                    onEdit={openEditModal}
-                    onDelete={openDeleteDialog}
-                    formatDate={formatDate}
-                    getStatusColor={getStatusColor}
-                  />
-                </TabPanel>
-                
-                {/* Past Trips/History */}
-                <TabPanel px={0}>
-                  <TripsTable 
-                    trips={filteredTrips.filter(trip => {
-                      const tripDate = new Date(trip.scheduledDate);
-                      const today = new Date();
-                      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                      return tripDate < todayStart;
                     })} 
                     showPattern={false}
                     onView={openViewModal}
@@ -1802,6 +2089,198 @@ const SchedulerDashboard = ({ view }) => {
           </ModalBody>
           <ModalFooter>
             <Button onClick={onViewClose}>Close</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Export Options Modal */}
+      <Modal isOpen={isExportOpen} onClose={onExportClose} size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            <HStack spacing={2}>
+              <Box as={ArrowDownTrayIcon} w={6} h={6} color="green.500" />
+              <Text>Export Schedule Options</Text>
+            </HStack>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <VStack spacing={6} align="stretch">
+              {/* Export Format Display */}
+              <Alert status="info" borderRadius="md">
+                <AlertIcon />
+                <VStack align="start" spacing={0}>
+                  <Text fontWeight="bold">
+                    Export Format: {exportFormat.toUpperCase()}
+                  </Text>
+                  <Text fontSize="sm">
+                    {exportFormat === 'csv' && 'Excel-compatible spreadsheet format'}
+                    {exportFormat === 'json' && 'Complete data with all trip details'}
+                    {exportFormat === 'print' && 'Formatted print-ready document'}
+                  </Text>
+                </VStack>
+              </Alert>
+
+              {/* Scope Selection */}
+              <FormControl>
+                <FormLabel fontWeight="bold">Select Trips to Export</FormLabel>
+                <VStack spacing={3} align="stretch">
+                  <Button
+                    variant={exportScope === 'today' ? 'solid' : 'outline'}
+                    colorScheme="green"
+                    justifyContent="space-between"
+                    onClick={() => setExportScope('today')}
+                    rightIcon={
+                      <Badge colorScheme="green">
+                        {trips.filter(trip => {
+                          const tripDate = new Date(trip.scheduledDate);
+                          const today = new Date();
+                          tripDate.setHours(0, 0, 0, 0);
+                          today.setHours(0, 0, 0, 0);
+                          return tripDate.getTime() === today.getTime();
+                        }).length}
+                      </Badge>
+                    }
+                  >
+                    <HStack>
+                      <Box as={CalendarDaysIcon} w={4} h={4} />
+                      <Text>Today's Trips</Text>
+                    </HStack>
+                  </Button>
+
+                  <Button
+                    variant={exportScope === 'upcoming' ? 'solid' : 'outline'}
+                    colorScheme="green"
+                    justifyContent="space-between"
+                    onClick={() => setExportScope('upcoming')}
+                    rightIcon={
+                      <Badge colorScheme="blue">
+                        {trips.filter(trip => {
+                          const tripDate = new Date(trip.scheduledDate);
+                          const tomorrow = new Date();
+                          tomorrow.setDate(tomorrow.getDate() + 1);
+                          return tripDate >= tomorrow;
+                        }).length}
+                      </Badge>
+                    }
+                  >
+                    <HStack>
+                      <Box as={ClockIcon} w={4} h={4} />
+                      <Text>Upcoming Trips</Text>
+                    </HStack>
+                  </Button>
+
+                  <Button
+                    variant={exportScope === 'pending' ? 'solid' : 'outline'}
+                    colorScheme="green"
+                    justifyContent="space-between"
+                    onClick={() => setExportScope('pending')}
+                    rightIcon={
+                      <Badge colorScheme="yellow">
+                        {trips.filter(trip => trip.status === 'pending').length}
+                      </Badge>
+                    }
+                  >
+                    <HStack>
+                      <Box as={ExclamationTriangleIcon} w={4} h={4} />
+                      <Text>Pending Trips</Text>
+                    </HStack>
+                  </Button>
+
+                  <Button
+                    variant={exportScope === 'assigned' ? 'solid' : 'outline'}
+                    colorScheme="green"
+                    justifyContent="space-between"
+                    onClick={() => setExportScope('assigned')}
+                    rightIcon={
+                      <Badge colorScheme="orange">
+                        {trips.filter(trip => trip.status === 'assigned').length}
+                      </Badge>
+                    }
+                  >
+                    <HStack>
+                      <Box as={TruckIcon} w={4} h={4} />
+                      <Text>Assigned Trips</Text>
+                    </HStack>
+                  </Button>
+
+                  <Button
+                    variant={exportScope === 'completed' ? 'solid' : 'outline'}
+                    colorScheme="green"
+                    justifyContent="space-between"
+                    onClick={() => setExportScope('completed')}
+                    rightIcon={
+                      <Badge colorScheme="green">
+                        {trips.filter(trip => trip.status === 'completed').length}
+                      </Badge>
+                    }
+                  >
+                    <HStack>
+                      <Box as={CheckCircleIcon} w={4} h={4} />
+                      <Text>Completed Trips</Text>
+                    </HStack>
+                  </Button>
+
+                  <Divider />
+
+                  <Button
+                    variant={exportScope === 'filtered' ? 'solid' : 'outline'}
+                    colorScheme="green"
+                    justifyContent="space-between"
+                    onClick={() => setExportScope('filtered')}
+                    rightIcon={
+                      <Badge colorScheme="purple">
+                        {filteredTrips.length > 0 ? filteredTrips.length : trips.length}
+                      </Badge>
+                    }
+                  >
+                    <HStack>
+                      <Box as={FunnelIcon} w={4} h={4} />
+                      <Text>Current View/Filtered</Text>
+                    </HStack>
+                  </Button>
+
+                  <Button
+                    variant={exportScope === 'all' ? 'solid' : 'outline'}
+                    colorScheme="green"
+                    justifyContent="space-between"
+                    onClick={() => setExportScope('all')}
+                    rightIcon={
+                      <Badge colorScheme="gray">
+                        {trips.length}
+                      </Badge>
+                    }
+                  >
+                    <HStack>
+                      <Box as={QueueListIcon} w={4} h={4} />
+                      <Text>All Trips</Text>
+                    </HStack>
+                  </Button>
+                </VStack>
+              </FormControl>
+
+              {/* Preview Info */}
+              <Alert status="success" borderRadius="md">
+                <AlertIcon />
+                <Text fontSize="sm">
+                  <strong>{getTripsForExport(exportScope).length} trip(s)</strong> will be exported
+                </Text>
+              </Alert>
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onExportClose}>
+              Cancel
+            </Button>
+            <Button
+              colorScheme="green"
+              leftIcon={<Box as={ArrowDownTrayIcon} w={4} h={4} />}
+              onClick={executeExport}
+              isDisabled={getTripsForExport(exportScope).length === 0}
+            >
+              {exportFormat === 'print' ? 'Print' : 'Export'} {getTripsForExport(exportScope).length} Trip(s)
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

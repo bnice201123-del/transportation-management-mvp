@@ -62,6 +62,7 @@ import DriverLocationTracking from './components/driver/DriverLocationTracking';
 import UserProfile from './components/shared/UserProfile';
 import NotificationsPage from './components/shared/NotificationsPage';
 import NotificationSettings from './components/shared/NotificationSettings';
+import AccountPreferences from './components/settings/AccountPreferences';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { isAuthenticated, user, loading } = useAuth();
@@ -466,13 +467,13 @@ const AppRoutes = () => {
         } 
       />
       
-      {/* Notification Settings - Available to all authenticated users */}
+      {/* Account Preferences - Available to all authenticated users */}
       <Route 
-        path="/settings/notifications" 
+        path="/settings/preferences" 
         element={
           <ProtectedRoute>
-            <ErrorBoundary fallbackMessage="Failed to load Notification Settings. Please try refreshing the page.">
-              <NotificationSettings />
+            <ErrorBoundary fallbackMessage="Failed to load Account Preferences. Please try refreshing the page.">
+              <AccountPreferences />
             </ErrorBoundary>
           </ProtectedRoute>
         } 

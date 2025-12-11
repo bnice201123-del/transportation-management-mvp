@@ -352,6 +352,11 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Trip'
   }],
+  // User Preferences
+  preferences: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
   // Encryption metadata
   encryptionMetadata: {
     isEncrypted: {

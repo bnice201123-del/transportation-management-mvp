@@ -25,8 +25,20 @@ import {
   Spacer,
   Tooltip
 } from '@chakra-ui/react';
-import { HamburgerIcon, ChevronDownIcon, SettingsIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import { 
+  HamburgerIcon, 
+  ChevronDownIcon, 
+  SettingsIcon, 
+  ChevronLeftIcon, 
+  ChevronRightIcon,
+  BellIcon
+} from '@chakra-ui/icons';
 import { BellIcon as BellIconOutline } from '@heroicons/react/24/outline';
+import { 
+  UserCircleIcon,
+  Cog6ToothIcon,
+  ArrowRightOnRectangleIcon
+} from '@heroicons/react/24/outline';
 import { useAuth } from "../../contexts/AuthContext";
 import { useSidebar } from "../../contexts/SidebarContext";
 import { useNotifications } from "../../contexts/NotificationContext";
@@ -359,22 +371,44 @@ const Navbar = ({ title }) => {
                       </VStack>
                     </MenuItem>
                     <MenuDivider />
-                    <MenuItem _hover={{ bg: "green.50" }} onClick={() => navigate('/profile')}>
-                      Profile Settings
+                    <MenuItem 
+                      icon={<Box as={UserCircleIcon} w={5} h={5} />}
+                      _hover={{ bg: "green.50" }} 
+                      onClick={() => navigate('/profile')}
+                    >
+                      <VStack align="start" spacing={0}>
+                        <Text fontSize="sm" fontWeight="medium">Profile Settings</Text>
+                        <Text fontSize="xs" color="gray.500">Personal info & preferences</Text>
+                      </VStack>
                     </MenuItem>
-                    <MenuItem _hover={{ bg: "green.50" }}>
-                      Account Preferences
+                    <MenuItem 
+                      icon={<Box as={Cog6ToothIcon} w={5} h={5} />}
+                      _hover={{ bg: "green.50" }}
+                      onClick={() => navigate('/settings/preferences')}
+                    >
+                      <VStack align="start" spacing={0}>
+                        <Text fontSize="sm" fontWeight="medium">Account Preferences</Text>
+                        <Text fontSize="xs" color="gray.500">Display, privacy & more</Text>
+                      </VStack>
                     </MenuItem>
-                    <MenuItem _hover={{ bg: "green.50" }} onClick={() => navigate('/settings/notifications')}>
-                      Notification Settings
+                    <MenuItem 
+                      icon={<BellIcon />}
+                      _hover={{ bg: "green.50" }} 
+                      onClick={() => navigate('/settings/notifications')}
+                    >
+                      <VStack align="start" spacing={0}>
+                        <Text fontSize="sm" fontWeight="medium">Notification Settings</Text>
+                        <Text fontSize="xs" color="gray.500">Manage alerts & emails</Text>
+                      </VStack>
                     </MenuItem>
                     <MenuDivider />
                     <MenuItem 
+                      icon={<Box as={ArrowRightOnRectangleIcon} w={5} h={5} />}
                       onClick={handleLogout}
                       _hover={{ bg: "red.50", color: "red.600" }}
                       color="red.500"
                     >
-                      Sign Out
+                      <Text fontSize="sm" fontWeight="medium">Sign Out</Text>
                     </MenuItem>
                   </MenuList>
                 </Menu>

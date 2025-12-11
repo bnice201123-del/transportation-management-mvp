@@ -909,4 +909,56 @@ router.delete('/:id/profile-image', authenticateToken, async (req, res) => {
   }
 });
 
+// Get user preferences
+router.get('/preferences', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('preferences');
+    res.json({
+      success: true,
+      preferences: user?.preferences || {}
+    });
+  } catch (error) {
+    console.error('Get preferences error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching preferences',
+      error: error.message
+    });
+  }
+});
+
+// Update user preferences
+router.put('/preferences', authenticateToken, async (req, res) => {
+  try {
+    const { preferences } = req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { preferences },
+      { new: true, runValidators: true }
+    ).select('preferences');
+
+    // Log activity
+    await logActivity({
+      userId: req.user._id,
+      userRole: req.user.role,
+      action: 'update_preferences',
+      details: 'Updated account preferences'
+    });
+
+    res.json({
+      success: true,
+      message: 'Preferences updated successfully',
+      preferences: user.preferences
+    });
+  } catch (error) {
+    console.error('Update preferences error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error updating preferences',
+      error: error.message
+    });
+  }
+});
+
 export default router;

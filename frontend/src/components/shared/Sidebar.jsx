@@ -207,31 +207,61 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
     xl: 'xl'
   });
 
-  // Click outside handler for tablet sidebar (md breakpoint only)
+  // Click outside handler for desktop sidebar (all desktop breakpoints)
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Only handle clicks when:
-      // 1. Sidebar is visible
-      // 2. On tablet (md) breakpoint only (not lg/xl where sidebar is part of layout)
-      // 3. Click is outside the sidebar element
-      if (isSidebarVisible && currentBreakpoint === 'md' && sidebarRef.current && !sidebarRef.current.contains(event.target)) {
-        // Check if click is not on the toggle button or inside a dropdown menu
-        const isToggleButton = event.target.closest('[aria-label="Hide sidebar"]') || 
-                               event.target.closest('[aria-label="Show sidebar"]');
-        const isDropdownMenu = event.target.closest('.menu-dropdown');
-        
-        if (!isToggleButton && !isDropdownMenu) {
-          hideSidebar();
-        }
+      // Skip if sidebar is not visible or on mobile
+      if (!isSidebarVisible || !currentBreakpoint || currentBreakpoint === 'base') {
+        return;
+      }
+
+      // Skip if no sidebarRef
+      if (!sidebarRef.current) {
+        return;
+      }
+
+      // Check if click is inside sidebar or any sidebar-related element
+      const clickedInsideSidebar = sidebarRef.current.contains(event.target);
+      const isToggleButton = event.target.closest('[aria-label="Hide sidebar"]') || 
+                             event.target.closest('[aria-label="Show sidebar"]');
+      const isDropdownMenu = event.target.closest('.menu-dropdown');
+      const isSidebarElement = event.target.closest('[data-sidebar]');
+      
+      // Only hide if click is truly outside all sidebar-related elements
+      if (!clickedInsideSidebar && !isToggleButton && !isDropdownMenu && !isSidebarElement) {
+        hideSidebar();
       }
     };
 
-    // Add event listener
-    document.addEventListener('mousedown', handleClickOutside);
+    // Add event listener with slight delay to ensure refs are set
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
     
     // Cleanup
     return () => {
+      clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isSidebarVisible, hideSidebar, currentBreakpoint]);
+
+  // Hide sidebar on scroll for desktop (md and above breakpoints)
+  useEffect(() => {
+    const handleScroll = () => {
+      // Only hide sidebar on desktop breakpoints (md, lg, xl) when it's visible
+      if (isSidebarVisible && currentBreakpoint && currentBreakpoint !== 'base') {
+        hideSidebar();
+      }
+    };
+
+    // Add scroll listeners to both window and document with capture phase
+    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+    document.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('scroll', handleScroll, { capture: true });
+      document.removeEventListener('scroll', handleScroll, { capture: true });
     };
   }, [isSidebarVisible, hideSidebar, currentBreakpoint]);
 
@@ -593,6 +623,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   const DesktopSidebar = () => (
     <Box
       ref={sidebarRef}
+      data-sidebar="true"
       position="fixed"
       left={0}
       top={{ base: 0, md: "60px" }}

@@ -374,101 +374,109 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
     return item.roles.some(role => userRoles.includes(role));
   });
 
-  // Mobile-specific menu items (strictly limited per requirements)
+  // Mobile-specific menu items (simplified for mobile UX)
   const mobileMenuItems = [
-    // 1. Admin Overview - Main Admin Dashboard landing page (admin only)
+    // Admin Dashboard Overview - for users with admin role ONLY
     ...(hasAdminAccess() ? [{
       id: 'admin-overview-mobile',
-      label: 'Admin Overview',
+      label: 'Admin Dashboard',
       icon: ViewIcon,
       color: 'purple.600',
       path: '/admin/overview',
       roles: ['admin']
     }] : []),
     
-    // 2. System Settings - System configuration, profile settings, agency settings
-    {
-      id: 'system-settings-mobile',
-      label: 'System Settings',
-      icon: SettingsIcon,
-      color: 'gray.600',
-      path: '/admin/settings',
-      roles: ['admin', 'scheduler', 'dispatcher', 'driver'],
-      subItems: [
-        { label: 'Profile Settings', icon: FaUser, action: () => navigate('/settings/profile') },
-        ...(hasAdminAccess() ? [
-          { label: 'System Config', icon: SettingsIcon, action: () => navigate('/admin/settings') },
-          { label: 'Agency Settings', icon: FaClipboardList, action: () => navigate('/admin/agency') }
-        ] : [])
-      ]
-    },
+    // Dispatcher - for users with dispatcher role
+    ...((user?.roles?.includes('dispatcher') || user?.role === 'dispatcher') ? [{
+      id: 'dispatch-mobile',
+      label: 'Dispatch',
+      icon: TimeIcon,
+      color: 'blue.500',
+      path: '/dispatcher',
+      roles: ['dispatcher']
+    }] : []),
     
-    // 3. Maps / Tracking - Trip maps, live tracking, driver locations, route visualization
-    {
-      id: 'maps-tracking-mobile',
-      label: 'Maps / Tracking',
+    // Scheduler - for users with scheduler role
+    ...((user?.roles?.includes('scheduler') || user?.role === 'scheduler') ? [{
+      id: 'scheduler-mobile',
+      label: 'Scheduler',
+      icon: CalendarIcon,
+      color: 'teal.500',
+      path: '/scheduler',
+      roles: ['scheduler']
+    }] : []),
+
+    // Driver View - for users with driver role
+    ...((user?.roles?.includes('driver') || user?.role === 'driver') ? [{
+      id: 'drivers-mobile',
+      label: 'Driver View',
+      icon: FaUserTie,
+      color: 'purple.500',
+      path: '/driver',
+      roles: ['driver']
+    }] : []),
+    
+    // Reports - for admin users ONLY
+    ...(hasAdminAccess() ? [{
+      id: 'reports-mobile',
+      label: 'Reports',
+      icon: SearchIcon,
+      color: 'orange.500',
+      path: '/admin/reports',
+      roles: ['admin']
+    }] : []),
+    
+    // Register New User - for admin users ONLY
+    ...(hasAdminAccess() ? [{
+      id: 'register-mobile',
+      label: 'Register New User',
+      icon: UnlockIcon,
+      color: 'green.500',
+      path: '/admin/register',
+      roles: ['admin']
+    }] : []),
+    
+    // Manage Users - for admin users ONLY
+    ...(hasAdminAccess() ? [{
+      id: 'users-mobile',
+      label: 'Manage Users',
+      icon: SettingsIcon,
+      color: 'red.500',
+      path: '/admin/users',
+      roles: ['admin']
+    }] : []),
+    
+    // Riders - for scheduler, dispatcher, admin
+    ...((user?.roles?.includes('scheduler') || user?.roles?.includes('dispatcher') || user?.roles?.includes('admin') || 
+        user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin') ? [{
+      id: 'riders-mobile',
+      label: 'Riders',
+      icon: FaUsers,
+      color: 'cyan.500',
+      path: '/riders',
+      roles: ['scheduler', 'dispatcher', 'admin']
+    }] : []),
+    
+    // Vehicles - for scheduler, dispatcher, admin
+    ...((user?.roles?.includes('scheduler') || user?.roles?.includes('dispatcher') || user?.roles?.includes('admin') || 
+        user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin') ? [{
+      id: 'vehicles-mobile',
+      label: 'Vehicles',
+      icon: FaCar,
+      color: 'yellow.600',
+      path: '/vehicles',
+      roles: ['scheduler', 'dispatcher', 'admin']
+    }] : []),
+    
+    // Live Tracking - for scheduler, dispatcher, admin
+    ...((user?.roles?.includes('scheduler') || user?.roles?.includes('dispatcher') || user?.roles?.includes('admin') || 
+        user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin') ? [{
+      id: 'tracking-mobile',
+      label: 'Live Tracking',
       icon: FaMap,
       color: 'green.500',
-      path: '/maps',
-      roles: ['scheduler', 'dispatcher', 'admin', 'driver'],
-      subItems: [
-        { label: 'Trip Maps', icon: FaRoute, action: () => navigate('/maps/trips') },
-        { label: 'Live Tracking', icon: TimeIcon, action: () => navigate('/maps/tracking') },
-        { label: 'Route Planning', icon: FaMapMarkedAlt, action: () => navigate('/maps/routes') }
-      ]
-    },
-    
-    // 4. Operations - Show all Operations submenu items EXCEPT Advanced Search
-    ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'driver' || user?.role === 'admin' ? [{
-      id: 'operations-mobile',
-      label: 'Operations',
-      icon: FaRoute,
-      color: 'orange.500',
-      path: '/operations',
-      roles: ['scheduler', 'dispatcher', 'driver', 'admin'],
-      subItems: [
-        // Create Trip
-        ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [
-          { label: 'Create Trip', icon: AddIcon, action: () => navigate('/scheduler?action=create') }
-        ] : []),
-        // Trip Management
-        ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [
-          { label: 'Trip Management', icon: FaClipboardList, action: () => navigate('/scheduler?view=manage') }
-        ] : []),
-        // Dispatcher
-        ...(user?.role === 'dispatcher' || user?.role === 'admin' ? [
-          { label: 'Dispatcher', icon: TimeIcon, action: () => navigate('/dispatcher') }
-        ] : []),
-        // Scheduler
-        ...(user?.role === 'scheduler' || user?.role === 'admin' ? [
-          { label: 'Scheduler', icon: CalendarIcon, action: () => navigate('/scheduler') }
-        ] : []),
-        // Driver View
-        ...(user?.role === 'driver' || user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [
-          { label: 'Driver View', icon: FaUserTie, action: () => navigate('/driver') }
-        ] : []),
-        // Riders
-        ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [
-          { label: 'Riders', icon: FaUsers, action: () => navigate('/riders') }
-        ] : []),
-        // Vehicles
-        ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [
-          { label: 'Vehicles', icon: FaCar, action: () => navigate('/vehicles') }
-        ] : []),
-        // Recurring Trips
-        ...(user?.role === 'scheduler' || user?.role === 'dispatcher' || user?.role === 'admin' ? [
-          { label: 'Recurring Trips', icon: RepeatIcon, action: () => navigate('/scheduler/recurring') }
-        ] : []),
-        // Dispatch Tools
-        ...(user?.role === 'dispatcher' || user?.role === 'admin' ? [
-          { label: 'Dispatch Tools', icon: FaRoute, action: () => navigate('/dispatcher/tools') }
-        ] : []),
-        // Scheduler Tools
-        ...(user?.role === 'scheduler' || user?.role === 'admin' ? [
-          { label: 'Scheduler Tools', icon: CalendarIcon, action: () => navigate('/scheduler/tools') }
-        ] : [])
-        // ❌ Advanced Search is explicitly excluded from mobile
-      ]
+      path: '/maps/tracking',
+      roles: ['scheduler', 'dispatcher', 'admin']
     }] : [])
   ];
 
@@ -740,7 +748,6 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
             <VStack spacing={2} align="stretch">
               {filteredMobileMenuItems.map((item) => (
                 <Box key={item.id}>
-                  {/* Main Menu Item */}
                   <Flex
                     align="center"
                     p={4}
@@ -753,62 +760,17 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                     transition="all 0.2s ease"
                     borderRadius="md"
                     onClick={() => {
-                      if (item.subItems?.length > 0) {
-                        toggleExpanded(item.id);
-                        triggerHaptic('light');
-                        playSound('click');
-                      } else {
-                        triggerHaptic('light');
-                        playSound('click');
-                        handleItemClick(item);
-                        handleClose();
-                      }
+                      triggerHaptic('light');
+                      playSound('click');
+                      handleItemClick(item);
+                      handleClose();
                     }}
                   >
                     <Icon as={item.icon} boxSize={6} />
                     <Text ml={3} fontSize="md" fontWeight="medium" flex={1}>
                       {item.label}
                     </Text>
-                    {item.subItems?.length > 0 && (
-                      <Icon
-                        as={expandedItems[item.id] ? ChevronDownIcon : ChevronRightIcon}
-                        boxSize={5}
-                      />
-                    )}
                   </Flex>
-                  
-                  {/* Sub Items */}
-                  {item.subItems && (
-                    <Collapse in={expandedItems[item.id]}>
-                      <VStack spacing={1} align="stretch" mt={1} ml={4} mr={2}>
-                        {item.subItems.map((subItem, index) => (
-                          <Flex
-                            key={index}
-                            align="center"
-                            p={3}
-                            minH="44px"
-                            cursor="pointer"
-                            _hover={{ bg: hoverBg, color: item.color }}
-                            _active={{ bg: activeBg, transform: "scale(0.96)" }}
-                            transition="all 0.1s"
-                            borderRadius="md"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              triggerHaptic('light');
-                              playSound('click');
-                              subItem.action();
-                              handleClose();
-                            }}
-                          >
-                            <Icon as={subItem.icon} boxSize={5} />
-                            <Text ml={2} fontSize="sm" fontWeight="medium">
-                              {subItem.label}
-                            </Text>
-                          </Flex>
-                        ))}
-                      </VStack>
-                    </Collapse>
-                  )}
                 </Box>
               ))}
               

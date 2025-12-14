@@ -217,10 +217,14 @@ router.get('/search', authenticateToken, async (req, res) => {
     ];
 
     // Role-based filtering - more permissive for search
-    if (req.user.role === 'driver') {
+    const userRoles = req.user.roles && req.user.roles.length > 0 
+      ? req.user.roles 
+      : [req.user.role];
+    
+    if (userRoles.includes('driver') && !userRoles.includes('admin') && !userRoles.includes('dispatcher') && !userRoles.includes('scheduler')) {
       // Drivers can search all trips but see limited details on others
       // Don't restrict by assignedDriver to allow seeing full schedule
-    } else if (req.user.role === 'scheduler') {
+    } else if (userRoles.includes('scheduler') && !userRoles.includes('admin') && !userRoles.includes('dispatcher')) {
       // Schedulers can see all trips for better coordination
       // No restrictions
     }
@@ -548,8 +552,17 @@ router.get('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Trip not found' });
     }
 
-    // Check authorization
-    if (req.user.role === 'driver' && trip.assignedDriver?._id.toString() !== req.user._id.toString()) {
+    // Check authorization - support both single role (legacy) and multiple roles array
+    const userRoles = req.user.roles && req.user.roles.length > 0 
+      ? req.user.roles 
+      : [req.user.role];
+    
+    const isDriverOnly = userRoles.includes('driver') && 
+                        !userRoles.includes('admin') && 
+                        !userRoles.includes('dispatcher') && 
+                        !userRoles.includes('scheduler');
+    
+    if (isDriverOnly && trip.assignedDriver?._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
     // Schedulers, dispatchers and admins can view any trip
@@ -694,8 +707,17 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Trip not found' });
     }
 
-    // Check authorization
-    if (req.user.role === 'driver' && trip.assignedDriver?.toString() !== req.user._id.toString()) {
+    // Check authorization - support both single role (legacy) and multiple roles array
+    const userRoles = req.user.roles && req.user.roles.length > 0 
+      ? req.user.roles 
+      : [req.user.role];
+    
+    const isDriverOnly = userRoles.includes('driver') && 
+                        !userRoles.includes('admin') && 
+                        !userRoles.includes('dispatcher') && 
+                        !userRoles.includes('scheduler');
+    
+    if (isDriverOnly && trip.assignedDriver?.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
     // Schedulers, dispatchers and admins can update any trip
@@ -837,8 +859,17 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Trip not found' });
     }
 
-    // Check authorization for status changes
-    if (req.user.role === 'driver' && trip.assignedDriver?.toString() !== req.user._id.toString()) {
+    // Check authorization for status changes - support both single role (legacy) and multiple roles array
+    const userRoles = req.user.roles && req.user.roles.length > 0 
+      ? req.user.roles 
+      : [req.user.role];
+    
+    const isDriverOnly = userRoles.includes('driver') && 
+                        !userRoles.includes('admin') && 
+                        !userRoles.includes('dispatcher') && 
+                        !userRoles.includes('scheduler');
+    
+    if (isDriverOnly && trip.assignedDriver?.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
@@ -872,7 +903,11 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     }
 
     // Update driver location if provided
-    if (location && req.user.role === 'driver') {
+    const userRoles = req.user.roles && req.user.roles.length > 0 
+      ? req.user.roles 
+      : [req.user.role];
+    
+    if (location && userRoles.includes('driver')) {
       trip.driverLocation = {
         ...location,
         lastUpdated: new Date()
@@ -910,7 +945,7 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     }
     
     // Update driver location if provided
-    if (location && req.user.role === 'driver' && trip.assignedDriver) {
+    if (location && userRoles.includes('driver') && trip.assignedDriver) {
       await handleDriverLocationUpdate(
         trip._id,
         trip.assignedDriver,

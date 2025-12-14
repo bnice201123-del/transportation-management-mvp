@@ -196,8 +196,8 @@ const Navbar = ({ title }) => {
               {/* Column 3: Notifications + User Profile */}
               <Box flex="0 0 auto">
                 <HStack spacing={2}>
-                  {/* Notification Bell Icon */}
-                  <Box position="relative">
+                  {/* Notification Bell Icon - Hidden on Mobile */}
+                  <Box position="relative" display={{ base: 'none', md: 'block' }}>
                     <IconButton
                       icon={<Box as={BellIconOutline} w={5} h={5} />}
                       aria-label="Notifications"
@@ -370,7 +370,8 @@ const Navbar = ({ title }) => {
                   <MenuList border="1px" borderColor="brand.200" shadow="lg">
                     <MenuItem 
                       icon={<Avatar size="xs" name={user ? `${user.firstName} ${user.lastName}` : 'User'} src={user?.profileImage} bg={user?.profileImage ? 'transparent' : 'blue.500'} />}
-                      _hover={{ bg: "green.50" }}
+                      isDisabled
+                      _disabled={{ opacity: 1, cursor: 'default' }}
                     >
                       <VStack align="start" spacing={0}>
                         <Text fontSize="sm" fontWeight="medium">

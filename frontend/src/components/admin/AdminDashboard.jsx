@@ -320,9 +320,9 @@ const AdminDashboard = () => {
     </Card>
   );
 
-  // Quick Actions Card
+  // Quick Actions Card (Hidden on Mobile)
   const QuickActionsCard = () => (
-    <Card bg={cardBg} borderColor={borderColor} borderWidth="1px" borderRadius="xl">
+    <Card bg={cardBg} borderColor={borderColor} borderWidth="1px" borderRadius="xl" display={{ base: 'none', md: 'block' }}>
       <CardHeader pb={2}>
         <HStack>
           <Icon as={FaTachometerAlt} color="purple.500" boxSize={5} />

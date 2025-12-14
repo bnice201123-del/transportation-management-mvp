@@ -516,9 +516,9 @@ const DriverDashboard = () => {
           </CardBody>
         </Card>
 
-        {/* Quick Actions Section - Conditional for admins/dispatchers/schedulers */}
+        {/* Quick Actions Section - Conditional for admins/dispatchers/schedulers (Hidden on Mobile) */}
         {user?.role && ['admin', 'dispatcher', 'scheduler'].includes(user.role) && (
-          <Card mb={cardSpacing} bg={cardBg}>
+          <Card mb={cardSpacing} bg={cardBg} display={{ base: 'none', md: 'block' }}>
             <CardHeader>
               <Heading size="md" display="flex" alignItems="center" gap={3}>
                 <Box as={Cog6ToothIcon} w={5} h={5} color="blue.500" />

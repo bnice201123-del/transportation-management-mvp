@@ -14,6 +14,8 @@ import {
   Icon,
   SimpleGrid,
   useColorModeValue,
+  useBreakpointValue,
+  useToast,
   Badge,
   Flex,
   Spacer,
@@ -41,6 +43,8 @@ import Navbar from '../shared/Navbar';
 
 const SystemAdministration = () => {
   const navigate = useNavigate();
+  const toast = useToast();
+  const isMobile = useBreakpointValue({ base: true, md: false });
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
   const headerBg = useColorModeValue('linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 'linear-gradient(135deg, #4a5568 0%, #2d3748 100%)');
@@ -48,6 +52,21 @@ const SystemAdministration = () => {
   const headingColor = useColorModeValue('gray.800', 'white');
   const textColor = useColorModeValue('gray.600', 'gray.300');
   const dividerColor = useColorModeValue('gray.300', 'gray.600');
+
+  const handleMobileRestriction = (categoryTitle) => {
+    if (isMobile) {
+      toast({
+        title: 'Desktop Only',
+        description: `The "${categoryTitle}" section can only be accessed on desktop. Please use a larger screen to access this feature.`,
+        status: 'info',
+        duration: 5,
+        isClosable: true,
+        position: 'top'
+      });
+      return false;
+    }
+    return true;
+  };
 
   const adminFunctions = [
     {
@@ -265,7 +284,13 @@ const SystemAdministration = () => {
 
           {/* Administration Functions */}
           <VStack spacing={{ base: 8, md: 10, lg: 12 }} align="stretch">
-            {adminFunctions.map((category, categoryIndex) => (
+            {adminFunctions.map((category, categoryIndex) => {
+              // Only show User Management category on mobile
+              if (isMobile && categoryIndex !== 0) {
+                return null;
+              }
+
+              return (
               <Box key={categoryIndex}>
                 <Box
                   bg={categoryBg}
@@ -287,7 +312,22 @@ const SystemAdministration = () => {
                 </Box>
 
                 <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={{ base: 4, md: 6 }}>
-                  {category.functions.map((func, funcIndex) => (
+                  {category.functions.map((func, funcIndex) => {
+                    // Filter functions on mobile: only show first 3 of User Management category
+                    if (isMobile && categoryIndex === 0 && funcIndex > 2) {
+                      return null;
+                    }
+
+                    const handleClick = () => {
+                      // For non-first category items on mobile, show alert
+                      if (isMobile && categoryIndex !== 0) {
+                        handleMobileRestriction(category.title);
+                        return;
+                      }
+                      navigate(func.path);
+                    };
+
+                    return (
                     <Card
                       key={funcIndex}
                       bg={cardBg}
@@ -330,7 +370,7 @@ const SystemAdministration = () => {
                             size={{ base: "xs", md: "sm" }}
                             colorScheme="teal"
                             variant="solid"
-                            alignSelf="flex-end"
+                            alignSelf={{ base: "center", md: "flex-end" }}
                             borderRadius="lg"
                             fontWeight="medium"
                             _hover={{
@@ -338,14 +378,15 @@ const SystemAdministration = () => {
                               shadow: 'md'
                             }}
                             transition="all 0.2s"
-                            onClick={() => navigate(func.path)}
+                            onClick={handleClick}
                           >
                             Access →
                           </Button>
                         </VStack>
                       </CardBody>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </SimpleGrid>
 
                 {categoryIndex < adminFunctions.length - 1 && (
@@ -357,10 +398,11 @@ const SystemAdministration = () => {
                   />
                 )}
               </Box>
-            ))}
+            );
+            })}
           </VStack>
 
-          {/* Quick Actions */}
+          {/* Quick Actions - Hidden on Mobile */}
           <Card
             bg={cardBg}
             shadow="xl"
@@ -368,6 +410,7 @@ const SystemAdministration = () => {
             border="1px solid"
             borderColor={useColorModeValue('gray.200', 'gray.600')}
             overflow="hidden"
+            display={{ base: 'none', md: 'block' }}
           >
             <CardHeader
               bg={useColorModeValue('gray.50', 'gray.700')}

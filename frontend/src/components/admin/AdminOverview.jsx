@@ -513,7 +513,7 @@ const AdminOverview = () => {
         </Box>
         
         <CardBody p={5}>
-          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+          <SimpleGrid columns={{ base: 1, md: 4 }} spacing={4}>
             {onlineData.map((item) => (
               <VStack
                 key={item.label}
@@ -765,6 +765,7 @@ const AdminOverview = () => {
         shadow="lg"
         borderRadius="2xl"
         overflow="hidden"
+        display={{ base: 'none', md: 'block' }}
       >
         <Box 
           bgGradient={isHealthy ? "linear(to-r, green.400, teal.500)" : "linear(to-r, orange.400, red.500)"}
@@ -905,6 +906,7 @@ const AdminOverview = () => {
       shadow="lg"
       borderRadius="2xl"
       overflow="hidden"
+      display={{ base: 'none', md: 'block' }}
     >
       <Box 
         bgGradient="linear(to-r, purple.500, pink.500)"
@@ -1219,25 +1221,28 @@ const AdminOverview = () => {
               </CircularProgress>
             </Box>
             
-            <SimpleGrid columns={2} spacing={2} width="full">
+            <VStack spacing={2} width="full">
               {tripData.map((item) => (
-                <Box 
+                <HStack 
                   key={item.label}
-                  p={2}
+                  p={3}
                   bg={statBg}
                   borderRadius="lg"
-                  textAlign="center"
+                  width="full"
+                  justify="space-between"
                 >
-                  <Icon as={item.icon} color={`${item.color}.500`} boxSize={4} mb={1} />
-                  <Text fontSize="md" fontWeight="bold">
+                  <HStack spacing={3}>
+                    <Icon as={item.icon} color={`${item.color}.500`} boxSize={5} />
+                    <Text fontSize="sm" color={textColor}>
+                      {item.label}
+                    </Text>
+                  </HStack>
+                  <Text fontSize="lg" fontWeight="bold">
                     {item.value}
                   </Text>
-                  <Text fontSize="2xs" color={textColor} noOfLines={1}>
-                    {item.label}
-                  </Text>
-                </Box>
+                </HStack>
               ))}
-            </SimpleGrid>
+            </VStack>
           </VStack>
         </CardBody>
       </Card>
@@ -1532,6 +1537,7 @@ const AdminOverview = () => {
                       borderRadius="full"
                       fontWeight="semibold"
                       px={6}
+                      display={{ base: 'none', md: 'flex' }}
                     >
                       Actions
                     </MenuButton>

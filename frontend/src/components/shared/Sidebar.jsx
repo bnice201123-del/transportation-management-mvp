@@ -61,7 +61,8 @@ import {
   FaMapMarkedAlt,
   FaClock,
   FaExchangeAlt,
-  FaFileAlt
+  FaFileAlt,
+  FaBell
 } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -292,7 +293,6 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       path: '/dashboard',
       roles: ['scheduler', 'dispatcher', 'driver'],
       subItems: [
-        { label: 'Overview', icon: ViewIcon, action: () => navigate('/dashboard') },
         { label: 'Analytics', icon: InfoIcon, action: () => navigate('/dashboard/analytics') },
         { label: 'Reports', icon: SearchIcon, action: () => navigate('/dashboard/reports') },
         { label: 'Statistics', icon: StarIcon, action: () => navigate('/dashboard/stats') },
@@ -309,15 +309,15 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       path: '/admin',
       roles: ['admin'],
       subItems: [
-        { label: 'Dashboard', icon: FaClipboardList, action: () => navigate('/admin') },
         { label: 'Overview', icon: InfoIcon, action: () => navigate('/admin/overview') },
+        { label: 'Dashboard', icon: FaClipboardList, action: () => navigate('/admin') },
         { label: 'Analytics', icon: StarIcon, action: () => navigate('/admin/analytics') },
         { label: 'Statistics', icon: CalendarIcon, action: () => navigate('/admin/statistics') },
         { label: 'Reports', icon: SearchIcon, action: () => navigate('/admin/reports') }
       ]
     }] : []),
 
-    // System Administration - for admin users ONLY
+    // System Administration - for admin users ONLY (desktop only)
     ...(hasAdminAccess() ? [{
       id: 'system-admin',
       label: 'System Administration',
@@ -325,14 +325,15 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       color: 'red.500',
       path: '/admin/system',
       roles: ['admin'],
+      display: { base: 'none', md: 'block' },
       subItems: [
         { label: 'System Landing', icon: ViewIcon, action: () => navigate('/admin/system') },
-        { label: 'System Settings', icon: SettingsIcon, action: () => navigate('/admin/settings') },
-        { label: 'Backup & Restore', icon: CalendarIcon, action: () => navigate('/admin/backup') },
-        { label: 'Security', icon: UnlockIcon, action: () => navigate('/admin/security') },
-        { label: 'Register New User', icon: UnlockIcon, action: () => navigate('/admin/register') },
-        { label: 'Manage Users', icon: FaUser, action: () => navigate('/admin/users') },
-        { label: 'User Roles & Permissions', icon: InfoIcon, action: () => navigate('/admin/roles') }
+        { label: 'System Settings', icon: SettingsIcon, action: () => navigate('/admin/settings'), display: { base: 'none', md: 'block' } },
+        { label: 'Backup & Restore', icon: CalendarIcon, action: () => navigate('/admin/backup'), display: { base: 'none', md: 'block' } },
+        { label: 'Security', icon: UnlockIcon, action: () => navigate('/admin/security'), display: { base: 'none', md: 'block' } },
+        { label: 'Register New User', icon: UnlockIcon, action: () => navigate('/admin/register'), display: { base: 'none', md: 'block' } },
+        { label: 'Manage Users', icon: FaUser, action: () => navigate('/admin/users'), display: { base: 'none', md: 'block' } },
+        { label: 'User Roles & Permissions', icon: InfoIcon, action: () => navigate('/admin/roles'), display: { base: 'none', md: 'block' } }
       ]
     }] : []),
 
@@ -374,6 +375,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       color: 'teal.500',
       path: '/schedule',
       roles: ['scheduler', 'dispatcher', 'driver', 'admin'],
+      display: { base: 'none', md: 'block' },
       subItems: [
         { label: 'Schedule Calendar', icon: CalendarIcon, action: () => navigate('/schedule/calendar') },
         { label: 'Time Off Requests', icon: FaCalendarTimes, action: () => navigate('/schedule/time-off') },
@@ -394,7 +396,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       subItems: [
         { label: 'Trip Maps', icon: FaRoute, action: () => navigate('/maps/trips') },
         { label: 'Live Tracking', icon: TimeIcon, action: () => navigate('/maps/tracking') },
-        { label: 'Route Planning', icon: FaMapMarkedAlt, action: () => navigate('/maps/routes') }
+        { label: 'Route Planning', icon: FaMapMarkedAlt, action: () => navigate('/maps/routes'), display: { base: 'none', md: 'block' } }
       ]
     }
   ];
@@ -418,161 +420,94 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
 
   // Mobile-specific menu items (simplified for mobile UX)
   const mobileMenuItems = [
-    // For Scheduler role: Show only Operations and Maps
-    ...(isSchedulerOnly() ? [
-      // Operations - with scheduler-specific submenu items
-      {
-        id: 'operations-mobile',
-        label: 'Operations',
-        icon: FaRoute,
-        color: 'orange.500',
-        path: '/operations',
-        roles: ['scheduler'],
-        subItems: [
-          { label: 'Scheduler', icon: CalendarIcon, action: () => navigate('/scheduler') },
-          { label: 'Riders', icon: FaUsers, action: () => navigate('/riders') },
+    // 1. Overview - for all users
+    {
+      id: 'overview-mobile',
+      label: 'Overview',
+      icon: ViewIcon,
+      color: 'purple.600',
+      path: hasAdminAccess() ? '/admin/overview' : '/dashboard',
+      roles: ['admin', 'scheduler', 'dispatcher', 'driver']
+    },
+    
+    // 2. System Settings - for desktop only
+    {
+      id: 'system-settings-mobile',
+      label: 'System Settings',
+      icon: SettingsIcon,
+      color: 'red.500',
+      path: '/admin/settings',
+      roles: ['admin', 'scheduler', 'dispatcher', 'driver'],
+      display: { base: 'none', md: 'block' }
+    },
+    
+    // 2b. System Landing - for all users (visible on both mobile and desktop)
+    ...(hasAdminAccess() ? [{
+      id: 'system-landing-mobile',
+      label: 'System Landing',
+      icon: ViewIcon,
+      color: 'purple.600',
+      path: '/admin/system',
+      roles: ['admin']
+    }] : []),
+    
+    // 2c. Notifications - for mobile only
+    {
+      id: 'notifications-mobile',
+      label: 'Notifications',
+      icon: FaBell,
+      color: 'blue.500',
+      path: '/notifications',
+      roles: ['admin', 'scheduler', 'dispatcher', 'driver']
+    },
+    
+    // 3. Maps / Tracking - for all users (hidden on mobile)
+    {
+      id: 'maps-mobile',
+      label: 'Maps / Tracking',
+      icon: FaMap,
+      color: 'green.500',
+      path: '/maps',
+      roles: ['admin', 'scheduler', 'dispatcher', 'driver'],
+      display: { base: 'none', md: 'block' },
+      subItems: [
+        { label: 'Trip Maps', icon: FaRoute, action: () => navigate('/maps/trips') },
+        { label: 'Live Tracking', icon: TimeIcon, action: () => navigate('/maps/tracking') }
+      ]
+    },
+    
+    // 4. Operations - all submenu items EXCEPT Advanced Search
+    {
+      id: 'operations-mobile',
+      label: 'Operations',
+      icon: FaRoute,
+      color: 'orange.500',
+      path: '/operations',
+      roles: ['admin', 'scheduler', 'dispatcher', 'driver'],
+      subItems: [
+        // Dispatcher - for dispatcher and admin roles
+        ...((user?.roles?.includes('dispatcher') || user?.role === 'dispatcher' || hasAdminAccess()) ? [
+          { label: 'Dispatcher', icon: TimeIcon, action: () => navigate('/dispatcher') }
+        ] : []),
+        // Scheduler - for scheduler and admin roles
+        ...((user?.roles?.includes('scheduler') || user?.role === 'scheduler' || hasAdminAccess()) ? [
+          { label: 'Scheduler', icon: CalendarIcon, action: () => navigate('/scheduler') }
+        ] : []),
+        // Driver - for all roles
+        { label: 'Driver', icon: FaUserTie, action: () => navigate('/driver') },
+        // Riders - for scheduler, dispatcher, and admin
+        ...((user?.roles?.includes('scheduler') || user?.roles?.includes('dispatcher') || 
+            user?.role === 'scheduler' || user?.role === 'dispatcher' || hasAdminAccess()) ? [
+          { label: 'Riders', icon: FaUsers, action: () => navigate('/riders') }
+        ] : []),
+        // Vehicles - for scheduler, dispatcher, and admin
+        ...((user?.roles?.includes('scheduler') || user?.roles?.includes('dispatcher') || 
+            user?.role === 'scheduler' || user?.role === 'dispatcher' || hasAdminAccess()) ? [
           { label: 'Vehicles', icon: FaCar, action: () => navigate('/vehicles') }
-          // Advanced Search excluded per previous rules
-        ]
-      },
-      // Maps - with limited submenu for schedulers
-      {
-        id: 'maps-mobile',
-        label: 'Maps',
-        icon: FaMap,
-        color: 'green.500',
-        path: '/maps',
-        roles: ['scheduler'],
-        subItems: [
-          { label: 'Trip Maps', icon: FaRoute, action: () => navigate('/maps/trips') },
-          { label: 'Live Tracking', icon: TimeIcon, action: () => navigate('/maps/tracking') }
-        ]
-      }
-    ] : isDispatcherOnly() ? [
-      // For Dispatcher role: Show only Operations and Maps
-      // Operations - with dispatcher-specific submenu items
-      {
-        id: 'operations-mobile',
-        label: 'Operations',
-        icon: FaRoute,
-        color: 'orange.500',
-        path: '/operations',
-        roles: ['dispatcher'],
-        subItems: [
-          { label: 'Dispatcher', icon: TimeIcon, action: () => navigate('/dispatcher') },
-          { label: 'Riders', icon: FaUsers, action: () => navigate('/riders') },
-          { label: 'Vehicles', icon: FaCar, action: () => navigate('/vehicles') }
-          // Advanced Search excluded per previous rules
-        ]
-      },
-      // Maps - with limited submenu for dispatchers
-      {
-        id: 'maps-mobile',
-        label: 'Maps',
-        icon: FaMap,
-        color: 'green.500',
-        path: '/maps',
-        roles: ['dispatcher'],
-        subItems: [
-          { label: 'Trip Maps', icon: FaRoute, action: () => navigate('/maps/trips') },
-          { label: 'Live Tracking', icon: TimeIcon, action: () => navigate('/maps/tracking') }
-        ]
-      }
-    ] : [
-      // For non-scheduler roles: Show full mobile menu
-      // Admin Dashboard Overview - for users with admin role ONLY
-      ...(hasAdminAccess() ? [{
-        id: 'admin-overview-mobile',
-        label: 'Admin Dashboard',
-        icon: ViewIcon,
-        color: 'purple.600',
-        path: '/admin/overview',
-        roles: ['admin']
-      }] : []),
-      
-      // Dispatcher - for users with dispatcher role
-      ...((user?.roles?.includes('dispatcher') || user?.role === 'dispatcher') ? [{
-        id: 'dispatch-mobile',
-        label: 'Dispatch',
-        icon: TimeIcon,
-        color: 'blue.500',
-        path: '/dispatcher',
-        roles: ['dispatcher']
-      }] : []),
-      
-      // Driver View - for users with driver role
-      ...((user?.roles?.includes('driver') || user?.role === 'driver') ? [{
-        id: 'drivers-mobile',
-        label: 'Driver View',
-        icon: FaUserTie,
-        color: 'purple.500',
-        path: '/driver',
-        roles: ['driver']
-      }] : []),
-      
-      // Reports - for admin users ONLY
-      ...(hasAdminAccess() ? [{
-        id: 'reports-mobile',
-        label: 'Reports',
-        icon: SearchIcon,
-        color: 'orange.500',
-        path: '/admin/reports',
-        roles: ['admin']
-      }] : []),
-      
-      // Register New User - for admin users ONLY
-      ...(hasAdminAccess() ? [{
-        id: 'register-mobile',
-        label: 'Register New User',
-        icon: UnlockIcon,
-        color: 'green.500',
-        path: '/admin/register',
-        roles: ['admin']
-      }] : []),
-      
-      // Manage Users - for admin users ONLY
-      ...(hasAdminAccess() ? [{
-        id: 'users-mobile',
-        label: 'Manage Users',
-        icon: SettingsIcon,
-        color: 'red.500',
-        path: '/admin/users',
-        roles: ['admin']
-      }] : []),
-      
-      // Riders - for dispatcher, admin
-      ...((user?.roles?.includes('dispatcher') || user?.roles?.includes('admin') || 
-          user?.role === 'dispatcher' || user?.role === 'admin') ? [{
-        id: 'riders-mobile',
-        label: 'Riders',
-        icon: FaUsers,
-        color: 'cyan.500',
-        path: '/riders',
-        roles: ['dispatcher', 'admin']
-      }] : []),
-      
-      // Vehicles - for dispatcher, admin
-      ...((user?.roles?.includes('dispatcher') || user?.roles?.includes('admin') || 
-          user?.role === 'dispatcher' || user?.role === 'admin') ? [{
-        id: 'vehicles-mobile',
-        label: 'Vehicles',
-        icon: FaCar,
-        color: 'yellow.600',
-        path: '/vehicles',
-        roles: ['dispatcher', 'admin']
-      }] : []),
-      
-      // Live Tracking - for dispatcher, admin
-      ...((user?.roles?.includes('dispatcher') || user?.roles?.includes('admin') || 
-          user?.role === 'dispatcher' || user?.role === 'admin') ? [{
-        id: 'tracking-mobile',
-        label: 'Live Tracking',
-        icon: FaMap,
-        color: 'green.500',
-        path: '/maps/tracking',
-        roles: ['dispatcher', 'admin']
-      }] : [])
-    ])
+        ] : [])
+        // ❌ Advanced Search is explicitly excluded from mobile
+      ]
+    }
   ];
 
   const filteredMobileMenuItems = mobileMenuItems.filter(item => {
@@ -635,7 +570,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       zIndex={900}
       shadow="xl"
       py={4}
-      display={{ base: "none", md: isSidebarVisible ? "block" : "none" }}
+      display={{ base: "none", sm: "none", md: isSidebarVisible ? "block" : "none" }}
       overflowY="auto"
       transition="all 0.3s ease"
       onClick={(e) => e.stopPropagation()}
@@ -644,7 +579,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
         // Expanded sidebar for lg+ screens
         <VStack spacing={2} align="stretch" px={4}>
           {filteredMenuItems.map((item) => (
-            <Box key={item.id}>
+            <Box key={item.id} display={item.display}>
               <Flex
                 align="center"
                 p={3}
@@ -685,6 +620,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                         p={2}
                         borderRadius="md"
                         cursor="pointer"
+                        display={subItem.display}
                         _hover={{ bg: hoverBg, color: item.color }}
                         transition="all 0.1s"
                         onClick={(e) => {
@@ -712,6 +648,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
             <Box
               key={item.id}
               position="relative"
+              display={item.display}
               _hover={{
                 '& > .menu-dropdown': {
                   opacity: 1,
@@ -777,6 +714,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                       px={3}
                       py={2}
                       cursor="pointer"
+                      display={subItem.display}
                       _hover={{ bg: hoverBg, color: item.color }}
                       transition="all 0.1s"
                       onClick={(e) => {
@@ -843,7 +781,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
           <DrawerBody p={2}>
             <VStack spacing={2} align="stretch">
               {filteredMobileMenuItems.map((item) => (
-                <Box key={item.id}>
+                <Box key={item.id} display={item.display}>
                   {/* Main Menu Item */}
                   <Flex
                     align="center"

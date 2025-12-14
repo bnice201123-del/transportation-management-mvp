@@ -903,10 +903,6 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     }
 
     // Update driver location if provided
-    const userRoles = req.user.roles && req.user.roles.length > 0 
-      ? req.user.roles 
-      : [req.user.role];
-    
     if (location && userRoles.includes('driver')) {
       trip.driverLocation = {
         ...location,

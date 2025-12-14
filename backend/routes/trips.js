@@ -707,6 +707,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Trip not found' });
     }
 
+    // Prevent editing of completed trips
+    if (trip.status === 'completed') {
+      return res.status(400).json({ message: 'Cannot edit completed trips' });
+    }
+
     // Check authorization - support both single role (legacy) and multiple roles array
     const userRoles = req.user.roles && req.user.roles.length > 0 
       ? req.user.roles 

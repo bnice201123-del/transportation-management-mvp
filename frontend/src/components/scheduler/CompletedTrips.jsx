@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -50,7 +51,9 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  useToast
+  useToast,
+  Grid,
+  Spacer
 } from '@chakra-ui/react';
 import {
   SearchIcon,
@@ -72,10 +75,16 @@ import {
   FaFileExport
 } from 'react-icons/fa';
 import axios from '../../config/axios';
+import Navbar from '../shared/Navbar';
 
 const CompletedTrips = () => {
+  const navigate = useNavigate();
   const toast = useToast();
   const { isOpen: isDetailOpen, onOpen: onDetailOpen, onClose: onDetailClose } = useDisclosure();
+  
+  // Process Menu state
+  const [isProcessMenuOpen, setIsProcessMenuOpen] = useState(false);
+  const processMenuTimeoutRef = React.useRef(null);
   
   // Color mode values
   const cardBg = useColorModeValue('white', 'gray.700');
@@ -391,12 +400,204 @@ const CompletedTrips = () => {
     </Card>
   );
 
+  const handleProcessMenuNavigation = (path) => {
+    setIsProcessMenuOpen(false);
+    navigate(path);
+  };
+
   return (
-    <Box w="100%" py={{ base: 4, md: 6 }} px={{ base: 3, md: 4, lg: 6 }} overflowX="hidden">
+    <>
+      <Navbar title="Completed Trips" />
+      <Box w="100%" py={{ base: 4, md: 6 }} px={{ base: 3, md: 4, lg: 6 }} overflowX="hidden">
+      
+      {/* Process Menu at Top */}
+      <Flex justify="center" mb={6}>
+        <Box 
+          position="relative" 
+          onMouseLeave={() => {
+            processMenuTimeoutRef.current = setTimeout(() => {
+              setIsProcessMenuOpen(false);
+            }, 150);
+          }}
+          onMouseEnter={() => {
+            if (processMenuTimeoutRef.current) {
+              clearTimeout(processMenuTimeoutRef.current);
+            }
+            setIsProcessMenuOpen(true);
+          }}
+        >
+          <Tooltip label="View process options" placement="bottom">
+            <Button
+              variant="outline"
+              size={{ base: "sm", md: "md" }}
+              colorScheme="blue"
+              _hover={{ bg: "blue.50" }}
+              onClick={() => setIsProcessMenuOpen(!isProcessMenuOpen)}
+            >
+              Process
+            </Button>
+          </Tooltip>
+          
+          {/* Process Menu Dropdown */}
+          {isProcessMenuOpen && (
+            <Box
+              position="absolute"
+              top="100%"
+              left="50%"
+              transform="translateX(-50%)"
+              bg="white"
+              border="1px solid"
+              borderColor="gray.200"
+              borderRadius="md"
+              boxShadow="0 10px 25px rgba(0,0,0,0.15)"
+              p={6}
+              mt={2}
+              minW="600px"
+              zIndex={1000}
+              pointerEvents="auto"
+              onMouseEnter={() => {
+                if (processMenuTimeoutRef.current) {
+                  clearTimeout(processMenuTimeoutRef.current);
+                }
+              }}
+            >
+              <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                {/* Column 1 - TRIPS */}
+                <VStack align="start" spacing={1}>
+                  <Text fontSize="xs" fontWeight="bold" color="gray.400" px={3}>
+                    TRIPS
+                  </Text>
+                  <Divider my={1} />
+                  <Button 
+                    variant="ghost" 
+                    justifyContent="flex-start" 
+                    w="full" 
+                    size="sm"
+                    onClick={() => handleProcessMenuNavigation('/trips/manage')}
+                    _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                  >
+                    Manage Trips
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    justifyContent="flex-start" 
+                    w="full"
+                    size="sm"
+                    onClick={() => handleProcessMenuNavigation('/trips/map')}
+                    _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                  >
+                    View Map
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    justifyContent="flex-start" 
+                    w="full"
+                    size="sm"
+                    onClick={() => handleProcessMenuNavigation('/trips/upcoming')}
+                    _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                  >
+                    Upcoming
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    justifyContent="flex-start" 
+                    w="full"
+                    size="sm"
+                    onClick={() => handleProcessMenuNavigation('/trips/all')}
+                    _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                  >
+                    All Trips
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    justifyContent="flex-start" 
+                    w="full"
+                    size="sm"
+                    onClick={() => handleProcessMenuNavigation('/trips/active')}
+                    _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                  >
+                    Active
+                  </Button>
+                </VStack>
+                
+                {/* Column 2 - NAVIGATE */}
+                <VStack align="start" spacing={1}>
+                  <Text fontSize="xs" fontWeight="bold" color="gray.400" px={3}>
+                    NAVIGATE
+                  </Text>
+                  <Divider my={1} />
+                  <Button 
+                    variant="ghost" 
+                    justifyContent="flex-start" 
+                    w="full"
+                    size="sm"
+                    onClick={() => handleProcessMenuNavigation('/riders')}
+                    _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                  >
+                    All Riders
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    justifyContent="flex-start" 
+                    w="full"
+                    size="sm"
+                    onClick={() => handleProcessMenuNavigation('/users')}
+                    _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                  >
+                    All Users
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    justifyContent="flex-start" 
+                    w="full"
+                    size="sm"
+                    onClick={() => handleProcessMenuNavigation('/drivers')}
+                    _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                  >
+                    Drivers
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    justifyContent="flex-start" 
+                    w="full"
+                    size="sm"
+                    onClick={() => handleProcessMenuNavigation('/tracking')}
+                    _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                  >
+                    Tracking
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    justifyContent="flex-start" 
+                    w="full"
+                    size="sm"
+                    onClick={() => handleProcessMenuNavigation('/profile')}
+                    _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                  >
+                    Profile
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    justifyContent="flex-start" 
+                    w="full"
+                    size="sm"
+                    onClick={() => handleProcessMenuNavigation('/schedule')}
+                    _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                  >
+                    Schedule
+                  </Button>
+                </VStack>
+              </Grid>
+            </Box>
+          )}
+        </Box>
+      </Flex>
+      
       {/* Header */}
       <Box bg={headerBg} p={6} borderRadius="lg" mb={6} w="100%" maxW="100%">
-        <HStack justify="space-between" align="start">
-          <VStack align="start" spacing={2}>
+        <VStack spacing={4} w="100%">
+          {/* Title Row */}
+          <VStack align="start" spacing={2} w="100%">
             <Heading size="lg" color="green.600">
               <CheckCircleIcon mr={3} />
               Completed Trips
@@ -406,29 +607,30 @@ const CompletedTrips = () => {
             </Text>
           </VStack>
 
-          <HStack>
+          {/* Controls Row - View and Export on right */}
+          <HStack justify="flex-end" align="center" w="100%">
             <Menu>
-              <MenuButton as={Button} rightIcon={<ChevronDownIcon />} size="sm">
-                View: {viewMode === 'cards' ? 'Cards' : 'Table'}
-              </MenuButton>
-              <MenuList>
-                <MenuItem onClick={() => setViewMode('cards')}>Card View</MenuItem>
-                <MenuItem onClick={() => setViewMode('table')}>Table View</MenuItem>
-              </MenuList>
-            </Menu>
-            
-            <Button
-              leftIcon={<DownloadIcon />}
-              colorScheme="green"
-              variant="outline"
-              size="sm"
-              onClick={exportTrips}
-              isDisabled={!completedTrips.length}
-            >
-              Export CSV
-            </Button>
-          </HStack>
-        </HStack>
+                <MenuButton as={Button} rightIcon={<ChevronDownIcon />} size="sm">
+                  View: {viewMode === 'cards' ? 'Cards' : 'Table'}
+                </MenuButton>
+                <MenuList>
+                  <MenuItem onClick={() => setViewMode('cards')}>Card View</MenuItem>
+                  <MenuItem onClick={() => setViewMode('table')}>Table View</MenuItem>
+                </MenuList>
+              </Menu>
+              
+              <Button
+                leftIcon={<DownloadIcon />}
+                colorScheme="green"
+                variant="outline"
+                size="sm"
+                onClick={exportTrips}
+                isDisabled={!completedTrips.length}
+              >
+                Export CSV
+              </Button>
+            </HStack>
+        </VStack>
       </Box>
 
       {/* Statistics Cards */}
@@ -821,7 +1023,8 @@ const CompletedTrips = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </Box>
+      </Box>
+    </>
   );
 };
 

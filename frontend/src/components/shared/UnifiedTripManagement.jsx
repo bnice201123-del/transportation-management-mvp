@@ -934,9 +934,10 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
                             icon={<Box as={PencilIcon} w={4} h={4} />}
                             variant="ghost"
                             colorScheme="orange"
-                            title="Edit Trip"
+                            title={trip.status === 'completed' ? "Completed trips cannot be edited" : "Edit Trip"}
                             onClick={() => handleEditTrip(trip)}
-                            _hover={{ bg: "orange.50" }}
+                            isDisabled={trip.status === 'completed'}
+                            _hover={{ bg: trip.status === 'completed' ? "gray.100" : "orange.50" }}
                           />
                           {(trip.status === 'completed' || trip.status === 'cancelled') && (
                             <IconButton

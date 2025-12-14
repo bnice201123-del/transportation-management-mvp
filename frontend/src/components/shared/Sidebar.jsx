@@ -507,7 +507,53 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
         ] : [])
         // ❌ Advanced Search is explicitly excluded from mobile
       ]
-    }
+    },
+
+    // 5. Process Menu - for dispatcher, scheduler, and admin roles (mobile-specific)
+    ...((user?.roles?.includes('dispatcher') || user?.roles?.includes('scheduler') || 
+         user?.role === 'dispatcher' || user?.role === 'scheduler' || hasAdminAccess()) ? [{
+      id: 'process-menu-mobile',
+      label: 'Process Menu',
+      icon: FaRoute,
+      color: 'blue.600',
+      path: '/process',
+      roles: ['dispatcher', 'scheduler', 'admin'],
+      subItems: [
+        // TRIPS Column
+        { label: 'Create Trip', icon: FaCalendarPlus, action: () => navigate('/trips/create'), 
+          category: 'TRIPS' },
+        { label: 'Manage Trips', icon: FaClipboardList, action: () => navigate('/trips/manage'), 
+          category: 'TRIPS' },
+        { label: 'View Map', icon: FaMap, action: () => navigate('/trips/map'), 
+          category: 'TRIPS' },
+        // TRIPS Status Column
+        { label: 'Upcoming', icon: FaCalendarPlus, action: () => navigate('/trips/upcoming'), 
+          category: 'TRIPS_STATUS' },
+        { label: 'Completed', icon: FaCalendarCheck, action: () => navigate('/trips/completed'), 
+          category: 'TRIPS_STATUS' },
+        { label: 'All Trips', icon: FaClipboardList, action: () => navigate('/trips/all'), 
+          category: 'TRIPS_STATUS' },
+        { label: 'Active', icon: TimeIcon, action: () => navigate('/trips/active'), 
+          category: 'TRIPS_STATUS' },
+        // NAVIGATE Column
+        { label: 'All Riders', icon: FaUsers, action: () => navigate('/riders'), 
+          category: 'NAVIGATE' },
+        { label: 'All Users', icon: FaUser, action: () => navigate('/users'), 
+          category: 'NAVIGATE' },
+        { label: 'Drivers', icon: FaUserTie, action: () => navigate('/drivers'), 
+          category: 'NAVIGATE' },
+        { label: 'Tracking', icon: FaMap, action: () => navigate('/tracking'), 
+          category: 'NAVIGATE' },
+        { label: 'Profile', icon: FaUser, action: () => navigate('/profile'), 
+          category: 'NAVIGATE' },
+        { label: 'Schedule', icon: FaClock, action: () => navigate('/schedule'), 
+          category: 'NAVIGATE' },
+        { label: 'Search', icon: SearchIcon, action: () => navigate('/search'), 
+          category: 'NAVIGATE' },
+        { label: 'Recurring Trips', icon: RepeatIcon, action: () => navigate('/trips/recurring'), 
+          category: 'NAVIGATE' }
+      ]
+    }] : [])
   ];
 
   const filteredMobileMenuItems = mobileMenuItems.filter(item => {

@@ -63,6 +63,9 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const LiveTracking = () => {
   // State Management
+  const [isProcessMenuOpen, setIsProcessMenuOpen] = useState(false);
+  const processMenuTimeoutRef = React.useRef(null);
+  
   const [vehicles, setVehicles] = useState([]);
   const [filteredVehicles, setFilteredVehicles] = useState([]);
   const [activeTrips, setActiveTrips] = useState([]);
@@ -440,6 +443,11 @@ const LiveTracking = () => {
     return { total, active, idle, offline };
   };
 
+  const handleProcessMenuNavigation = (path) => {
+    setIsProcessMenuOpen(false);
+    navigate(path);
+  };
+
   const stats = getStatistics();
 
   if (loading && (!Array.isArray(vehicles) || vehicles.length === 0)) {
@@ -496,6 +504,112 @@ const LiveTracking = () => {
   return (
     <>
       <Navbar title="Live Vehicle Tracking" />
+      
+      {/* Process Menu */}
+      <Flex justify="center" mt={6} mb={6}>
+        <Box 
+          position="relative"
+          onMouseLeave={() => {
+            processMenuTimeoutRef.current = setTimeout(() => {
+              setIsProcessMenuOpen(false);
+            }, 150);
+          }}
+          onMouseEnter={() => {
+            if (processMenuTimeoutRef.current) {
+              clearTimeout(processMenuTimeoutRef.current);
+            }
+            setIsProcessMenuOpen(true);
+          }}
+        >
+          <Tooltip label="View process options" placement="bottom">
+            <Button
+              variant="outline"
+              size={{ base: "sm", md: "md" }}
+              colorScheme="blue"
+              _hover={{ bg: "blue.50" }}
+              onClick={() => setIsProcessMenuOpen(!isProcessMenuOpen)}
+            >
+              Process
+            </Button>
+          </Tooltip>
+          
+          {isProcessMenuOpen && (
+            <Box
+              position="absolute"
+              top="100%"
+              left="50%"
+              transform="translateX(-50%)"
+              bg="white"
+              border="1px solid"
+              borderColor="gray.200"
+              borderRadius="md"
+              boxShadow="0 10px 25px rgba(0,0,0,0.15)"
+              p={6}
+              mt={2}
+              minW="600px"
+              zIndex={1000}
+              pointerEvents="auto"
+            >
+              <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                {/* TRIPS Section */}
+                <Box>
+                  <Text fontWeight="bold" mb={3} fontSize="sm" color="gray.700">
+                    TRIPS
+                  </Text>
+                  <VStack align="start" spacing={2}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/manage-trips')}>
+                      Manage Trips
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/map')}>
+                      View Map
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/upcoming')}>
+                      Upcoming
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/completed')}>
+                      Completed
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/all-trips')}>
+                      All Trips
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/active')}>
+                      Active
+                    </Button>
+                  </VStack>
+                </Box>
+
+                {/* NAVIGATE Section */}
+                <Box>
+                  <Text fontWeight="bold" mb={3} fontSize="sm" color="gray.700">
+                    NAVIGATE
+                  </Text>
+                  <VStack align="start" spacing={2}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/riders')}>
+                      All Riders
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/users')}>
+                      All Users
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/drivers')}>
+                      Drivers
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/tracking')}>
+                      Tracking
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/profile')}>
+                      Profile
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
+                      Schedule
+                    </Button>
+                  </VStack>
+                </Box>
+              </Grid>
+            </Box>
+          )}
+        </Box>
+      </Flex>
+
       <Box minHeight="100vh" bg={bgColor}>
         <Container maxWidth="full" py={6}>
           {/* Header */}

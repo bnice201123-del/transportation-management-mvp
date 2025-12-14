@@ -28,7 +28,6 @@ import {
   HomeIcon
 } from '@heroicons/react/24/outline';
 import AdvancedSearchModal from '../search/AdvancedSearchModal';
-import ReturnToDispatchButton from './ReturnToDispatchButton';
 
 const DispatcherSearch = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -97,7 +96,6 @@ const DispatcherSearch = () => {
             <BreadcrumbLink>Trip Search</BreadcrumbLink>
           </BreadcrumbItem>
         </Breadcrumb>
-        <ReturnToDispatchButton size="sm" />
       </HStack>
 
       {/* Header Card */}

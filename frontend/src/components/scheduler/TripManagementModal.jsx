@@ -863,12 +863,13 @@ const TripManagementModal = ({ isOpen, onClose, onTripUpdate }) => {
                                         onClick={() => handleViewTrip(trip)}
                                       />
                                     </Tooltip>
-                                    <Tooltip label="Edit Trip">
+                                    <Tooltip label={trip.status === 'completed' ? "Completed trips cannot be edited" : "Edit Trip"}>
                                       <IconButton
                                         size="xs"
                                         icon={<FaEdit />}
                                         variant="ghost"
                                         colorScheme="orange"
+                                        isDisabled={trip.status === 'completed'}
                                         onClick={() => handleEditTrip(trip)}
                                       />
                                     </Tooltip>

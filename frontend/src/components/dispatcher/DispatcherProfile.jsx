@@ -41,7 +41,6 @@ import {
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
-import ReturnToDispatchButton from './ReturnToDispatchButton';
 
 const DispatcherProfile = () => {
   const { user } = useAuth();
@@ -153,7 +152,6 @@ const DispatcherProfile = () => {
             <BreadcrumbLink>Profile</BreadcrumbLink>
           </BreadcrumbItem>
         </Breadcrumb>
-        <ReturnToDispatchButton size="sm" />
       </HStack>
 
       {/* Profile Header Card */}

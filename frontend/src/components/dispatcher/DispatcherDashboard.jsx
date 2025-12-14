@@ -46,11 +46,6 @@ import {
   GridItem,
   Alert,
   AlertIcon,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
   InputGroup,
   InputLeftElement,
   Flex,
@@ -99,7 +94,6 @@ import {
   CalendarDaysIcon,
   FunnelIcon,
   ArrowDownTrayIcon,
-  Cog6ToothIcon,
   ChatBubbleLeftRightIcon,
   ChevronDownIcon,
   HomeIcon,
@@ -126,7 +120,6 @@ import DispatcherProfile from './DispatcherProfile';
 import DispatcherSchedule from './DispatcherSchedule';
 import DispatcherSearch from './DispatcherSearch';
 import { DriverInfoDisplay } from '../driver/shared';
-import useCloseOnScroll from '../../hooks/useCloseOnScroll';
 
 const DispatcherDashboard = () => {
   // Navigation
@@ -136,7 +129,6 @@ const DispatcherDashboard = () => {
   const [trips, setTrips] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [formData, setFormData] = useState({
     riderName: '',
@@ -152,40 +144,23 @@ const DispatcherDashboard = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tripToDelete, setTripToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
+  const [isProcessMenuOpen, setIsProcessMenuOpen] = useState(false);
+  const processMenuTimeoutRef = React.useRef(null);
   
   // View state for Trip Management
   const [isManageView, setIsManageView] = useState(false);
   
   // Enhanced filtering and display state
   const [displayedTrips, setDisplayedTrips] = useState([]);
-  const [activeTab, setActiveTab] = useState(0); // 0: Today, 1: Upcoming, 2: Past, 3: All
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
-  
-  // Enhanced pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
   
   // Responsive design variables
-  const isMobile = useBreakpointValue({ base: true, md: false });
-  const isTablet = useBreakpointValue({ base: false, md: true, lg: false });
-  const cardDirection = useBreakpointValue({ base: 'column', lg: 'row' });
   const statsColumns = useBreakpointValue({ base: 1, sm: 2, lg: 4 });
-  const tableSize = useBreakpointValue({ base: 'sm', md: 'md' });
   
   // Color mode values
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
   const textColor = useColorModeValue('gray.800', 'white');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
-  const successColor = useColorModeValue('green.500', 'green.300');
-  
-  // Close Quick Actions dropdown on scroll
-  useCloseOnScroll(isQuickActionsOpen, () => setIsQuickActionsOpen(false));
-  const warningColor = useColorModeValue('orange.500', 'orange.300');
-  const errorColor = useColorModeValue('red.500', 'red.300');
-  const primaryColor = useColorModeValue('blue.600', 'blue.300');
   
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
@@ -195,7 +170,6 @@ const DispatcherDashboard = () => {
   } = useDisclosure();
   const {
     isOpen: isDeleteOpen,
-    onOpen: onDeleteOpen,
     onClose: onDeleteClose
   } = useDisclosure();
   const {
@@ -271,20 +245,12 @@ const DispatcherDashboard = () => {
     };
   }, [trips, drivers]);
   
-  // Paginated trips calculation
-  const paginatedTrips = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return displayedTrips.slice(startIndex, endIndex);
-  }, [displayedTrips, currentPage, itemsPerPage]);
-  
-  const totalPages = Math.ceil(displayedTrips.length / itemsPerPage);
+
 
   // Destructure computed stats for easier access
   const { 
     availableDriversData: availableDrivers, 
-    busyDriversData: busyDrivers,
-    activeTripsData: activeTrips
+    busyDriversData: busyDrivers
   } = dashboardStats;
 
   const fetchTrips = useCallback(async () => {
@@ -302,7 +268,6 @@ const DispatcherDashboard = () => {
       });
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [toast]);
 
@@ -331,98 +296,33 @@ const DispatcherDashboard = () => {
     return () => clearInterval(interval);
   }, [fetchTrips, fetchDrivers]);
 
-  // Filter trips based on active tab - Dispatch Landing Page Requirements
+  // Filter trips to show only TODAY's trips - Simplified Interface
   useEffect(() => {
     if ((trips || []).length > 0) {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
 
-      let filtered = [];
+      // Filter to only today's trips
+      const filtered = trips.filter(trip => {
+        const tripDate = new Date(trip.scheduledDate);
+        const tripDateOnly = new Date(tripDate.getFullYear(), tripDate.getMonth(), tripDate.getDate());
+        return tripDateOnly.getTime() === today.getTime();
+      });
 
-      switch (activeTab) {
-        case 0: // Today
-          filtered = trips.filter(trip => {
-            const tripDate = new Date(trip.scheduledDate);
-            const tripDateOnly = new Date(tripDate.getFullYear(), tripDate.getMonth(), tripDate.getDate());
-            return tripDateOnly.getTime() === today.getTime();
-          });
-          break;
-        case 1: // Upcoming
-          filtered = trips.filter(trip => {
-            const tripDate = new Date(trip.scheduledDate);
-            return tripDate >= tomorrow;
-          });
-          
-          // Apply date range filter if set
-          if (dateRange.start || dateRange.end) {
-            filtered = filtered.filter(trip => {
-              const tripDate = new Date(trip.scheduledDate);
-              const tripDateOnly = new Date(tripDate.getFullYear(), tripDate.getMonth(), tripDate.getDate());
-              
-              if (dateRange.start && dateRange.end) {
-                const startDate = new Date(dateRange.start);
-                const endDate = new Date(dateRange.end);
-                return tripDateOnly >= startDate && tripDateOnly <= endDate;
-              } else if (dateRange.start) {
-                const startDate = new Date(dateRange.start);
-                return tripDateOnly >= startDate;
-              } else if (dateRange.end) {
-                const endDate = new Date(dateRange.end);
-                return tripDateOnly <= endDate;
-              }
-              
-              return true;
-            });
-          }
-          break;
-        case 2: // Past
-          filtered = trips.filter(trip => {
-            const tripDate = new Date(trip.scheduledDate);
-            const tripDateOnly = new Date(tripDate.getFullYear(), tripDate.getMonth(), tripDate.getDate());
-            return tripDateOnly < today.getTime();
-          });
-          break;
-        case 3: // All
-          filtered = trips;
-          break;
-        default:
-          filtered = trips;
-      }
-
-      // Sort by scheduled date (chronological order)
-      filtered.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
+      // Sort by scheduled time (chronological order)
+      filtered.sort((a, b) => {
+        const timeA = new Date(`1970-01-01 ${a.scheduledTime || '00:00'}`);
+        const timeB = new Date(`1970-01-01 ${b.scheduledTime || '00:00'}`);
+        return timeA - timeB;
+      });
+      
       setDisplayedTrips(filtered);
     }
-  }, [trips, activeTab, dateRange]);
+  }, [trips]);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchTrips();
-    await fetchDrivers();
-  };
-
-  const assignDriver = async (tripId, driverId) => {
-    try {
-      await axios.post(`/api/trips/${tripId}/assign`, { driverId });
-      toast({
-        title: 'Success',
-        description: 'Driver assigned successfully',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-      fetchTrips();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to assign driver',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-    }
+  const handleProcessMenuNavigation = (path) => {
+    setIsProcessMenuOpen(false);
+    navigate(path);
   };
 
   const handleSubmit = async (e) => {
@@ -493,22 +393,6 @@ const DispatcherDashboard = () => {
     onClose();
   };
 
-  const handleEdit = (trip) => {
-    setSelectedTrip(trip);
-    const scheduledDate = new Date(trip.scheduledDate);
-    setFormData({
-      riderName: trip.riderName,
-      riderPhone: trip.riderPhone,
-      pickupLocation: trip.pickupLocation,
-      dropoffLocation: trip.dropoffLocation,
-      scheduledDate: scheduledDate.toISOString().split('T')[0],
-      scheduledTime: scheduledDate.toTimeString().slice(0, 5),
-      notes: trip.notes || '',
-      assignedDriver: trip.assignedDriver?._id || ''
-    });
-    onOpen();
-  };
-
   const handleView = (trip) => {
     setSelectedTrip(trip);
     onViewOpen();
@@ -525,11 +409,6 @@ const DispatcherDashboard = () => {
     setViewTripDetails(trip);
   };
 
-  const handleDeleteClick = (trip) => {
-    setTripToDelete(trip);
-    onDeleteOpen();
-  };
-
   const handleDeleteTrip = async () => {
     if (!tripToDelete) return;
     
@@ -544,7 +423,6 @@ const DispatcherDashboard = () => {
         isClosable: true,
       });
       fetchTrips();
-      onDeleteClose();
       setTripToDelete(null);
     } catch (error) {
       console.error('Error deleting trip:', error);
@@ -557,29 +435,6 @@ const DispatcherDashboard = () => {
       });
     } finally {
       setIsDeleting(false);
-    }
-  };
-
-  const handleRevertStatus = async (trip) => {
-    try {
-      const response = await axios.post(`/api/trips/${trip._id}/revert-status`);
-      toast({
-        title: 'Status Reverted',
-        description: `Trip status changed from ${response.data.reversion.oldStatus} to ${response.data.reversion.newStatus}`,
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
-      fetchTrips();
-    } catch (error) {
-      console.error('Error reverting trip status:', error);
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to revert trip status',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
     }
   };
 
@@ -668,6 +523,319 @@ const getLocationText = (location) => {
   return (
     <>
       <Navbar title="Dispatch Control Center" />
+      {/* Breadcrumb Navigation with Process Menu - Positioned at Top */}
+      <Box 
+        position="sticky" 
+        top={0} 
+        zIndex={100}
+        bg="white" 
+        borderBottom="1px solid" 
+        borderColor="gray.200" 
+        px={{ base: 3, md: 4 }} 
+        py={{ base: 3, md: 4 }}
+        boxShadow="0 2px 4px rgba(0,0,0,0.1)"
+      >
+        <VStack align="stretch" spacing={3}>
+          <Flex justify="space-between" align="center">
+            <Breadcrumb fontSize={{ base: "sm", md: "md" }}>
+              <BreadcrumbItem>
+                <BreadcrumbLink display="flex" alignItems="center" gap={2}>
+                  <Box as={HomeIcon} w={4} h={4} />
+                  Operations
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbItem isCurrentPage>
+                <BreadcrumbLink>Dispatcher</BreadcrumbLink>
+              </BreadcrumbItem>
+            </Breadcrumb>
+            <Spacer />
+            
+            {/* Process Menu - Desktop Version - Centered */}
+            <Box 
+              position="relative" 
+              display={{ base: "none", md: "block" }}
+              onMouseLeave={() => {
+                // Delay closing to allow mouse to move to dropdown
+                processMenuTimeoutRef.current = setTimeout(() => {
+                  setIsProcessMenuOpen(false);
+                }, 150);
+              }}
+              onMouseEnter={() => {
+                // Clear any pending timeout when re-entering
+                if (processMenuTimeoutRef.current) {
+                  clearTimeout(processMenuTimeoutRef.current);
+                }
+                setIsProcessMenuOpen(true);
+              }}
+            >
+              <Tooltip label="View process options" placement="bottom">
+                <Button
+                  variant="outline"
+                  size={{ base: "sm", md: "md" }}
+                  colorScheme="blue"
+                  _hover={{ bg: "blue.50" }}
+                  onClick={() => setIsProcessMenuOpen(!isProcessMenuOpen)}
+                >
+                  Process
+                </Button>
+              </Tooltip>
+              
+              {/* 3-Column Dropdown Menu on Hover or Click */}
+              {isProcessMenuOpen && (
+                <Box
+                  position="absolute"
+                  top="100%"
+                  left="50%"
+                  transform="translateX(-50%)"
+                  bg="white"
+                  border="1px solid"
+                  borderColor="gray.200"
+                  borderRadius="md"
+                  boxShadow="0 10px 25px rgba(0,0,0,0.15)"
+                  p={6}
+                  mt={0}
+                  minW="700px"
+                  zIndex={1000}
+                  pointerEvents="auto"
+                  onMouseEnter={() => {
+                    // Clear timeout when hovering over menu
+                    if (processMenuTimeoutRef.current) {
+                      clearTimeout(processMenuTimeoutRef.current);
+                    }
+                  }}
+                >
+                  <Grid templateColumns="repeat(3, 1fr)" gap={4}>
+                    {/* Column 1 - TRIPS */}
+                    <VStack align="start" spacing={1}>
+                      <Text fontSize="xs" fontWeight="bold" color="gray.400" px={3}>
+                        TRIPS
+                      </Text>
+                      <Divider my={1} />
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={onOpen}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        Create Trip
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => handleProcessMenuNavigation('/trips/manage')}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        Manage Trips
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => handleProcessMenuNavigation('/trips/map')}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        View Map
+                      </Button>
+                    </VStack>
+                    
+                    {/* Column 2 - USERS */}
+                    <VStack align="start" spacing={1}>
+                      <Text fontSize="xs" fontWeight="bold" color="gray.400" px={3}>
+                        USERS
+                      </Text>
+                      <Divider my={1} />
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => handleProcessMenuNavigation('/trips/upcoming')}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        Upcoming
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => handleProcessMenuNavigation('/trips/completed')}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        Completed
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => handleProcessMenuNavigation('/trips/all')}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        All Trips
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => handleProcessMenuNavigation('/trips/active')}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        Active
+                      </Button>
+                    </VStack>
+                    
+                    {/* Column 3 - NAVIGATE */}
+                    <VStack align="start" spacing={1}>
+                      <Text fontSize="xs" fontWeight="bold" color="gray.400" px={3}>
+                        NAVIGATE
+                      </Text>
+                      <Divider my={1} />
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => handleProcessMenuNavigation('/riders')}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        All Riders
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => handleProcessMenuNavigation('/users')}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        All Users
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => handleProcessMenuNavigation('/drivers')}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        Drivers
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => handleProcessMenuNavigation('/tracking')}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        Tracking
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => handleProcessMenuNavigation('/profile')}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        Profile
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => handleProcessMenuNavigation('/schedule')}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        Schedule
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => handleProcessMenuNavigation('/search')}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        Search
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => handleProcessMenuNavigation('/trips/recurring')}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        Recurring Trips
+                      </Button>
+                    </VStack>
+                  </Grid>
+                </Box>
+              )}
+            </Box>
+            
+            <Spacer />
+          </Flex>
+          
+          {/* Process Menu - Mobile Version - Full Width Below Breadcrumb */}
+          <Menu>
+            <MenuButton
+              as={Button}
+              variant="outline"
+              size="sm"
+              colorScheme="blue"
+              display={{ base: "block", md: "none" }}
+              w="full"
+            >
+              Process
+            </MenuButton>
+            <MenuList minW="200px">
+              <MenuItem onClick={onOpen}>
+                Create Trip
+              </MenuItem>
+              <MenuItem onClick={() => navigate('/trips/manage')}>
+                Manage Trips
+              </MenuItem>
+              <MenuItem onClick={() => navigate('/trips/map')}>
+                View Map
+              </MenuItem>
+              <MenuDivider />
+              <MenuItem onClick={() => navigate('/trips/upcoming')}>
+                Upcoming
+              </MenuItem>
+              <MenuItem onClick={() => navigate('/trips/completed')}>
+                Completed
+              </MenuItem>
+              <MenuItem onClick={() => navigate('/trips/all')}>
+                All Trips
+              </MenuItem>
+              <MenuItem onClick={() => navigate('/trips/active')}>
+                Active
+              </MenuItem>
+              <MenuDivider />
+              <MenuItem onClick={() => navigate('/riders')}>
+                All Riders
+              </MenuItem>
+              <MenuItem onClick={() => navigate('/users')}>
+                All Users
+              </MenuItem>
+              <MenuItem onClick={() => navigate('/drivers')}>
+                Drivers
+              </MenuItem>
+              <MenuDivider />
+              <MenuItem onClick={() => navigate('/tracking')}>
+                Tracking
+              </MenuItem>
+              <MenuItem onClick={() => navigate('/profile')}>
+                Profile
+              </MenuItem>
+              <MenuItem onClick={() => navigate('/schedule')}>
+                Schedule
+              </MenuItem>
+              <MenuItem onClick={() => navigate('/search')}>
+                Search
+              </MenuItem>
+              <MenuItem onClick={() => navigate('/trips/recurring')}>
+                Recurring Trips
+              </MenuItem>
+            </MenuList>
+          </Menu>
+        </VStack>
+      </Box>
       <Box bg="gray.50" minH="calc(100vh - 80px)" w="100%" overflowX="hidden">
         {/* Conditional rendering for different views */}
         {isManageView ? (
@@ -701,88 +869,8 @@ const getLocationText = (location) => {
           >
                 Manage active trips, assign drivers, monitor real-time status, and coordinate transportation operations
               </Text>
-              
-              {/* Quick Actions Dropdown - Compact Design */}
-              <Box mt={4}>
-                <Menu
-                  isOpen={isQuickActionsOpen}
-                  onClose={() => setIsQuickActionsOpen(false)}
-                  onOpen={() => setIsQuickActionsOpen(true)}
-                  closeOnBlur={true}
-                  closeOnSelect={true}
-                >
-                  <Tooltip label="Quick Actions" placement="right">
-                    <MenuButton
-                      as={Button}
-                      rightIcon={<Box as={ChevronDownIcon} w={5} h={5} />}
-                      leftIcon={<Box as={Cog6ToothIcon} w={5} h={5} />}
-                      size="md"
-                      variant="solid"
-                      colorScheme="blue"
-                    >
-                      Quick Actions
-                    </MenuButton>
-                  </Tooltip>
-                  <MenuList>
-                    {/* Primary Actions */}
-                    <MenuItem 
-                      icon={<Box as={PlusIcon} w={5} h={5} />}
-                      onClick={onOpen}
-                    >
-                      Create Trip
-                    </MenuItem>
-                    <MenuItem 
-                      icon={<Box as={MagnifyingGlassIcon} w={5} h={5} />}
-                      onClick={() => setIsManageView(true)}
-                    >
-                      Manage Trips
-                    </MenuItem>
-                    <MenuItem 
-                      icon={<Box as={MapPinIcon} w={5} h={5} />}
-                      onClick={() => navigate('/dispatcher/live-tracking')}
-                    >
-                      View Map
-                    </MenuItem>
-                    
-                    <MenuDivider />
-                    
-                    {/* Secondary Actions */}
-                    <MenuItem 
-                      icon={<Box as={UserGroupIconSolid} w={5} h={5} />}
-                      onClick={() => navigate('/riders')}
-                    >
-                      All Riders
-                    </MenuItem>
-                    <MenuItem 
-                      icon={<Box as={TruckIcon} w={5} h={5} />}
-                      onClick={() => navigate('/admin/users')}
-                    >
-                      All Users
-                    </MenuItem>
-                    <MenuItem 
-                      icon={<Box as={CalendarIcon} w={5} h={5} />}
-                      onClick={() => navigate('/scheduler/recurring')}
-                    >
-                      Recurring Trips
-                    </MenuItem>
-                  </MenuList>
-                </Menu>
-              </Box>
             </VStack>
           </Box>
-
-          {/* Enhanced Breadcrumb Navigation */}
-          <Breadcrumb mb={{ base: 4, md: 6 }} fontSize={{ base: "sm", md: "md" }}>
-            <BreadcrumbItem>
-              <BreadcrumbLink display="flex" alignItems="center" gap={2}>
-                <Box as={HomeIcon} w={4} h={4} />
-                Operations
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbItem isCurrentPage>
-              <BreadcrumbLink>Dispatcher</BreadcrumbLink>
-            </BreadcrumbItem>
-          </Breadcrumb>
 
           {/* Enhanced Real-time Statistics Dashboard */}
           <SimpleGrid 
@@ -802,7 +890,6 @@ const getLocationText = (location) => {
               transition="all 0.3s ease"
               borderLeft="6px solid"
               borderLeftColor="blue.500"
-              onClick={() => setActiveTab(0)}
               role="button"
               aria-label="View today's trips"
               tabIndex={0}
@@ -875,7 +962,6 @@ const getLocationText = (location) => {
               transition="all 0.3s ease"
               borderLeft="6px solid"
               borderLeftColor="green.500"
-              onClick={() => setActiveTab(3)}
               role="button"
               aria-label="View completed trips"
               tabIndex={0}
@@ -948,7 +1034,6 @@ const getLocationText = (location) => {
               transition="all 0.3s ease"
               borderLeft="6px solid"
               borderLeftColor="orange.500"
-              onClick={() => setActiveTab(1)}
               role="button"
               aria-label="View active trips"
               tabIndex={0}
@@ -1045,7 +1130,6 @@ const getLocationText = (location) => {
               transition="all 0.3s ease"
               borderLeft="6px solid"
               borderLeftColor="purple.500"
-              onClick={() => setActiveTab(2)}
               role="button"
               aria-label="View available drivers"
               tabIndex={0}
@@ -1112,1217 +1196,326 @@ const getLocationText = (location) => {
             </Card>
           </SimpleGrid>
 
-          {/* Enhanced Tabbed Interface with Modern Icons */}
+          {/* Simplified Today's Operations Dashboard - No Tabs */}
           <Card mb={{ base: 6, md: 8 }} bg={cardBg}>
-            <CardBody p={0}>
-              <Tabs 
-                index={activeTab} 
-                onChange={setActiveTab} 
-                variant="enclosed" 
-                colorScheme="blue"
-              >
-                <TabList 
-                  flexWrap="wrap"
-                  borderBottom="2px solid"
-                  borderColor={borderColor}
-                  bg={bgColor}
-                >
-                  <Tab 
-                    flex={{ base: "1", sm: "initial" }}
-                    fontSize={{ base: "sm", md: "md" }}
-                    py={{ base: 3, md: 4 }}
-                    px={{ base: 3, md: 6 }}
-                    _selected={{ 
-                      color: primaryColor, 
-                      borderColor: "blue.500",
-                      bg: cardBg
-                    }}
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                  >
-                    <Box as={CalendarDaysIcon} w={4} h={4} />
-                    <Text display={{ base: "none", sm: "inline" }}>Today</Text>
-                  </Tab>
-                  <Tab 
-                    flex={{ base: "1", sm: "initial" }}
-                    fontSize={{ base: "sm", md: "md" }}
-                    py={{ base: 3, md: 4 }}
-                    px={{ base: 3, md: 6 }}
-                    _selected={{ 
-                      color: primaryColor, 
-                      borderColor: "blue.500",
-                      bg: cardBg
-                    }}
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                  >
-                    <Box as={ClockIcon} w={4} h={4} />
-                    <Text display={{ base: "none", sm: "inline" }}>Upcoming</Text>
-                  </Tab>
-                  <Tab 
-                    flex={{ base: "1", sm: "initial" }}
-                    fontSize={{ base: "sm", md: "md" }}
-                    py={{ base: 3, md: 4 }}
-                    px={{ base: 3, md: 6 }}
-                    _selected={{ 
-                      color: primaryColor, 
-                      borderColor: "blue.500",
-                      bg: cardBg
-                    }}
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                  >
-                    <Box as={CheckCircleIcon} w={4} h={4} />
-                    <Text display={{ base: "none", sm: "inline" }}>Completed</Text>
-                  </Tab>
-                  <Tab 
-                    flex={{ base: "1", sm: "initial" }}
-                    fontSize={{ base: "sm", md: "md" }}
-                    py={{ base: 3, md: 4 }}
-                    px={{ base: 3, md: 6 }}
-                    _selected={{ 
-                      color: primaryColor, 
-                      borderColor: "blue.500",
-                      bg: cardBg
-                    }}
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                  >
-                    <Box as={ChartBarIcon} w={4} h={4} />
-                    <Text display={{ base: "none", sm: "inline" }}>All Trips</Text>
-                  </Tab>
-                  
-                  {/* Enhanced Dispatch Features */}
-                  <Tab 
-                    flex={{ base: "1", sm: "initial" }}
-                    fontSize={{ base: "sm", md: "md" }}
-                    py={{ base: 3, md: 4 }}
-                    px={{ base: 3, md: 6 }}
-                    _selected={{ 
-                      color: primaryColor, 
-                      borderColor: "blue.500",
-                      bg: cardBg
-                    }}
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                  >
-                    <Box as={TruckIcon} w={4} h={4} />
-                    <Text display={{ base: "none", md: "inline" }}>Active</Text>
-                  </Tab>
-                  <Tab 
-                    flex={{ base: "1", sm: "initial" }}
-                    fontSize={{ base: "sm", md: "md" }}
-                    py={{ base: 3, md: 4 }}
-                    px={{ base: 3, md: 6 }}
-                    _selected={{ 
-                      color: primaryColor, 
-                      borderColor: "blue.500",
-                      bg: cardBg
-                    }}
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                  >
-                    <Box as={UserGroupIcon} w={4} h={4} />
-                    <Text display={{ base: "none", md: "inline" }}>Drivers</Text>
-                  </Tab>
-                  <Tab 
-                    flex={{ base: "1", sm: "initial" }}
-                    fontSize={{ base: "sm", md: "md" }}
-                    py={{ base: 3, md: 4 }}
-                    px={{ base: 3, md: 6 }}
-                    _selected={{ 
-                      color: primaryColor, 
-                      borderColor: "blue.500",
-                      bg: cardBg
-                    }}
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                  >
-                    <Box as={MapPinIcon} w={4} h={4} />
-                    <Text display={{ base: "none", md: "inline" }}>Tracking</Text>
-                  </Tab>
-                  <Tab 
-                    flex={{ base: "1", sm: "initial" }}
-                    fontSize={{ base: "sm", md: "md" }}
-                    py={{ base: 3, md: 4 }}
-                    px={{ base: 3, md: 6 }}
-                    _selected={{ 
-                      color: primaryColor, 
-                      borderColor: "blue.500",
-                      bg: cardBg
-                    }}
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                  >
-                    <Box as={UserIcon} w={4} h={4} />
-                    <Text display={{ base: "none", md: "inline" }}>Profile</Text>
-                  </Tab>
-                  <Tab 
-                    flex={{ base: "1", sm: "initial" }}
-                    fontSize={{ base: "sm", md: "md" }}
-                    py={{ base: 3, md: 4 }}
-                    px={{ base: 3, md: 6 }}
-                    _selected={{ 
-                      color: primaryColor, 
-                      borderColor: "blue.500",
-                      bg: cardBg
-                    }}
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                  >
-                    <Box as={CalendarIcon} w={4} h={4} />
-                    <Text display={{ base: "none", md: "inline" }}>Schedule</Text>
-                  </Tab>
-                  <Tab 
-                    flex={{ base: "1", sm: "initial" }}
-                    fontSize={{ base: "sm", md: "md" }}
-                    py={{ base: 3, md: 4 }}
-                    px={{ base: 3, md: 6 }}
-                    _selected={{ 
-                      color: primaryColor, 
-                      borderColor: "blue.500",
-                      bg: cardBg
-                    }}
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                  >
-                    <Box as={MagnifyingGlassIcon} w={4} h={4} />
-                    <Text display={{ base: "none", md: "inline" }}>Search</Text>
-                  </Tab>
-                </TabList>
+            <CardBody p={{ base: 4, md: 6 }}>
 
-          <TabPanels>
-            <TabPanel px={0}>
-              {/* Today's Dashboard */}
-              <Card mb={4}>
-                <CardHeader>
-                  <HStack justify="space-between">
-                    <Heading size="md">Today's Rides</Heading>
-                    <Badge colorScheme="blue" fontSize="md" px={3} py={1}>
-                      {displayedTrips.length} rides
-                    </Badge>
-                  </HStack>
-                </CardHeader>
-                <CardBody>
-                  <VStack spacing={4} align="stretch">
-                    {/* Today's Statistics */}
-                    <Grid templateColumns="repeat(auto-fit, minmax(150px, 1fr))" gap={4} w="100%">
-                      <Card bg="green.50">
-                        <CardBody textAlign="center">
-                          <Text fontSize="2xl" fontWeight="bold" color="green.600">
-                            {(displayedTrips || []).filter(trip => trip.status === 'completed').length}
-                          </Text>
-                          <Text fontSize="sm" color="green.700">Completed Today</Text>
-                        </CardBody>
-                      </Card>
-                      <Card bg="orange.50">
-                        <CardBody textAlign="center">
-                          <Text fontSize="2xl" fontWeight="bold" color="orange.600">
-                            {(displayedTrips || []).filter(trip => trip.status === 'in_progress').length}
-                          </Text>
-                          <Text fontSize="sm" color="orange.700">In Progress</Text>
-                        </CardBody>
-                      </Card>
-                      <Card bg="blue.50">
-                        <CardBody textAlign="center">
-                          <Text fontSize="2xl" fontWeight="bold" color="blue.600">
-                            {(displayedTrips || []).filter(trip => trip.status === 'assigned').length}
-                          </Text>
-                          <Text fontSize="sm" color="blue.700">Assigned</Text>
-                        </CardBody>
-                      </Card>
-                      <Card bg="red.50">
-                        <CardBody textAlign="center">
-                          <Text fontSize="2xl" fontWeight="bold" color="red.600">
-                            {(displayedTrips || []).filter(trip => !trip.assignedDriver).length}
-                          </Text>
-                          <Text fontSize="sm" color="red.700">Need Driver</Text>
-                        </CardBody>
-                      </Card>
-                    </Grid>
+              <VStack spacing={6} align="stretch">
+                {/* SECTION 1: TODAY'S TRIP SUMMARY */}
+                <Card>
+                  <CardHeader>
+                    <HStack justify="space-between">
+                      <Heading size="md">📋 Today's Trips Overview</Heading>
+                      <Badge colorScheme="blue" fontSize="md" px={3} py={1}>
+                        {displayedTrips.length} rides
+                      </Badge>
+                    </HStack>
+                  </CardHeader>
+                  <CardBody>
+                    <VStack spacing={4} align="stretch">
+                      {/* Quick Stats */}
+                      <Grid templateColumns="repeat(auto-fit, minmax(140px, 1fr))" gap={3} w="100%">
+                        <Card bg="green.50" border="1px solid" borderColor="green.200">
+                          <CardBody textAlign="center" py={4}>
+                            <Text fontSize="2xl" fontWeight="bold" color="green.600">
+                              {(displayedTrips || []).filter(trip => trip.status === 'completed').length}
+                            </Text>
+                            <Text fontSize="sm" color="green.700">Completed</Text>
+                          </CardBody>
+                        </Card>
+                        <Card bg="orange.50" border="1px solid" borderColor="orange.200">
+                          <CardBody textAlign="center" py={4}>
+                            <Text fontSize="2xl" fontWeight="bold" color="orange.600">
+                              {(displayedTrips || []).filter(trip => trip.status === 'in_progress').length}
+                            </Text>
+                            <Text fontSize="sm" color="orange.700">Active</Text>
+                          </CardBody>
+                        </Card>
+                        <Card bg="blue.50" border="1px solid" borderColor="blue.200">
+                          <CardBody textAlign="center" py={4}>
+                            <Text fontSize="2xl" fontWeight="bold" color="blue.600">
+                              {(displayedTrips || []).filter(trip => trip.status === 'assigned').length}
+                            </Text>
+                            <Text fontSize="sm" color="blue.700">Assigned</Text>
+                          </CardBody>
+                        </Card>
+                        <Card bg="red.50" border="1px solid" borderColor="red.200">
+                          <CardBody textAlign="center" py={4}>
+                            <Text fontSize="2xl" fontWeight="bold" color="red.600">
+                              {(displayedTrips || []).filter(trip => !trip.assignedDriver).length}
+                            </Text>
+                            <Text fontSize="sm" color="red.700">Need Driver</Text>
+                          </CardBody>
+                        </Card>
+                      </Grid>
 
-                    {/* Today's Trips Table */}
-                    <Card>
-                      <CardBody p={0}>
-                        <TableContainer overflowX="auto" w="100%">
-                          <Table variant="simple" size={{ base: "sm", md: "md" }} w="100%">
-                            <Thead>
-                              <Tr>
-                                <Th>Trip ID</Th>
-                                <Th>Rider</Th>
-                                <Th display={{ base: "none", md: "table-cell" }}>Route</Th>
-                                <Th display={{ base: "none", lg: "table-cell" }}>Scheduled</Th>
-                                <Th>Driver</Th>
-                                <Th>Status</Th>
-                                <Th>Actions</Th>
-                              </Tr>
-                            </Thead>
-                            <Tbody>
-                              {displayedTrips.map((trip) => (
-                                <Tr key={trip._id}>
-                                  <Td>
-                                    <Text 
-                                      color="blue.600" 
-                                      cursor="pointer" 
-                                      _hover={{ textDecoration: 'underline' }}
-                                      onClick={(e) => handleTripClick(e, trip)}
-                                    >
-                                      {trip.tripId}
-                                    </Text>
-                                  </Td>
-                                  <Td>
-                                    <VStack align="start" spacing={0}>
-                                      <Text 
-                                        fontSize="sm"
-                                        color="blue.600" 
-                                        cursor="pointer" 
-                                        _hover={{ textDecoration: 'underline' }}
-                                        onClick={(e) => handleRiderClick(e, trip.rider?._id || trip.rider)}
-                                      >
-                                        {trip.riderName}
-                                      </Text>
-                                      {trip.riderPhone && (
-                                        <Text fontSize="xs" color="gray.500" display={{ base: "block", sm: "none" }}>
-                                          {trip.riderPhone}
-                                        </Text>
-                                      )}
-                                    </VStack>
-                                  </Td>
-                                  <Td display={{ base: "none", md: "table-cell" }}>
-                                    <VStack align="start" spacing={0}>
-                                      <Text fontSize="xs">From: {getLocationText(trip.pickupLocation).substring(0, 30)}...</Text>
-                                      <Text fontSize="xs">To: {getLocationText(trip.dropoffLocation).substring(0, 30)}...</Text>
-                                    </VStack>
-                                  </Td>
-                                  <Td display={{ base: "none", lg: "table-cell" }}>
-                                    <Text fontSize="xs">
-                                      {formatDate(trip.scheduledDate)}
-                                    </Text>
-                                  </Td>
-                                  <Td>
-                                    {trip.assignedDriver ? (
-                                      <VStack align="start" spacing={1}>
-                                        <VStack align="start" spacing={0}>
-                                          <Text fontSize="sm">
-                                            {trip.assignedDriver.firstName} {trip.assignedDriver.lastName}
-                                          </Text>
-                                          {trip.assignedDriver.phone && (
-                                            <Text fontSize="xs" color="gray.500">
-                                              {trip.assignedDriver.phone}
-                                            </Text>
-                                          )}
-                                        </VStack>
-                                        <Button
-                                          size="xs"
-                                          variant="outline"
-                                          colorScheme="blue"
-                                          onClick={() => handleAssignClick(trip)}
-                                        >
-                                          Reassign
-                                        </Button>
-                                      </VStack>
-                                    ) : (
-                                      <Button
-                                        size="sm"
-                                        colorScheme="green"
-                                        onClick={() => handleAssignClick(trip)}
-                                        disabled={availableDrivers.length === 0}
-                                      >
-                                        Assign Driver
-                                      </Button>
-                                    )}
-                                  </Td>
-                                  <Td>
-                                    <Badge colorScheme={getStatusColor(trip.status)} size="sm">
-                                      {trip.status.replace('_', ' ').toUpperCase()}
-                                    </Badge>
-                                  </Td>
-                                  <Td>
-                                    <HStack spacing={1} flexWrap="wrap" justify={{ base: "center", md: "flex-start" }}>
-                                      <IconButton
-                                        icon={<Box as={EyeIcon} w={4} h={4} />}
-                                        size="xs"
-                                        colorScheme="blue"
-                                        onClick={() => handleView(trip)}
-                                        aria-label="View trip"
-                                        title="View trip details"
-                                      />
-                                      <IconButton
-                                        icon={<Box as={PencilIcon} w={4} h={4} />}
-                                        size="xs"
-                                        colorScheme="yellow"
-                                        onClick={() => handleEdit(trip)}
-                                        aria-label="Edit trip"
-                                        title="Edit trip"
-                                      />
-                                      {(trip.status === 'completed' || trip.status === 'cancelled') && (
-                                        <IconButton
-                                          icon={<Box as={ArrowUturnLeftIcon} w={4} h={4} />}
-                                          size="xs"
-                                          colorScheme="purple"
-                                          onClick={() => handleRevertStatus(trip)}
-                                          aria-label="Revert status"
-                                          title={`Revert ${trip.status === 'completed' ? 'completion' : 'cancellation'}`}
-                                        />
-                                      )}
-                                      {!trip.assignedDriver && (
-                                        <Button
-                                          size="xs"
-                                          colorScheme="green"
-                                          onClick={() => handleAssignClick(trip)}
-                                          disabled={availableDrivers.length === 0}
-                                        >
-                                          Assign
-                                        </Button>
-                                      )}
-                                      <IconButton
-                                        icon={<Box as={TrashIcon} w={4} h={4} />}
-                                        size="xs"
-                                        colorScheme="red"
-                                        onClick={() => handleDeleteClick(trip)}
-                                        aria-label="Cancel trip"
-                                        title="Cancel trip"
-                                      />
-                                      {trip.riderPhone && (
-                                        <IconButton
-                                          icon={<Box as={PhoneIcon} w={4} h={4} />}
-                                          size="xs"
-                                          colorScheme="green"
-                                          aria-label="Call rider"
-                                          title="Call rider"
-                                        />
-                                      )}
-                                    </HStack>
-                                  </Td>
+                      {/* Today's Trips Table */}
+                      <Card>
+                        <CardBody p={0}>
+                          <TableContainer overflowX="auto" w="100%">
+                            <Table variant="simple" size={{ base: "sm", md: "md" }} w="100%">
+                              <Thead bg={bgColor}>
+                                <Tr>
+                                  <Th>Pickup Time</Th>
+                                  <Th>Rider Name</Th>
+                                  <Th display={{ base: "none", md: "table-cell" }}>Route</Th>
+                                  <Th>Driver</Th>
+                                  <Th>Status</Th>
+                                  <Th>Actions</Th>
                                 </Tr>
-                              ))}
-                            </Tbody>
-                          </Table>
-                        </TableContainer>
-                        {displayedTrips.length === 0 && (
-                          <Center py={8}>
-                            <VStack spacing={3}>
-                              <Text color="gray.500" fontSize="lg">No rides scheduled for today</Text>
-                              <Text color="gray.400" fontSize="sm">Today's rides will appear here</Text>
-                            </VStack>
-                          </Center>
-                        )}
-                      </CardBody>
-                    </Card>
-                  </VStack>
-                </CardBody>
-              </Card>
-            </TabPanel>
-            <TabPanel px={0}>
-              {/* Upcoming Trips */}
-              <Card mb={4}>
-                <CardHeader>
-                  <HStack justify="space-between">
-                    <Heading size="md">Upcoming Trips</Heading>
-                    <Badge colorScheme="green" fontSize="md" px={3} py={1}>
-                      {displayedTrips.length} trips
-                    </Badge>
-                  </HStack>
-                </CardHeader>
-                <CardBody p={0}>
-                  <TableContainer overflowX="auto" w="100%">
-                    <Table variant="simple" size={{ base: "sm", md: "md" }} w="100%">
-                      <Thead>
-                        <Tr>
-                          <Th>Trip ID</Th>
-                          <Th>Rider</Th>
-                          <Th display={{ base: "none", md: "table-cell" }}>Route</Th>
-                          <Th display={{ base: "none", lg: "table-cell" }}>Scheduled</Th>
-                          <Th>Driver</Th>
-                          <Th>Status</Th>
-                          <Th>Actions</Th>
-                        </Tr>
-                      </Thead>
-                      <Tbody>
-                        {displayedTrips.map((trip) => (
-                          <Tr key={trip._id}>
-                            <Td>
-                              <Text 
-                                color="blue.600" 
-                                cursor="pointer" 
-                                _hover={{ textDecoration: 'underline' }}
-                                onClick={(e) => handleTripClick(e, trip)}
-                              >
-                                {trip.tripId}
-                              </Text>
-                            </Td>
-                            <Td>
-                              <VStack align="start" spacing={0}>
-                                <Text 
-                                  fontSize="sm"
-                                  color="blue.600" 
-                                  cursor="pointer" 
-                                  _hover={{ textDecoration: 'underline' }}
-                                  onClick={(e) => handleRiderClick(e, trip.rider?._id || trip.rider)}
-                                >
-                                  {trip.riderName}
-                                </Text>
-                                {trip.riderPhone && (
-                                  <Text fontSize="xs" color="gray.500" display={{ base: "block", sm: "none" }}>
-                                    {trip.riderPhone}
-                                  </Text>
-                                )}
-                              </VStack>
-                            </Td>
-                            <Td display={{ base: "none", md: "table-cell" }}>
-                              <VStack align="start" spacing={0}>
-                                <Text fontSize="xs">From: {getLocationText(trip.pickupLocation).substring(0, 30)}...</Text>
-                                <Text fontSize="xs">To: {getLocationText(trip.dropoffLocation).substring(0, 30)}...</Text>
-                              </VStack>
-                            </Td>
-                            <Td display={{ base: "none", lg: "table-cell" }}>
-                              <Text fontSize="xs">
-                                {formatDate(trip.scheduledDate)}
-                              </Text>
-                            </Td>
-                            <Td>
-                              {trip.assignedDriver ? (
-                                <VStack align="start" spacing={1}>
-                                  <VStack align="start" spacing={0}>
-                                    <Text fontSize="sm">
-                                      {trip.assignedDriver.firstName} {trip.assignedDriver.lastName}
-                                    </Text>
-                                    {trip.assignedDriver.phone && (
-                                      <Text fontSize="xs" color="gray.500">
-                                        {trip.assignedDriver.phone}
-                                      </Text>
-                                    )}
-                                  </VStack>
-                                  <Button
-                                    size="xs"
-                                    variant="outline"
-                                    colorScheme="blue"
-                                    onClick={() => handleAssignClick(trip)}
-                                  >
-                                    Reassign
-                                  </Button>
-                                </VStack>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  colorScheme="green"
-                                  onClick={() => handleAssignClick(trip)}
-                                  disabled={availableDrivers.length === 0}
-                                >
-                                  Assign Driver
-                                </Button>
-                              )}
-                            </Td>
-                            <Td>
-                              <Badge colorScheme={getStatusColor(trip.status)} size="sm">
-                                {trip.status.replace('_', ' ').toUpperCase()}
-                              </Badge>
-                            </Td>
-                            <Td>
-                              <HStack spacing={1} flexWrap="wrap" justify={{ base: "center", md: "flex-start" }}>
-                                <IconButton
-                                  icon={<Box as={EyeIcon} w={4} h={4} />}
-                                  size="xs"
-                                  colorScheme="blue"
-                                  onClick={() => handleView(trip)}
-                                  aria-label="View trip"
-                                  title="View trip details"
-                                />
-                                <IconButton
-                                  icon={<Box as={PencilIcon} w={4} h={4} />}
-                                  size="xs"
-                                  colorScheme="yellow"
-                                  onClick={() => handleEdit(trip)}
-                                  aria-label="Edit trip"
-                                  title="Edit trip"
-                                />
-                                {!trip.assignedDriver && (
-                                  <Button
-                                    size="xs"
-                                    colorScheme="green"
-                                    onClick={() => handleAssignClick(trip)}
-                                    disabled={availableDrivers.length === 0}
-                                  >
-                                    Assign
-                                  </Button>
-                                )}
-                                <IconButton
-                                  icon={<Box as={TrashIcon} w={4} h={4} />}
-                                  size="xs"
-                                  colorScheme="red"
-                                  onClick={() => handleDeleteClick(trip)}
-                                  aria-label="Cancel trip"
-                                  title="Cancel trip"
-                                />
-                                {trip.riderPhone && (
-                                  <IconButton
-                                    icon={<Box as={PhoneIcon} w={4} h={4} />}
-                                    size="xs"
-                                    colorScheme="green"
-                                    aria-label="Call rider"
-                                    title="Call rider"
-                                  />
-                                )}
-                              </HStack>
-                            </Td>
-                          </Tr>
-                        ))}
-                      </Tbody>
-                    </Table>
-                  </TableContainer>
-                  {displayedTrips.length === 0 && (
-                    <Center py={8}>
-                      <VStack spacing={3}>
-                        <Text color="gray.500" fontSize="lg">No upcoming trips found</Text>
-                        <Text color="gray.400" fontSize="sm">Future trips will appear here</Text>
-                      </VStack>
-                    </Center>
-                  )}
-                </CardBody>
-              </Card>
-            </TabPanel>
-            <TabPanel px={0}>
-              {/* Past Trips */}
-              <Card mb={4}>
-                <CardHeader>
-                  <HStack justify="space-between">
-                    <Heading size="md">Past Trips</Heading>
-                    <Badge colorScheme="gray" fontSize="md" px={3} py={1}>
-                      {displayedTrips.length} trips
-                    </Badge>
-                  </HStack>
-                </CardHeader>
-                <CardBody p={0}>
-                  <TableContainer overflowX="auto" w="100%">
-                    <Table variant="simple" size={{ base: "sm", md: "md" }} w="100%">
-                      <Thead>
-                        <Tr>
-                          <Th>Trip ID</Th>
-                          <Th>Rider</Th>
-                          <Th display={{ base: "none", md: "table-cell" }}>Route</Th>
-                          <Th display={{ base: "none", lg: "table-cell" }}>Scheduled</Th>
-                          <Th>Driver</Th>
-                          <Th>Status</Th>
-                          <Th>Actions</Th>
-                        </Tr>
-                      </Thead>
-                      <Tbody>
-                        {displayedTrips.map((trip) => (
-                          <Tr key={trip._id}>
-                            <Td>
-                              <Text 
-                                color="blue.600" 
-                                cursor="pointer" 
-                                _hover={{ textDecoration: 'underline' }}
-                                onClick={(e) => handleTripClick(e, trip)}
-                              >
-                                {trip.tripId}
-                              </Text>
-                            </Td>
-                            <Td>
-                              <VStack align="start" spacing={0}>
-                                <Text 
-                                  fontSize="sm"
-                                  color="blue.600" 
-                                  cursor="pointer" 
-                                  _hover={{ textDecoration: 'underline' }}
-                                  onClick={(e) => handleRiderClick(e, trip.rider?._id || trip.rider)}
-                                >
-                                  {trip.riderName}
-                                </Text>
-                                {trip.riderPhone && (
-                                  <Text fontSize="xs" color="gray.500" display={{ base: "block", sm: "none" }}>
-                                    {trip.riderPhone}
-                                  </Text>
-                                )}
-                              </VStack>
-                            </Td>
-                            <Td display={{ base: "none", md: "table-cell" }}>
-                              <VStack align="start" spacing={0}>
-                                <Text fontSize="xs">From: {getLocationText(trip.pickupLocation).substring(0, 30)}...</Text>
-                                <Text fontSize="xs">To: {getLocationText(trip.dropoffLocation).substring(0, 30)}...</Text>
-                              </VStack>
-                            </Td>
-                            <Td display={{ base: "none", lg: "table-cell" }}>
-                              <Text fontSize="xs">
-                                {formatDate(trip.scheduledDate)}
-                              </Text>
-                            </Td>
-                            <Td>
-                              {trip.assignedDriver ? (
-                                <VStack align="start" spacing={0}>
-                                  <Text fontSize="sm">
-                                    {trip.assignedDriver.firstName} {trip.assignedDriver.lastName}
-                                  </Text>
-                                  {trip.assignedDriver.phone && (
-                                    <Text fontSize="xs" color="gray.500">
-                                      {trip.assignedDriver.phone}
-                                    </Text>
-                                  )}
-                                </VStack>
-                              ) : (
-                                <Text fontSize="sm" color="gray.500">No driver assigned</Text>
-                              )}
-                            </Td>
-                            <Td>
-                              <Badge colorScheme={getStatusColor(trip.status)} size="sm">
-                                {trip.status.replace('_', ' ').toUpperCase()}
-                              </Badge>
-                            </Td>
-                            <Td>
-                              <HStack spacing={1} flexWrap="wrap" justify={{ base: "center", md: "flex-start" }}>
-                                <IconButton
-                                  icon={<Box as={EyeIcon} w={4} h={4} />}
-                                  size="xs"
-                                  colorScheme="blue"
-                                  onClick={() => handleView(trip)}
-                                  aria-label="View trip"
-                                  title="View trip details"
-                                />
-                              </HStack>
-                            </Td>
-                          </Tr>
-                        ))}
-                      </Tbody>
-                    </Table>
-                  </TableContainer>
-                  {displayedTrips.length === 0 && (
-                    <Center py={8}>
-                      <VStack spacing={3}>
-                        <Text color="gray.500" fontSize="lg">No past trips found</Text>
-                        <Text color="gray.400" fontSize="sm">Completed trips will appear here</Text>
-                      </VStack>
-                    </Center>
-                  )}
-                </CardBody>
-              </Card>
-            </TabPanel>
-            <TabPanel px={0}>
-              {/* All Trips */}
-              <Card mb={4}>
-                <CardHeader>
-                  <HStack justify="space-between">
-                    <Heading size="md">All Trips</Heading>
-                    <Badge colorScheme="purple" fontSize="md" px={3} py={1}>
-                      {displayedTrips.length} trips
-                    </Badge>
-                  </HStack>
-                </CardHeader>
-                <CardBody p={0}>
-                  <TableContainer overflowX="auto" w="100%">
-                    <Table variant="simple" size={{ base: "sm", md: "md" }} w="100%">
-                      <Thead>
-                        <Tr>
-                          <Th>Trip ID</Th>
-                          <Th>Rider</Th>
-                          <Th display={{ base: "none", md: "table-cell" }}>Route</Th>
-                          <Th display={{ base: "none", lg: "table-cell" }}>Scheduled</Th>
-                          <Th>Driver</Th>
-                          <Th>Status</Th>
-                          <Th>Actions</Th>
-                        </Tr>
-                      </Thead>
-                      <Tbody>
-                        {displayedTrips.map((trip) => (
-                          <Tr key={trip._id}>
-                            <Td>
-                              <Text 
-                                color="blue.600" 
-                                cursor="pointer" 
-                                _hover={{ textDecoration: 'underline' }}
-                                onClick={(e) => handleTripClick(e, trip)}
-                              >
-                                {trip.tripId}
-                              </Text>
-                            </Td>
-                            <Td>
-                              <VStack align="start" spacing={0}>
-                                <Text 
-                                  fontSize="sm"
-                                  color="blue.600" 
-                                  cursor="pointer" 
-                                  _hover={{ textDecoration: 'underline' }}
-                                  onClick={(e) => handleRiderClick(e, trip.rider?._id || trip.rider)}
-                                >
-                                  {trip.riderName}
-                                </Text>
-                                {trip.riderPhone && (
-                                  <Text fontSize="xs" color="gray.500" display={{ base: "block", sm: "none" }}>
-                                    {trip.riderPhone}
-                                  </Text>
-                                )}
-                              </VStack>
-                            </Td>
-                            <Td display={{ base: "none", md: "table-cell" }}>
-                              <VStack align="start" spacing={0}>
-                                <Text fontSize="xs">From: {getLocationText(trip.pickupLocation).substring(0, 30)}...</Text>
-                                <Text fontSize="xs">To: {getLocationText(trip.dropoffLocation).substring(0, 30)}...</Text>
-                              </VStack>
-                            </Td>
-                            <Td display={{ base: "none", lg: "table-cell" }}>
-                              <Text fontSize="xs">
-                                {formatDate(trip.scheduledDate)}
-                              </Text>
-                            </Td>
-                            <Td>
-                              {trip.assignedDriver ? (
-                                <VStack align="start" spacing={1}>
-                                  <VStack align="start" spacing={0}>
-                                    <Text fontSize="sm">
-                                      {trip.assignedDriver.firstName} {trip.assignedDriver.lastName}
-                                    </Text>
-                                    {trip.assignedDriver.phone && (
-                                      <Text fontSize="xs" color="gray.500">
-                                        {trip.assignedDriver.phone}
-                                      </Text>
-                                    )}
-                                  </VStack>
-                                  <Button
-                                    size="xs"
-                                    variant="outline"
-                                    colorScheme="blue"
-                                    onClick={() => handleAssignClick(trip)}
-                                  >
-                                    Reassign
-                                  </Button>
-                                </VStack>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  colorScheme="green"
-                                  onClick={() => handleAssignClick(trip)}
-                                  disabled={availableDrivers.length === 0}
-                                >
-                                  Assign Driver
-                                </Button>
-                              )}
-                            </Td>
-                            <Td>
-                              <Badge colorScheme={getStatusColor(trip.status)} size="sm">
-                                {trip.status.replace('_', ' ').toUpperCase()}
-                              </Badge>
-                            </Td>
-                            <Td>
-                              <HStack spacing={1} flexWrap="wrap" justify={{ base: "center", md: "flex-start" }}>
-                                <IconButton
-                                  icon={<Box as={EyeIcon} w={4} h={4} />}
-                                  size="xs"
-                                  colorScheme="blue"
-                                  onClick={() => handleView(trip)}
-                                  aria-label="View trip"
-                                  title="View trip details"
-                                />
-                                <IconButton
-                                  icon={<Box as={PencilIcon} w={4} h={4} />}
-                                  size="xs"
-                                  colorScheme="yellow"
-                                  onClick={() => handleEdit(trip)}
-                                  aria-label="Edit trip"
-                                  title="Edit trip"
-                                />
-                                {!trip.assignedDriver && (
-                                  <Button
-                                    size="xs"
-                                    colorScheme="green"
-                                    onClick={() => handleAssignClick(trip)}
-                                    disabled={availableDrivers.length === 0}
-                                  >
-                                    Assign
-                                  </Button>
-                                )}
-                                <IconButton
-                                  icon={<Box as={TrashIcon} w={4} h={4} />}
-                                  size="xs"
-                                  colorScheme="red"
-                                  onClick={() => handleDeleteClick(trip)}
-                                  aria-label="Cancel trip"
-                                  title="Cancel trip"
-                                />
-                                {trip.riderPhone && (
-                                  <IconButton
-                                    icon={<Box as={PhoneIcon} w={4} h={4} />}
-                                    size="xs"
-                                    colorScheme="green"
-                                    aria-label="Call rider"
-                                    title="Call rider"
-                                  />
-                                )}
-                              </HStack>
-                            </Td>
-                          </Tr>
-                        ))}
-                      </Tbody>
-                    </Table>
-                  </TableContainer>
-                  {displayedTrips.length === 0 && (
-                    <Center py={8}>
-                      <VStack spacing={3}>
-                        <Text color="gray.500" fontSize="lg">No trips found</Text>
-                        <Text color="gray.400" fontSize="sm">All trips will appear here</Text>
-                      </VStack>
-                    </Center>
-                  )}
-                </CardBody>
-              </Card>
-            </TabPanel>
-            
-            {/* Active Trips Tab */}
-            <TabPanel px={0}>
-              <Card mb={4}>
-                <CardHeader>
-                  <HStack justify="space-between">
-                    <Heading size="md">⏰ Active Trip Operations</Heading>
-                    <Badge colorScheme="blue" fontSize="md" px={3} py={1}>
-                      Real-time Monitoring
-                    </Badge>
-                  </HStack>
-                </CardHeader>
-                <CardBody>
-                  <VStack spacing={6} align="stretch">
-                    {/* Active Trips Statistics */}
-                    <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={4}>
-                      <Card bg="blue.50" p={4}>
-                        <VStack>
-                          <Text fontSize="2xl" fontWeight="bold" color="blue.600">
-                            {trips.filter(trip => trip.status === 'in_progress').length}
-                          </Text>
-                          <Text fontSize="sm" color="blue.700">In Progress</Text>
-                        </VStack>
-                      </Card>
-                      <Card bg="orange.50" p={4}>
-                        <VStack>
-                          <Text fontSize="2xl" fontWeight="bold" color="orange.600">
-                            {trips.filter(trip => trip.status === 'assigned').length}
-                          </Text>
-                          <Text fontSize="sm" color="orange.700">Assigned</Text>
-                        </VStack>
-                      </Card>
-                      <Card bg="green.50" p={4}>
-                        <VStack>
-                          <Text fontSize="2xl" fontWeight="bold" color="green.600">
-                            {trips.filter(trip => trip.status === 'pending').length}
-                          </Text>
-                          <Text fontSize="sm" color="green.700">Awaiting Assignment</Text>
-                        </VStack>
-                      </Card>
-                    </Grid>
-                    
-                    {/* Active Trips Management */}
-                    <Card>
-                      <CardBody>
-                        <Text fontSize="lg" fontWeight="semibold" mb={4}>Active Trip Monitoring</Text>
-                        <VStack spacing={4}>
-                          {trips.filter(trip => ['in_progress', 'assigned'].includes(trip.status)).length > 0 ? (
-                            trips.filter(trip => ['in_progress', 'assigned'].includes(trip.status)).map(trip => (
-                              <Card key={trip._id} w="full" bg="gray.50">
-                                <CardBody p={4}>
-                                  <HStack justify="space-between" align="start">
-                                    <VStack align="start" spacing={1}>
-                                      <Text fontWeight="bold">
+                              </Thead>
+                              <Tbody>
+                                {displayedTrips.map((trip) => (
+                                  <Tr key={trip._id}>
+                                    <Td fontWeight="600">
+                                      {trip.scheduledTime || 'TBD'}
+                                    </Td>
+                                    <Td>
+                                      <VStack align="start" spacing={0}>
                                         <Text 
-                                          as="span"
+                                          fontSize="sm"
                                           color="blue.600" 
                                           cursor="pointer" 
-                                          _hover={{ textDecoration: 'underline' }}
-                                          onClick={(e) => handleTripClick(e, trip)}
-                                        >
-                                          {trip.tripId}
-                                        </Text>
-                                        {' - '}
-                                        <Text 
-                                          as="span"
-                                          color="blue.600" 
-                                          cursor="pointer" 
+                                          fontWeight="600"
                                           _hover={{ textDecoration: 'underline' }}
                                           onClick={(e) => handleRiderClick(e, trip.rider?._id || trip.rider)}
                                         >
                                           {trip.riderName}
                                         </Text>
-                                      </Text>
-                                      <Text fontSize="sm" color="gray.600">
-                                        {getLocationText(trip.pickupLocation)} → {getLocationText(trip.dropoffLocation)}
-                                      </Text>
-                                      <Badge colorScheme={getStatusColor(trip.status)}>
+                                        {trip.riderPhone && (
+                                          <Text fontSize="xs" color="gray.500">
+                                            {trip.riderPhone}
+                                          </Text>
+                                        )}
+                                      </VStack>
+                                    </Td>
+                                    <Td display={{ base: "none", md: "table-cell" }}>
+                                      <VStack align="start" spacing={0}>
+                                        <Text fontSize="xs" color="gray.700">From: {getLocationText(trip.pickupLocation).substring(0, 25)}...</Text>
+                                        <Text fontSize="xs" color="gray.700">To: {getLocationText(trip.dropoffLocation).substring(0, 25)}...</Text>
+                                      </VStack>
+                                    </Td>
+                                    <Td>
+                                      {trip.assignedDriver ? (
+                                        <VStack align="start" spacing={1}>
+                                          <VStack align="start" spacing={0}>
+                                            <Text fontSize="sm" fontWeight="600">
+                                              {trip.assignedDriver.firstName} {trip.assignedDriver.lastName}
+                                            </Text>
+                                            {trip.assignedDriver.phone && (
+                                              <Text fontSize="xs" color="gray.500">
+                                                {trip.assignedDriver.phone}
+                                              </Text>
+                                            )}
+                                          </VStack>
+                                          <Button
+                                            size="xs"
+                                            variant="outline"
+                                            colorScheme="blue"
+                                            onClick={() => handleAssignClick(trip)}
+                                          >
+                                            Reassign
+                                          </Button>
+                                        </VStack>
+                                      ) : (
+                                        <Button
+                                          size="sm"
+                                          colorScheme="green"
+                                          onClick={() => handleAssignClick(trip)}
+                                          disabled={availableDrivers.length === 0}
+                                        >
+                                          Assign Driver
+                                        </Button>
+                                      )}
+                                    </Td>
+                                    <Td>
+                                      <Badge colorScheme={getStatusColor(trip.status)} size="sm">
                                         {trip.status.replace('_', ' ').toUpperCase()}
                                       </Badge>
-                                    </VStack>
-                                    <Button size="sm" colorScheme="blue" onClick={() => handleView(trip)}>
-                                      Monitor
-                                    </Button>
-                                  </HStack>
-                                </CardBody>
-                              </Card>
-                            ))
-                          ) : (
-                            <Text color="gray.500">No active trips to monitor</Text>
+                                    </Td>
+                                    <Td>
+                                      <HStack spacing={1} flexWrap="wrap" justify={{ base: "center", md: "flex-start" }}>
+                                        <Tooltip label="View details">
+                                          <IconButton
+                                            icon={<Box as={EyeIcon} w={4} h={4} />}
+                                            size="xs"
+                                            colorScheme="blue"
+                                            onClick={() => handleView(trip)}
+                                            aria-label="View trip"
+                                          />
+                                        </Tooltip>
+                                        <Tooltip label="Call rider">
+                                          <IconButton
+                                            icon={<Box as={PhoneIcon} w={4} h={4} />}
+                                            size="xs"
+                                            colorScheme="green"
+                                            aria-label="Call rider"
+                                          />
+                                        </Tooltip>
+                                        <Tooltip label="View on map">
+                                          <IconButton
+                                            icon={<Box as={MapPinIcon} w={4} h={4} />}
+                                            size="xs"
+                                            colorScheme="purple"
+                                            onClick={() => navigate(`/maps/trips?tripId=${trip._id}`)}
+                                            aria-label="View on map"
+                                          />
+                                        </Tooltip>
+                                      </HStack>
+                                    </Td>
+                                  </Tr>
+                                ))}
+                              </Tbody>
+                            </Table>
+                          </TableContainer>
+                          {displayedTrips.length === 0 && (
+                            <Center py={8}>
+                              <VStack spacing={3}>
+                                <Text color="gray.500" fontSize="lg">No rides scheduled for today</Text>
+                                <Text color="gray.400" fontSize="sm">Create a trip to get started</Text>
+                              </VStack>
+                            </Center>
                           )}
-                        </VStack>
-                      </CardBody>
-                    </Card>
-                  </VStack>
-                </CardBody>
-              </Card>
-            </TabPanel>
-            
-            {/* Driver Assignment Tab */}
-            <TabPanel px={0}>
-              <Card mb={4}>
-                <CardHeader>
-                  <HStack justify="space-between">
-                    <Heading size="md">👥 Driver Assignment Center</Heading>
-                    <Badge colorScheme="green" fontSize="md" px={3} py={1}>
-                      {availableDrivers.length} Available
-                    </Badge>
-                  </HStack>
-                </CardHeader>
-                <CardBody>
-                  <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={6}>
-                    {/* Unassigned Trips */}
-                    <Card>
-                      <CardHeader>
-                        <Heading size="sm">Trips Needing Assignment</Heading>
-                      </CardHeader>
-                      <CardBody>
-                        <VStack spacing={3} align="stretch">
-                          {trips.filter(trip => !trip.assignedDriver && trip.status === 'pending').length > 0 ? (
-                            trips.filter(trip => !trip.assignedDriver && trip.status === 'pending').map(trip => (
-                              <Card key={trip._id} bg="red.50" border="1px solid" borderColor="red.200">
-                                <CardBody p={3}>
-                                  <VStack align="start" spacing={2}>
-                                    <HStack justify="space-between" w="full">
-                                      <Text 
-                                        fontWeight="bold" 
-                                        fontSize="sm"
-                                        color="blue.600" 
-                                        cursor="pointer" 
-                                        _hover={{ textDecoration: 'underline' }}
-                                        onClick={(e) => handleTripClick(e, trip)}
-                                      >
-                                        {trip.tripId}
-                                      </Text>
-                                      <Text fontSize="xs" color="gray.600">
-                                        {formatDate(trip.scheduledDate)}
-                                      </Text>
-                                    </HStack>
-                                    <Text 
-                                      fontSize="sm"
-                                      color="blue.600" 
-                                      cursor="pointer" 
-                                      _hover={{ textDecoration: 'underline' }}
-                                      onClick={(e) => handleRiderClick(e, trip.rider?._id || trip.rider)}
-                                    >
-                                      {trip.riderName}
-                                    </Text>
-                                    <Text fontSize="xs" color="gray.600">
-                                      {getLocationText(trip.pickupLocation)}
-                                    </Text>
-                                    <Button 
-                                      size="xs" 
-                                      colorScheme="green" 
-                                      onClick={() => handleAssignClick(trip)}
-                                      w="full"
-                                    >
-                                      Assign Driver
-                                    </Button>
-                                  </VStack>
-                                </CardBody>
-                              </Card>
-                            ))
-                          ) : (
-                            <Text color="gray.500" textAlign="center" py={4}>
-                              All trips have been assigned
-                            </Text>
-                          )}
-                        </VStack>
-                      </CardBody>
-                    </Card>
-                    
-                    {/* Available Drivers */}
-                    <Card>
-                      <CardHeader>
-                        <Heading size="sm">Available Drivers</Heading>
-                      </CardHeader>
-                      <CardBody>
-                        <VStack spacing={3} align="stretch">
-                          {availableDrivers.length > 0 ? (
-                            availableDrivers.map(driver => (
-                              <Card key={driver._id} bg="green.50" border="1px solid" borderColor="green.200">
-                                <CardBody p={3}>
-                                  <VStack align="start" spacing={1}>
-                                    <Text fontWeight="bold" fontSize="sm">
-                                      {driver.firstName} {driver.lastName}
-                                    </Text>
-                                    <Text fontSize="xs" color="gray.600">{driver.phone}</Text>
-                                    <Text fontSize="xs" color="green.600">
-                                      Vehicle: {driver.vehicleId || 'Not assigned'}
-                                    </Text>
-                                    <Badge colorScheme="green" size="sm">Available</Badge>
-                                  </VStack>
-                                </CardBody>
-                              </Card>
-                            ))
-                          ) : (
-                            <Text color="gray.500" textAlign="center" py={4}>
-                              No drivers currently available
-                            </Text>
-                          )}
-                        </VStack>
-                      </CardBody>
-                    </Card>
-                  </Grid>
-                </CardBody>
-              </Card>
-            </TabPanel>
-            
-            {/* Live Tracking Tab */}
-            <TabPanel px={0}>
-              <Card mb={4}>
-                <CardHeader>
-                  <HStack justify="space-between">
-                    <Heading size="md">🗺️ Live Trip Tracking</Heading>
-                    <Badge colorScheme="purple" fontSize="md" px={3} py={1}>
-                      Real-time GPS
-                    </Badge>
-                  </HStack>
-                </CardHeader>
-                <CardBody>
-                  <VStack spacing={6} align="stretch">
-                    {/* Tracking Overview */}
-                    <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={4}>
-                      <Card bg="purple.50" p={4}>
-                        <VStack>
-                          <Text fontSize="2xl" fontWeight="bold" color="purple.600">
-                            {trips.filter(trip => trip.status === 'in_progress').length}
-                          </Text>
-                          <Text fontSize="sm" color="purple.700">Trips Being Tracked</Text>
-                        </VStack>
-                      </Card>
-                      <Card bg="blue.50" p={4}>
-                        <VStack>
-                          <Text fontSize="2xl" fontWeight="bold" color="blue.600">
-                            {drivers.filter(driver => driver.status === 'active').length}
-                          </Text>
-                          <Text fontSize="sm" color="blue.700">Drivers Online</Text>
-                        </VStack>
-                      </Card>
-                    </Grid>
-                    
-                    {/* Live Tracking Interface */}
-                    <Card>
-                      <CardBody>
-                        <VStack spacing={4} align="center" py={8}>
-                          <Heading size="md" color="purple.600">🗺️ Live Tracking Interface</Heading>
-                          <Text color="gray.600" textAlign="center" maxW="md">
-                            Real-time GPS tracking for active trips, driver locations, and route monitoring.
-                            Advanced mapping features with live updates and traffic information.
-                          </Text>
-                          <VStack spacing={3}>
-                            <Button 
-                              colorScheme="purple" 
-                              size="lg"
-                              onClick={() => window.location.href = '/maps/tracking'}
-                            >
-                              Open Live Tracking Map
-                            </Button>
-                            <Button 
-                              variant="outline"
-                              colorScheme="purple"
-                              onClick={() => window.open('/maps/tracking', '_blank')}
-                            >
-                              Open in New Window
-                            </Button>
-                          </VStack>
-                        </VStack>
-                      </CardBody>
-                    </Card>
-                    
-                    {/* Currently Tracked Trips */}
-                    {trips.filter(trip => trip.status === 'in_progress').length > 0 && (
-                      <Card>
-                        <CardHeader>
-                          <Heading size="sm">Currently Tracked Trips</Heading>
-                        </CardHeader>
-                        <CardBody>
-                          <VStack spacing={2}>
-                            {trips.filter(trip => trip.status === 'in_progress').map(trip => (
-                              <Card key={trip._id} w="full" bg="purple.25" border="1px solid" borderColor="purple.200">
-                                <CardBody p={3}>
-                                  <HStack justify="space-between">
-                                    <VStack align="start" spacing={1}>
-                                      <Text 
-                                        fontWeight="bold" 
-                                        fontSize="sm"
-                                        color="blue.600" 
-                                        cursor="pointer" 
-                                        _hover={{ textDecoration: 'underline' }}
-                                        onClick={(e) => handleTripClick(e, trip)}
-                                      >
-                                        {trip.tripId}
-                                      </Text>
-                                      <Text 
-                                        fontSize="xs"
-                                        color="blue.600" 
-                                        cursor="pointer" 
-                                        _hover={{ textDecoration: 'underline' }}
-                                        onClick={(e) => handleRiderClick(e, trip.rider?._id || trip.rider)}
-                                      >
-                                        {trip.riderName}
-                                      </Text>
-                                      <Badge colorScheme="purple" size="sm">Tracking Active</Badge>
-                                    </VStack>
-                                    <Button size="xs" colorScheme="purple" variant="outline">
-                                      View on Map
-                                    </Button>
-                                  </HStack>
-                                </CardBody>
-                              </Card>
-                            ))}
-                          </VStack>
                         </CardBody>
                       </Card>
+                    </VStack>
+                  </CardBody>
+                </Card>
+
+                {/* SECTION 2: ACTIVE DRIVERS PANEL */}
+                <Card>
+                  <CardHeader>
+                    <HStack justify="space-between">
+                      <Heading size="md">👥 Active Drivers Status</Heading>
+                      <Badge colorScheme="green" fontSize="md" px={3} py={1}>
+                        {drivers.filter(d => d.status === 'online').length} Online
+                      </Badge>
+                    </HStack>
+                  </CardHeader>
+                  <CardBody>
+                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+                      {drivers.filter(d => d.status === 'online').map((driver) => (
+                        <Card key={driver._id} border="2px solid" borderColor="green.200" bg="green.50">
+                          <CardBody>
+                            <VStack align="start" spacing={2}>
+                              <VStack align="start" spacing={0}>
+                                <Text fontWeight="bold" fontSize="sm">
+                                  {driver.firstName} {driver.lastName}
+                                </Text>
+                                <Badge colorScheme="green" size="sm">Online</Badge>
+                              </VStack>
+                              <Text fontSize="xs" color="gray.600">
+                                {driver.phone}
+                              </Text>
+                              <Text fontSize="xs" color="gray.600">
+                                Vehicle: {driver.vehicleId || 'Not assigned'}
+                              </Text>
+                              <HStack spacing={2} pt={2} w="full">
+                                <Button size="xs" colorScheme="blue" flex={1}>
+                                  View Map
+                                </Button>
+                                <Button size="xs" variant="outline" colorScheme="gray" flex={1}>
+                                  Message
+                                </Button>
+                              </HStack>
+                            </VStack>
+                          </CardBody>
+                        </Card>
+                      ))}
+                    </SimpleGrid>
+                    {drivers.filter(d => d.status === 'online').length === 0 && (
+                      <Center py={8}>
+                        <VStack spacing={3}>
+                          <Text color="gray.500">No drivers currently online</Text>
+                          <Text color="gray.400" fontSize="sm">Drivers will appear here when they come online</Text>
+                        </VStack>
+                      </Center>
                     )}
-                  </VStack>
-                </CardBody>
-              </Card>
-            </TabPanel>
+                  </CardBody>
+                </Card>
 
-            {/* Profile Tab */}
-            <TabPanel px={0}>
-              <DispatcherProfile />
-            </TabPanel>
+                {/* SECTION 3: ALERTS & NOTIFICATIONS */}
+                <Card>
+                  <CardHeader>
+                    <HStack justify="space-between">
+                      <Heading size="md">⚠️ Alerts & Issues</Heading>
+                      <Badge colorScheme="red" fontSize="md" px={3} py={1}>
+                        {
+                          (displayedTrips.filter(t => !t.assignedDriver).length || 0) +
+                          (displayedTrips.filter(t => {
+                            const now = new Date();
+                            const pickupTime = new Date(t.scheduledDate + ' ' + t.scheduledTime);
+                            const lateThreshold = new Date(now.getTime() - 10 * 60000); // 10 mins ago
+                            return pickupTime < lateThreshold && t.status !== 'completed';
+                          }).length || 0)
+                        } Issues
+                      </Badge>
+                    </HStack>
+                  </CardHeader>
+                  <CardBody>
+                    <VStack spacing={3} align="stretch">
+                      {/* No Driver Alert */}
+                      {displayedTrips.filter(t => !t.assignedDriver).length > 0 && (
+                        <Alert status="error" borderRadius="md">
+                          <AlertIcon />
+                          <Box>
+                            <Text fontWeight="bold">
+                              {displayedTrips.filter(t => !t.assignedDriver).length} Trip(s) Without Driver
+                            </Text>
+                            <Text fontSize="sm" color="gray.600">
+                              Action required: Assign drivers to these trips
+                            </Text>
+                          </Box>
+                        </Alert>
+                      )}
 
-            {/* Schedule Tab */}
-            <TabPanel px={0}>
-              <DispatcherSchedule 
-                onViewTrip={(trip) => {
-                  setSelectedTrip(trip);
-                  setViewTripDetails(trip);
-                  onViewOpen();
-                }}
-                onAssignDriver={(trip) => {
-                  setSelectedTrip(trip);
-                  setTripToAssign(trip);
-                  onAssignOpen();
-                }}
-              />
-            </TabPanel>
+                      {/* Late Pickup Alert */}
+                      {displayedTrips.filter(t => {
+                        const now = new Date();
+                        const pickupTime = new Date(t.scheduledDate + ' ' + t.scheduledTime);
+                        const lateThreshold = new Date(now.getTime() - 10 * 60000);
+                        return pickupTime < lateThreshold && t.status !== 'completed';
+                      }).length > 0 && (
+                        <Alert status="warning" borderRadius="md">
+                          <AlertIcon />
+                          <Box>
+                            <Text fontWeight="bold">
+                              {displayedTrips.filter(t => {
+                                const now = new Date();
+                                const pickupTime = new Date(t.scheduledDate + ' ' + t.scheduledTime);
+                                const lateThreshold = new Date(now.getTime() - 10 * 60000);
+                                return pickupTime < lateThreshold && t.status !== 'completed';
+                              }).length} Trip(s) Running Late
+                            </Text>
+                            <Text fontSize="sm" color="gray.600">
+                              These pickups were scheduled more than 10 minutes ago
+                            </Text>
+                          </Box>
+                        </Alert>
+                      )}
 
-            {/* Search Tab */}
-            <TabPanel px={0}>
-              <DispatcherSearch />
-            </TabPanel>
-              </TabPanels>
-            </Tabs>
+                      {/* All Good Alert */}
+                      {displayedTrips.filter(t => !t.assignedDriver).length === 0 && 
+                       displayedTrips.filter(t => {
+                        const now = new Date();
+                        const pickupTime = new Date(t.scheduledDate + ' ' + t.scheduledTime);
+                        const lateThreshold = new Date(now.getTime() - 10 * 60000);
+                        return pickupTime < lateThreshold && t.status !== 'completed';
+                       }).length === 0 && (
+                        <Alert status="success" borderRadius="md">
+                          <AlertIcon />
+                          <Box>
+                            <Text fontWeight="bold">All Systems Normal</Text>
+                            <Text fontSize="sm" color="gray.600">
+                              All trips are assigned and on schedule
+                            </Text>
+                          </Box>
+                        </Alert>
+                      )}
+                    </VStack>
+                  </CardBody>
+                </Card>
+              </VStack>
           </CardBody>
         </Card>
 
@@ -2345,58 +1538,6 @@ const getLocationText = (location) => {
             </CardBody>
           </Card>
           
-          {/* Enhanced Date Filter for Upcoming Tab - Mobile-First Design */}
-          {activeTab === 1 && (
-            <Card mb={{ base: 4, md: 6 }}>
-              <CardBody p={{ base: 4, md: 6 }}>
-                <VStack spacing={4} align="stretch">
-                  <Text fontSize="md" fontWeight="semibold" color="blue.700">
-                    Filter by Date Range
-                  </Text>
-                  <Flex 
-                    direction={{ base: "column", sm: "row" }}
-                    gap={{ base: 3, sm: 4 }}
-                    align={{ base: "stretch", sm: "end" }}
-                  >
-                    <FormControl flex="1" minW={{ base: "auto", sm: "140px" }}>
-                      <FormLabel fontSize="sm" mb={2} color="gray.700">From Date</FormLabel>
-                      <Input
-                        type="date"
-                        size="md"
-                        value={dateRange.start}
-                        onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                        bg="white"
-                        borderColor="gray.300"
-                        _focus={{ borderColor: "blue.500", boxShadow: "0 0 0 1px blue.500" }}
-                      />
-                    </FormControl>
-                    <FormControl flex="1" minW={{ base: "auto", sm: "140px" }}>
-                      <FormLabel fontSize="sm" mb={2} color="gray.700">To Date</FormLabel>
-                      <Input
-                        type="date"
-                        size="md"
-                        value={dateRange.end}
-                        onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                        bg="white"
-                        borderColor="gray.300"
-                        _focus={{ borderColor: "blue.500", boxShadow: "0 0 0 1px blue.500" }}
-                      />
-                    </FormControl>
-                    <Button
-                      size="md"
-                      colorScheme="gray"
-                      variant="outline"
-                      onClick={() => setDateRange({ start: '', end: '' })}
-                      minW={{ base: "full", sm: "100px" }}
-                    >
-                      Clear Filters
-                    </Button>
-                  </Flex>
-                </VStack>
-              </CardBody>
-            </Card>
-          )}
-
         {/* Driver Status - Full Width Row */}
         <Card>
           <CardHeader>

@@ -49,7 +49,6 @@ import {
   HomeIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
-import ReturnToDispatchButton from './ReturnToDispatchButton';
 
 const DispatcherSchedule = ({ onViewTrip, onAssignDriver }) => {
   const toast = useToast();
@@ -171,7 +170,6 @@ const DispatcherSchedule = ({ onViewTrip, onAssignDriver }) => {
             <BreadcrumbLink>Schedule</BreadcrumbLink>
           </BreadcrumbItem>
         </Breadcrumb>
-        <ReturnToDispatchButton size="sm" />
       </HStack>
 
       {/* Filter Controls */}

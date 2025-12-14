@@ -13,6 +13,12 @@ import Register from './components/auth/Register';
 import SchedulerDashboard from './components/scheduler/SchedulerDashboard';
 import RecurringTrips from './components/scheduler/RecurringTrips';
 import CompletedTrips from './components/scheduler/CompletedTrips';
+import UpcomingTrips from './components/trips/UpcomingTrips';
+import AllTrips from './components/trips/AllTrips';
+import ActiveTrips from './components/trips/ActiveTrips';
+import SearchPage from './components/trips/SearchPage';
+import SchedulePage from './components/trips/SchedulePage';
+import DriversManagement from './components/drivers/DriversManagement';
 import RiderHistory from './components/riders/RiderHistory';
 import DispatcherDashboard from './components/dispatcher/DispatcherDashboard';
 import DriverLanding from './components/driver/DriverLanding';
@@ -763,6 +769,128 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <ScrollTestPage />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* Canonical Trip Routes */}
+      <Route 
+        path="/trips/create" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <SchedulerDashboard view="manage" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/trips/manage" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <SchedulerDashboard view="manage" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/trips/map" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <LiveTrackingDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/trips/upcoming" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <UpcomingTrips />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/trips/completed" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <CompletedTrips />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/trips/all" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <AllTrips />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/trips/active" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <ActiveTrips />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/trips/recurring" 
+        element={
+          <ProtectedRoute allowedRoles={['admin', 'scheduler', 'dispatcher']}>
+            <RecurringTrips />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* Canonical User/Management Routes */}
+      <Route 
+        path="/users" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <ErrorBoundary fallbackMessage="Failed to load User Management. Please try refreshing the page.">
+              <ManageUsers />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/tracking" 
+        element={
+          <ProtectedRoute allowedRoles={['admin', 'dispatcher']}>
+            <ErrorBoundary fallbackMessage="Failed to load Live Tracking Dashboard. Please try refreshing the page.">
+              <LiveTrackingDashboard />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/drivers" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <DriversManagement />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/profile" 
+        element={
+          <ProtectedRoute>
+            <ErrorBoundary fallbackMessage="Failed to load User Profile. Please try refreshing the page.">
+              <UserProfile />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/schedule" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <SchedulePage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/search" 
+        element={
+          <ProtectedRoute allowedRoles={['scheduler', 'dispatcher', 'admin']}>
+            <SearchPage />
           </ProtectedRoute>
         } 
       />

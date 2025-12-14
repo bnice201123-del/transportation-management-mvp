@@ -1235,7 +1235,7 @@ const SchedulerDashboard = ({ view }) => {
                 </MenuItem>
                 <MenuItem 
                   icon={<Box as={DocumentTextIcon} w={5} h={5} />}
-                  onClick={() => navigate('/scheduler/recurring-trips')}
+                  onClick={() => navigate('/trips/recurring')}
                 >
                   Recurring Trips
                 </MenuItem>
@@ -1244,7 +1244,7 @@ const SchedulerDashboard = ({ view }) => {
                 
                 <MenuItem 
                   icon={<Box as={UserGroupIconSolid} w={5} h={5} />}
-                  onClick={() => navigate('/riders?tab=all-riders')}
+                  onClick={() => navigate('/riders')}
                 >
                   All Riders
                 </MenuItem>

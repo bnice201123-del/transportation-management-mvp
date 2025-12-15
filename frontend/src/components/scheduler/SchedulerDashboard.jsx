@@ -120,6 +120,7 @@ import {
 import axios from 'axios';
 import '../../config/axios';
 import Navbar from '../shared/Navbar';
+import { useAuth } from '../../contexts/AuthContext';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 import UnifiedTripManagement from '../shared/UnifiedTripManagement';
 import TripManagementModal from './TripManagementModal';
@@ -129,6 +130,11 @@ import useCloseOnScroll from '../../hooks/useCloseOnScroll';
 const SchedulerDashboard = ({ view }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // Process Menu State
+  const [isProcessMenuOpen, setIsProcessMenuOpen] = useState(false);
+  const processMenuTimeoutRef = React.useRef(null);
   
   const isManageView = view === 'manage' || location.pathname.includes('/manage') || location.search.includes('view=manage');
   const isCalendarView = view === 'calendar' || location.pathname.includes('/calendar') || location.search.includes('view=calendar');
@@ -255,8 +261,18 @@ const SchedulerDashboard = ({ view }) => {
 
   const fetchDispatchers = useCallback(async () => {
     try {
-      const response = await axios.get('/api/users/dispatchers/available');
-      setDispatchers(response.data);
+      try {
+        const response = await axios.get('/api/users/dispatchers/available');
+        setDispatchers(response.data.data || response.data || []);
+      } catch (error) {
+        if (error.response?.status === 403 || error.response?.status === 404) {
+          // Fallback: fetch users with dispatcher role
+          const response = await axios.get('/api/users?role=dispatcher');
+          setDispatchers(response.data.data?.users || response.data || []);
+        } else {
+          throw error;
+        }
+      }
     } catch (error) {
       console.error('Error fetching dispatchers:', error);
     }
@@ -1097,9 +1113,130 @@ const SchedulerDashboard = ({ view }) => {
   const pendingTrips = (trips || []).filter(trip => trip.status === 'pending');
   const completedTrips = (trips || []).filter(trip => trip.status === 'completed');
 
+  const handleProcessMenuNavigation = (path) => {
+    setIsProcessMenuOpen(false);
+    navigate(path);
+  };
+
   return (
     <Box minH="100vh" bg="green.25" overflowX="hidden">
       <Navbar title="Scheduler Dashboard" />
+      
+      {/* Process Menu */}
+      <Flex justify="center" mt={6} mb={6}>
+        <Box 
+          position="relative"
+          onMouseLeave={() => {
+            processMenuTimeoutRef.current = setTimeout(() => {
+              setIsProcessMenuOpen(false);
+            }, 150);
+          }}
+          onMouseEnter={() => {
+            if (processMenuTimeoutRef.current) {
+              clearTimeout(processMenuTimeoutRef.current);
+            }
+            setIsProcessMenuOpen(true);
+          }}
+        >
+          <Tooltip label="View process options" placement="bottom">
+            <Button
+              variant="outline"
+              size={{ base: "sm", md: "md" }}
+              colorScheme="blue"
+              _hover={{ bg: "blue.50" }}
+              onClick={() => setIsProcessMenuOpen(!isProcessMenuOpen)}
+            >
+              Process
+            </Button>
+          </Tooltip>
+          
+          {isProcessMenuOpen && (
+            <Box
+              position="absolute"
+              top="100%"
+              left="50%"
+              transform="translateX(-50%)"
+              bg="white"
+              border="1px solid"
+              borderColor="gray.200"
+              borderRadius="md"
+              boxShadow="0 10px 25px rgba(0,0,0,0.15)"
+              p={6}
+              mt={2}
+              minW={{ base: "280px", sm: "600px", md: "900px" }}
+              zIndex={1000}
+              pointerEvents="auto"
+            >
+              <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={6}>
+                {/* Column 1: Trip Creation */}
+                <Box>
+                  <VStack align="start" spacing={2}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/create-trip')}>
+                      Create Trip
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/manage-trips')}>
+                      Manage Trips
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/map')}>
+                      View Map
+                    </Button>
+                  </VStack>
+                </Box>
+
+                {/* Column 2: Trip Views */}
+                <Box>
+                  <VStack align="start" spacing={2}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/upcoming')}>
+                      Upcoming
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/completed')}>
+                      Completed
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/all-trips')}>
+                      All Trips
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/active')}>
+                      Active
+                    </Button>
+                  </VStack>
+                </Box>
+
+                {/* Column 3: Navigation */}
+                <Box>
+                  <VStack align="start" spacing={2}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/riders')}>
+                      All Riders
+                    </Button>
+                    {user?.role !== 'dispatcher' && user?.role !== 'scheduler' && (
+                      <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/users')}>
+                        All Users
+                      </Button>
+                    )}
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/drivers')}>
+                      Drivers
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/tracking')}>
+                      Tracking
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/profile')}>
+                      Profile
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
+                      Schedule
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/search')}>
+                      Search
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/recurring-trips')}>
+                      Recurring Trips
+                    </Button>
+                  </VStack>
+                </Box>
+              </Grid>
+            </Box>
+          )}
+        </Box>
+      </Flex>
       
       <Box pt={{ base: 4, md: 0 }} w="100%">
         {/* Conditional rendering for different views */}

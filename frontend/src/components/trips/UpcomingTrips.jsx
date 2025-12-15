@@ -148,7 +148,7 @@ const UpcomingTrips = () => {
   return (
     <>
       <Navbar title="Upcoming Trips" />
-      <Container maxW="7xl" py={8}>
+      <Container maxW={{ base: "full", lg: "full" }} px={{ base: 4, lg: 8 }} py={8}>
         {/* Process Menu at Top */}
         <Flex justify="center" mb={6}>
           <Box 

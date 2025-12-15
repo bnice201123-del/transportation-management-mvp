@@ -351,9 +351,12 @@ const LiveTracking = () => {
   };
 
   // Manual refresh
+  const [lastRefreshTime, setLastRefreshTime] = useState(null);
+  
   const handleRefresh = () => {
     setLoading(true);
     setError(null);
+    setLastRefreshTime(new Date());
     fetchVehicles();
     fetchActiveTrips();
   };
@@ -506,7 +509,7 @@ const LiveTracking = () => {
       <Navbar title="Live Vehicle Tracking" />
       
       {/* Process Menu */}
-      <Flex justify="center" mt={6} mb={6}>
+      <Flex justify="center" mt={6} mb={6} position="relative" zIndex={2000}>
         <Box 
           position="relative"
           onMouseLeave={() => {
@@ -523,10 +526,11 @@ const LiveTracking = () => {
         >
           <Tooltip label="View process options" placement="bottom">
             <Button
-              variant="outline"
+              variant="solid"
               size={{ base: "sm", md: "md" }}
               colorScheme="blue"
-              _hover={{ bg: "blue.50" }}
+              bg="blue.600"
+              _hover={{ bg: "blue.700" }}
               onClick={() => setIsProcessMenuOpen(!isProcessMenuOpen)}
             >
               Process
@@ -546,23 +550,29 @@ const LiveTracking = () => {
               boxShadow="0 10px 25px rgba(0,0,0,0.15)"
               p={6}
               mt={2}
-              minW="600px"
-              zIndex={1000}
+              minW={{ base: "280px", sm: "600px", md: "900px" }}
+              zIndex={1100}
               pointerEvents="auto"
             >
-              <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                {/* TRIPS Section */}
+              <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={6}>
+                {/* Column 1: Trip Creation */}
                 <Box>
-                  <Text fontWeight="bold" mb={3} fontSize="sm" color="gray.700">
-                    TRIPS
-                  </Text>
                   <VStack align="start" spacing={2}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/create-trip')}>
+                      Create Trip
+                    </Button>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/manage-trips')}>
                       Manage Trips
                     </Button>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/map')}>
                       View Map
                     </Button>
+                  </VStack>
+                </Box>
+
+                {/* Column 2: Trip Views */}
+                <Box>
+                  <VStack align="start" spacing={2}>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/upcoming')}>
                       Upcoming
                     </Button>
@@ -578,18 +588,17 @@ const LiveTracking = () => {
                   </VStack>
                 </Box>
 
-                {/* NAVIGATE Section */}
+                {/* Column 3: Navigation */}
                 <Box>
-                  <Text fontWeight="bold" mb={3} fontSize="sm" color="gray.700">
-                    NAVIGATE
-                  </Text>
                   <VStack align="start" spacing={2}>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/riders')}>
                       All Riders
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/users')}>
-                      All Users
-                    </Button>
+                    {user?.role !== 'dispatcher' && user?.role !== 'scheduler' && (
+                      <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/users')}>
+                        All Users
+                      </Button>
+                    )}
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/drivers')}>
                       Drivers
                     </Button>
@@ -602,6 +611,12 @@ const LiveTracking = () => {
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
                       Schedule
                     </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/search')}>
+                      Search
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/recurring-trips')}>
+                      Recurring Trips
+                    </Button>
                   </VStack>
                 </Box>
               </Grid>
@@ -609,10 +624,9 @@ const LiveTracking = () => {
           )}
         </Box>
       </Flex>
-
+      
       <Box minHeight="100vh" bg={bgColor}>
         <Container maxWidth="full" py={6}>
-          {/* Header */}
           <VStack spacing={6} align="stretch">
           <Flex 
             align={{ base: "flex-start", md: "center" }} 
@@ -656,15 +670,19 @@ const LiveTracking = () => {
                 />
               </FormControl>
               
-              <Tooltip label="Refresh Now">
+              <Tooltip label={lastRefreshTime ? `Last refreshed: ${lastRefreshTime.toLocaleTimeString()}` : "Click to refresh data now"}>
                 <IconButton
                   icon={<RepeatIcon />}
                   onClick={handleRefresh}
                   colorScheme="blue"
-                  variant="outline"
+                  variant="solid"
                   isLoading={loading}
+                  isDisabled={loading}
                   size={{ base: "sm", md: "md" }}
                   w={{ base: "full", md: "auto" }}
+                  _hover={!loading ? { bg: "blue.700", transform: "scale(1.05)" } : {}}
+                  _active={!loading ? { transform: "scale(0.95)" } : {}}
+                  transition="all 0.2s"
                 />
               </Tooltip>
               
@@ -1007,7 +1025,8 @@ const LiveTracking = () => {
             </GridItem>
           </Grid>
         </VStack>
-      </Container>
+        </Container>
+      </Box>
 
       {/* Mobile Vehicle Details Drawer */}
       <Drawer isOpen={isDetailsOpen} placement="bottom" onClose={onDetailsClose} size="lg">
@@ -1092,7 +1111,6 @@ const LiveTracking = () => {
           </DrawerBody>
         </DrawerContent>
       </Drawer>
-      </Box>
     </>
   );
 };

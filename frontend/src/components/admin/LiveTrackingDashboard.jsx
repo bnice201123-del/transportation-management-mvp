@@ -52,10 +52,13 @@ const LiveTrackingDashboard = () => {
     try {
       setLoading(true);
       const response = await axios.get('/api/trips');
-      const tripsData = response.data || [];
+      const tripsData = response.data.data?.trips || response.data || [];
+      
+      // Ensure tripsData is an array
+      const tripsArray = Array.isArray(tripsData) ? tripsData : [];
       
       // Filter trips that have coordinates and are active
-      const activeTrips = tripsData.filter(trip => 
+      const activeTrips = tripsArray.filter(trip => 
         trip.pickupLocation?.coordinates && 
         trip.dropoffLocation?.coordinates &&
         ['scheduled', 'in-progress', 'assigned'].includes(trip.status)

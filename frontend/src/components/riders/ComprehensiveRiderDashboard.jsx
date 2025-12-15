@@ -69,7 +69,8 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
-  InputRightAddon
+  InputRightAddon,
+  Tooltip
 } from '@chakra-ui/react';
 import {
   SearchIcon,
@@ -108,7 +109,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-// Removed unused import - useAuth was not being used in this component
+import { useAuth } from '../../contexts/AuthContext';
 import Navbar from '../shared/Navbar';
 import RiderInfoModal from '../shared/RiderInfoModal';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
@@ -184,6 +185,17 @@ const ComprehensiveRiderDashboard = () => {
   // Modal states
   const { isOpen: isNewRiderOpen, onOpen: onNewRiderOpen, onClose: onNewRiderClose } = useDisclosure();
   const { isOpen: isEditRiderOpen, onOpen: onEditRiderOpen, onClose: onEditRiderClose } = useDisclosure();
+
+  // Process Menu State
+  const { user } = useAuth();
+  const [isProcessMenuOpen, setIsProcessMenuOpen] = useState(false);
+  const processMenuTimeoutRef = React.useRef(null);
+
+  // Process Menu Navigation Handler
+  const handleProcessMenuNavigation = (path) => {
+    setIsProcessMenuOpen(false);
+    navigate(path);
+  };
 
   // Color scheme
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -510,8 +522,124 @@ const ComprehensiveRiderDashboard = () => {
     <Box minH="100vh" bg={bgColor}>
       <Navbar title="Rider Management" />
       
+      {/* Process Menu */}
+      <Flex justify="center" mt={6} mb={6}>
+        <Box 
+          position="relative"
+          onMouseLeave={() => {
+            processMenuTimeoutRef.current = setTimeout(() => {
+              setIsProcessMenuOpen(false);
+            }, 150);
+          }}
+          onMouseEnter={() => {
+            if (processMenuTimeoutRef.current) {
+              clearTimeout(processMenuTimeoutRef.current);
+            }
+            setIsProcessMenuOpen(true);
+          }}
+        >
+          <Tooltip label="View process options" placement="bottom">
+            <Button
+              variant="outline"
+              size={{ base: "sm", md: "md" }}
+              colorScheme="blue"
+              _hover={{ bg: "blue.50" }}
+              onClick={() => setIsProcessMenuOpen(!isProcessMenuOpen)}
+            >
+              Process
+            </Button>
+          </Tooltip>
+          
+          {isProcessMenuOpen && (
+            <Box
+              position="absolute"
+              top="100%"
+              left="50%"
+              transform="translateX(-50%)"
+              bg="white"
+              border="1px solid"
+              borderColor="gray.200"
+              borderRadius="md"
+              boxShadow="0 10px 25px rgba(0,0,0,0.15)"
+              p={6}
+              mt={2}
+              minW={{ base: "280px", sm: "600px", md: "900px" }}
+              zIndex={1100}
+              pointerEvents="auto"
+            >
+              <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={6}>
+                {/* Column 1: Trip Creation */}
+                <Box>
+                  <VStack align="start" spacing={2}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/create-trip')}>
+                      Create Trip
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/manage-trips')}>
+                      Manage Trips
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/map')}>
+                      View Map
+                    </Button>
+                  </VStack>
+                </Box>
+
+                {/* Column 2: Trip Views */}
+                <Box>
+                  <VStack align="start" spacing={2}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/upcoming')}>
+                      Upcoming
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/completed')}>
+                      Completed
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/all-trips')}>
+                      All Trips
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/active')}>
+                      Active
+                    </Button>
+                  </VStack>
+                </Box>
+
+                {/* Column 3: Navigation */}
+                <Box>
+                  <VStack align="start" spacing={2}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/riders')}>
+                      All Riders
+                    </Button>
+                    {user?.role !== 'dispatcher' && user?.role !== 'scheduler' && (
+                      <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/users')}>
+                        All Users
+                      </Button>
+                    )}
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/drivers')}>
+                      Drivers
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/tracking')}>
+                      Tracking
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/profile')}>
+                      Profile
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
+                      Schedule
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/search')}>
+                      Search
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/recurring-trips')}>
+                      Recurring Trips
+                    </Button>
+                  </VStack>
+                </Box>
+              </Grid>
+            </Box>
+          )}
+        </Box>
+      </Flex>
+      
       <Box pt={{ base: 4, md: 0 }}>
-        <Container maxW="container.xl" py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>
+        <Container maxW={{ base: "full", lg: "full" }} py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>
           <VStack spacing={{ base: 6, md: 8 }} align="stretch">
             {/* Welcome Header */}
             <Box textAlign="center" py={{ base: 4, md: 6 }}>

@@ -23,10 +23,12 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../shared/Navbar';
+import { useAuth } from '../../contexts/AuthContext';
 import { PhoneIcon, MapPinIcon, ClockIcon } from '@heroicons/react/24/outline';
 
 const ActiveTrips = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isProcessMenuOpen, setIsProcessMenuOpen] = useState(false);
   const processMenuTimeoutRef = React.useRef(null);
   
@@ -126,23 +128,29 @@ const ActiveTrips = () => {
               boxShadow="0 10px 25px rgba(0,0,0,0.15)"
               p={6}
               mt={2}
-              minW="600px"
+              minW={{ base: "280px", sm: "600px", md: "900px" }}
               zIndex={1000}
               pointerEvents="auto"
             >
-              <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                {/* TRIPS Section */}
+              <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={6}>
+                {/* Column 1: Trip Creation */}
                 <Box>
-                  <Text fontWeight="bold" mb={3} fontSize="sm" color="gray.700">
-                    TRIPS
-                  </Text>
                   <VStack align="start" spacing={2}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/create-trip')}>
+                      Create Trip
+                    </Button>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/manage-trips')}>
                       Manage Trips
                     </Button>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/map')}>
                       View Map
                     </Button>
+                  </VStack>
+                </Box>
+
+                {/* Column 2: Trip Views */}
+                <Box>
+                  <VStack align="start" spacing={2}>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/upcoming')}>
                       Upcoming
                     </Button>
@@ -158,18 +166,17 @@ const ActiveTrips = () => {
                   </VStack>
                 </Box>
 
-                {/* NAVIGATE Section */}
+                {/* Column 3: Navigation */}
                 <Box>
-                  <Text fontWeight="bold" mb={3} fontSize="sm" color="gray.700">
-                    NAVIGATE
-                  </Text>
                   <VStack align="start" spacing={2}>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/riders')}>
                       All Riders
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/users')}>
-                      All Users
-                    </Button>
+                    {user?.role !== 'dispatcher' && user?.role !== 'scheduler' && (
+                      <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/users')}>
+                        All Users
+                      </Button>
+                    )}
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/drivers')}>
                       Drivers
                     </Button>
@@ -181,6 +188,12 @@ const ActiveTrips = () => {
                     </Button>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
                       Schedule
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/search')}>
+                      Search
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/recurring-trips')}>
+                      Recurring Trips
                     </Button>
                   </VStack>
                 </Box>

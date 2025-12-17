@@ -13,6 +13,7 @@ import Register from './components/auth/Register';
 import SchedulerDashboard from './components/scheduler/SchedulerDashboard';
 import RecurringTrips from './components/scheduler/RecurringTrips';
 import CompletedTrips from './components/scheduler/CompletedTrips';
+import ScheduleTemplates from './components/ScheduleTemplates';
 import UpcomingTrips from './components/trips/UpcomingTrips';
 import AllTrips from './components/trips/AllTrips';
 import ActiveTrips from './components/trips/ActiveTrips';
@@ -262,7 +263,7 @@ const AppRoutes = () => {
         path="/scheduler/templates" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="templates" />
+            <ScheduleTemplates />
           </ProtectedRoute>
         } 
       />

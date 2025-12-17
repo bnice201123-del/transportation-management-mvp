@@ -649,18 +649,39 @@
 ## 🏢 **Work Schedule & Time Management**
 
 ### Work Schedule Features
-- [ ] Automatic conflict detection (overlapping time-off)
+**Status:** Implementation In Progress (Dec 7, 2025)
+
+**Completed:**
+- [x] Backend Models (WorkSchedule, TimeOff, ShiftSwap, ScheduleTemplate) - verified existing
+- [x] ScheduleConflictService - comprehensive conflict detection utility created
+- [x] Enhanced schedule API routes (scheduleAdvanced.js) with:
+  - [x] Conflict detection endpoints (/api/schedules/check-conflicts)
+  - [x] Driver availability slots endpoints (/api/schedules/driver/:driverId/available-slots)
+  - [x] Shift swap request endpoints (create, driver response, admin response)
+  - [x] Time-off request endpoints (request, approve/deny, balance tracking)
+  - [x] Shift reminder endpoints for email/SMS
+- [x] Frontend Components:
+  - [x] ConflictModal.jsx - displays scheduling conflicts with alternative driver suggestions
+  - [x] ShiftSwapModal.jsx - shift swap request interface
+  - [x] TimeOffRequestModal.jsx - time-off request interface with balance checking
+- [x] VacationBalance model - automatic balance calculation and tracking
+
+**In Progress:**
+- [ ] UI integration of conflict detection into shift creation flow
+- [ ] Manager dashboard for approving/denying requests
+- [ ] Driver personal schedule calendar view
+- [ ] Notification system for shift reminders and approvals
+
+**Remaining:**
 - [ ] Integration with Google Calendar & Outlook
 - [ ] Recurring time-off patterns (every Friday, etc.)
 - [ ] Bulk approval/denial actions for managers
-- [ ] Shift swap requests between drivers
-- [ ] Schedule templates (weekly patterns)
-- [ ] SMS/email reminders for upcoming shifts
+- [ ] Schedule templates UI implementation
+- [ ] SMS/email reminders execution (framework in place, needs Twilio integration)
 - [ ] Holiday calendar import (regional)
-- [ ] Vacation balance tracking per driver
-- [ ] Automated coverage suggestions
+- [ ] Automated coverage suggestions UI
 - [ ] Overtime tracking and alerts
-- [ ] Break time enforcement
+- [ ] Break time enforcement (backend logic exists, UI pending)
 
 **Priority:** Medium | **Effort:** High | **Impact:** High
 

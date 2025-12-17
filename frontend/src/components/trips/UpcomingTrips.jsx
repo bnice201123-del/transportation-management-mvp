@@ -6,7 +6,6 @@ import {
   VStack,
   HStack,
   Button,
-  useDisclosure,
   Spinner,
   Center,
   SimpleGrid,
@@ -56,7 +55,6 @@ const UpcomingTrips = () => {
       });
       
       setTrips(upcomingTrips);
-      applyFilters(upcomingTrips);
     } catch (error) {
       console.error('Error fetching upcoming trips:', error);
     } finally {
@@ -116,10 +114,10 @@ const UpcomingTrips = () => {
     setFilteredTrips(filtered);
   };
 
-  // Update filters when filter values change
   useEffect(() => {
-    applyFilters(trips);
-  }, [dateRangeStart, dateRangeEnd, selectedRider, selectedDriver, selectedStatus]);
+    applyFilters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRangeStart, dateRangeEnd, selectedRider, selectedDriver, selectedStatus, trips]);
 
   const handleEditTrip = (tripId) => {
     navigate(`/scheduler?tripId=${tripId}&action=edit`);
@@ -212,7 +210,17 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full" 
                       size="sm"
-                      onClick={() => handleProcessMenuNavigation('/trips/manage')}
+                      onClick={() => handleProcessMenuNavigation('/scheduler')}
+                      _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                    >
+                      Create Trip
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      justifyContent="flex-start" 
+                      w="full" 
+                      size="sm"
+                      onClick={() => handleProcessMenuNavigation('/scheduler')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
                       Manage Trips
@@ -222,7 +230,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
-                      onClick={() => handleProcessMenuNavigation('/trips/map')}
+                      onClick={() => handleProcessMenuNavigation('/maps/tracking')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
                       View Map
@@ -324,6 +332,56 @@ const UpcomingTrips = () => {
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
                       Schedule
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      justifyContent="flex-start" 
+                      w="full"
+                      size="sm"
+                      onClick={() => handleProcessMenuNavigation('/scheduler?view=manage')}
+                      _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                    >
+                      Trip Management
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      justifyContent="flex-start" 
+                      w="full"
+                      size="sm"
+                      onClick={() => handleProcessMenuNavigation('/scheduler?view=calendar')}
+                      _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                    >
+                      Calendar View
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      justifyContent="flex-start" 
+                      w="full"
+                      size="sm"
+                      onClick={() => handleProcessMenuNavigation('/search')}
+                      _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                    >
+                      Search
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      justifyContent="flex-start" 
+                      w="full"
+                      size="sm"
+                      onClick={() => handleProcessMenuNavigation('/trips/recurring')}
+                      _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                    >
+                      Recurring Trips
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      justifyContent="flex-start" 
+                      w="full"
+                      size="sm"
+                      onClick={() => handleProcessMenuNavigation('/admin/analytics')}
+                      _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                    >
+                      📊 Analytics Dashboard
                     </Button>
                   </VStack>
                 </Grid>

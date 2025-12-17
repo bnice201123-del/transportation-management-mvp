@@ -68,7 +68,6 @@ const LiveTracking = () => {
   
   const [vehicles, setVehicles] = useState([]);
   const [filteredVehicles, setFilteredVehicles] = useState([]);
-  const [activeTrips, setActiveTrips] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -76,7 +75,7 @@ const LiveTracking = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [refreshInterval, setRefreshInterval] = useState(30); // seconds
+  const [refreshInterval] = useState(30); // seconds
   
   // Map state
   const [mapCenter, setMapCenter] = useState({ lat: 44.9778, lng: -93.2650 }); // Minneapolis, MN
@@ -90,8 +89,6 @@ const LiveTracking = () => {
   
   // Advanced tracking features
   const [followedVehicle, setFollowedVehicle] = useState(null);
-  const [showRouteHistory, setShowRouteHistory] = useState(false);
-  const [routeHistory, setRouteHistory] = useState([]);
   
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -232,7 +229,7 @@ const LiveTracking = () => {
     try {
       const response = await axios.get('/api/trips?status=active,in-progress');
       const tripsData = response.data.data?.trips || [];
-      setActiveTrips(tripsData);
+      void tripsData;
     } catch (error) {
       console.error('Error fetching active trips:', error);
     } finally {
@@ -292,7 +289,7 @@ const LiveTracking = () => {
         }
       };
     }
-  }, [autoRefresh, refreshInterval, fetchVehicles, fetchActiveTrips]);
+  }, [autoRefresh, fetchVehicles, fetchActiveTrips, refreshInterval]);
 
   // Initial data fetch
   useEffect(() => {
@@ -558,13 +555,13 @@ const LiveTracking = () => {
                 {/* Column 1: Trip Creation */}
                 <Box>
                   <VStack align="start" spacing={2}>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/create-trip')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
                       Create Trip
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/manage-trips')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
                       Manage Trips
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/map')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/maps/tracking')}>
                       View Map
                     </Button>
                   </VStack>
@@ -573,16 +570,16 @@ const LiveTracking = () => {
                 {/* Column 2: Trip Views */}
                 <Box>
                   <VStack align="start" spacing={2}>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/upcoming')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/upcoming')}>
                       Upcoming
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/completed')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/completed')}>
                       Completed
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/all-trips')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/all')}>
                       All Trips
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/active')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/active')}>
                       Active
                     </Button>
                   </VStack>
@@ -608,27 +605,52 @@ const LiveTracking = () => {
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/profile')}>
                       Profile
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/schedule')}>
                       Schedule
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler?view=manage')}>
+                      Trip Management
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler?view=calendar')}>
+                      Calendar View
                     </Button>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/search')}>
                       Search
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/recurring-trips')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/recurring')}>
                       Recurring Trips
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/analytics')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/admin/analytics')}>
                       📊 Analytics Dashboard
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleExportSchedule('csv')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => {
+                      const csvContent = 'Vehicle ID,License Plate,Driver Name,Status,Location,Last Update\n' + filteredVehicles.map(v => `${v.id},${v.licensePlate},${v.driver?.firstName || ''} ${v.driver?.lastName || ''},${v.status},"${v.currentLocation?.lat},${v.currentLocation?.lng}",${new Date().toISOString()}`).join('\n');
+                      const link = document.createElement('a');
+                      link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+                      link.download = 'vehicles.csv';
+                      link.click();
+                    }}>
                       📥 Export as CSV
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleExportSchedule('json')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => {
+                      const jsonContent = JSON.stringify(filteredVehicles, null, 2);
+                      const link = document.createElement('a');
+                      link.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(jsonContent);
+                      link.download = 'vehicles.json';
+                      link.click();
+                    }}>
                       📥 Export as JSON
                     </Button>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => window.print()}>
                       🖨️ Print Schedule
                     </Button>
+                  </VStack>
+                </Box>
+              </Grid>
+            </Box>
+          )}
+        </Box>
+      </Flex>
       
       <Box minHeight="100vh" bg={bgColor}>
         <Container maxWidth="full" py={6}>

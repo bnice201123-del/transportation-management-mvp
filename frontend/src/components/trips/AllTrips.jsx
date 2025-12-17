@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -41,7 +41,7 @@ const AllTrips = () => {
   const [sortBy, setSortBy] = useState('date');
 
   // Fetch all trips
-  const fetchAllTrips = useCallback(async () => {
+  const fetchAllTrips = async () => {
     try {
       setLoading(true);
       const response = await axios.get('/api/trips');
@@ -53,11 +53,12 @@ const AllTrips = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchAllTrips();
-  }, [fetchAllTrips]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Apply filters and sorting
   const applyFilters = (tripsToFilter) => {
@@ -92,7 +93,8 @@ const AllTrips = () => {
 
   useEffect(() => {
     applyFilters(trips);
-  }, [searchTerm, selectedStatus, sortBy]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, selectedStatus, sortBy, trips]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -204,7 +206,7 @@ const AllTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
-                      onClick={() => handleProcessMenuNavigation('/trips/map')}
+                      onClick={() => handleProcessMenuNavigation('/maps/tracking')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
                       View Map
@@ -306,6 +308,56 @@ const AllTrips = () => {
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
                       Schedule
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      justifyContent="flex-start" 
+                      w="full"
+                      size="sm"
+                      onClick={() => handleProcessMenuNavigation('/scheduler?view=manage')}
+                      _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                    >
+                      Trip Management
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      justifyContent="flex-start" 
+                      w="full"
+                      size="sm"
+                      onClick={() => handleProcessMenuNavigation('/scheduler?view=calendar')}
+                      _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                    >
+                      Calendar View
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      justifyContent="flex-start" 
+                      w="full"
+                      size="sm"
+                      onClick={() => handleProcessMenuNavigation('/search')}
+                      _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                    >
+                      Search
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      justifyContent="flex-start" 
+                      w="full"
+                      size="sm"
+                      onClick={() => handleProcessMenuNavigation('/trips/recurring')}
+                      _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                    >
+                      Recurring Trips
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      justifyContent="flex-start" 
+                      w="full"
+                      size="sm"
+                      onClick={() => handleProcessMenuNavigation('/admin/analytics')}
+                      _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                    >
+                      📊 Analytics Dashboard
                     </Button>
                   </VStack>
                 </Grid>

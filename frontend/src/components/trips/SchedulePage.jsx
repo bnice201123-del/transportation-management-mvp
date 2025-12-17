@@ -217,13 +217,13 @@ const SchedulePage = () => {
                 {/* Column 1: Trip Creation */}
                 <Box>
                   <VStack align="start" spacing={2}>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/create-trip')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
                       Create Trip
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/manage-trips')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
                       Manage Trips
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/map')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/maps/tracking')}>
                       View Map
                     </Button>
                   </VStack>
@@ -232,16 +232,16 @@ const SchedulePage = () => {
                 {/* Column 2: Trip Views */}
                 <Box>
                   <VStack align="start" spacing={2}>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/upcoming')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/upcoming')}>
                       Upcoming
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/completed')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/completed')}>
                       Completed
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/all-trips')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/all')}>
                       All Trips
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/active')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/active')}>
                       Active
                     </Button>
                   </VStack>
@@ -267,27 +267,36 @@ const SchedulePage = () => {
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/profile')}>
                       Profile
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/schedule')}>
                       Schedule
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler?view=manage')}>
+                      Trip Management
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler?view=calendar')}>
+                      Calendar View
                     </Button>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/search')}>
                       Search
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/recurring-trips')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/recurring')}>
                       Recurring Trips
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/analytics')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/admin/analytics')}>
                       📊 Analytics Dashboard
-                    </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleExportSchedule('csv')}>
-                      📥 Export as CSV
-                    </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleExportSchedule('json')}>
-                      📥 Export as JSON
                     </Button>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => window.print()}>
                       🖨️ Print Schedule
                     </Button>
+                  </VStack>
+                </Box>
+              </Grid>
+            </Box>
+          )}
+        </Box>
+      </Flex>
+
+      <Container maxW="container.xl" py={8}>
         <VStack spacing={6} align="stretch">
           {/* Schedule Header */}
           <Box>
@@ -467,5 +476,6 @@ const SchedulePage = () => {
     </Box>
   );
 };
+
 
 export default SchedulePage;

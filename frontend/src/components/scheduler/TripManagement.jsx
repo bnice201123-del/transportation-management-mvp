@@ -62,7 +62,6 @@ import {
   Divider,
   Grid,
   Tooltip,
-  useBreakpointValue,
   useColorModeValue,
   Checkbox
 } from '@chakra-ui/react';
@@ -116,7 +115,6 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
   const [loading, setLoading] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState(0);
 
   // Filter and Search States
   const [searchTerm, setSearchTerm] = useState('');
@@ -158,7 +156,6 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
 
   const toast = useToast();
   const navigate = useNavigate();
-  const isMobile = useBreakpointValue({ base: true, md: false });
 
   // Responsive design variables
   const cardBg = useColorModeValue('white', 'gray.800');
@@ -414,6 +411,7 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
       let response;
       if (isEdit) {
         response = await axios.put(`/api/trips/${selectedTrip._id}`, tripData);
+        void response;
         toast({
           title: 'Success',
           description: 'Trip updated successfully',
@@ -422,7 +420,8 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
           isClosable: true,
         });
       } else {
-        response = await axios.post('/api/trips', tripData);
+        const res = await axios.post('/api/trips', tripData);
+        void res;
         toast({
           title: 'Success',
           description: 'Trip created successfully',
@@ -637,13 +636,13 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
                 {/* Column 1: Trip Creation */}
                 <Box>
                   <VStack align="start" spacing={2}>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/create-trip')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
                       Create Trip
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/manage-trips')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
                       Manage Trips
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/map')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/maps/tracking')}>
                       View Map
                     </Button>
                   </VStack>
@@ -652,16 +651,16 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
                 {/* Column 2: Trip Views */}
                 <Box>
                   <VStack align="start" spacing={2}>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/upcoming')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/upcoming')}>
                       Upcoming
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/completed')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/completed')}>
                       Completed
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/all-trips')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/all')}>
                       All Trips
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/active')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/active')}>
                       Active
                     </Button>
                   </VStack>
@@ -687,16 +686,22 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/profile')}>
                       Profile
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/schedule')}>
                       Schedule
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler?view=manage')}>
+                      Trip Management
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler?view=calendar')}>
+                      Calendar View
                     </Button>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/search')}>
                       Search
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/recurring-trips')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/recurring')}>
                       Recurring Trips
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/analytics')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/admin/analytics')}>
                       📊 Analytics Dashboard
                     </Button>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => {

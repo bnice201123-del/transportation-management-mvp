@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -91,6 +91,7 @@ import {
   MapPinIcon,
   TruckIcon,
   UserGroupIcon,
+  UserIcon,
   ChartBarIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
@@ -164,30 +165,18 @@ const SchedulerDashboard = ({ view }) => {
   const [riderSearchTerm, setRiderSearchTerm] = useState('');
 
   // Enhanced filtering and display state
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState('today');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
   
   // Responsive design variables
-  const isMobile = useBreakpointValue({ base: true, md: false });
-  const isTablet = useBreakpointValue({ base: false, md: true, lg: false });
-  const cardDirection = useBreakpointValue({ base: 'column', lg: 'row' });
-  const statsColumns = useBreakpointValue({ base: 1, sm: 2, lg: 4 });
-  const tableSize = useBreakpointValue({ base: 'sm', md: 'md' });
   
   // Color mode values
-  const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const textColor = useColorModeValue('gray.800', 'white');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
-  const successColor = useColorModeValue('green.500', 'green.300');
-  const warningColor = useColorModeValue('orange.500', 'orange.300');
-  const errorColor = useColorModeValue('red.500', 'red.300');
   const primaryColor = useColorModeValue('green.600', 'green.300');
   
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -203,7 +192,6 @@ const SchedulerDashboard = ({ view }) => {
   } = useDisclosure();
   const {
     isOpen: isTripManagementOpen,
-    onOpen: onTripManagementOpen,
     onClose: onTripManagementClose
   } = useDisclosure();
   const {
@@ -374,7 +362,7 @@ const SchedulerDashboard = ({ view }) => {
   }, [trips, dispatchers]);
   
   // Paginated and filtered trips calculation
-  const processedTrips = useMemo(() => {
+  useMemo(() => {
     let filtered = trips;
     
     // Apply search filter
@@ -434,7 +422,8 @@ const SchedulerDashboard = ({ view }) => {
       currentPage,
       totalItems: filtered.length
     };
-  }, [trips, searchTerm, statusFilter, activeTab, currentPage, itemsPerPage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trips, searchTerm, statusFilter, activeTab, itemsPerPage]);
 
   // Update date and time every minute
   useEffect(() => {
@@ -519,7 +508,7 @@ const SchedulerDashboard = ({ view }) => {
     };
 
     filterTrips();
-  }, [trips, activeTab, searchTerm, statusFilter, dateRange]);
+  }, [trips, searchTerm, statusFilter, activeTab, dateRange]);
 
   // Trips Table Component
   const TripsTable = ({ trips, showPattern, onView, onEdit, onDelete, formatDate, getStatusColor }) => (
@@ -1104,7 +1093,7 @@ const SchedulerDashboard = ({ view }) => {
   // Get today's and upcoming trips
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayTrips = (trips || []).filter(trip => {
+  const _filterTodayTrips = (trips || []).filter(trip => {
     const tripDate = new Date(trip.scheduledDate);
     tripDate.setHours(0, 0, 0, 0);
     return tripDate.getTime() === today.getTime();
@@ -1171,13 +1160,13 @@ const SchedulerDashboard = ({ view }) => {
                 {/* Column 1: Trip Creation */}
                 <Box>
                   <VStack align="start" spacing={2}>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/create-trip')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
                       Create Trip
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/manage-trips')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
                       Manage Trips
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/map')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/maps/tracking')}>
                       View Map
                     </Button>
                   </VStack>
@@ -1186,16 +1175,16 @@ const SchedulerDashboard = ({ view }) => {
                 {/* Column 2: Trip Views */}
                 <Box>
                   <VStack align="start" spacing={2}>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/upcoming')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/upcoming')}>
                       Upcoming
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/completed')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/completed')}>
                       Completed
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/all-trips')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/all')}>
                       All Trips
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/active')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/active')}>
                       Active
                     </Button>
                   </VStack>
@@ -1221,16 +1210,22 @@ const SchedulerDashboard = ({ view }) => {
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/profile')}>
                       Profile
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/schedule')}>
                       Schedule
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler?view=manage')}>
+                      Trip Management
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler?view=calendar')}>
+                      Calendar View
                     </Button>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/search')}>
                       Search
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/recurring-trips')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/recurring')}>
                       Recurring Trips
                     </Button>
-                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/analytics')}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/admin/analytics')}>
                       📊 Analytics Dashboard
                     </Button>
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleExportSchedule('csv')}>
@@ -1340,93 +1335,64 @@ const SchedulerDashboard = ({ view }) => {
             </CardBody>
           </Card>
 
-          {/* Quick Actions Dropdown */}
-          <Box mb={{ base: 6, md: 8 }}>
-            <Menu
-              isOpen={isQuickActionsOpen}
-              onClose={() => setIsQuickActionsOpen(false)}
-              onOpen={() => setIsQuickActionsOpen(true)}
-              closeOnBlur={true}
-              closeOnSelect={true}
+          {/* Primary Action Buttons */}
+          <Flex 
+            mb={{ base: 6, md: 8 }}
+            gap={{ base: 2, md: 3 }}
+            flexWrap="wrap"
+            align="center"
+            justify="center"
+            w="100%"
+          >
+            {/* Create Trip Button */}
+            <Button 
+              leftIcon={<Box as={PlusIcon} w={5} h={5} />}
+              colorScheme="blue"
+              size="md"
+              fontSize={{ base: "sm", md: "md" }}
+              fontWeight="semibold"
+              onClick={onOpen}
+              _hover={{ 
+                shadow: "lg",
+                transform: "translateY(-1px)"
+              }}
+              _active={{
+                transform: "translateY(0px)"
+              }}
+              transition="all 0.2s ease"
+              borderRadius="md"
+              px={{ base: 4, md: 6 }}
+              py={6}
             >
-              <MenuButton
-                as={Button}
-                rightIcon={<Box as={ChevronDownIcon} w={5} h={5} />}
-                leftIcon={<Box as={AdjustmentsHorizontalIcon} w={5} h={5} />}
-                size="md"
-                variant="solid"
-                colorScheme="green"
-              >
-                Quick Actions
-              </MenuButton>
-              <MenuList>
-                <MenuItem 
-                  icon={<Box as={PlusIcon} w={5} h={5} />}
-                  onClick={onOpen}
-                >
-                  Schedule Trip
-                </MenuItem>
-                <MenuItem 
-                  icon={<Box as={MagnifyingGlassIcon} w={5} h={5} />}
-                  onClick={() => navigate('/scheduler?view=manage')}
-                  fontWeight={isManageView ? "bold" : "normal"}
-                  bg={isManageView ? "blue.50" : "transparent"}
-                >
-                  Trip Management
-                </MenuItem>
-                <MenuItem 
-                  icon={<Box as={CalendarDaysIcon} w={5} h={5} />}
-                  onClick={() => navigate('/scheduler?view=calendar')}
-                  fontWeight={isCalendarView ? "bold" : "normal"}
-                  bg={isCalendarView ? "blue.50" : "transparent"}
-                >
-                  Calendar View
-                </MenuItem>
-                <MenuItem 
-                  icon={<Box as={DocumentTextIcon} w={5} h={5} />}
-                  onClick={() => navigate('/trips/recurring')}
-                >
-                  Recurring Trips
-                </MenuItem>
-                
-                <MenuDivider />
-                
-                <MenuItem 
-                  icon={<Box as={UserGroupIconSolid} w={5} h={5} />}
-                  onClick={() => navigate('/riders')}
-                >
-                  All Riders
-                </MenuItem>
-                <MenuItem 
-                  icon={<Box as={ChartBarIcon} w={5} h={5} />}
-                  onClick={() => navigate('/admin/analytics')}
-                >
-                  Analytics Dashboard
-                </MenuItem>
-                
-                <MenuDivider />
-                
-                <MenuItem 
-                  icon={<Box as={ArrowDownTrayIcon} w={5} h={5} />}
-                  onClick={() => openExportDialog('csv')}
-                >
-                  Export as CSV
-                </MenuItem>
-                <MenuItem 
-                  icon={<Box as={ArrowDownTrayIcon} w={5} h={5} />}
-                  onClick={() => openExportDialog('json')}
-                >
-                  Export as JSON
-                </MenuItem>
-                <MenuItem 
-                  icon={<Box as={DocumentTextIcon} w={5} h={5} />}
-                  onClick={() => openExportDialog('print')}
-                >
-                  Print Schedule
-                </MenuItem>
-              </MenuList>
-            </Menu>
-          </Box>
+              Create Trip
+            </Button>
+
+            {/* Print Schedule Button */}
+            <Button 
+              leftIcon={<Box as={DocumentTextIcon} w={5} h={5} />}
+              colorScheme="gray"
+              variant="outline"
+              size="md"
+              fontSize={{ base: "sm", md: "md" }}
+              fontWeight="semibold"
+              onClick={() => openExportDialog('print')}
+              _hover={{ 
+                shadow: "lg",
+                transform: "translateY(-1px)",
+                bg: "gray.100"
+              }}
+              _active={{
+                transform: "translateY(0px)"
+              }}
+              transition="all 0.2s ease"
+              borderRadius="md"
+              borderWidth="1px"
+              px={{ base: 4, md: 6 }}
+              py={6}
+            >
+              Print Schedule
+            </Button>
+          </Flex>
 
           {/* Statistics Dashboard */}
           <SimpleGrid 
@@ -1516,111 +1482,6 @@ const SchedulerDashboard = ({ view }) => {
             </Card>
           </SimpleGrid>
 
-          {/* Enhanced Action Buttons - Mobile-First Design */}
-          <Card 
-            mb={{ base: 6, md: 8 }}
-            bg="white"
-            shadow="md"
-            borderRadius="xl"
-            border="1px solid"
-            borderColor="green.100"
-            w="100%"
-            maxW="100%"
-          >
-            <CardBody p={{ base: 4, md: 6 }}>
-              <Grid 
-                templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }}
-                gap={{ base: 3, md: 4 }}
-              >
-                {/* Create New Trip - Primary Action */}
-                <Button 
-                  leftIcon={<Box as={PlusIcon} w={5} h={5} />} 
-                  colorScheme="green" 
-                  onClick={onOpen}
-                  size={{ base: "lg", md: "lg" }}
-                  height={{ base: "50px", md: "56px" }}
-                  fontSize={{ base: "sm", md: "md" }}
-                  fontWeight="semibold"
-                  _hover={{ transform: "translateY(-1px)", shadow: "lg" }}
-                  transition="all 0.2s ease"
-                >
-                  <VStack spacing={0}>
-                    <Text>➕ Create Trip</Text>
-                    <Text fontSize="xs" opacity={0.8} display={{ base: "none", md: "block" }}>
-                      New Schedule
-                    </Text>
-                  </VStack>
-                </Button>
-
-                {/* Manage Trips */}
-                <Button 
-                  leftIcon={<Box as={MagnifyingGlassIcon} w={5} h={5} />} 
-                  colorScheme="green" 
-                  variant="outline"
-                  onClick={onTripManagementOpen}
-                  size={{ base: "lg", md: "lg" }}
-                  height={{ base: "50px", md: "56px" }}
-                  fontSize={{ base: "sm", md: "md" }}
-                  fontWeight="semibold"
-                  _hover={{ transform: "translateY(-1px)", shadow: "lg", bg: "green.50" }}
-                  transition="all 0.2s ease"
-                  borderWidth="2px"
-                >
-                  <VStack spacing={0}>
-                    <Text>🔍 Manage Trips</Text>
-                    <Text fontSize="xs" opacity={0.7} display={{ base: "none", md: "block" }}>
-                      Edit & Update
-                    </Text>
-                  </VStack>
-                </Button>
-
-                {/* Quick Access to Calendar View */}
-                <Button 
-                  leftIcon={<Box as={CalendarDaysIcon} w={5} h={5} />} 
-                  colorScheme="green" 
-                  variant="outline"
-                  onClick={() => setActiveTab(4)} // Switch to Calendar tab
-                  size={{ base: "lg", md: "lg" }}
-                  height={{ base: "50px", md: "56px" }}
-                  fontSize={{ base: "sm", md: "md" }}
-                  fontWeight="semibold"
-                  _hover={{ transform: "translateY(-1px)", shadow: "lg", bg: "green.50" }}
-                  transition="all 0.2s ease"
-                  borderWidth="2px"
-                >
-                  <VStack spacing={0}>
-                    <Text>� Calendar</Text>
-                    <Text fontSize="xs" opacity={0.7} display={{ base: "none", md: "block" }}>
-                      Visual Schedule
-                    </Text>
-                  </VStack>
-                </Button>
-
-                {/* Quick Access to Analytics */}
-                <Button 
-                  leftIcon={<Box as={EyeIcon} w={5} h={5} />} 
-                  colorScheme="green" 
-                  variant="outline"
-                  onClick={() => setActiveTab(6)} // Switch to Analytics tab
-                  size={{ base: "lg", md: "lg" }}
-                  height={{ base: "50px", md: "56px" }}
-                  fontSize={{ base: "sm", md: "md" }}
-                  fontWeight="semibold"
-                  _hover={{ transform: "translateY(-1px)", shadow: "lg", bg: "green.50" }}
-                  transition="all 0.2s ease"
-                  borderWidth="2px"
-                >
-                  <VStack spacing={0}>
-                    <Text>� Analytics</Text>
-                    <Text fontSize="xs" opacity={0.7} display={{ base: "none", md: "block" }}>
-                      Performance
-                    </Text>
-                  </VStack>
-                </Button>
-              </Grid>
-            </CardBody>
-          </Card>
-
           {/* Enhanced Trips Management with Advanced Filtering */}
           <Card 
             shadow="xl"
@@ -1652,86 +1513,122 @@ const SchedulerDashboard = ({ view }) => {
                   </Heading>
                 </Flex>
                 
-                {/* Enhanced Search and Filters */}
-                <Card bg="white" shadow="sm" borderRadius="lg">
-                  <CardBody p={{ base: 3, md: 4 }}>
-                    <VStack spacing={4} align="stretch">
-                      {/* Search and Status Filter Row */}
-                      <Flex
-                        direction={{ base: "column", md: "row" }}
-                        gap={{ base: 3, md: 4 }}
-                        align={{ base: "stretch", md: "center" }}
+                {/* Modern Filter Panel */}
+                <Card 
+                  bg="linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)"
+                  shadow="md" 
+                  borderRadius="xl"
+                  borderWidth="1px"
+                  borderColor="green.200"
+                >
+                  <CardBody p={{ base: 4, md: 6 }}>
+                    <VStack spacing={6} align="stretch">
+                      {/* Main Filters Row */}
+                      <Grid 
+                        templateColumns={{ base: "1fr", sm: "1fr 1fr", lg: "2fr 1fr 1fr 1fr" }} 
+                        gap={4}
                       >
-                        <InputGroup flex="1" maxW={{ base: "full", md: "300px" }}>
-                          <InputLeftElement pointerEvents="none">
-                            <Box as={MagnifyingGlassIcon} w={5} h={5} color="green.400" />
-                          </InputLeftElement>
-                          <Input
-                            placeholder="🔍 Search trips by rider, location, or notes..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            borderColor="green.200"
-                            _hover={{ borderColor: "green.300" }}
-                            _focus={{ borderColor: "green.500", boxShadow: "0 0 0 1px var(--chakra-colors-green-500)" }}
-                          />
-                        </InputGroup>
-                        
-                        <Select
-                          placeholder="🎯 All Statuses"
-                          value={statusFilter}
-                          onChange={(e) => setStatusFilter(e.target.value)}
-                          maxW={{ base: "full", md: "180px" }}
-                          borderColor="green.200"
-                          _hover={{ borderColor: "green.300" }}
-                          _focus={{ borderColor: "green.500" }}
-                        >
-                          <option value="all">All Statuses</option>
-                          <option value="pending">⏳ Pending</option>
-                          <option value="assigned">👤 Assigned</option>
-                          <option value="in_progress">🚗 In Progress</option>
-                          <option value="completed">✅ Completed</option>
-                          <option value="cancelled">❌ Cancelled</option>
-                        </Select>
-                      </Flex>
-                      
-                      {/* Date Range Filter Row */}
-                      <Flex
-                        direction={{ base: "column", sm: "row" }}
-                        gap={{ base: 3, sm: 2 }}
-                        align={{ base: "stretch", sm: "center" }}
-                        flexWrap="wrap"
-                      >
-                        <Flex align="center" gap={2} minW="fit-content">
-                          <Box as={CalendarDaysIcon} w={4} h={4} color="green.500" />
-                          <Text fontSize="sm" color="gray.700" fontWeight="semibold">
-                            Date Range:
+                        {/* Search Input */}
+                        <Box>
+                          <Text fontSize="xs" fontWeight="bold" color="gray.600" mb={2}>
+                            🔍 SEARCH
                           </Text>
-                        </Flex>
-                        
-                        <Flex gap={2} align="center" flex="1">
+                          <InputGroup>
+                            <InputLeftElement pointerEvents="none">
+                              <Box as={MagnifyingGlassIcon} w={5} h={5} color="green.400" />
+                            </InputLeftElement>
+                            <Input
+                              placeholder="Search by rider, location, trip ID..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              bg="white"
+                              borderColor="green.300"
+                              _hover={{ borderColor: "green.400" }}
+                              _focus={{ borderColor: "green.500", boxShadow: "0 0 0 3px rgba(34, 197, 94, 0.1)" }}
+                              fontSize="sm"
+                            />
+                          </InputGroup>
+                        </Box>
+
+                        {/* Status Filter */}
+                        <Box>
+                          <Text fontSize="xs" fontWeight="bold" color="gray.600" mb={2}>
+                            🎯 STATUS
+                          </Text>
+                          <Select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            bg="white"
+                            borderColor="green.300"
+                            _hover={{ borderColor: "green.400" }}
+                            _focus={{ borderColor: "green.500" }}
+                            fontSize="sm"
+                          >
+                            <option value="all">All Statuses</option>
+                            <option value="pending">⏳ Pending</option>
+                            <option value="assigned">👤 Assigned</option>
+                            <option value="in_progress">🚗 In Progress</option>
+                            <option value="completed">✅ Completed</option>
+                            <option value="cancelled">❌ Cancelled</option>
+                          </Select>
+                        </Box>
+
+                        {/* From Date */}
+                        <Box>
+                          <Text fontSize="xs" fontWeight="bold" color="gray.600" mb={2}>
+                            📅 FROM DATE
+                          </Text>
                           <Input
                             type="date"
                             value={dateRange.start}
                             onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
-                            size="sm"
-                            maxW={{ base: "full", sm: "150px" }}
-                            borderColor="green.200"
-                            _hover={{ borderColor: "green.300" }}
+                            bg="white"
+                            borderColor="green.300"
+                            _hover={{ borderColor: "green.400" }}
+                            _focus={{ borderColor: "green.500" }}
+                            fontSize="sm"
                           />
-                          <Text fontSize="sm" color="gray.500" fontWeight="medium">to</Text>
+                        </Box>
+
+                        {/* To Date */}
+                        <Box>
+                          <Text fontSize="xs" fontWeight="bold" color="gray.600" mb={2}>
+                            📅 TO DATE
+                          </Text>
                           <Input
                             type="date"
                             value={dateRange.end}
                             onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
-                            size="sm"
-                            maxW={{ base: "full", sm: "150px" }}
-                            borderColor="green.200"
-                            _hover={{ borderColor: "green.300" }}
+                            bg="white"
+                            borderColor="green.300"
+                            _hover={{ borderColor: "green.400" }}
+                            _focus={{ borderColor: "green.500" }}
+                            fontSize="sm"
                           />
-                        </Flex>
-                        
+                        </Box>
+                      </Grid>
+
+                      {/* Action Buttons */}
+                      <Flex 
+                        gap={3} 
+                        justify={{ base: "stretch", sm: "flex-end" }}
+                        flexWrap="wrap"
+                      >
                         <Button
-                          size="sm"
+                          size="md"
+                          colorScheme="green"
+                          variant="solid"
+                          onClick={() => {
+                            // Filters are already being applied in real-time
+                          }}
+                          _hover={{ shadow: "md" }}
+                          fontSize="sm"
+                          fontWeight="semibold"
+                        >
+                          ✓ Apply Filters
+                        </Button>
+                        <Button
+                          size="md"
                           variant="outline"
                           colorScheme="green"
                           onClick={() => {
@@ -1740,10 +1637,29 @@ const SchedulerDashboard = ({ view }) => {
                             setDateRange({ start: '', end: '' });
                           }}
                           _hover={{ bg: "green.50" }}
+                          fontSize="sm"
+                          fontWeight="semibold"
                         >
                           🗑️ Clear Filters
                         </Button>
                       </Flex>
+
+                      {/* Filter Info */}
+                      <Box 
+                        bg="white" 
+                        p={3} 
+                        borderRadius="lg"
+                        borderLeftWidth="4px"
+                        borderLeftColor="green.500"
+                      >
+                        <Text fontSize="sm" color="gray.700">
+                          <strong>Showing:</strong> {filteredTrips.length} trip(s) 
+                          {searchTerm && ` matching "${searchTerm}"`}
+                          {statusFilter !== 'all' && ` with status "${statusFilter}"`}
+                          {dateRange.start && ` from ${dateRange.start}`}
+                          {dateRange.end && ` to ${dateRange.end}`}
+                        </Text>
+                      </Box>
                     </VStack>
                   </CardBody>
                 </Card>
@@ -1751,273 +1667,93 @@ const SchedulerDashboard = ({ view }) => {
             </CardHeader>
           
           <CardBody p={{ base: 3, md: 4 }}>
-            <Tabs 
-              index={activeTab} 
-              onChange={setActiveTab} 
-              variant="soft-rounded" 
-              colorScheme="green"
-              size={{ base: "sm", md: "md" }}
-            >
-              <TabList 
-                mb={4}
-                gap={{ base: 1, md: 2 }}
-                flexWrap="wrap"
-                justifyContent={{ base: "center", md: "flex-start" }}
-                bg="green.50"
-                p={2}
-                borderRadius="lg"
-              >
-                {/* Trip Management Tabs - Enhanced with HeroIcons */}
-                <Tab 
-                  fontSize={{ base: "xs", md: "sm" }}
-                  fontWeight="semibold"
-                  _selected={{ 
-                    bg: "green.600", 
-                    color: "white",
-                    shadow: "md"
-                  }}
-                  _hover={{ bg: "green.100" }}
-                  transition="all 0.2s ease"
-                >
-                  <HStack spacing={1}>
-                    <Box as={ClockIcon} w={3} h={3} />
-                    <Text>
-                      Today ({(trips || []).filter(trip => {
-                        const tripDate = new Date(trip.scheduledDate);
-                        const today = new Date();
-                        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                        const todayEnd = new Date(todayStart);
-                        todayEnd.setDate(todayEnd.getDate() + 1);
-                        return tripDate >= todayStart && tripDate < todayEnd;
-                      }).length})
-                    </Text>
-                  </HStack>
-                </Tab>
-                <Tab 
-                  fontSize={{ base: "xs", md: "sm" }}
-                  fontWeight="semibold"
-                  _selected={{ 
-                    bg: "green.600", 
-                    color: "white",
-                    shadow: "md"
-                  }}
-                  _hover={{ bg: "green.100" }}
-                  transition="all 0.2s ease"
-                >
-                  <HStack spacing={1}>
-                    <Box as={ArrowRightIcon} w={3} h={3} />
-                    <Text>
-                      Upcoming ({(trips || []).filter(trip => {
-                        const tripDate = new Date(trip.scheduledDate);
-                        const tomorrow = new Date();
-                        tomorrow.setDate(tomorrow.getDate() + 1);
-                        return tripDate >= tomorrow;
-                      }).length})
-                    </Text>
-                  </HStack>
-                </Tab>
-                <Tab 
-                  fontSize={{ base: "xs", md: "sm" }}
-                  fontWeight="semibold"
-                  _selected={{ 
-                    bg: "green.600", 
-                    color: "white",
-                    shadow: "md"
-                  }}
-                  _hover={{ bg: "green.100" }}
-                  transition="all 0.2s ease"
-                >
-                  <HStack spacing={1}>
-                    <Box as={QueueListIcon} w={3} h={3} />
-                    <Text>All Trips ({(trips || []).length})</Text>
-                  </HStack>
-                </Tab>
+            {/* Today's Trips - Full Page View */}
+            {(() => {
+              // Filter for today's trips only (exclude completed and canceled)
+              const todaysTrips = (trips || []).filter(trip => {
+                const tripDate = new Date(trip.scheduledDate);
+                const today = new Date();
+                const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                const todayEnd = new Date(todayStart);
+                todayEnd.setDate(todayEnd.getDate() + 1);
+                const isTodayTrip = tripDate >= todayStart && tripDate < todayEnd;
                 
-                {/* Additional Feature Tabs - Enhanced with HeroIcons */}
-                <Tab 
-                  fontSize={{ base: "xs", md: "sm" }}
-                  fontWeight="semibold"
-                  _selected={{ 
-                    bg: "green.600", 
-                    color: "white",
-                    shadow: "md"
-                  }}
-                  _hover={{ bg: "green.100" }}
-                  transition="all 0.2s ease"
-                >
-                  <HStack spacing={1}>
-                    <Box as={CalendarDaysIcon} w={3} h={3} />
-                    <Text>Calendar</Text>
-                  </HStack>
-                </Tab>
-                <Tab 
-                  fontSize={{ base: "xs", md: "sm" }}
-                  fontWeight="semibold"
-                  _selected={{ 
-                    bg: "green.600", 
-                    color: "white",
-                    shadow: "md"
-                  }}
-                  _hover={{ bg: "green.100" }}
-                  transition="all 0.2s ease"
-                >
-                  <HStack spacing={1}>
-                    <Box as={ArrowPathIcon} w={3} h={3} />
-                    <Text>Recurring</Text>
-                  </HStack>
-                </Tab>
-                <Tab 
-                  fontSize={{ base: "xs", md: "sm" }}
-                  fontWeight="semibold"
-                  _selected={{ 
-                    bg: "green.600", 
-                    color: "white",
-                    shadow: "md"
-                  }}
-                  _hover={{ bg: "green.100" }}
-                  transition="all 0.2s ease"
-                >
-                  <HStack spacing={1}>
-                    <Box as={PresentationChartLineIcon} w={3} h={3} />
-                    <Text>Analytics</Text>
-                  </HStack>
-                </Tab>
-              </TabList>
+                // Exclude completed and canceled trips
+                const isActive = trip.status !== 'completed' && trip.status !== 'cancelled' && trip.status !== 'canceled';
+                
+                return isTodayTrip && isActive;
+              });
 
-              <TabPanels>
-                {/* Today's Trips */}
-                <TabPanel px={0}>
-                  <TripsTable 
-                    trips={filteredTrips.filter(trip => {
-                      const tripDate = new Date(trip.scheduledDate);
-                      const today = new Date();
-                      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                      const todayEnd = new Date(todayStart);
-                      todayEnd.setDate(todayEnd.getDate() + 1);
-                      return tripDate >= todayStart && tripDate < todayEnd;
-                    })} 
-                    showPattern={false}
-                    onView={openViewModal}
-                    onEdit={openEditModal}
-                    onDelete={openDeleteDialog}
-                    formatDate={formatDate}
-                    getStatusColor={getStatusColor}
-                  />
-                </TabPanel>
-                
-                {/* Upcoming Trips */}
-                <TabPanel px={0}>
-                  <TripsTable 
-                    trips={filteredTrips.filter(trip => {
-                      const tripDate = new Date(trip.scheduledDate);
-                      const tomorrow = new Date();
-                      tomorrow.setDate(tomorrow.getDate() + 1);
-                      return tripDate >= tomorrow;
-                    })} 
-                    showPattern={false}
-                    onView={openViewModal}
-                    onEdit={openEditModal}
-                    onDelete={openDeleteDialog}
-                    formatDate={formatDate}
-                    getStatusColor={getStatusColor}
-                  />
-                </TabPanel>
-                
-                {/* All Trips */}
-                <TabPanel px={0}>
-                  <TripsTable 
-                    trips={filteredTrips} 
-                    showPattern={false}
-                    onView={openViewModal}
-                    onEdit={openEditModal}
-                    onDelete={openDeleteDialog}
-                    formatDate={formatDate}
-                    getStatusColor={getStatusColor}
-                  />
-                </TabPanel>
-                
-                {/* Calendar View */}
-                <TabPanel px={0}>
-                  <Card bg="white" shadow="sm" p={4}>
-                    <VStack spacing={4} align="center">
-                      <Heading size="md" color="green.600">📅 Calendar View</Heading>
-                      <Text color="gray.600" textAlign="center">
-                        Advanced calendar interface for visual trip scheduling and management.
-                      </Text>
-                      <Button 
-                        colorScheme="green" 
-                        size="lg"
-                        onClick={() => window.location.href = '/scheduler/calendar'}
-                      >
-                        Open Full Calendar View
-                      </Button>
-                    </VStack>
-                  </Card>
-                </TabPanel>
-                
-                {/* Recurring Trips */}
-                <TabPanel px={0}>
-                  <Card bg="white" shadow="sm" p={4}>
-                    <VStack spacing={4} align="center">
-                      <Heading size="md" color="green.600">🔄 Recurring Trips</Heading>
-                      <Text color="gray.600" textAlign="center">
-                        Manage scheduled routes, weekly patterns, and recurring transportation schedules.
-                      </Text>
-                      <Button 
-                        colorScheme="green" 
-                        size="lg"
-                        onClick={() => window.location.href = '/scheduler/recurring'}
-                      >
-                        Manage Recurring Trips
-                      </Button>
-                    </VStack>
-                  </Card>
-                </TabPanel>
-                
-                {/* Analytics */}
-                <TabPanel px={0}>
-                  <VStack spacing={6}>
-                    <Card bg="white" shadow="sm" p={6} w="full">
-                      <VStack spacing={4}>
-                        <Heading size="md" color="green.600">📈 Scheduler Analytics</Heading>
-                        
-                        {/* Analytics Summary Cards */}
-                        <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={4} w="full">
-                          <Card bg="green.50" p={4}>
-                            <VStack>
-                              <Text fontSize="2xl" fontWeight="bold" color="green.600">
-                                {Math.round((completedTrips.length / (trips.length || 1)) * 100)}%
-                              </Text>
-                              <Text fontSize="sm" color="gray.600">Completion Rate</Text>
-                            </VStack>
-                          </Card>
-                          <Card bg="orange.50" p={4}>
-                            <VStack>
-                              <Text fontSize="2xl" fontWeight="bold" color="orange.500">
-                                {pendingTrips.length}
-                              </Text>
-                              <Text fontSize="sm" color="gray.600">Pending Assignments</Text>
-                            </VStack>
-                          </Card>
-                          <Card bg="blue.50" p={4}>
-                            <VStack>
-                              <Text fontSize="2xl" fontWeight="bold" color="blue.500">
-                                {Math.round(trips.length / 7)}
-                              </Text>
-                              <Text fontSize="sm" color="gray.600">Avg Daily Trips</Text>
-                            </VStack>
-                          </Card>
-                        </Grid>
-                        
-                        <Text color="gray.600" textAlign="center" mt={4}>
-                          Detailed analytics and reporting features for scheduling optimization and performance tracking.
-                        </Text>
+              // Sort by scheduled time (chronological order)
+              const sortedTrips = todaysTrips.sort((a, b) => {
+                const timeA = a.scheduledTime ? parseInt(a.scheduledTime.replace(':', '')) : 2359;
+                const timeB = b.scheduledTime ? parseInt(b.scheduledTime.replace(':', '')) : 2359;
+                return timeA - timeB;
+              });
+
+              const totalTrips = sortedTrips.length;
+
+              return (
+                <VStack spacing={6} align="stretch" w="full">
+                  {/* Header with Count and Refresh */}
+                  <Box>
+                    <HStack justify="space-between" align="center" mb={6}>
+                      <VStack align="start" spacing={2}>
+                        <Heading size="lg" color="green.700">
+                          Today's Trips
+                        </Heading>
+                        <HStack spacing={3}>
+                          <Badge colorScheme="green" fontSize="md" px={4} py={2}>
+                            {totalTrips} trip{totalTrips !== 1 ? 's' : ''} active
+                          </Badge>
+                          <Text fontSize="sm" color="gray.500">
+                            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                          </Text>
+                        </HStack>
                       </VStack>
-                    </Card>
-                  </VStack>
-                </TabPanel>
-              </TabPanels>
-            </Tabs>
+                      <Button
+                        size="md"
+                        variant="outline"
+                        colorScheme="green"
+                        onClick={fetchTrips}
+                        leftIcon={<Box as={ArrowPathIcon} w={5} h={5} />}
+                      >
+                        Refresh
+                      </Button>
+                    </HStack>
+                    
+                    {totalTrips === 0 && (
+                      <Alert status="info" borderRadius="md" bg="blue.50" border="1px solid" borderColor="blue.200">
+                        <AlertIcon />
+                        <VStack align="start" spacing={1}>
+                          <Text fontWeight="semibold">No active trips scheduled for today</Text>
+                          <Text fontSize="sm" color="gray.600">Create a new trip to get started.</Text>
+                        </VStack>
+                      </Alert>
+                    )}
+                  </Box>
+
+                  {/* Trips List - Chronological Order */}
+                  {totalTrips > 0 && (
+                    <VStack spacing={4} align="stretch">
+                      {sortedTrips.map((trip, index) => (
+                        <TodayTripCard 
+                          key={trip._id} 
+                          trip={trip}
+                          onView={() => openViewModal(trip)}
+                          onEdit={() => openEditModal(trip)}
+                          onDelete={() => openDeleteDialog(trip)}
+                          formatDate={formatDate}
+                          getStatusColor={getStatusColor}
+                          tripIndex={index + 1}
+                          totalTrips={totalTrips}
+                        />
+                      ))}
+                    </VStack>
+                  )}
+                </VStack>
+              );
+            })()}
           </CardBody>
         </Card>
             </>
@@ -2493,6 +2229,130 @@ const SchedulerDashboard = ({ view }) => {
         onTripUpdate={fetchTrips}
       />
     </Box>
+  );
+};
+
+// Today's Trip Card Component
+const TodayTripCard = ({ trip, onView, onEdit, onDelete, formatDate, getStatusColor }) => {
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  
+  const scheduleTime = trip.scheduledTime ? trip.scheduledTime : 'Not set';
+  const riderName = trip.riderName || trip.rider?.name || 'Unknown Rider';
+  const driverName = trip.assignedDriver?.name || 'Unassigned';
+  const pickupAddr = trip.pickupLocation?.address || 'No pickup address';
+  const dropoffAddr = trip.dropoffLocation?.address || 'No dropoff address';
+  
+  const statusColor = getStatusColor(trip.status);
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  
+  return (
+    <Card 
+      bg={cardBg} 
+      borderColor={borderColor} 
+      borderWidth={1} 
+      overflow="hidden"
+      transition="all 0.2s"
+      _hover={{ shadow: 'md', borderColor: 'green.400' }}
+    >
+      <CardBody p={4} spacing={3}>
+        {/* Time and Status Header */}
+        <HStack justify="space-between" mb={3}>
+          <VStack align="start" spacing={0} flex={1}>
+            <Text fontSize="lg" fontWeight="bold" color="green.700">
+              {scheduleTime}
+            </Text>
+            <Text fontSize="xs" color={mutedColor}>
+              {formatDate(trip.scheduledDate)}
+            </Text>
+          </VStack>
+          <Badge 
+            colorScheme={statusColor}
+            variant="solid"
+            px={2}
+            py={1}
+          >
+            {trip.status.replace(/_/g, ' ').toUpperCase()}
+          </Badge>
+        </HStack>
+
+        {/* Rider Info */}
+        <HStack spacing={2} mb={2}>
+          <Box as={UserIcon} w={4} h={4} color={mutedColor} />
+          <VStack align="start" spacing={0}>
+            <Text fontSize="sm" fontWeight="500">
+              {riderName}
+            </Text>
+          </VStack>
+        </HStack>
+
+        {/* Driver Info */}
+        <HStack spacing={2} mb={2}>
+          <Box as={TruckIcon} w={4} h={4} color={mutedColor} />
+          <Text fontSize="sm" color={driverName === 'Unassigned' ? 'red.500' : 'inherit'}>
+            {driverName}
+          </Text>
+        </HStack>
+
+        {/* Pickup Location */}
+        <HStack spacing={2} mb={2} align="start">
+          <Box as={MapPinIcon} w={4} h={4} color="orange.500" mt={0.5} flexShrink={0} />
+          <VStack align="start" spacing={0} flex={1}>
+            <Text fontSize="xs" color={mutedColor}>
+              Pickup
+            </Text>
+            <Text fontSize="sm" noOfLines={2} wordBreak="break-word">
+              {pickupAddr}
+            </Text>
+          </VStack>
+        </HStack>
+
+        {/* Dropoff Location */}
+        <HStack spacing={2} mb={4} align="start">
+          <Box as={MapPinIcon} w={4} h={4} color="blue.500" mt={0.5} flexShrink={0} />
+          <VStack align="start" spacing={0} flex={1}>
+            <Text fontSize="xs" color={mutedColor}>
+              Dropoff
+            </Text>
+            <Text fontSize="sm" noOfLines={2} wordBreak="break-word">
+              {dropoffAddr}
+            </Text>
+          </VStack>
+        </HStack>
+
+        {/* Action Buttons */}
+        <HStack spacing={2} justify="flex-start" wrap="wrap">
+          <Button
+            size="sm"
+            variant="outline"
+            colorScheme="blue"
+            onClick={onView}
+            leftIcon={<Box as={EyeIcon} w={4} h={4} />}
+          >
+            {isMobile ? 'View' : 'View Details'}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            colorScheme="green"
+            onClick={onEdit}
+            leftIcon={<Box as={PencilIcon} w={4} h={4} />}
+          >
+            {isMobile ? 'Edit' : 'Edit'}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            colorScheme="red"
+            onClick={onDelete}
+            leftIcon={<Box as={TrashIcon} w={4} h={4} />}
+          >
+            {isMobile ? 'Cancel' : 'Cancel'}
+          </Button>
+        </HStack>
+      </CardBody>
+    </Card>
   );
 };
 

@@ -630,13 +630,18 @@ const ComprehensiveRiderDashboard = () => {
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/recurring-trips')}>
                       Recurring Trips
                     </Button>
-                  </VStack>
-                </Box>
-              </Grid>
-            </Box>
-          )}
-        </Box>
-      </Flex>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/analytics')}>
+                      📊 Analytics Dashboard
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleExportSchedule('csv')}>
+                      📥 Export as CSV
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleExportSchedule('json')}>
+                      📥 Export as JSON
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => window.print()}>
+                      🖨️ Print Schedule
+                    </Button>
       
       <Box pt={{ base: 4, md: 0 }}>
         <Container maxW={{ base: "full", lg: "full" }} py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>

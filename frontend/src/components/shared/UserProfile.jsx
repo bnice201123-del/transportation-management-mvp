@@ -238,6 +238,18 @@ const UserProfile = () => {
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/recurring-trips')}>
                       Recurring Trips
                     </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/analytics')}>
+                      📊 Analytics Dashboard
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleExportSchedule('csv')}>
+                      📥 Export as CSV
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleExportSchedule('json')}>
+                      📥 Export as JSON
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => window.print()}>
+                      🖨️ Print Schedule
+                    </Button>
                   </VStack>
                 </Box>
               </Grid>

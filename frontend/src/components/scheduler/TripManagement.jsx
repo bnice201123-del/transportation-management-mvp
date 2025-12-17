@@ -696,6 +696,30 @@ const TripManagement = ({ onTripUpdate, initialTrips = [] }) => {
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/recurring-trips')}>
                       Recurring Trips
                     </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/analytics')}>
+                      📊 Analytics Dashboard
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => {
+                      const csvContent = 'Trip ID,Status,Date\\n';
+                      const link = document.createElement('a');
+                      link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+                      link.download = 'trip-management.csv';
+                      link.click();
+                    }}>
+                      📥 Export as CSV
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => {
+                      const jsonContent = JSON.stringify({ trips: [] }, null, 2);
+                      const link = document.createElement('a');
+                      link.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(jsonContent);
+                      link.download = 'trip-management.json';
+                      link.click();
+                    }}>
+                      📥 Export as JSON
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => window.print()}>
+                      🖨️ Print Schedule
+                    </Button>
                   </VStack>
                 </Box>
               </Grid>

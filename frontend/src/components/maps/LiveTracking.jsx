@@ -617,13 +617,18 @@ const LiveTracking = () => {
                     <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/recurring-trips')}>
                       Recurring Trips
                     </Button>
-                  </VStack>
-                </Box>
-              </Grid>
-            </Box>
-          )}
-        </Box>
-      </Flex>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/analytics')}>
+                      📊 Analytics Dashboard
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleExportSchedule('csv')}>
+                      📥 Export as CSV
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleExportSchedule('json')}>
+                      📥 Export as JSON
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => window.print()}>
+                      🖨️ Print Schedule
+                    </Button>
       
       <Box minHeight="100vh" bg={bgColor}>
         <Container maxWidth="full" py={6}>

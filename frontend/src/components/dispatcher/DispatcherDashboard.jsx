@@ -762,6 +762,54 @@ const getLocationText = (location) => {
                       >
                         Recurring Trips
                       </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => handleProcessMenuNavigation('/analytics')}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        📊 Analytics Dashboard
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => {
+                          const csvContent = 'Trip ID,Rider,Driver,Status,Date\\n';
+                          const link = document.createElement('a');
+                          link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+                          link.download = 'dispatch-data.csv';
+                          link.click();
+                        }}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        📥 Export as CSV
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => {
+                          const jsonContent = JSON.stringify({ trips: [], dispatchers: [] }, null, 2);
+                          const link = document.createElement('a');
+                          link.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(jsonContent);
+                          link.download = 'dispatch-data.json';
+                          link.click();
+                        }}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        📥 Export as JSON
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        justifyContent="flex-start" 
+                        w="full" 
+                        onClick={() => window.print()}
+                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
+                      >
+                        🖨️ Print Schedule
+                      </Button>
                     </VStack>
                   </Grid>
                 </Box>

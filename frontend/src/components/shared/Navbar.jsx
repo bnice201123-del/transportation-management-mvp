@@ -373,14 +373,9 @@ const Navbar = ({ title }) => {
                       isDisabled
                       _disabled={{ opacity: 1, cursor: 'default' }}
                     >
-                      <VStack align="start" spacing={0}>
-                        <Text fontSize="sm" fontWeight="medium">
-                          {user ? `${user.firstName} ${user.lastName}` : 'User'}
-                        </Text>
-                        <Text fontSize="xs" color="gray.500">
-                          {user?.email}
-                        </Text>
-                      </VStack>
+                      <Text fontSize="sm" fontWeight="normal">
+                        {user ? `${user.firstName} ${user.lastName}` : 'User'}
+                      </Text>
                     </MenuItem>
                     <MenuDivider />
                     <MenuItem 
@@ -388,30 +383,21 @@ const Navbar = ({ title }) => {
                       _hover={{ bg: "green.50" }} 
                       onClick={() => navigate('/profile')}
                     >
-                      <VStack align="start" spacing={0}>
-                        <Text fontSize="sm" fontWeight="medium">Profile Settings</Text>
-                        <Text fontSize="xs" color="gray.500">Personal info & preferences</Text>
-                      </VStack>
+                      <Text fontSize="sm" fontWeight="normal">Profile Settings</Text>
                     </MenuItem>
                     <MenuItem 
                       icon={<Box as={Cog6ToothIcon} w={5} h={5} />}
                       _hover={{ bg: "green.50" }}
                       onClick={() => navigate('/settings/preferences')}
                     >
-                      <VStack align="start" spacing={0}>
-                        <Text fontSize="sm" fontWeight="medium">Account Preferences</Text>
-                        <Text fontSize="xs" color="gray.500">Display, privacy & more</Text>
-                      </VStack>
+                      <Text fontSize="sm" fontWeight="normal">Account Preferences</Text>
                     </MenuItem>
                     <MenuItem 
                       icon={<BellIcon />}
                       _hover={{ bg: "green.50" }} 
                       onClick={() => navigate('/settings/notifications')}
                     >
-                      <VStack align="start" spacing={0}>
-                        <Text fontSize="sm" fontWeight="medium">Notification Settings</Text>
-                        <Text fontSize="xs" color="gray.500">Manage alerts & emails</Text>
-                      </VStack>
+                      <Text fontSize="sm" fontWeight="normal">Notification Settings</Text>
                     </MenuItem>
                     <MenuDivider />
                     <MenuItem 
@@ -420,7 +406,7 @@ const Navbar = ({ title }) => {
                       _hover={{ bg: "red.50", color: "red.600" }}
                       color="red.500"
                     >
-                      <Text fontSize="sm" fontWeight="medium">Sign Out</Text>
+                      <Text fontSize="sm" fontWeight="normal">Sign Out</Text>
                     </MenuItem>
                   </MenuList>
                 </Menu>

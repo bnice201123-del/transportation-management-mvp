@@ -27,6 +27,7 @@ import {
   ChartBarIcon,
   HomeIcon
 } from '@heroicons/react/24/outline';
+import ReturnToDispatchButton from './ReturnToDispatchButton';
 import AdvancedSearchModal from '../search/AdvancedSearchModal';
 
 const DispatcherSearch = () => {
@@ -85,6 +86,7 @@ const DispatcherSearch = () => {
     <VStack spacing={6} align="stretch">
       {/* Breadcrumb and Return Button */}
       <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
+        <ReturnToDispatchButton variant="ghost" size="sm" showText={true} />
         <Breadcrumb fontSize={{ base: "sm", md: "md" }}>
           <BreadcrumbItem>
             <BreadcrumbLink display="flex" alignItems="center" gap={2} href="/dispatcher">

@@ -46,7 +46,8 @@ import {
   AlertIcon,
   AlertTitle
 } from '@chakra-ui/react';
-import { ChevronDownIcon, PlusIcon, EditIcon, TrashIcon, CopyIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, EditIcon, CopyIcon, DeleteIcon } from '@chakra-ui/icons';
+import { AddIcon } from '@chakra-ui/icons';
 import axios from 'axios';
 import Navbar from "./shared/Navbar";
 
@@ -200,7 +201,7 @@ const ScheduleTemplates = () => {
             </Box>
             <Button
               colorScheme="green"
-              leftIcon={<PlusIcon />}
+              leftIcon={<AddIcon />}
               onClick={onCreateOpen}
             >
               New Template
@@ -348,7 +349,7 @@ const ScheduleTemplates = () => {
                                 </MenuItem>
                                 <MenuItem
                                   onClick={() => handleDeleteTemplate(template._id)}
-                                  icon={<TrashIcon />}
+                                  icon={<DeleteIcon />}
                                   color="red.500"
                                 >
                                   Delete

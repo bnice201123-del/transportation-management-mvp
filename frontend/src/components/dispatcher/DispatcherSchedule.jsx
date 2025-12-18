@@ -48,6 +48,7 @@ import {
   ChevronDownIcon,
   HomeIcon
 } from '@heroicons/react/24/outline';
+import ReturnToDispatchButton from './ReturnToDispatchButton';
 import axios from 'axios';
 
 const DispatcherSchedule = ({ onViewTrip, onAssignDriver }) => {
@@ -159,6 +160,7 @@ const DispatcherSchedule = ({ onViewTrip, onAssignDriver }) => {
     <VStack spacing={6} align="stretch">
       {/* Navigation Breadcrumb */}
       <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
+        <ReturnToDispatchButton variant="ghost" size="sm" showText={true} />
         <Breadcrumb fontSize={{ base: "sm", md: "md" }}>
           <BreadcrumbItem>
             <BreadcrumbLink display="flex" alignItems="center" gap={2} href="/dispatcher">

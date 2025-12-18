@@ -80,12 +80,15 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   const lastFocusedElement = useRef(null);
   
   // Settings from localStorage (with defaults)
+  // eslint-disable-next-line no-unused-vars
   const [overlayOpacity, setOverlayOpacity] = useState(() => {
     return localStorage.getItem('sidebar.overlayOpacity') || '600';
   });
+  // eslint-disable-next-line no-unused-vars
   const [soundEnabled, setSoundEnabled] = useState(() => {
     return localStorage.getItem('sidebar.soundEnabled') !== 'false';
   });
+  // eslint-disable-next-line no-unused-vars
   const [hapticEnabled, setHapticEnabled] = useState(() => {
     return localStorage.getItem('sidebar.hapticEnabled') !== 'false';
   });
@@ -109,8 +112,8 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   const sidebarWidth = useBreakpointValue({ 
     base: 0, 
     md: isSidebarVisible ? "60px" : "0", 
-    lg: isSidebarVisible ? "200px" : "0", 
-    xl: isSidebarVisible ? "240px" : "0" 
+    lg: isSidebarVisible ? "260px" : "0", 
+    xl: isSidebarVisible ? "280px" : "0" 
   });
   
   // Utility functions for sound and haptic feedback
@@ -164,6 +167,13 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       playSound('open');
     }
   }, [isMobileOpen, isSidebarVisible, playSound]);
+
+  // Reset expanded submenus when sidebar closes
+  useEffect(() => {
+    if (!isMobileOpen && !isSidebarVisible) {
+      setExpandedItems({});
+    }
+  }, [isMobileOpen, isSidebarVisible]);
   
   // Enhanced close function with focus restoration
   const handleClose = () => {
@@ -407,12 +417,14 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   });
 
   // Check if user is scheduler-only (no admin or dispatcher role)
+  // eslint-disable-next-line no-unused-vars
   const isSchedulerOnly = () => {
     const userRoles = user?.roles || [user?.role];
     return (userRoles.includes('scheduler') && !userRoles.includes('admin') && !userRoles.includes('dispatcher'));
   };
 
   // Check if user is dispatcher-only (no admin role)
+  // eslint-disable-next-line no-unused-vars
   const isDispatcherOnly = () => {
     const userRoles = user?.roles || [user?.role];
     return (userRoles.includes('dispatcher') && !userRoles.includes('admin'));
@@ -628,6 +640,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
             <Box key={item.id} display={item.display}>
               <Flex
                 align="center"
+                justify="flex-start"
                 p={3}
                 borderRadius="lg"
                 cursor="pointer"
@@ -635,6 +648,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                 color={isActive(item.path) ? item.color : textColor}
                 _hover={{ bg: hoverBg, color: item.color }}
                 transition="all 0.2s ease"
+                minH="48px"
                 onClick={() => {
                   if (item.subItems?.length > 0) {
                     toggleExpanded(item.id);
@@ -643,14 +657,15 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                   }
                 }}
               >
-                <Icon as={item.icon} boxSize={5} />
-                <Text ml={3} fontSize="sm" fontWeight="medium" flex={1}>
+                <Icon as={item.icon} boxSize={6} flexShrink={0} />
+                <Text ml={3} fontSize="sm" fontWeight="medium" flex={1} lineHeight="1.4">
                   {item.label}
                 </Text>
                 {item.subItems?.length > 0 && (
                   <Icon
                     as={expandedItems[item.id] ? ChevronDownIcon : ChevronRightIcon}
                     boxSize={4}
+                    flexShrink={0}
                   />
                 )}
               </Flex>
@@ -658,28 +673,30 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
               {/* Sub Items */}
               {item.subItems && (
                 <Collapse in={expandedItems[item.id]}>
-                  <VStack spacing={1} align="stretch" mt={2} ml={8}>
+                  <VStack spacing={0} align="stretch" mt={1} ml={0} mr={0} px={2} py={1}>
                     {item.subItems.map((subItem, index) => (
-                      <Flex
-                        key={index}
-                        align="center"
-                        p={2}
-                        borderRadius="md"
-                        cursor="pointer"
-                        display={subItem.display}
-                        _hover={{ bg: hoverBg, color: item.color }}
-                        transition="all 0.1s"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          subItem.action();
-                          hideSidebar(); // Auto-close sidebar when subitem is clicked
-                        }}
-                      >
-                        <Icon as={subItem.icon} boxSize={4} />
-                        <Text ml={2} fontSize="xs">
-                          {subItem.label}
-                        </Text>
-                      </Flex>
+                      <Box key={index} display={subItem.display}>
+                        <HStack
+                          px={3}
+                          py={2}
+                          minH="36px"
+                          borderRadius="md"
+                          cursor="pointer"
+                          spacing={2}
+                          _hover={{ bg: hoverBg, color: item.color }}
+                          transition="all 0.1s"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            subItem.action();
+                            hideSidebar(); // Auto-close sidebar when subitem is clicked
+                          }}
+                        >
+                          <Icon as={subItem.icon} boxSize={4} flexShrink={0} />
+                          <Text fontSize="xs" fontWeight="normal" flex={1} lineHeight="1.3" noOfLines={1} overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
+                            {subItem.label}
+                          </Text>
+                        </HStack>
+                      </Box>
                     ))}
                   </VStack>
                 </Collapse>
@@ -704,22 +721,22 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
               }}
             >
               <Tooltip label={item.label} placement="right" hasArrow>
-                <Box
-                  w="44px"
-                  h="44px"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
+                <Flex
+                  w="48px"
+                  h="48px"
+                  align="center"
+                  justify="center"
                   borderRadius="lg"
                   cursor="pointer"
                   bg={isActive(item.path) ? activeBg : 'transparent'}
                   color={isActive(item.path) ? item.color : textColor}
-                  _hover={{ bg: hoverBg, color: item.color, transform: 'scale(1.1)' }}
+                  _hover={{ bg: hoverBg, color: item.color, transform: 'scale(1.05)' }}
                   transition="all 0.2s ease"
                   onClick={() => handleItemClick(item)}
+                  flexShrink={0}
                 >
-                  <Icon as={item.icon} boxSize={5} />
-                </Box>
+                  <Icon as={item.icon} boxSize={6} />
+                </Flex>
               </Tooltip>
 
               {/* Hover Menu */}
@@ -757,10 +774,13 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                   {item.subItems.map((subItem, index) => (
                     <HStack
                       key={index}
-                      px={3}
-                      py={2}
+                      pl={3}
+                      pr={2}
+                      py={1.5}
                       cursor="pointer"
                       display={subItem.display}
+                      spacing={2}
+                      minH="32px"
                       _hover={{ bg: hoverBg, color: item.color }}
                       transition="all 0.1s"
                       onClick={(e) => {
@@ -769,8 +789,8 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                         hideSidebar(); // Auto-close sidebar when subitem is clicked
                       }}
                     >
-                      <Icon as={subItem.icon} boxSize={4} />
-                      <Text fontSize="sm" fontWeight="medium">
+                      <Icon as={subItem.icon} boxSize={4} flexShrink={0} />
+                      <Text fontSize="2xs" fontWeight="medium" noOfLines={1} overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
                         {subItem.label}
                       </Text>
                     </HStack>
@@ -831,8 +851,9 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                   {/* Main Menu Item */}
                   <Flex
                     align="center"
+                    justify="flex-start"
                     p={4}
-                    minH="48px" // Touch-friendly minimum height
+                    minH="52px" // Touch-friendly minimum height
                     cursor="pointer"
                     bg={isActive(item.path) ? activeBg : 'transparent'}
                     color={isActive(item.path) ? item.color : textColor}
@@ -853,8 +874,8 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                       }
                     }}
                   >
-                    <Icon as={item.icon} boxSize={6} />
-                    <Text ml={3} fontSize="md" fontWeight="medium" flex={1}>
+                    <Icon as={item.icon} boxSize={6} flexShrink={0} />
+                    <Text ml={3} fontSize="md" fontWeight="medium" flex={1} lineHeight="1.4">
                       {item.label}
                     </Text>
                     {item.subItems?.length > 0 && (
@@ -868,31 +889,34 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                   {/* Sub Items */}
                   {item.subItems && (
                     <Collapse in={expandedItems[item.id]}>
-                      <VStack spacing={1} align="stretch" mt={1} ml={4} mr={2}>
+                      <VStack spacing={0} align="stretch" mt={1} ml={2} mr={0} py={1}>
                         {item.subItems.map((subItem, index) => (
-                          <Flex
-                            key={index}
-                            align="center"
-                            p={3}
-                            minH="44px"
-                            cursor="pointer"
-                            _hover={{ bg: hoverBg, color: item.color }}
-                            _active={{ bg: activeBg, transform: "scale(0.96)" }}
-                            transition="all 0.1s"
-                            borderRadius="md"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              triggerHaptic('light');
-                              playSound('click');
-                              subItem.action();
-                              handleClose();
-                            }}
-                          >
-                            <Icon as={subItem.icon} boxSize={5} />
-                            <Text ml={2} fontSize="sm" fontWeight="medium">
-                              {subItem.label}
-                            </Text>
-                          </Flex>
+                          <Box key={index}>
+                            <HStack
+                              pl={4}
+                              pr={2}
+                              py={1.5}
+                              minH="36px"
+                              cursor="pointer"
+                              spacing={2}
+                              _hover={{ bg: hoverBg, color: item.color }}
+                              _active={{ bg: activeBg, transform: "scale(0.96)" }}
+                              transition="all 0.1s"
+                              borderRadius="md"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                triggerHaptic('light');
+                                playSound('click');
+                                subItem.action();
+                                handleClose();
+                              }}
+                            >
+                              <Icon as={subItem.icon} boxSize={4} flexShrink={0} />
+                              <Text fontSize="2xs" fontWeight="medium" flex={1} lineHeight="1.3" noOfLines={1} overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
+                                {subItem.label}
+                              </Text>
+                            </HStack>
+                          </Box>
                         ))}
                       </VStack>
                     </Collapse>

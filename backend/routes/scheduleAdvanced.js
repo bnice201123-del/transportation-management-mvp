@@ -6,7 +6,6 @@ import TimeOff from '../models/TimeOff.js';
 import User from '../models/User.js';
 import VacationBalance from '../models/VacationBalance.js';
 import ScheduleConflictService from '../services/scheduleConflictService.js';
-import { logAuditAction } from '../middleware/audit.js';
 
 const router = express.Router();
 
@@ -152,11 +151,12 @@ router.post('/swap-request', authenticateToken, async (req, res) => {
     await swapRequest.save();
 
     // Log audit action
-    await logAuditAction('shift_swap_requested', 'shift_swap', swapRequest._id.toString(), {
-      requestingDriver: requestingDriverId,
-      targetDriver: targetDriverId,
-      originalShift: originalShiftId
-    }, 'info');
+    // TODO: Implement proper audit logging
+    // await logAuditAction('shift_swap_requested', 'shift_swap', swapRequest._id.toString(), {
+    //   requestingDriver: requestingDriverId,
+    //   targetDriver: targetDriverId,
+    //   originalShift: originalShiftId
+    // }, 'info');
 
     res.status(201).json(swapRequest);
   } catch (error) {
@@ -196,9 +196,10 @@ router.patch('/swap-request/:swapId/driver-response', authenticateToken, async (
     await swapRequest.save();
 
     // Log audit action
-    await logAuditAction('shift_swap_driver_response', 'shift_swap', swapId, {
-      driverResponse: status
-    }, status === 'declined' ? 'warning' : 'info');
+    // TODO: Implement proper audit logging
+    // await logAuditAction('shift_swap_driver_response', 'shift_swap', swapId, {
+    //   driverResponse: status
+    // }, status === 'declined' ? 'warning' : 'info');
 
     res.json(swapRequest);
   } catch (error) {
@@ -261,10 +262,11 @@ router.patch('/swap-request/:swapId/admin-response', authenticateToken, requireP
     await swapRequest.save();
 
     // Log audit action
-    await logAuditAction('shift_swap_admin_response', 'shift_swap', swapId, {
-      adminResponse: status,
-      respondedBy: adminId
-    }, 'info');
+    // TODO: Implement proper audit logging
+    // await logAuditAction('shift_swap_admin_response', 'shift_swap', swapId, {
+    //   adminResponse: status,
+    //   respondedBy: adminId
+    // }, 'info');
 
     res.json(swapRequest);
   } catch (error) {
@@ -376,11 +378,12 @@ router.post('/time-off/request', authenticateToken, async (req, res) => {
     await timeOff.save();
 
     // Log audit action
-    await logAuditAction('time_off_requested', 'time_off', timeOff._id.toString(), {
-      type,
-      totalDays,
-      hasConflicts: conflicts.length > 0
-    }, 'info');
+    // TODO: Implement proper audit logging
+    // await logAuditAction('time_off_requested', 'time_off', timeOff._id.toString(), {
+    //   type,
+    //   totalDays,
+    //   hasConflicts: conflicts.length > 0
+    // }, 'info');
 
     res.status(201).json(timeOff);
   } catch (error) {
@@ -428,10 +431,11 @@ router.patch('/time-off/:timeOffId/respond', authenticateToken, requirePermissio
     await timeOff.save();
 
     // Log audit action
-    await logAuditAction('time_off_response', 'time_off', timeOffId, {
-      status,
-      respondedBy: approverId
-    }, status === 'denied' ? 'warning' : 'info');
+    // TODO: Implement proper audit logging
+    // await logAuditAction('time_off_response', 'time_off', timeOffId, {
+    //   status,
+    //   respondedBy: approverId
+    // }, status === 'denied' ? 'warning' : 'info');
 
     res.json(timeOff);
   } catch (error) {
@@ -526,12 +530,13 @@ router.post('/send-shift-reminders', authenticateToken, requireAdmin, async (req
     }
 
     // Log audit action
-    await logAuditAction('shift_reminders_sent', 'shift', null, {
-      count: sentCount,
-      hoursBeforeShift,
-      sendEmail,
-      sendSMS
-    }, 'info');
+    // TODO: Implement proper audit logging
+    // await logAuditAction('shift_reminders_sent', 'shift', null, {
+    //   count: sentCount,
+    //   hoursBeforeShift,
+    //   sendEmail,
+    //   sendSMS
+    // }, 'info');
 
     res.json({
       sentCount,

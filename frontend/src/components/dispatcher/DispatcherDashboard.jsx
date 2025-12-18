@@ -112,6 +112,7 @@ import {
 } from '@heroicons/react/24/solid';
 import axios from 'axios';
 import Navbar from '../shared/Navbar';
+import ReturnToDispatchButton from './ReturnToDispatchButton';
 import UnifiedTripManagement from '../shared/UnifiedTripManagement';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 import RiderInfoModal from '../shared/RiderInfoModal';
@@ -882,6 +883,9 @@ const getLocationText = (location) => {
               </MenuItem>
             </MenuList>
           </Menu>
+          
+          <Spacer />
+          <ReturnToDispatchButton variant="ghost" size="sm" showText={true} />
         </VStack>
       </Box>
       <Box bg="gray.50" minH="calc(100vh - 80px)" w="100%" overflowX="hidden">

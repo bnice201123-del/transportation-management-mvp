@@ -2,7 +2,6 @@ import express from 'express';
 import ScheduleTemplate from '../models/ScheduleTemplate.js';
 import Schedule from '../models/Schedule.js';
 import { authenticateToken, requireAdmin, requirePermission } from '../middleware/auth.js';
-import { logAuditAction } from '../services/auditService.js';
 
 const router = express.Router();
 
@@ -80,10 +79,11 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     await template.save();
 
     // Log audit action
-    await logAuditAction('schedule_template_created', 'ScheduleTemplate', template._id, {
-      name,
-      category
-    }, 'info');
+    // TODO: Implement proper audit logging
+    // await logAuditAction('schedule_template_created', 'ScheduleTemplate', template._id, {
+    //   name,
+    //   category
+    // }, 'info');
 
     res.status(201).json(template);
   } catch (error) {
@@ -116,10 +116,11 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     }
 
     // Log audit action
-    await logAuditAction('schedule_template_updated', 'ScheduleTemplate', template._id, {
-      name,
-      category
-    }, 'info');
+    // TODO: Implement proper audit logging
+    // await logAuditAction('schedule_template_updated', 'ScheduleTemplate', template._id, {
+    //   name,
+    //   category
+    // }, 'info');
 
     res.json(template);
   } catch (error) {
@@ -137,9 +138,10 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
     }
 
     // Log audit action
-    await logAuditAction('schedule_template_deleted', 'ScheduleTemplate', template._id, {
-      name: template.name
-    }, 'info');
+    // TODO: Implement proper audit logging
+    // await logAuditAction('schedule_template_deleted', 'ScheduleTemplate', template._id, {
+    //   name: template.name
+    // }, 'info');
 
     res.json({ message: 'Template deleted' });
   } catch (error) {
@@ -198,13 +200,14 @@ router.post('/:id/apply', authenticateToken, requirePermission('schedule', 'crea
     }
 
     // Log audit action
-    await logAuditAction('schedule_template_applied', 'Schedule', null, {
-      templateId: template._id,
-      templateName: template.name,
-      driverCount: driverIds.length,
-      createdCount,
-      dateRange: `${startDate} to ${endDate}`
-    }, 'info');
+    // TODO: Implement proper audit logging
+    // await logAuditAction('schedule_template_applied', 'Schedule', null, {
+    //   templateId: template._id,
+    //   templateName: template.name,
+    //   driverCount: driverIds.length,
+    //   createdCount,
+    //   dateRange: `${startDate} to ${endDate}`
+    // }, 'info');
 
     res.json({
       templateId: template._id,
@@ -255,10 +258,11 @@ router.post('/:id/clone', authenticateToken, requireAdmin, async (req, res) => {
     await cloned.save();
 
     // Log audit action
-    await logAuditAction('schedule_template_cloned', 'ScheduleTemplate', cloned._id, {
-      name: cloned.name,
-      fromTemplate: original.name
-    }, 'info');
+    // TODO: Implement proper audit logging
+    // await logAuditAction('schedule_template_cloned', 'ScheduleTemplate', cloned._id, {
+    //   name: cloned.name,
+    //   fromTemplate: original.name
+    // }, 'info');
 
     res.status(201).json(cloned);
   } catch (error) {

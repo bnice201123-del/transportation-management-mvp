@@ -39,6 +39,7 @@ import {
   CalendarDaysIcon,
   HomeIcon
 } from '@heroicons/react/24/outline';
+import ReturnToDispatchButton from './ReturnToDispatchButton';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -141,6 +142,7 @@ const DispatcherProfile = () => {
     <VStack spacing={6} align="stretch">
       {/* Navigation Breadcrumb */}
       <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
+        <ReturnToDispatchButton variant="ghost" size="sm" showText={true} />
         <Breadcrumb fontSize={{ base: "sm", md: "md" }}>
           <BreadcrumbItem>
             <BreadcrumbLink display="flex" alignItems="center" gap={2} href="/dispatcher">

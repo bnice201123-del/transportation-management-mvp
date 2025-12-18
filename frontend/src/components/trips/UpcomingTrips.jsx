@@ -210,6 +210,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full" 
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/scheduler')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -220,6 +221,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full" 
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/scheduler')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -230,6 +232,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/maps/tracking')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -240,6 +243,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/trips/completed')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -250,6 +254,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/trips/all')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -260,6 +265,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/trips/active')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -278,6 +284,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/riders')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -288,6 +295,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/users')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -298,6 +306,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/drivers')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -308,6 +317,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/tracking')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -318,6 +328,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/profile')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -328,6 +339,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/schedule')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -338,6 +350,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/scheduler?view=manage')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -348,6 +361,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/scheduler?view=calendar')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -358,6 +372,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/search')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -368,6 +383,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/trips/recurring')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >
@@ -378,6 +394,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/admin/analytics')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
                     >

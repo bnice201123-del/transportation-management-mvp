@@ -277,39 +277,46 @@ const Footer = () => {
 
           <Spacer />
 
-          <VStack align={{ base: 'center', md: 'end' }} spacing={2}>
-            <HStack spacing={4} fontSize="sm" color={textColor}>
-              <Text>Available 24/7</Text>
+          <VStack align={{ base: 'center', md: 'start' }} spacing={{ base: 3, md: 2 }}>
+            <HStack spacing={{ base: 2, md: 4 }} fontSize={{ base: "xs", md: "sm" }} color={textColor} flexWrap="wrap" justify="center">
+              <Text fontWeight="medium">Available 24/7</Text>
               <Text>•</Text>
-              <Text>Emergency Support: (555) 911-HELP</Text>
+              <Link href="tel:(555)911-4357" color="blue.500" _hover={{ textDecoration: 'underline' }}>
+                Emergency Support: (555) 911-HELP
+              </Link>
             </HStack>
-            <Text fontSize="sm" color={textColor}>
+            <Text fontSize={{ base: "xs", md: "sm" }} color={textColor}>
               Serving communities since 2020
             </Text>
+          </VStack>
+
+          <Spacer />
+
+          {/* Right section - Empty on mobile, visible on desktop */}
+          <VStack display={{ base: 'none', md: 'flex' }} align="end" spacing={2}>
+            {/* This can be populated with additional info */}
           </VStack>
         </Stack>
       </Container>
 
       {/* Bottom Copyright Bar */}
-      <Box bg={useColorModeValue('gray.100', 'gray.800')} py={4}>
-        <Container maxW="container.xl">
-          <Flex direction={{ base: 'column', md: 'row' }} align="center" spacing={4}>
-            <Text fontSize="sm" color={textColor}>
+      <Box bg={useColorModeValue('gray.100', 'gray.800')} py={{ base: 3, md: 4 }}>
+        <Container maxW="container.xl" px={{ base: 3, md: 4 }}>
+          <Flex direction={{ base: 'column', md: 'row' }} align={{ base: 'center', md: 'center' }} gap={{ base: 3, md: 4 }} justify="space-between">
+            <Text fontSize={{ base: "xs", md: "sm" }} color={textColor} textAlign={{ base: 'center', md: 'left' }}>
               © {currentYear} Transportation Management System. All rights reserved.
             </Text>
             
-            <Spacer />
-            
-            <HStack spacing={4} fontSize="sm">
-              <Link href="/sitemap" color={linkColor}>
+            <HStack spacing={{ base: 2, md: 4 }} fontSize={{ base: "xs", md: "sm" }} flexWrap="wrap" justify={{ base: 'center', md: 'flex-end' }}>
+              <Link href="/sitemap" color={linkColor} _hover={{ textDecoration: 'underline' }}>
                 Sitemap
               </Link>
-              <Text color={textColor}>•</Text>
-              <Link href="/accessibility" color={linkColor}>
+              <Text color={textColor} display={{ base: 'inline', md: 'inline' }}>•</Text>
+              <Link href="/accessibility" color={linkColor} _hover={{ textDecoration: 'underline' }}>
                 Accessibility
               </Link>
-              <Text color={textColor}>•</Text>
-              <Text color={textColor}>
+              <Text color={textColor} display={{ base: 'inline', md: 'inline' }}>•</Text>
+              <Text color={textColor} whiteSpace="nowrap">
                 Made with <Box as={FaHeart} display="inline" color="red.400" /> for better transportation
               </Text>
             </HStack>

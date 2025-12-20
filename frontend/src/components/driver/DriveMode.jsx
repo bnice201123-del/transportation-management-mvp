@@ -328,12 +328,14 @@ const DriveMode = ({ trip, onComplete, onCancel }) => {
   if (!trip) {
     return (
       <Box p={6}>
-        <Alert status="info" borderRadius="md">
+        <Alert status="info" borderRadius="md" variant="subtle">
           <AlertIcon />
-          <AlertTitle>No Active Trip</AlertTitle>
-          <AlertDescription>
-            You don't have an active trip. Select a trip from the Active Trips tab to start driving.
-          </AlertDescription>
+          <Box>
+            <AlertTitle mb={1}>Select a Trip to Start</AlertTitle>
+            <AlertDescription fontSize="sm">
+              Click the "Drive" button on any trip in the Active Trips section above to begin driving mode.
+            </AlertDescription>
+          </Box>
         </Alert>
       </Box>
     );

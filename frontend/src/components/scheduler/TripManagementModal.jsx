@@ -450,9 +450,20 @@ const TripManagementModal = ({ isOpen, onClose, onTripUpdate }) => {
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} size="full" scrollBehavior="inside">
-        <ModalOverlay />
-        <ModalContent maxH="95vh" maxW="98vw" m={4}>
+      <Modal 
+        isOpen={isOpen} 
+        onClose={onClose} 
+        size={{ base: "full", md: "full" }}
+        scrollBehavior="inside"
+      >
+        <ModalOverlay backdropFilter="blur(2px)" />
+        <ModalContent 
+          maxH={{ base: "100vh", md: "95vh" }} 
+          maxW={{ base: "100%", md: "98vw" }}
+          m={{ base: 0, md: 4 }}
+          borderRadius={{ base: 0, md: "lg" }}
+          borderTopRadius={{ base: "xl", md: "lg" }}
+        >
           <ModalHeader>
             <Flex align="center" gap={4}>
               <Box>

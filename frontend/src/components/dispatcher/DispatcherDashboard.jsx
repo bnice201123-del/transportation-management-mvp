@@ -121,6 +121,8 @@ import DispatcherProfile from './DispatcherProfile';
 import DispatcherSchedule from './DispatcherSchedule';
 import DispatcherSearch from './DispatcherSearch';
 import { DriverInfoDisplay } from '../driver/shared';
+import { ViewToggle, ViewContainer, ViewTable, ViewCard } from '../shared/ViewToggle';
+import { useViewMode } from '../../hooks/useViewMode';
 
 const DispatcherDashboard = () => {
   // Navigation
@@ -150,6 +152,9 @@ const DispatcherDashboard = () => {
   
   // View state for Trip Management
   const [isManageView, setIsManageView] = useState(false);
+  
+  // View toggle for table/card display
+  const { _viewMode, setViewMode } = useViewMode('dispatcherTripViewMode', 'table');
   
   // Enhanced filtering and display state
   const [displayedTrips, setDisplayedTrips] = useState([]);
@@ -932,19 +937,9 @@ const getLocationText = (location) => {
           >
             <Card 
               bg={cardBg}
-              shadow="lg" 
-              _hover={{ 
-                shadow: "2xl", 
-                transform: "translateY(-4px) scale(1.02)",
-                cursor: "pointer",
-                borderLeftColor: "blue.600"
-              }} 
-              transition="all 0.3s ease"
+              shadow="md" 
               borderLeft="6px solid"
               borderLeftColor="blue.500"
-              role="button"
-              aria-label="View today's trips"
-              tabIndex={0}
             >
               <CardBody p={{ base: 3, md: 4 }}>
                 <VStack align="stretch" spacing={3}>
@@ -994,7 +989,7 @@ const getLocationText = (location) => {
                         Today's Trips
                       </StatLabel>
                       <Text fontSize="xs" color={mutedColor} fontWeight="medium">
-                        {dashboardStats.todayCompletionRate}% completed • Click to view
+                        {dashboardStats.todayCompletionRate}% completed
                       </Text>
                     </VStack>
                   </Stat>
@@ -1004,19 +999,9 @@ const getLocationText = (location) => {
             
             <Card 
               bg={cardBg}
-              shadow="lg" 
-              _hover={{ 
-                shadow: "2xl", 
-                transform: "translateY(-4px) scale(1.02)",
-                cursor: "pointer",
-                borderLeftColor: "green.600"
-              }} 
-              transition="all 0.3s ease"
+              shadow="md" 
               borderLeft="6px solid"
               borderLeftColor="green.500"
-              role="button"
-              aria-label="View completed trips"
-              tabIndex={0}
             >
               <CardBody p={{ base: 3, md: 4 }}>
                 <VStack align="stretch" spacing={3}>
@@ -1076,19 +1061,9 @@ const getLocationText = (location) => {
 
             <Card 
               bg={cardBg}
-              shadow="lg" 
-              _hover={{ 
-                shadow: "2xl", 
-                transform: "translateY(-4px) scale(1.02)",
-                cursor: "pointer",
-                borderLeftColor: "orange.600"
-              }} 
-              transition="all 0.3s ease"
+              shadow="md" 
               borderLeft="6px solid"
               borderLeftColor="orange.500"
-              role="button"
-              aria-label="View active trips"
-              tabIndex={0}
               position="relative"
               overflow="hidden"
             >
@@ -1162,7 +1137,7 @@ const getLocationText = (location) => {
                         color={dashboardStats.unassignedTrips > 0 ? "orange.600" : mutedColor}
                         fontWeight={dashboardStats.unassignedTrips > 0 ? "bold" : "medium"}
                       >
-                        {dashboardStats.unassignedTrips} unassigned • Click to assign
+                        {dashboardStats.unassignedTrips} unassigned
                       </Text>
                     </VStack>
                   </Stat>
@@ -1172,19 +1147,9 @@ const getLocationText = (location) => {
 
             <Card 
               bg={cardBg}
-              shadow="lg" 
-              _hover={{ 
-                shadow: "2xl", 
-                transform: "translateY(-4px) scale(1.02)",
-                cursor: "pointer",
-                borderLeftColor: "purple.600"
-              }} 
-              transition="all 0.3s ease"
+              shadow="md" 
               borderLeft="6px solid"
               borderLeftColor="purple.500"
-              role="button"
-              aria-label="View available drivers"
-              tabIndex={0}
             >
               <CardBody p={{ base: 3, md: 4 }}>
                 <VStack align="stretch" spacing={3}>
@@ -1303,8 +1268,14 @@ const getLocationText = (location) => {
 
                       {/* Today's Trips Table */}
                       <Card>
+                        <CardHeader display={{ base: "flex", md: "block" }} justifyContent="space-between" alignItems="center" py={{ base: 3, md: 4 }}>
+                          <Heading size={{ base: "sm", md: "md" }}>Today's Trips</Heading>
+                          <ViewToggle storageKey="dispatcherTripViewMode" onViewChange={setViewMode} />
+                        </CardHeader>
                         <CardBody p={0}>
-                          <TableContainer overflowX="auto" w="100%">
+                          <ViewContainer storageKey="dispatcherTripViewMode">
+                            <ViewTable key="table">
+                              <TableContainer overflowX="auto" w="100%">
                             <Table variant="simple" size={{ base: "sm", md: "md" }} w="100%">
                               <Thead bg={bgColor}>
                                 <Tr>
@@ -1428,6 +1399,97 @@ const getLocationText = (location) => {
                               </VStack>
                             </Center>
                           )}
+                            </ViewTable>
+                            <ViewCard key="card">
+                              {displayedTrips.length === 0 ? (
+                                <Center py={8}>
+                                  <VStack spacing={3}>
+                                    <Text color="gray.500" fontSize="lg">No rides scheduled for today</Text>
+                                    <Text color="gray.400" fontSize="sm">Create a trip to get started</Text>
+                                  </VStack>
+                                </Center>
+                              ) : (
+                                <VStack spacing={3} p={3} align="stretch">
+                                  {displayedTrips.map((trip) => (
+                                    <Box key={trip._id} p={3} bg={cardBg} rounded="md" border="1px solid" borderColor="gray.200">
+                                      <VStack align="start" spacing={2}>
+                                        <HStack justify="space-between" w="100%">
+                                          <VStack align="start" spacing={0}>
+                                            <Text fontSize="sm" fontWeight="bold">{trip.scheduledTime || 'TBD'}</Text>
+                                            <Badge colorScheme={getStatusColor(trip.status)} size="sm">{trip.status.replace('_', ' ').toUpperCase()}</Badge>
+                                          </VStack>
+                                          <HStack spacing={1}>
+                                            <Tooltip label="View details">
+                                              <IconButton
+                                                icon={<Box as={EyeIcon} w={4} h={4} />}
+                                                size="sm"
+                                                colorScheme="blue"
+                                                onClick={() => handleView(trip)}
+                                                minH="44px"
+                                                minW="44px"
+                                                aria-label="View trip"
+                                              />
+                                            </Tooltip>
+                                            <Tooltip label="View on map">
+                                              <IconButton
+                                                icon={<Box as={MapPinIcon} w={4} h={4} />}
+                                                size="sm"
+                                                colorScheme="purple"
+                                                onClick={() => navigate(`/maps/trips?tripId=${trip._id}`)}
+                                                minH="44px"
+                                                minW="44px"
+                                                aria-label="View on map"
+                                              />
+                                            </Tooltip>
+                                          </HStack>
+                                        </HStack>
+                                        <Divider />
+                                        <VStack align="start" spacing={1} w="100%">
+                                          <Text fontSize="xs" fontWeight="bold" color="gray.600">RIDER</Text>
+                                          <Text fontSize="sm" fontWeight="600">{trip.riderName}</Text>
+                                          {trip.riderPhone && <Text fontSize="xs" color="gray.500">{trip.riderPhone}</Text>}
+                                        </VStack>
+                                        <VStack align="start" spacing={1} w="100%">
+                                          <Text fontSize="xs" fontWeight="bold" color="gray.600">ROUTE</Text>
+                                          <Text fontSize="xs" color="gray.700">From: {getLocationText(trip.pickupLocation).substring(0, 30)}...</Text>
+                                          <Text fontSize="xs" color="gray.700">To: {getLocationText(trip.dropoffLocation).substring(0, 30)}...</Text>
+                                        </VStack>
+                                        {trip.assignedDriver ? (
+                                          <VStack align="start" spacing={1} w="100%">
+                                            <Text fontSize="xs" fontWeight="bold" color="gray.600">DRIVER</Text>
+                                            <Text fontSize="sm" fontWeight="600">{trip.assignedDriver.firstName} {trip.assignedDriver.lastName}</Text>
+                                            {trip.assignedDriver.phone && <Text fontSize="xs" color="gray.500">{trip.assignedDriver.phone}</Text>}
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              colorScheme="blue"
+                                              onClick={() => handleAssignClick(trip)}
+                                              w="100%"
+                                              minH="44px"
+                                              mt={2}
+                                            >
+                                              Reassign
+                                            </Button>
+                                          </VStack>
+                                        ) : (
+                                          <Button
+                                            size="sm"
+                                            colorScheme="green"
+                                            onClick={() => handleAssignClick(trip)}
+                                            disabled={availableDrivers.length === 0}
+                                            w="100%"
+                                            minH="44px"
+                                          >
+                                            Assign Driver
+                                          </Button>
+                                        )}
+                                      </VStack>
+                                    </Box>
+                                  ))}
+                                </VStack>
+                              )}
+                            </ViewCard>
+                          </ViewContainer>
                         </CardBody>
                       </Card>
                     </VStack>

@@ -5,6 +5,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import connectDB from './config/database.js';
 import passport from './config/passport.js';
+import { sanitizeRequestBody } from './middleware/sanitizer.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -100,6 +101,9 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Apply sanitization middleware to all requests
+app.use(sanitizeRequestBody);
 
 // Initialize Passport
 app.use(passport.initialize());

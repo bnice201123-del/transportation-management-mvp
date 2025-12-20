@@ -68,6 +68,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSidebar } from '../../contexts/SidebarContext';
 import AdvancedSearchModal from '../search/AdvancedSearchModal';
+import BrandingLogo from './BrandingLogo';
 
 const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   const { user, logout } = useAuth();
@@ -294,14 +295,14 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   };
 
   const menuItems = [
-    // Dashboard for non-admin users only (but not for dispatcher/scheduler-only users)
-    ...(!hasAdminAccess() && !isDispatcherOrSchedulerOnly() && user?.role !== 'admin' ? [{
+    // Dashboard for non-admin, non-driver users only (but not for dispatcher/scheduler-only users)
+    ...(!hasAdminAccess() && !isDispatcherOrSchedulerOnly() && user?.role !== 'admin' && user?.role !== 'driver' ? [{
       id: 'dashboard',
       label: 'Dashboard',
       icon: ViewIcon,
       color: 'blue.500',
       path: '/dashboard',
-      roles: ['scheduler', 'dispatcher', 'driver'],
+      roles: ['scheduler', 'dispatcher'],
       subItems: [
         { label: 'Analytics', icon: InfoIcon, action: () => navigate('/dashboard/analytics') },
         { label: 'Reports', icon: SearchIcon, action: () => navigate('/dashboard/reports') },
@@ -679,7 +680,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                         <HStack
                           px={3}
                           py={2}
-                          minH="36px"
+                          minH="44px"
                           borderRadius="md"
                           cursor="pointer"
                           spacing={2}
@@ -780,7 +781,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                       cursor="pointer"
                       display={subItem.display}
                       spacing={2}
-                      minH="32px"
+                      minH="44px"
                       _hover={{ bg: hoverBg, color: item.color }}
                       transition="all 0.1s"
                       onClick={(e) => {
@@ -835,14 +836,14 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
             }}
           />
           <DrawerHeader borderBottomWidth="1px" pb={4}>
-            <VStack align="start" spacing={1}>
-              <Text fontSize="lg" fontWeight="bold" color="green.600">
-                TransportHub
-              </Text>
-              <Text fontSize="xs" color="gray.500">
-                Transportation Management
-              </Text>
-            </VStack>
+            <HStack spacing={3} align="center">
+              <BrandingLogo 
+                logoUrl={user?.logoUrl}
+                agencyName={user?.firstName || 'Drive'}
+                size="sm"
+                showText={true}
+              />
+            </HStack>
           </DrawerHeader>
           <DrawerBody p={2}>
             <VStack spacing={2} align="stretch">
@@ -896,7 +897,7 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
                               pl={4}
                               pr={2}
                               py={1.5}
-                              minH="36px"
+                              minH="44px"
                               cursor="pointer"
                               spacing={2}
                               _hover={{ bg: hoverBg, color: item.color }}

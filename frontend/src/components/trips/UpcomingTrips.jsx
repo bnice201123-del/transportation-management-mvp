@@ -210,6 +210,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full" 
                       size="sm"
+                      minH="44px"
                       fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/scheduler')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
@@ -221,6 +222,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full" 
                       size="sm"
+                      minH="44px"
                       fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/scheduler')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
@@ -232,6 +234,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      minH="44px"
                       fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/maps/tracking')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
@@ -243,6 +246,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      minH="44px"
                       fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/trips/completed')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
@@ -254,6 +258,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      minH="44px"
                       fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/trips/all')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
@@ -265,6 +270,7 @@ const UpcomingTrips = () => {
                       justifyContent="flex-start" 
                       w="full"
                       size="sm"
+                      minH="44px"
                       fontWeight="normal"
                       onClick={() => handleProcessMenuNavigation('/trips/active')}
                       _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}

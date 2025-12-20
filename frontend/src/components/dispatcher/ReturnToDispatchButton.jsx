@@ -33,6 +33,7 @@ const ReturnToDispatchButton = ({ variant = 'solid', size = 'md', showText = tru
       colorScheme="blue"
       variant={variant}
       size={size}
+      minH="44px"
       bg={variant === 'solid' ? buttonBg : undefined}
       color={variant === 'solid' ? buttonColor : 'blue.500'}
       _hover={{

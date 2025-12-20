@@ -44,6 +44,7 @@ import { useSidebar } from "../../contexts/SidebarContext";
 import { useNotifications } from "../../contexts/NotificationContext";
 import useCloseOnScroll from "../../hooks/useCloseOnScroll";
 import Sidebar from './Sidebar';
+import BrandingLogo from './BrandingLogo';
 
 const Navbar = ({ title }) => {
   const { user, logout } = useAuth();
@@ -183,14 +184,12 @@ const Navbar = ({ title }) => {
                 cursor="pointer"
                 onClick={navigateToDashboard}
               >
-                <VStack spacing={0}>
-                  <Text fontSize="md" fontWeight="bold" color="brand.600" lineHeight="1.2">
-                    TransportHub
-                  </Text>
-                  <Text fontSize="xx-small" color="secondary.600" lineHeight="1">
-                    Transportation Management
-                  </Text>
-                </VStack>
+                <BrandingLogo 
+                  logoUrl={user?.logoUrl}
+                  agencyName={user?.firstName || 'Drive'}
+                  size="sm"
+                  showText={false}
+                />
               </Box>
 
               {/* Column 3: Notifications + User Profile */}
@@ -272,12 +271,12 @@ const Navbar = ({ title }) => {
                   cursor="pointer"
                   onClick={navigateToDashboard}
                 >
-                  <Text fontSize={{ base: "lg", md: "2xl" }} fontWeight="bold" color="brand.600">
-                    TransportHub
-                  </Text>
-                  <Text fontSize="xs" color="secondary.600" mt="-1">
-                    Transportation Management
-                  </Text>
+                  <BrandingLogo 
+                    logoUrl={user?.logoUrl}
+                    agencyName={user?.firstName || 'Drive'}
+                    size="md"
+                    showText={true}
+                  />
                 </Box>
               </HStack>
             </Box>

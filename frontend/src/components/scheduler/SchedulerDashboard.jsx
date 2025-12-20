@@ -127,6 +127,12 @@ import UnifiedTripManagement from '../shared/UnifiedTripManagement';
 import TripManagementModal from './TripManagementModal';
 import CalendarOverview from './CalendarOverview';
 import useCloseOnScroll from '../../hooks/useCloseOnScroll';
+import { validateField, validateForm, tripFormValidation, sanitizeFormData } from '../../utils/validationSchemas';
+import { useRetry } from '../../hooks/useRetry';
+import { RetryAlert, ErrorRecoveryAlert } from '../shared/RetryAlerts';
+import { handleApiError, formatValidationErrors, isRetryableError } from '../../utils/errorHandler';
+import { ViewToggle, ViewContainer, ViewTable, ViewCard } from '../shared/ViewToggle';
+import { useViewMode } from '../../hooks/useViewMode';
 
 const SchedulerDashboard = ({ view }) => {
   const location = useLocation();
@@ -139,6 +145,9 @@ const SchedulerDashboard = ({ view }) => {
   
   const isManageView = view === 'manage' || location.pathname.includes('/manage') || location.search.includes('view=manage');
   const isCalendarView = view === 'calendar' || location.pathname.includes('/calendar') || location.search.includes('view=calendar');
+  
+  // View toggle for table/card display
+  const { _viewMode, _setViewMode } = useViewMode('schedulerTripViewMode', 'table');
   
   // Core state management
   const [trips, setTrips] = useState([]);
@@ -156,6 +165,7 @@ const SchedulerDashboard = ({ view }) => {
     notes: '',
     assignedDriver: ''
   });
+  const [validationErrors, setValidationErrors] = useState({});
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -209,6 +219,20 @@ const SchedulerDashboard = ({ view }) => {
   // Close Quick Actions dropdown on scroll
   useCloseOnScroll(isQuickActionsOpen, () => setIsQuickActionsOpen(false));
 
+  // Initialize retry hook for API operations
+  const { 
+    retry, 
+    isRetrying, 
+    retryCount, 
+    cancel: cancelRetry 
+  } = useRetry({
+    maxAttempts: 3,
+    showNotifications: true,
+  });
+  
+  // Retry state for different operations
+  const [activeRetryOperation, setActiveRetryOperation] = useState(null);
+  const [retryErrorData, setRetryErrorData] = useState(null);
   
   // Additional filtering state (removing duplicates)
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -580,18 +604,24 @@ const SchedulerDashboard = ({ view }) => {
                     <IconButton
                       icon={<Box as={EyeIcon} w={4} h={4} />}
                       size="sm"
+                      minW="44px"
+                      minH="44px"
                       onClick={() => onView(trip)}
                       aria-label="View trip"
                     />
                     <IconButton
                       icon={<Box as={PencilIcon} w={4} h={4} />}
                       size="sm"
+                      minW="44px"
+                      minH="44px"
                       onClick={() => onEdit(trip)}
                       aria-label="Edit trip"
                     />
                     <IconButton
                       icon={<Box as={TrashIcon} w={4} h={4} />}
                       size="sm"
+                      minW="44px"
+                      minH="44px"
                       colorScheme="red"
                       onClick={() => onDelete(trip)}
                       aria-label="Delete trip"
@@ -622,28 +652,52 @@ const SchedulerDashboard = ({ view }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setValidationErrors({});
     setIsSubmitting(true);
+    setActiveRetryOperation('submit');
+    setRetryErrorData(null);
 
     try {
+      // Validate form data
+      const { isValid, errors } = validateForm(formData, tripFormValidation);
+      
+      if (!isValid) {
+        setValidationErrors(errors);
+        toast({
+          title: 'Validation Error',
+          description: formatValidationErrors(errors),
+          status: 'warning',
+          duration: 4000,
+          isClosable: true,
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Sanitize form data before submission
+      const cleanData = sanitizeFormData(formData);
+
       const tripData = {
-        ...formData,
+        ...cleanData,
         scheduledDate: new Date(`${formData.scheduledDate}T${formData.scheduledTime}`),
-        estimatedDuration: 30, // Default 30 minutes
-        // Add mock coordinates for now (will integrate with Google Maps API later)
+        estimatedDuration: 30,
         pickupLocation: {
           ...formData.pickupLocation,
-          lat: formData.pickupLocation.lat || 40.7128, // Default to NYC coordinates
+          lat: formData.pickupLocation.lat || 40.7128,
           lng: formData.pickupLocation.lng || -74.0060
         },
         dropoffLocation: {
           ...formData.dropoffLocation,
-          lat: formData.dropoffLocation.lat || 40.7580, // Default to NYC coordinates  
+          lat: formData.dropoffLocation.lat || 40.7580,
           lng: formData.dropoffLocation.lng || -73.9855
         }
       };
 
       if (selectedTrip) {
-        await axios.put(`/api/trips/${selectedTrip._id}`, tripData);
+        await retry(
+          () => axios.put(`/api/trips/${selectedTrip._id}`, tripData),
+          'Update Trip'
+        );
         toast({
           title: 'Success',
           description: 'Trip updated successfully',
@@ -652,7 +706,10 @@ const SchedulerDashboard = ({ view }) => {
           isClosable: true,
         });
       } else {
-        await axios.post('/api/trips', tripData);
+        await retry(
+          () => axios.post('/api/trips', tripData),
+          'Create Trip'
+        );
         toast({
           title: 'Success',
           description: 'Trip created successfully',
@@ -664,14 +721,33 @@ const SchedulerDashboard = ({ view }) => {
 
       fetchTrips();
       handleCloseModal();
+      setActiveRetryOperation(null);
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Error saving trip';
-      const errorCode = error.response?.data?.error;
+      setRetryErrorData(error);
+      const apiError = handleApiError(error, 'Trip submission');
       
-      if (errorCode === 'RIDER_NOT_FOUND') {
+      if (error.response?.data?.error === 'RIDER_NOT_FOUND') {
         setError('Rider not found. Please select a valid registered rider from the system.');
       } else {
-        setError(errorMessage);
+        setError(apiError.description);
+      }
+      
+      if (apiError.isRetryable) {
+        toast({
+          title: apiError.title,
+          description: `${apiError.description} (Retryable)`,
+          status: 'warning',
+          duration: 5000,
+          isClosable: true,
+        });
+      } else {
+        toast({
+          title: apiError.title,
+          description: apiError.description,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
       }
     } finally {
       setIsSubmitting(false);
@@ -694,6 +770,7 @@ const SchedulerDashboard = ({ view }) => {
       assignedDriver: ''
     });
     setError('');
+    setValidationErrors({});
     onClose();
   };
 
@@ -728,8 +805,14 @@ const SchedulerDashboard = ({ view }) => {
     if (!tripToDelete) return;
     
     setIsDeleting(true);
+    setActiveRetryOperation('delete');
+    setRetryErrorData(null);
+    
     try {
-      await axios.delete(`/api/trips/${tripToDelete._id}`);
+      await retry(
+        () => axios.delete(`/api/trips/${tripToDelete._id}`),
+        'Cancel Trip'
+      );
       toast({
         title: 'Success',
         description: 'Trip cancelled successfully',
@@ -740,8 +823,10 @@ const SchedulerDashboard = ({ view }) => {
       fetchTrips(); // Refresh the trips list
       onDeleteClose();
       setTripToDelete(null);
+      setActiveRetryOperation(null);
     } catch (error) {
       console.error('Error deleting trip:', error);
+      setRetryErrorData(error);
       toast({
         title: 'Error',
         description: error.response?.data?.message || 'Failed to cancel trip',
@@ -1119,6 +1204,34 @@ const SchedulerDashboard = ({ view }) => {
     <Box minH="100vh" bg="green.25" overflowX="hidden">
       <Navbar title="Scheduler Dashboard" />
       
+      {/* Retry Alerts */}
+      <RetryAlert
+        isVisible={isRetrying && activeRetryOperation}
+        attempt={retryCount}
+        maxAttempts={3}
+        operationName={activeRetryOperation === 'delete' ? 'Cancel Trip' : 'Trip Operation'}
+        onCancel={cancelRetry}
+      />
+      
+      <ErrorRecoveryAlert
+        isVisible={!!retryErrorData && !isRetrying && activeRetryOperation}
+        error={retryErrorData}
+        attempt={retryCount}
+        maxAttempts={3}
+        onRetry={() => {
+          if (activeRetryOperation === 'delete') {
+            handleDeleteTrip();
+          } else if (activeRetryOperation === 'submit') {
+            handleSubmit({ preventDefault: () => {} });
+          }
+        }}
+        onDismiss={() => {
+          setRetryErrorData(null);
+          setActiveRetryOperation(null);
+        }}
+        operationName={activeRetryOperation === 'delete' ? 'Cancel Trip' : 'Trip Operation'}
+      />
+      
       {/* Process Menu */}
       <Flex justify="center" mt={6} mb={6}>
         <Box 
@@ -1250,22 +1363,22 @@ const SchedulerDashboard = ({ view }) => {
       <Box pt={{ base: 4, md: 0 }} w="100%">
         {/* Conditional rendering for different views */}
         {isManageView ? (
-          <Box px={{ base: 3, md: 4, lg: 6 }} py={{ base: 4, md: 6 }}>
+          <Box px={{ base: 2, sm: 3, md: 4, lg: 6 }} py={{ base: 3, sm: 4, md: 6 }}>
             <UnifiedTripManagement onTripUpdate={fetchTrips} initialTrips={trips} />
           </Box>
         ) : isCalendarView ? (
           <Box 
             w="100%"
-            py={{ base: 4, md: 6 }} 
-            px={{ base: 3, md: 4, lg: 6 }}
+            py={{ base: 3, sm: 4, md: 6 }} 
+            px={{ base: 2, sm: 3, md: 4, lg: 6 }}
           >
             <CalendarOverview onTripUpdate={fetchTrips} />
           </Box>
         ) : (
           <Box 
             w="100%"
-            py={{ base: 4, md: 6 }} 
-            px={{ base: 3, md: 4, lg: 6 }}
+            py={{ base: 3, sm: 4, md: 6 }} 
+            px={{ base: 2, sm: 3, md: 4, lg: 6 }}
           >
             <>
           {/* Enhanced Breadcrumb Navigation */}
@@ -1287,39 +1400,46 @@ const SchedulerDashboard = ({ view }) => {
 
           {/* Enhanced Scheduler Dashboard Header */}
           <Card 
-            mb={{ base: 6, md: 8 }} 
+            mb={{ base: 4, sm: 5, md: 8 }} 
             bg={cardBg}
-            shadow="lg"
-            _hover={{ shadow: "xl", transform: "translateY(-2px)" }}
+            shadow={{ base: "md", md: "lg" }}
+            _hover={{ shadow: { base: "lg", md: "xl" }, transform: "translateY(-2px)" }}
             transition="all 0.3s ease"
-            borderLeft="6px solid"
+            borderLeft={{ base: "4px solid", md: "6px solid" }}
             borderLeftColor="green.500"
             w="100%"
             maxW="100%"
           >
-            <CardBody p={{ base: 4, md: 6 }}>
-              <VStack align="start" spacing={{ base: 3, md: 4 }}>
-                <HStack spacing={3}>
+            <CardBody p={{ base: 3, sm: 4, md: 6 }}>
+              <VStack align="start" spacing={{ base: 2, md: 4 }}>
+                <HStack spacing={{ base: 2, md: 3 }} align="flex-start">
                   <Box 
                     bg="green.100" 
-                    p={3} 
+                    p={{ base: 2, md: 3 }}
                     borderRadius="lg"
                     color="green.600"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    minW={{ base: "36px", md: "auto" }}
+                    minH={{ base: "36px", md: "auto" }}
                   >
-                    <Box as={CalendarDaysIconSolid} w={8} h={8} />
+                    <Box as={CalendarDaysIconSolid} w={{ base: 6, md: 8 }} h={{ base: 6, md: 8 }} />
                   </Box>
-                  <VStack align="start" spacing={1}>
+                  <VStack align="start" spacing={{ base: 1, md: 2 }} flex={1}>
                     <Heading 
-                      size={{ base: "lg", md: "xl" }} 
+                      size={{ base: "md", sm: "lg", md: "xl" }} 
                       color={primaryColor}
                       fontWeight="bold"
+                      lineHeight={{ base: "1.2", md: "1.3" }}
                     >
                       Scheduler Control Center
                     </Heading>
                     <Text 
                       color={mutedColor}
-                      fontSize={{ base: "sm", md: "md" }}
+                      fontSize={{ base: "xs", sm: "sm", md: "md" }}
                       fontWeight="medium"
+                      lineHeight="1.4"
                     >
                       Comprehensive trip scheduling and management hub
                     </Text>
@@ -1327,9 +1447,9 @@ const SchedulerDashboard = ({ view }) => {
                 </HStack>
                 
                 {/* Current Date/Time Display */}
-                <HStack spacing={2} color={mutedColor}>
-                  <Box as={ClockIconSolid} w={4} h={4} />
-                  <Text fontSize={{ base: "sm", md: "md" }} fontWeight="medium">
+                <HStack spacing={2} color={mutedColor} fontSize={{ base: "xs", sm: "sm", md: "md" }}>
+                  <Box as={ClockIconSolid} w={{ base: 3, md: 4 }} h={{ base: 3, md: 4 }} />
+                  <Text fontWeight="medium">
                     {formatDateTime(currentDateTime)}
                   </Text>
                 </HStack>
@@ -1840,7 +1960,7 @@ const SchedulerDashboard = ({ view }) => {
                 
                 <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} width="100%">
                   <GridItem>
-                    <FormControl isRequired>
+                    <FormControl isRequired isInvalid={!!validationErrors.pickupAddress}>
                       <FormLabel>Pickup Location</FormLabel>
                       <PlacesAutocomplete
                         value={formData.pickupLocation.address}
@@ -1860,11 +1980,14 @@ const SchedulerDashboard = ({ view }) => {
                         placeholder="Enter pickup address"
                         isRequired
                       />
+                      {validationErrors.pickupAddress && (
+                        <Text fontSize="sm" color="red.500" mt={1}>{validationErrors.pickupAddress}</Text>
+                      )}
                     </FormControl>
                   </GridItem>
 
                   <GridItem>
-                    <FormControl isRequired>
+                    <FormControl isRequired isInvalid={!!validationErrors.dropoffAddress}>
                       <FormLabel>Dropoff Location</FormLabel>
                       <PlacesAutocomplete
                         value={formData.dropoffLocation.address}
@@ -1884,19 +2007,25 @@ const SchedulerDashboard = ({ view }) => {
                         placeholder="Enter dropoff address"
                         isRequired
                       />
+                      {validationErrors.dropoffAddress && (
+                        <Text fontSize="sm" color="red.500" mt={1}>{validationErrors.dropoffAddress}</Text>
+                      )}
                     </FormControl>
                   </GridItem>
                 </Grid>
 
                 <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} width="100%">
                   <GridItem>
-                    <FormControl isRequired>
+                    <FormControl isRequired isInvalid={!!validationErrors.scheduledDate}>
                       <FormLabel>Date</FormLabel>
                       <Input
                         type="date"
                         value={formData.scheduledDate}
                         onChange={(e) => setFormData(prev => ({ ...prev, scheduledDate: e.target.value }))}
                       />
+                      {validationErrors.scheduledDate && (
+                        <Text fontSize="sm" color="red.500" mt={1}>{validationErrors.scheduledDate}</Text>
+                      )}
                     </FormControl>
                   </GridItem>
                   <GridItem>
@@ -1926,13 +2055,16 @@ const SchedulerDashboard = ({ view }) => {
                   </Select>
                 </FormControl>
 
-                <FormControl>
+                <FormControl isInvalid={!!validationErrors.notes}>
                   <FormLabel>Notes</FormLabel>
                   <Textarea
                     value={formData.notes}
                     onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                     placeholder="Additional notes or special instructions"
                   />
+                  {validationErrors.notes && (
+                    <Text fontSize="sm" color="red.500" mt={1}>{validationErrors.notes}</Text>
+                  )}
                 </FormControl>
               </VStack>
             </ModalBody>

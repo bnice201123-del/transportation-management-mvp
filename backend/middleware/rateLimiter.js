@@ -9,12 +9,12 @@ let redisClient = null;
 try {
   if (process.env.REDIS_URL) {
     redisClient = new Redis(process.env.REDIS_URL);
-    console.log('✅ Rate limiting using Redis store');
+    // Rate limiting using Redis store
   } else {
-    console.log('⚠️  Rate limiting using memory store (Redis URL not configured)');
+    // Rate limiting using memory store (Redis not available)
   }
 } catch (error) {
-  console.warn('⚠️  Redis connection failed, using memory store for rate limiting:', error.message);
+  // Redis connection fallback to memory store
 }
 
 /**
@@ -179,11 +179,12 @@ function createRateLimiter(config, name = 'default') {
           });
         }
       } catch (error) {
-        console.error('Error logging rate limit violation:', error);
+        // Rate limit violation log error occurred
       }
 
       // Console log for immediate visibility
-      console.warn(`Rate limit exceeded for ${name}:`, {
+      // Rate limit exceeded for this endpoint
+      console.log('Rate limit exceeded for endpoint:', {
         ip: req.ip,
         path: req.path,
         method: req.method,
@@ -269,7 +270,7 @@ export const getRateLimitInfo = async (key) => {
 
     return info;
   } catch (error) {
-    console.error('Error getting rate limit info:', error);
+    // Error getting rate limit info
     return null;
   }
 };
@@ -290,7 +291,7 @@ export const resetRateLimit = async (key) => {
     }
     return false;
   } catch (error) {
-    console.error('Error resetting rate limit:', error);
+    // Error resetting rate limit
     return false;
   }
 };
@@ -325,7 +326,7 @@ export const getRateLimitStats = async () => {
 
     return stats;
   } catch (error) {
-    console.error('Error getting rate limit stats:', error);
+    // Error getting rate limit stats
     return { error: error.message };
   }
 };

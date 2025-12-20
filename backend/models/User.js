@@ -83,6 +83,11 @@ const userSchema = new mongoose.Schema({
     type: String, // Store base64 image data or URL
     default: null
   },
+  logoUrl: {
+    type: String, // Agency/company logo URL
+    default: null,
+    trim: true
+  },
   isActive: {
     type: Boolean,
     default: true

@@ -8,8 +8,38 @@ import { authLimiter, passwordResetLimiter, apiLimiter } from '../middleware/rat
 import Session from '../models/Session.js';
 import { hashToken } from '../middleware/sessionTracking.js';
 import { processSecureLogin, checkBruteForce, checkCredentialStuffing } from '../services/authSecurityService.js';
+import { validateLogin } from '../utils/validation.js';
+import multer from 'multer';
+import path from 'path';
 
 const router = express.Router();
+
+// Configure multer for agency logo uploads
+const logoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/logos/');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'logo-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const logoUpload = multer({
+  storage: logoStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit for logos
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|svg|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (extname && mimetype) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only image files are allowed'));
+    }
+  }
+});
 
 // Helper function to hash token
 // (imported from sessionTracking middleware)
@@ -45,8 +75,7 @@ router.post('/register', apiLimiter, authenticateToken, authorizeRoles('admin'),
   try {
     const { username, email, password, firstName, lastName, role, phone, licenseNumber, vehicleInfo, riderId, dateOfBirth, preferredVehicleType, serviceBalance, contractDetails, pricingDetails, mileageBalance, trips, securityQuestions } = req.body;
 
-    console.log('Registration request body:', req.body);
-    console.log('Destructured values:', { username, email, password, firstName, lastName, role, phone });
+    // Registration request received
 
     // Validate required fields
     if (!username) {
@@ -114,9 +143,9 @@ router.post('/register', apiLimiter, authenticateToken, authorizeRoles('admin'),
       if (role === 'rider') {
         // Generate a default password for riders
         userPassword = `Rider${Date.now()}`;
-        console.log('Generated default password for rider');
+        // Default password generated for rider
       } else {
-        console.log('Password validation failed - req.body.password:', req.body.password);
+        // Password validation failed
         return res.status(400).json({ 
           success: false,
           message: 'Password is required' 
@@ -193,7 +222,7 @@ router.post('/register', apiLimiter, authenticateToken, authorizeRoles('admin'),
       user: user.toJSON()
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    // Registration error occurred
     res.status(500).json({ message: 'Server error during registration' });
   }
 });
@@ -244,7 +273,7 @@ router.post('/register-admin', async (req, res) => {
       user: user.toJSON()
     });
   } catch (error) {
-    console.error('Admin registration error:', error);
+    // Admin registration error occurred
     res.status(500).json({ message: 'Server error during admin registration' });
   }
 });
@@ -253,6 +282,16 @@ router.post('/register-admin', async (req, res) => {
 router.post('/login', authLimiter, async (req, res) => {
   try {
     const { username, email, password, twoFactorToken } = req.body;
+
+    // Validate login data
+    const validation = validateLogin({ username, email, password });
+    if (!validation.isValid) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Validation failed',
+        errors: validation.errors
+      });
+    }
 
     // Support login with either username or email
     let user;
@@ -494,7 +533,7 @@ router.post('/login', authLimiter, async (req, res) => {
       // Check for anomalies
       const anomalies = await Session.detectAnomalies(user._id);
       if (anomalies.length > 0) {
-        console.warn(`Suspicious login detected for user ${user.username}:`, anomalies);
+        // Suspicious login activity detected
         
         await logAudit({
           userId: user._id,
@@ -512,7 +551,7 @@ router.post('/login', authLimiter, async (req, res) => {
         });
       }
     } catch (sessionError) {
-      console.error('Error creating session:', sessionError);
+      // Session creation error occurred
       // Don't fail login if session creation fails
     }
 
@@ -545,7 +584,7 @@ router.post('/login', authLimiter, async (req, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error('Login error:', error);
+    // Login error occurred
     res.status(500).json({ message: 'Server error during login' });
   }
 });
@@ -596,7 +635,7 @@ router.post('/fcm-token', async (req, res) => {
 
     res.json({ message: 'FCM token updated successfully' });
   } catch (error) {
-    console.error('FCM token update error:', error);
+    // FCM token update error occurred
     res.status(500).json({ message: 'Server error updating FCM token' });
   }
 });
@@ -634,7 +673,7 @@ router.post('/forgot-password/questions', passwordResetLimiter, async (req, res)
       questions
     });
   } catch (error) {
-    console.error('Get security questions error:', error);
+    // Security questions fetch error occurred
     res.status(500).json({ message: 'Server error retrieving security questions' });
   }
 });
@@ -698,7 +737,7 @@ router.post('/forgot-password/verify', passwordResetLimiter, async (req, res) =>
       resetToken
     });
   } catch (error) {
-    console.error('Verify security answers error:', error);
+    // Security answers verification error occurred
     res.status(500).json({ message: 'Server error verifying security answers' });
   }
 });
@@ -758,7 +797,7 @@ router.post('/forgot-password/reset', passwordResetLimiter, async (req, res) => 
       message: 'Password reset successfully. You can now login with your new password.'
     });
   } catch (error) {
-    console.error('Reset password error:', error);
+    // Password reset error occurred
     res.status(500).json({ message: 'Server error resetting password' });
   }
 });
@@ -796,7 +835,7 @@ router.post('/admin/reset-password/:userId', authenticateToken, authorizeRoles('
       tempPassword: newPassword ? undefined : passwordToSet // Only return if auto-generated
     });
   } catch (error) {
-    console.error('Admin password reset error:', error);
+    // Admin password reset error occurred
     res.status(500).json({ message: 'Server error resetting password' });
   }
 });
@@ -843,11 +882,51 @@ router.post('/set-username', authenticateToken, async (req, res) => {
       user: user.toJSON()
     });
   } catch (error) {
-    console.error('Set username error:', error);
+    // Set username error occurred
     if (error.code === 11000) {
       return res.status(400).json({ message: 'Username already taken' });
     }
     res.status(500).json({ message: 'Server error setting username' });
+  }
+});
+
+// Upload agency logo
+router.post('/upload-logo', authenticateToken, authorizeRoles('admin'), logoUpload.single('logo'), async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file provided' });
+    }
+
+    // Construct the file URL (relative path for serving from uploads folder)
+    const logoUrl = `/uploads/logos/${req.file.filename}`;
+
+    // Update user with new logo
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { logoUrl: logoUrl },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await logActivity(
+      userId,
+      'logo_uploaded',
+      `Agency logo uploaded: ${req.file.filename}`
+    );
+
+    res.json({
+      message: 'Logo uploaded successfully',
+      logoUrl: logoUrl,
+      user: user.toJSON()
+    });
+  } catch (error) {
+    console.error('Logo upload error:', error);
+    res.status(500).json({ message: 'Error uploading logo' });
   }
 });
 

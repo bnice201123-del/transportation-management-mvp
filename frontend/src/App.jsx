@@ -126,7 +126,9 @@ const AppRoutes = () => {
         path="/scheduler" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -134,7 +136,9 @@ const AppRoutes = () => {
         path="/scheduler/dashboard" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -142,7 +146,9 @@ const AppRoutes = () => {
         path="/scheduler/manage" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="manage" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="manage" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -167,7 +173,9 @@ const AppRoutes = () => {
         path="/scheduler/add-trip" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="manage" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="manage" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -175,7 +183,9 @@ const AppRoutes = () => {
         path="/scheduler/edit" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="manage" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="manage" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -183,7 +193,9 @@ const AppRoutes = () => {
         path="/scheduler/all" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="manage" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="manage" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -191,7 +203,9 @@ const AppRoutes = () => {
         path="/scheduler/assign-drivers" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="assign-drivers" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="assign-drivers" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -199,7 +213,9 @@ const AppRoutes = () => {
         path="/scheduler/assign-vehicles" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="assign-vehicles" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="assign-vehicles" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -207,7 +223,9 @@ const AppRoutes = () => {
         path="/scheduler/calendar" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="calendar" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="calendar" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -215,7 +233,9 @@ const AppRoutes = () => {
         path="/scheduler/timeline" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="timeline" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="timeline" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -223,7 +243,9 @@ const AppRoutes = () => {
         path="/scheduler/map" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="map" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="map" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -231,7 +253,9 @@ const AppRoutes = () => {
         path="/scheduler/history" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="history" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="history" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -239,7 +263,9 @@ const AppRoutes = () => {
         path="/scheduler/completed" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="completed" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="completed" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -247,7 +273,9 @@ const AppRoutes = () => {
         path="/scheduler/import" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin']}>
-            <SchedulerDashboard view="import" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="import" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -255,7 +283,9 @@ const AppRoutes = () => {
         path="/scheduler/export" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="export" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="export" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -271,7 +301,9 @@ const AppRoutes = () => {
         path="/scheduler/alerts" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="alerts" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="alerts" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -279,7 +311,9 @@ const AppRoutes = () => {
         path="/scheduler/notifications" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="notifications" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="notifications" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -287,7 +321,9 @@ const AppRoutes = () => {
         path="/scheduler/reports" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="reports" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="reports" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -295,7 +331,9 @@ const AppRoutes = () => {
         path="/scheduler/analytics" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="analytics" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="analytics" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -303,7 +341,9 @@ const AppRoutes = () => {
         path="/scheduler/share" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="share" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="share" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -311,7 +351,9 @@ const AppRoutes = () => {
         path="/scheduler/print" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin', 'dispatcher']}>
-            <SchedulerDashboard view="print" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="print" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -319,7 +361,9 @@ const AppRoutes = () => {
         path="/scheduler/settings" 
         element={
           <ProtectedRoute allowedRoles={['scheduler', 'admin']}>
-            <SchedulerDashboard view="settings" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="settings" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -327,7 +371,9 @@ const AppRoutes = () => {
         path="/scheduler/sync" 
         element={
           <ProtectedRoute allowedRoles={['admin']}>
-            <SchedulerDashboard view="sync" />
+            <ErrorBoundary fallbackMessage="Failed to load Scheduler Dashboard. Please try refreshing the page.">
+              <SchedulerDashboard view="sync" />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -335,7 +381,9 @@ const AppRoutes = () => {
         path="/dispatcher" 
         element={
           <ProtectedRoute allowedRoles={['dispatcher', 'admin']}>
-            <DispatcherDashboard />
+            <ErrorBoundary fallbackMessage="Failed to load Dispatcher Dashboard. Please try refreshing the page.">
+              <DispatcherDashboard />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />
@@ -343,7 +391,9 @@ const AppRoutes = () => {
         path="/driver" 
         element={
           <ProtectedRoute allowedRoles={['driver', 'scheduler', 'dispatcher', 'admin']}>
-            <ComprehensiveDriverDashboard />
+            <ErrorBoundary fallbackMessage="Failed to load Driver Dashboard. Please try refreshing the page.">
+              <ComprehensiveDriverDashboard />
+            </ErrorBoundary>
           </ProtectedRoute>
         } 
       />

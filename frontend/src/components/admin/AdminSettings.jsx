@@ -157,6 +157,7 @@ import {
 } from 'react-icons/fa';
 import axios from '../../config/axios';
 import Navbar from '../shared/Navbar';
+import { useAuth } from '../../contexts/AuthContext';
 import AuditLogViewer from './AuditLogViewer';
 import HolidayManagement from './HolidayManagement';
 import RateLimitMonitor from './RateLimitMonitor';
@@ -175,6 +176,7 @@ import SettingsComparison from './SettingsComparison';
 import SettingsImportExport from './SettingsImportExport';
 import SettingsSearchFilter from './SettingsSearchFilter';
 import settingsValidators from '../../utils/settingsValidation';
+import LogoUpload from './LogoUpload';
 
 const AdminSettings = () => {
   // State management
@@ -185,7 +187,7 @@ const AdminSettings = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [exportLoading, setExportLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTabKey, setActiveTabKey] = useState('search-filter');
   const [lastSaved, setLastSaved] = useState(null);
   const [changeHistory, setChangeHistory] = useState([]);
   const [backupStatus, setBackupStatus] = useState('idle');
@@ -204,6 +206,7 @@ const AdminSettings = () => {
   
   // Hooks
   const toast = useToast();
+  const { user } = useAuth();
   const { isOpen: isExportOpen, onOpen: onExportOpen, onClose: onExportClose } = useDisclosure();
   const { isOpen: isImportOpen, onOpen: onImportOpen, onClose: onImportClose } = useDisclosure();
   const { isOpen: isBackupOpen, onOpen: onBackupOpen, onClose: onBackupClose } = useDisclosure();
@@ -988,6 +991,7 @@ const AdminSettings = () => {
     { label: 'Login Attempts', icon: FaShieldAlt, key: 'login-attempts' },
     { label: 'Geo-Security', icon: FaMap, key: 'geo-security' },
     { label: 'Sidebar', icon: FaBars, key: 'sidebar-settings' },
+    { label: 'Branding', icon: FaPalette, key: 'branding' },
     { label: 'Templates', icon: FaCog, key: 'templates' },
     { label: 'Notifications', icon: FaBell, key: 'notifications-config' },
     { label: 'Rollback', icon: FaHistory, key: 'rollback' },
@@ -1003,6 +1007,17 @@ const AdminSettings = () => {
         tab.key.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : allTabs;
+
+  // Convert tab key to index in allTabs (for TabPanels which use allTabs indices)
+  const getTabIndexByKey = (key) => {
+    return allTabs.findIndex(tab => tab.key === key);
+  };
+
+  // Get current tab index in filtered tabs (for display/selection)
+  const activeTabIndexInFiltered = filteredTabs.findIndex(tab => tab.key === activeTabKey);
+
+  // Get actual tab index in allTabs (for TabPanels)
+  const activeTabIndex = getTabIndexByKey(activeTabKey);
 
   const SettingRow = ({ label, description, children, error }) => (
     <HStack justify="space-between" align="start" spacing={4}>
@@ -1291,8 +1306,13 @@ const AdminSettings = () => {
             <Card bg={cardBg} borderColor={borderColor} shadow="sm">
               <CardBody p={0}>
                 <Tabs 
-                  index={activeTab} 
-                  onChange={setActiveTab}
+                  index={activeTabIndex >= 0 ? activeTabIndex : 0} 
+                  onChange={(index) => {
+                    const selectedTab = allTabs[index];
+                    if (selectedTab) {
+                      setActiveTabKey(selectedTab.key);
+                    }
+                  }}
                   variant="line"
                   colorScheme="blue"
                 >
@@ -1305,8 +1325,8 @@ const AdminSettings = () => {
                     px={6}
                     pt={6}
                   >
-                    {filteredTabs.map((tab) => (
-                      <Tab key={tab.key} minW="fit-content">
+                    {allTabs.map((tab) => (
+                      <Tab key={tab.key} minW="fit-content" display={filteredTabs.some(t => t.key === tab.key) ? 'flex' : 'none'}>
                         <HStack spacing={2}>
                           <Icon as={tab.icon} boxSize={4} />
                           <Text>{tab.label}</Text>
@@ -1499,7 +1519,7 @@ const AdminSettings = () => {
                       </VStack>
                     </TabPanel>
 
-                    {/* Additional tabs with placeholder content */}
+                    {/* Notifications Tab */}
                     <TabPanel p={6}>
                       <VStack spacing={6} align="stretch">
                         <Heading size="md" color={textColor}>Notification Settings</Heading>
@@ -1507,6 +1527,7 @@ const AdminSettings = () => {
                       </VStack>
                     </TabPanel>
 
+                    {/* Maps & GPS Tab */}
                     <TabPanel p={6}>
                       <VStack spacing={6} align="stretch">
                         <Heading size="md" color={textColor}>Maps & GPS Configuration</Heading>
@@ -1514,6 +1535,7 @@ const AdminSettings = () => {
                       </VStack>
                     </TabPanel>
 
+                    {/* Business Tab */}
                     <TabPanel p={6}>
                       <VStack spacing={6} align="stretch">
                         <Heading size="md" color={textColor}>Business Settings</Heading>
@@ -1521,6 +1543,7 @@ const AdminSettings = () => {
                       </VStack>
                     </TabPanel>
 
+                    {/* Integration Tab */}
                     <TabPanel p={6}>
                       <VStack spacing={6} align="stretch">
                         <Heading size="md" color={textColor}>Integration Settings</Heading>
@@ -1595,6 +1618,28 @@ const AdminSettings = () => {
                     <TabPanel p={6}>
                       <VStack spacing={6} align="stretch">
                         <SidebarSettings />
+                      </VStack>
+                    </TabPanel>
+
+                    {/* Branding Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <Heading size="md" color={textColor}>Agency Branding</Heading>
+                        <Text color="gray.500">Customize your agency logo and branding</Text>
+                        <Divider />
+                        <LogoUpload 
+                          currentLogo={user?.logoUrl}
+                          onSuccess={() => {
+                            // Refresh user context or handle logo update
+                            toast({
+                              title: 'Logo updated',
+                              description: 'Your agency logo has been successfully uploaded',
+                              status: 'success',
+                              duration: 3000,
+                              isClosable: true
+                            });
+                          }}
+                        />
                       </VStack>
                     </TabPanel>
 

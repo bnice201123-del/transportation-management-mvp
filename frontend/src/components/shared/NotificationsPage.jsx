@@ -392,22 +392,22 @@ const NotificationsPage = () => {
     <>
       <Navbar title="Notifications" />
       <Box bg={bgColor} minH="100vh" py={8}>
-        <Container maxW="container.xl">
-          <VStack spacing={6} align="stretch">
+        <Container maxW={{ base: "100%", md: "container.xl" }} px={{ base: 3, md: 4 }}>
+          <VStack spacing={{ base: 4, md: 6 }} align="stretch">
             {/* Header */}
-            <Card bg={cardBg}>
-              <CardBody>
+            <Card bg={cardBg} borderRadius={{ base: "md", md: "lg" }}>
+              <CardBody py={{ base: 4, md: 6 }} px={{ base: 3, md: 4 }}>
                 <Flex 
                   direction={{ base: 'column', md: 'row' }} 
-                  justify="space-between" 
-                  align={{ base: 'stretch', md: 'center' }}
-                  gap={4}
+                  justify={{ base: 'center', md: 'space-between' }}
+                  align={{ base: 'center', md: 'center' }}
+                  gap={{ base: 4, md: 6 }}
                 >
-                  <HStack spacing={3}>
-                    <Box as={BellIconSolid} w={8} h={8} color="blue.500" />
+                  <HStack spacing={{ base: 4, md: 6 }} justify="center" align="center">
+                    <Box as={BellIconSolid} w={{ base: 6, md: 8 }} h={{ base: 6, md: 8 }} color="blue.500" flexShrink={0} />
                     <Box>
-                      <Heading size="lg">Notifications</Heading>
-                      <Text fontSize="sm" color={mutedColor}>
+                      <Heading size={{ base: "md", md: "lg" }}>Notifications</Heading>
+                      <Text fontSize={{ base: "xs", md: "sm" }} color={mutedColor}>
                         {unreadCount > 0 
                           ? `You have ${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`
                           : 'All caught up!'
@@ -416,12 +416,12 @@ const NotificationsPage = () => {
                     </Box>
                   </HStack>
 
-                  <HStack spacing={2} flexWrap="wrap">
+                  <HStack spacing={{ base: 1, md: 2 }} flexWrap="wrap" justify={{ base: 'center', md: 'flex-end' }} w={{ base: 'full', md: 'auto' }}>
                     <Select
-                      size="sm"
+                      size={{ base: "sm", md: "sm" }}
                       value={filterType}
                       onChange={(e) => setFilterType(e.target.value)}
-                      maxW="200px"
+                      maxW={{ base: "150px", md: "200px" }}
                     >
                       <option value="all">All Types</option>
                       <option value="trip_assigned">Trip Assigned</option>
@@ -455,8 +455,13 @@ const NotificationsPage = () => {
               index={activeTab}
               onChange={setActiveTab}
             >
-              <TabList>
-                <Tab>
+              <Center mb={6}>
+                <TabList 
+                  justify="center"
+                  display="flex"
+                  gap={2}
+                >
+                  <Tab>
                   All
                   {notifications.length > 0 && (
                     <Badge ml={2} colorScheme="gray">
@@ -474,6 +479,7 @@ const NotificationsPage = () => {
                 </Tab>
                 <Tab>Read</Tab>
               </TabList>
+              </Center>
 
               <TabPanels>
                 <TabPanel px={0}>

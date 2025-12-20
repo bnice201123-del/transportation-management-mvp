@@ -269,48 +269,58 @@ const ScheduleTemplates = () => {
           ) : (
             <Card bg={bgColor} borderColor={borderColor} borderWidth={1}>
               <CardHeader borderBottomWidth={1} borderColor={borderColor}>
-                <Heading size="md">Templates ({filteredTemplates.length})</Heading>
+                <Heading size={{ base: "sm", md: "md" }}>Templates ({filteredTemplates.length})</Heading>
               </CardHeader>
-              <CardBody>
-                <TableContainer>
-                  <Table size="sm">
-                    <Thead>
+              <CardBody p={{ base: 2, md: 4 }}>
+                <TableContainer overflowX={{ base: "auto", md: "visible" }}>
+                  <Table size={{ base: "sm", md: "md" }}>
+                    <Thead display={{ base: "none", md: "table-header-group" }}>
                       <Tr>
-                        <Th>Name</Th>
-                        <Th>Category</Th>
-                        <Th>Description</Th>
-                        <Th>Status</Th>
-                        <Th>Usage</Th>
-                        <Th>Created</Th>
-                        <Th>Actions</Th>
+                        <Th px={{ base: 1, md: 4 }}>Name</Th>
+                        <Th px={{ base: 1, md: 4 }} display={{ base: "none", lg: "table-cell" }}>Category</Th>
+                        <Th px={{ base: 1, md: 4 }} display={{ base: "none", xl: "table-cell" }}>Description</Th>
+                        <Th px={{ base: 1, md: 4 }}>Status</Th>
+                        <Th px={{ base: 1, md: 4 }} display={{ base: "none", md: "table-cell" }}>Usage</Th>
+                        <Th px={{ base: 1, md: 4 }} display={{ base: "none", lg: "table-cell" }}>Created</Th>
+                        <Th px={{ base: 1, md: 4 }}>Actions</Th>
                       </Tr>
                     </Thead>
                     <Tbody>
                       {filteredTemplates.map((template) => (
-                        <Tr key={template._id} _hover={{ bg: hoverBg }}>
-                          <Td fontWeight="bold">{template.name}</Td>
-                          <Td>
+                        <Tr key={template._id} _hover={{ bg: hoverBg }} display={{ base: "flex", md: "table-row" }} flexDir={{ base: "column", md: "row" }} py={{ base: 2, md: 0 }} px={{ base: 2, md: 0 }} mb={{ base: 2, md: 0 }} borderRadius={{ base: "md", md: 0 }} bg={{ base: bgColor, md: "transparent" }} borderWidth={{ base: 1, md: 0 }}>
+                          <Td fontWeight="bold" px={{ base: 1, md: 4 }} py={{ base: 1, md: 3 }} fontSize={{ base: "sm", md: "md" }} display={{ base: "flex", md: "table-cell" }} flexDir={{ base: "column", md: "row" }}>
+                            <Text display={{ base: "block", md: "none" }} fontSize="xs" fontWeight="bold" color="gray.600" mb={1}>Name</Text>
+                            {template.name}
+                          </Td>
+                          <Td px={{ base: 1, md: 4 }} py={{ base: 1, md: 3 }} display={{ base: "flex", lg: "table-cell" }} flexDir={{ base: "column", md: "row" }}>
+                            <Text display={{ base: "block", lg: "none" }} fontSize="xs" fontWeight="bold" color="gray.600" mb={1}>Category</Text>
                             <Badge colorScheme={getCategoryColor(template.category)}>
                               {template.category}
                             </Badge>
                           </Td>
-                          <Td fontSize="sm">{template.description || '—'}</Td>
-                          <Td>
+                          <Td fontSize={{ base: "xs", md: "sm" }} px={{ base: 1, md: 4 }} py={{ base: 1, md: 3 }} display={{ base: "none", xl: "table-cell" }}>
+                            {template.description || '—'}
+                          </Td>
+                          <Td px={{ base: 1, md: 4 }} py={{ base: 1, md: 3 }} display={{ base: "flex", md: "table-cell" }} flexDir={{ base: "column", md: "row" }}>
+                            <Text display={{ base: "block", md: "none" }} fontSize="xs" fontWeight="bold" color="gray.600" mb={1}>Status</Text>
                             <Badge colorScheme={template.isActive ? 'green' : 'red'}>
                               {template.isActive ? 'Active' : 'Inactive'}
                             </Badge>
                           </Td>
-                          <Td>{template.usageCount || 0} times</Td>
-                          <Td fontSize="sm">
+                          <Td px={{ base: 1, md: 4 }} py={{ base: 1, md: 3 }} fontSize={{ base: "sm", md: "md" }} display={{ base: "none", md: "table-cell" }}>
+                            {template.usageCount || 0} times
+                          </Td>
+                          <Td fontSize={{ base: "xs", md: "sm" }} px={{ base: 1, md: 4 }} py={{ base: 1, md: 3 }} display={{ base: "none", lg: "table-cell" }}>
                             {new Date(template.createdAt).toLocaleDateString()}
                           </Td>
-                          <Td>
+                          <Td px={{ base: 1, md: 4 }} py={{ base: 1, md: 3 }}>
                             <Menu>
                               <MenuButton
                                 as={IconButton}
                                 icon={<ChevronDownIcon />}
                                 variant="outline"
-                                size="sm"
+                                size={{ base: "xs", md: "sm" }}
+                                minH={{ base: "44px", md: "auto" }}
                               />
                               <MenuList>
                                 <MenuItem
@@ -319,6 +329,7 @@ const ScheduleTemplates = () => {
                                     onEditOpen();
                                   }}
                                   icon={<EditIcon />}
+                                  py={{ base: 3, md: 2 }}
                                 >
                                   Edit
                                 </MenuItem>
@@ -327,6 +338,7 @@ const ScheduleTemplates = () => {
                                     setSelectedTemplate(template);
                                     onPreviewOpen();
                                   }}
+                                  py={{ base: 3, md: 2 }}
                                 >
                                   Preview
                                 </MenuItem>
@@ -335,6 +347,7 @@ const ScheduleTemplates = () => {
                                     setSelectedTemplate(template);
                                     onApplyOpen();
                                   }}
+                                  py={{ base: 3, md: 2 }}
                                 >
                                   Apply
                                 </MenuItem>
@@ -344,6 +357,7 @@ const ScheduleTemplates = () => {
                                     handleCloneTemplate(template._id);
                                   }}
                                   icon={<CopyIcon />}
+                                  py={{ base: 3, md: 2 }}
                                 >
                                   Clone
                                 </MenuItem>
@@ -351,6 +365,7 @@ const ScheduleTemplates = () => {
                                   onClick={() => handleDeleteTemplate(template._id)}
                                   icon={<DeleteIcon />}
                                   color="red.500"
+                                  py={{ base: 3, md: 2 }}
                                 >
                                   Delete
                                 </MenuItem>

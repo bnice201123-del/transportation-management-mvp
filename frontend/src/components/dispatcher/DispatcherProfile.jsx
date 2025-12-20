@@ -227,7 +227,7 @@ const DispatcherProfile = () => {
           <Heading size="md">Performance Overview</Heading>
         </CardHeader>
         <CardBody>
-          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={6}>
+          <SimpleGrid columns={{ base: 1, md: 4 }} spacing={6}>
             <Stat>
               <StatLabel>Total Dispatched</StatLabel>
               <StatNumber>{stats.totalDispatched}</StatNumber>

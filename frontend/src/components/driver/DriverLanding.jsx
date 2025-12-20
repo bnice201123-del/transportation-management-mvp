@@ -396,7 +396,7 @@ const DriverLanding = () => {
                   {/* Driver Status Card */}
                   <Card>
                     <CardBody>
-                      <Grid templateColumns={{ base: '1fr', md: 'repeat(4, 1fr)' }} gap={6}>
+                      <Grid templateColumns={{ base: '1fr', sm: '1fr', md: 'repeat(4, 1fr)' }} gap={6}>
                         <VStack>
                           <Text fontSize="2xl" fontWeight="bold" color={isAvailable ? 'green.500' : 'orange.500'}>
                             {isAvailable ? 'Available' : 'Busy'}
@@ -751,7 +751,7 @@ const DriverLanding = () => {
                         </Box>
                         <Box>
                           <Heading size="sm" mb={4}>Statistics</Heading>
-                          <SimpleGrid columns={2} spacing={4}>
+                          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                             <Stat>
                               <StatLabel>Total Trips</StatLabel>
                               <StatNumber>{myTrips.length}</StatNumber>

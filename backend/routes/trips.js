@@ -20,6 +20,7 @@ import {
 } from '../utils/tripLifecycleHooks.js';
 import { optimizeRoute, estimateTripCost } from '../utils/routeOptimization.js';
 import { getTrafficInfo, calculateTrafficSurge } from '../services/trafficService.js';
+import { validateTrip, validators } from '../utils/validation.js';
 
 const router = express.Router();
 
@@ -582,17 +583,35 @@ router.post('/', authenticateToken, authorizeRoles('scheduler', 'dispatcher', 'a
       createdBy: req.user._id
     };
 
+    // Validate required trip fields
+    const addressValidation = {
+      pickupAddress: tripData.pickupAddress,
+      dropoffAddress: tripData.dropoffAddress,
+      scheduledDate: tripData.scheduledDate,
+      scheduledTime: tripData.scheduledTime,
+      numberOfPassengers: tripData.numberOfPassengers
+    };
+
+    const validation = validateTrip(addressValidation);
+    if (!validation.isValid) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Trip validation failed',
+        errors: validation.errors
+      });
+    }
+
     // Validate date/time format
     if (tripData.scheduledDate && tripData.scheduledTime) {
       const dateStr = typeof tripData.scheduledDate === 'string' 
         ? tripData.scheduledDate.split('T')[0]  // Extract YYYY-MM-DD from ISO string
         : new Date(tripData.scheduledDate).toISOString().split('T')[0];
       
-      const validation = validateDateTime(dateStr, tripData.scheduledTime);
-      if (!validation.isValid) {
+      const datetimeValidation = validateDateTime(dateStr, tripData.scheduledTime);
+      if (!datetimeValidation.isValid) {
         return res.status(400).json({ 
           message: 'Invalid date or time format',
-          errors: validation.errors
+          errors: datetimeValidation.errors
         });
       }
       

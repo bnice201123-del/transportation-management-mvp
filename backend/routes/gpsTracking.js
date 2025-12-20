@@ -1,6 +1,7 @@
 import express from 'express';
 import Trip from '../models/Trip.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { validateLocation, validators } from '../utils/validation.js';
 
 const router = express.Router();
 
@@ -96,8 +97,26 @@ router.post('/:tripId/location', authenticateToken, async (req, res) => {
     const { tripId } = req.params;
     const { latitude, longitude, accuracy, altitude, speed, heading, batteryLevel, timestamp } = req.body;
 
-    if (!latitude || !longitude) {
-      return res.status(400).json({ message: 'Latitude and longitude are required' });
+    // Validate location data
+    const validation = validateLocation({ latitude, longitude, accuracy, altitude, speed });
+    if (!validation.isValid) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Location validation failed',
+        errors: validation.errors
+      });
+    }
+
+    // Additional coordinate range validation
+    if (!validators.isValidCoordinates(latitude, longitude)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid coordinates',
+        errors: {
+          latitude: 'Latitude must be between -90 and 90',
+          longitude: 'Longitude must be between -180 and 180'
+        }
+      });
     }
 
     const trip = await Trip.findById(tripId);

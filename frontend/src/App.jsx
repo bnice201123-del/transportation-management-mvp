@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Box, Spinner, Center } from '@chakra-ui/react';
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { DualLoginProvider } from "./contexts/DualLoginContext";
 import { SidebarProvider } from "./contexts/SidebarContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 
@@ -25,6 +26,9 @@ import DispatcherDashboard from './components/dispatcher/DispatcherDashboard';
 import DriverLanding from './components/driver/DriverLanding';
 import DriverReport from './components/driver/DriverReport';
 import ComprehensiveDriverDashboard from './components/driver/ComprehensiveDriverDashboard';
+import DriverLoginForm from './components/driver/DriverLoginForm';
+import DualLoginDriverDashboard from './components/driver/DualLoginDriverDashboard';
+import ProtectedDriverRoute from './components/driver/ProtectedDriverRoute';
 import VehicleLog from './components/vehicles/VehicleLog';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminOverview from './components/admin/AdminOverview';
@@ -405,6 +409,22 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+
+      {/* Driver Section - Dual Login Routes */}
+      <Route 
+        path="/driver/dual-login" 
+        element={<DriverLoginForm />}
+      />
+      <Route 
+        path="/driver/dashboard" 
+        element={
+          <ProtectedDriverRoute>
+            <DualLoginDriverDashboard />
+          </ProtectedDriverRoute>
+        }
+      />
+
+      {/* Admin Routes */}
       <Route 
         path="/admin" 
         element={
@@ -967,18 +987,20 @@ function App() {
     <AuthProvider>
       <NotificationProvider>
         <SidebarProvider>
-          <Box 
-            minWidth="320px"
-            minHeight="100vh"
-            width="100%" 
-            bg="gray.50" 
-            position="relative"
-            overflowX="hidden"
-          >
-            <Layout>
-              <AppRoutes />
-            </Layout>
-          </Box>
+          <DualLoginProvider>
+            <Box 
+              minWidth="320px"
+              minHeight="100vh"
+              width="100%" 
+              bg="gray.50" 
+              position="relative"
+              overflowX="hidden"
+            >
+              <Layout>
+                <AppRoutes />
+              </Layout>
+            </Box>
+          </DualLoginProvider>
         </SidebarProvider>
       </NotificationProvider>
     </AuthProvider>

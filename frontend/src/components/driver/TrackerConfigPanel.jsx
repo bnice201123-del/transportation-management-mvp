@@ -32,7 +32,7 @@ import {
   NumberDecrementButton,
 } from '@chakra-ui/react';
 import { FiSave, FiRotateCcw, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
-import { useDualLogin } from '../../contexts/DualLoginContext';
+import { useDualLogin } from '../../contexts/useDualLogin';
 
 /**
  * TrackerConfigPanel Component

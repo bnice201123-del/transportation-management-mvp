@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useDualLogin } from '../../contexts/DualLoginContext';
+import { useDualLogin } from '../../contexts/useDualLogin';
 import { Box, Spinner, Center } from '@chakra-ui/react';
 
 /**

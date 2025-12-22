@@ -37,7 +37,7 @@ import {
   FaExclamationTriangle
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { useDualLogin } from '../../contexts/DualLoginContext';
+import { useDualLogin } from '../../contexts/useDualLogin';
 import axios from 'axios';
 
 /**
@@ -53,11 +53,12 @@ const DualLoginDriverDashboard = () => {
   const [error, setError] = useState(null);
 
   // Hooks
-  const { driverAuth, logoutDriver, getDriverAxios } = useDualLogin();
+  const { driverAuth, logoutDriver } = useDualLogin();
   const navigate = useNavigate();
   const toast = useToast();
 
   // Colors
+  const pageBg = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const statBg = useColorModeValue('gray.50', 'gray.700');
@@ -71,45 +72,42 @@ const DualLoginDriverDashboard = () => {
       return;
     }
 
-    fetchDashboardData();
-  }, [driverAuth.isAuthenticated, driverAuth.userId]);
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  /**
-   * Fetch dashboard data from API
-   */
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/drivers/${driverAuth.userId}/dashboard`,
-        {
-          headers: {
-            Authorization: `Bearer ${driverAuth.token}`
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/drivers/${driverAuth.userId}/dashboard`,
+          {
+            headers: {
+              Authorization: `Bearer ${driverAuth.token}`
+            }
           }
-        }
-      );
+        );
 
-      setDashboardData(response.data.data);
-      setTrackers(response.data.data.recentTrackers || []);
-    } catch (err) {
-      const errorMessage =
-        err.response?.data?.message || 'Failed to load dashboard';
-      setError(errorMessage);
+        setDashboardData(response.data.data);
+        setTrackers(response.data.data.recentTrackers || []);
+      } catch (err) {
+        const errorMessage =
+          err.response?.data?.message || 'Failed to load dashboard';
+        setError(errorMessage);
 
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-        position: 'top'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+        toast({
+          title: 'Error',
+          description: errorMessage,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+          position: 'top'
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [driverAuth.isAuthenticated, driverAuth.userId, driverAuth.token, navigate, toast]);
 
   /**
    * Handle logout
@@ -180,7 +178,7 @@ const DualLoginDriverDashboard = () => {
   }
 
   return (
-    <Box minH="100vh" bg={useColorModeValue('gray.50', 'gray.900')} pb={8}>
+    <Box minH="100vh" bg={pageBg} pb={8}>
       {/* Header */}
       <Box
         bg="linear(to-r, blue.400, purple.500)"

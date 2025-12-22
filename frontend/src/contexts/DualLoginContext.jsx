@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useState, useCallback, useEffect } from 'react';
 import axios from 'axios';
 
 /**
@@ -94,7 +94,7 @@ export const DualLoginProvider = ({ children }) => {
       setError(null);
 
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/drivers/section-login`,
+        `${import.meta.env.VITE_API_BASE_URL}/drivers/section-login`,
         {
           driverId,
           pin
@@ -150,7 +150,7 @@ export const DualLoginProvider = ({ children }) => {
       setError(null);
 
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/drivers/vehicle-phone-login`,
+        `${import.meta.env.VITE_API_BASE_URL}/drivers/vehicle-phone-login`,
         {
           phoneNumber,
           imei
@@ -303,7 +303,7 @@ export const DualLoginProvider = ({ children }) => {
 
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/drivers/refresh-token`,
+        `${import.meta.env.VITE_API_BASE_URL}/drivers/refresh-token`,
         { driverId: driverAuth.driverId },
         {
           headers: {
@@ -340,7 +340,7 @@ export const DualLoginProvider = ({ children }) => {
 
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/drivers/refresh-tracker-token`,
+        `${import.meta.env.VITE_API_BASE_URL}/drivers/refresh-tracker-token`,
         { trackerId: trackerAuth.trackerId },
         {
           headers: {
@@ -375,7 +375,7 @@ export const DualLoginProvider = ({ children }) => {
   const getDriverAxios = useCallback(() => {
     const token = getDriverToken();
     return axios.create({
-      baseURL: process.env.REACT_APP_API_URL,
+      baseURL: import.meta.env.VITE_API_BASE_URL,
       headers: {
         Authorization: `Bearer ${token}`,
         'X-Driver-Section': 'true'
@@ -389,7 +389,7 @@ export const DualLoginProvider = ({ children }) => {
   const getTrackerAxios = useCallback(() => {
     const token = getTrackerToken();
     return axios.create({
-      baseURL: process.env.REACT_APP_API_URL,
+      baseURL: import.meta.env.VITE_API_BASE_URL,
       headers: {
         Authorization: `Bearer ${token}`,
         'X-Tracker-Section': 'true'
@@ -431,20 +431,6 @@ export const DualLoginProvider = ({ children }) => {
       {children}
     </DualLoginContext.Provider>
   );
-};
-
-/**
- * useDualLogin Hook
- * Use this hook to access dual login context in components
- */
-export const useDualLogin = () => {
-  const context = useContext(DualLoginContext);
-
-  if (!context) {
-    throw new Error('useDualLogin must be used within DualLoginProvider');
-  }
-
-  return context;
 };
 
 export default DualLoginContext;

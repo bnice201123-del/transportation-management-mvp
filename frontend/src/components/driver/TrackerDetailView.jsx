@@ -39,7 +39,7 @@ import {
   FiAlertTriangle,
   FiCheck,
 } from 'react-icons/fi';
-import { useDualLogin } from '../../contexts/DualLoginContext';
+import { useDualLogin } from '../../contexts/useDualLogin';
 
 /**
  * TrackerDetailView Component

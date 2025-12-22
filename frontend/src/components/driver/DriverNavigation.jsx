@@ -27,7 +27,7 @@ import {
   FiMenu,
 } from 'react-icons/fi';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useDualLogin } from '../../contexts/DualLoginContext';
+import { useDualLogin } from '../../contexts/useDualLogin';
 
 /**
  * DriverNavigation Component

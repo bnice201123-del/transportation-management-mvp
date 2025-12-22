@@ -123,7 +123,7 @@ const DriverLoginForm = () => {
       setLoading(true);
 
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/drivers/section-login`,
+        `${import.meta.env.VITE_API_BASE_URL}/drivers/section-login`,
         {
           driverId: driverId.toUpperCase(),
           pin: pin || undefined
@@ -228,7 +228,7 @@ const DriverLoginForm = () => {
       setLoading(true);
 
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/drivers/vehicle-phone-login`,
+        `${import.meta.env.VITE_API_BASE_URL}/drivers/vehicle-phone-login`,
         {
           phoneNumber: formattedPhone,
           devicePassword

@@ -46,7 +46,7 @@ import {
   FiCheck,
   FiTrash2,
 } from 'react-icons/fi';
-import { useDualLogin } from '../../contexts/DualLoginContext';
+import { useDualLogin } from '../../contexts/useDualLogin';
 
 /**
  * DriverSettings Component

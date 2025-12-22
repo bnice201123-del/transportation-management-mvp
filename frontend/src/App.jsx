@@ -423,6 +423,38 @@ const AppRoutes = () => {
           </ProtectedDriverRoute>
         }
       />
+      <Route 
+        path="/driver/trackers" 
+        element={
+          <ProtectedDriverRoute>
+            <VehicleTrackerList />
+          </ProtectedDriverRoute>
+        }
+      />
+      <Route 
+        path="/driver/tracker/:id" 
+        element={
+          <ProtectedDriverRoute>
+            <TrackerDetailView />
+          </ProtectedDriverRoute>
+        }
+      />
+      <Route 
+        path="/driver/tracker/:id/config" 
+        element={
+          <ProtectedDriverRoute>
+            <TrackerConfigPanel />
+          </ProtectedDriverRoute>
+        }
+      />
+      <Route 
+        path="/driver/settings" 
+        element={
+          <ProtectedDriverRoute>
+            <DriverSettings />
+          </ProtectedDriverRoute>
+        }
+      />
 
       {/* Admin Routes */}
       <Route 

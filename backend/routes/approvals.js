@@ -2,7 +2,7 @@ import express from 'express';
 import ApprovalQueue from '../models/ApprovalQueue.js';
 import Trip from '../models/Trip.js';
 import User from '../models/User.js';
-import { authenticateToken, requirePermission } from '../middleware/auth.js';
+import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import { adminLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
@@ -15,7 +15,7 @@ const router = express.Router();
 router.get(
   '/queue',
   authenticateToken,
-  requirePermission('approvals', 'read'),
+  authorizeRoles('admin', 'scheduler'),
   adminLimiter,
   async (req, res) => {
     try {
@@ -101,7 +101,7 @@ router.get(
 router.get(
   '/:id',
   authenticateToken,
-  requirePermission('approvals', 'read'),
+  authorizeRoles('admin', 'scheduler'),
   async (req, res) => {
     try {
       const approval = await ApprovalQueue.findById(req.params.id)
@@ -206,7 +206,7 @@ router.post(
 router.post(
   '/:id/approve',
   authenticateToken,
-  requirePermission('approvals', 'approve'),
+  authorizeRoles('admin', 'scheduler'),
   adminLimiter,
   async (req, res) => {
     try {
@@ -241,7 +241,7 @@ router.post(
 router.post(
   '/:id/reject',
   authenticateToken,
-  requirePermission('approvals', 'approve'),
+  authorizeRoles('admin', 'scheduler'),
   adminLimiter,
   async (req, res) => {
     try {
@@ -323,7 +323,7 @@ router.post(
 router.post(
   '/:id/escalate',
   authenticateToken,
-  requirePermission('approvals', 'escalate'),
+  authorizeRoles('admin'),
   adminLimiter,
   async (req, res) => {
     try {
@@ -377,7 +377,7 @@ router.post(
 router.get(
   '/stats',
   authenticateToken,
-  requirePermission('approvals', 'read'),
+  authorizeRoles('admin', 'scheduler'),
   adminLimiter,
   async (req, res) => {
     try {

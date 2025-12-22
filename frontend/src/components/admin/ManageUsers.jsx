@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -81,7 +82,8 @@ import {
   CloseIcon,
   DownloadIcon,
   SettingsIcon,
-  CheckIcon
+  CheckIcon,
+  ArrowBackIcon
 } from '@chakra-ui/icons';
 import {
   HiUsers,
@@ -106,7 +108,6 @@ import {
   HiStar,
   HiRefresh
 } from 'react-icons/hi';
-import { useNavigate } from 'react-router-dom';
 import Navbar from '../shared/Navbar';
 
 const ManageUsers = () => {
@@ -531,6 +532,21 @@ const ManageUsers = () => {
     <Box minHeight="100vh" bg={bgColor} pb={8}>
       <Navbar />
       
+      {/* Back to Admin Button - Desktop Only */}
+      <Container maxW={containerMaxW} pt={4}>
+        <Flex mb={2} justifyContent="flex-start" display={{ base: 'none', lg: 'flex' }}>
+          <Button
+            leftIcon={<ArrowBackIcon />}
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/admin')}
+            colorScheme="blue"
+          >
+            Back to Admin Dashboard
+          </Button>
+        </Flex>
+      </Container>
+
       {/* Enhanced Header */}
       <Container maxW={containerMaxW} pt={6} pb={4}>
         <VStack spacing={4} align="stretch">

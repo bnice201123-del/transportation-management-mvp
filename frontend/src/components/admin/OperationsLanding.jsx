@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -12,7 +13,8 @@ import {
   HStack,
   Icon,
   useColorModeValue,
-  SimpleGrid
+  SimpleGrid,
+  Flex
 } from '@chakra-ui/react';
 import {
   FaRoute,
@@ -21,7 +23,7 @@ import {
   FaUsers,
   FaCar
 } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { ArrowBackIcon } from '@chakra-ui/icons';
 import Navbar from '../shared/Navbar';
 
 const OperationsLanding = () => {
@@ -74,6 +76,19 @@ const OperationsLanding = () => {
       <Box ml={{ base: 0, md: "60px", lg: "200px", xl: "240px" }} pt={{ base: 4, md: 0 }}>
         <Container maxW="container.xl" py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>
           <VStack spacing={8} align="stretch">
+            {/* Back to Admin Button - Desktop Only */}
+            <Flex mb={2} justifyContent="flex-start" display={{ base: 'none', lg: 'flex' }}>
+              <Button
+                leftIcon={<ArrowBackIcon />}
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/admin')}
+                colorScheme="blue"
+              >
+                Back to Admin Dashboard
+              </Button>
+            </Flex>
+
             {/* Header */}
             <Box textAlign="center" py={8}>
               <Heading size="xl" color="gray.700" mb={4}>

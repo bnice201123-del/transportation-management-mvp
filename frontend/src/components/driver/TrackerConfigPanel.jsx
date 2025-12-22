@@ -27,9 +27,6 @@ import {
   Checkbox,
   NumberInput,
   NumberInputField,
-  NumberInputStepper,
-  NumberIncrementButton,
-  NumberDecrementButton,
 } from '@chakra-ui/react';
 import { FiSave, FiRotateCcw, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import { useDualLogin } from '../../contexts/useDualLogin';
@@ -280,10 +277,6 @@ const TrackerConfigPanel = ({ trackerId, vehicleName, onSaveSuccess }) => {
                 max={300}
               >
                 <NumberInputField />
-                <NumberInputStepper>
-                  <NumberIncrementButton />
-                  <NumberDecrementButton />
-                </NumberInputStepper>
               </NumberInput>
             </FormControl>
           </VStack>
@@ -324,10 +317,6 @@ const TrackerConfigPanel = ({ trackerId, vehicleName, onSaveSuccess }) => {
                 max={50}
               >
                 <NumberInputField />
-                <NumberInputStepper>
-                  <NumberIncrementButton />
-                  <NumberDecrementButton />
-                </NumberInputStepper>
               </NumberInput>
             </FormControl>
           </VStack>
@@ -452,10 +441,6 @@ const TrackerConfigPanel = ({ trackerId, vehicleName, onSaveSuccess }) => {
                 max={365}
               >
                 <NumberInputField />
-                <NumberInputStepper>
-                  <NumberIncrementButton />
-                  <NumberDecrementButton />
-                </NumberInputStepper>
               </NumberInput>
             </FormControl>
           </VStack>

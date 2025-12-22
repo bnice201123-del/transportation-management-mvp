@@ -25,9 +25,12 @@ import {
   Spacer
 } from '@chakra-ui/react';
 import { FaUserShield, FaUsers, FaKey, FaCog } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import { ArrowBackIcon } from '@chakra-ui/icons';
 import Navbar from '../shared/Navbar';
 
 const UserRolesPermissions = () => {
+  const navigate = useNavigate();
   // Color mode values
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
@@ -64,6 +67,18 @@ const UserRolesPermissions = () => {
       <Navbar />
       <Container maxW="7xl" py={8}>
         <VStack spacing={8} align="stretch">
+          {/* Back to Admin Button - Desktop Only */}
+          <Flex mb={2} justifyContent="flex-start" display={{ base: 'none', lg: 'flex' }}>
+            <Button
+              leftIcon={<ArrowBackIcon />}
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/admin')}
+              colorScheme="blue"
+            >
+              Back to Admin Dashboard
+            </Button>
+          </Flex>
           {/* Header */}
           <Box>
             <Flex align="center" mb={2}>

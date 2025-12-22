@@ -30,8 +30,8 @@ import {
 import {
   FiArrowLeft,
   FiMapPin,
-  FiBattery2,
-  FiSignal,
+  FiBattery,
+  FiWifi,
   FiClock,
   FiRefreshCw,
   FiSettings,
@@ -211,7 +211,7 @@ const TrackerDetailView = ({ tracker, onBack }) => {
                 <VStack spacing={1} align="start">
                   <Text fontSize="xs" color="gray.500">Battery</Text>
                   <HStack spacing={1}>
-                    <Icon as={FiBattery2} />
+                    <Icon as={FiBattery} />
                     <Text fontSize="sm" fontWeight="bold">{displayData.batteryLevel || 0}%</Text>
                   </HStack>
                 </VStack>
@@ -220,7 +220,7 @@ const TrackerDetailView = ({ tracker, onBack }) => {
                 <VStack spacing={1} align="start">
                   <Text fontSize="xs" color="gray.500">Signal</Text>
                   <HStack spacing={1}>
-                    <Icon as={FiSignal} color={getSignalColor(displayData.signalStrength)} />
+                    <Icon as={FiWifi} color={getSignalColor(displayData.signalStrength)} />
                     <Text fontSize="sm" fontWeight="bold">
                       {getSignalText(displayData.signalStrength)}
                     </Text>

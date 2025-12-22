@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Grid,
@@ -96,7 +97,8 @@ import {
   InfoIcon,
   RepeatIcon,
   EmailIcon,
-  CopyIcon
+  CopyIcon,
+  ArrowBackIcon
 } from '@chakra-ui/icons';
 import { 
   FaFileExport,
@@ -120,6 +122,7 @@ import {
 import Navbar from '../shared/Navbar';
 
 const AdminReports = () => {
+  const navigate = useNavigate();
   const [reports, setReports] = useState([]);
   const [scheduledReports, setScheduledReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -495,6 +498,19 @@ const AdminReports = () => {
       <Navbar />
       <Box flex="1" p={{ base: 3, md: 4 }} w="100%" overflowX="hidden">
           <VStack align="stretch" spacing={{ base: 4, md: 6 }}>
+            {/* Back to Admin Button - Desktop Only */}
+            <Flex mb={2} justifyContent="flex-start" display={{ base: 'none', lg: 'flex' }}>
+              <Button
+                leftIcon={<ArrowBackIcon />}
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/admin')}
+                colorScheme="blue"
+              >
+                Back to Admin Dashboard
+              </Button>
+            </Flex>
+
             {/* Header */}
             <Flex 
               justify="space-between" 

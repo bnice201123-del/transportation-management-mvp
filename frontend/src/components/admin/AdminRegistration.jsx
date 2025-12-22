@@ -98,7 +98,8 @@ import {
   LockIcon,
   UnlockIcon,
   EditIcon,
-  ArrowForwardIcon
+  ArrowForwardIcon,
+  ArrowBackIcon
 } from '@chakra-ui/icons';
 import {
   FaUser,
@@ -123,10 +124,12 @@ import {
   FaSave,
   FaUndo
 } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from "../../contexts/AuthContext";
 import Navbar from '../shared/Navbar';
 
 const AdminRegistration = () => {
+  const navigate = useNavigate();
   // Enhanced state management
   const [formData, setFormData] = useState({
     email: '',
@@ -436,6 +439,19 @@ const AdminRegistration = () => {
       
       <Container maxW={cardMaxW} py={{ base: 4, md: 8 }} px={{ base: 4, md: 6 }}>
         <VStack spacing={{ base: 4, md: 6 }} align="stretch">
+          {/* Back to Admin Button - Desktop Only */}
+          <Flex mb={2} justifyContent="flex-start" display={{ base: 'none', lg: 'flex' }}>
+            <Button
+              leftIcon={<ArrowBackIcon />}
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/admin')}
+              colorScheme="blue"
+            >
+              Back to Admin Dashboard
+            </Button>
+          </Flex>
+
           {/* Enhanced Header with Breadcrumbs */}
           <ScaleFade in={true} initialScale={0.9}>
             <Card bg={cardBg} borderColor={borderColor} shadow="lg" borderRadius="xl">

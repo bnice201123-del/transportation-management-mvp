@@ -1,85 +1,137 @@
 import React, { useState } from 'react';
-import { Box, Image, VStack, Text, Icon } from '@chakra-ui/react';
+import { Box, Image, VStack, Text, Icon, useBreakpointValue } from '@chakra-ui/react';
 import { BuildingOfficeIcon } from '@heroicons/react/24/outline';
 
 const BrandingLogo = ({ 
   logoUrl, 
   agencyName = 'Drive', 
-  size = 'md', 
-  showText = false 
+  size = 'auto', 
+  showText = false,
+  brandingType = null // NEW: 'TEXT' or 'LOGO'
 }) => {
   const [imageError, setImageError] = useState(false);
 
-  // Define size configurations
-  const sizeConfig = {
-    sm: { imgHeight: '24px', imgWidth: '60px', textSize: 'xs', spacing: 1 },
-    md: { imgHeight: '32px', imgWidth: '80px', textSize: 'sm', spacing: 2 },
-    lg: { imgHeight: '48px', imgWidth: '120px', textSize: 'md', spacing: 3 }
-  };
+  // Auto-responsive sizing based on screen breakpoints
+  const responsiveSize = useBreakpointValue({
+    base: 'sm',      // mobile: 0px - 480px
+    sm: 'sm',        // small mobile: 480px - 768px
+    md: 'md',        // tablet: 768px - 992px
+    lg: 'lg',        // desktop: 992px - 1280px
+    xl: 'xl',        // large desktop: 1280px - 1536px
+    '2xl': '2xl'     // extra large: 1536px+
+  }, 'md');
 
-  const config = sizeConfig[size] || sizeConfig.md;
+  // Use responsive size if 'auto', otherwise use provided size
+  const finalSize = size === 'auto' ? responsiveSize : size;
+
+  // NEW: Determine what to display based on brandingType
+  // If brandingType is set, respect it; otherwise use showText prop
+  const shouldShowLogo = brandingType ? brandingType === 'LOGO' : !showText;
+  const shouldShowText = brandingType ? brandingType === 'TEXT' : showText;
 
   // Determine what to display
-  if (logoUrl && !imageError) {
+  if (shouldShowLogo && logoUrl && !imageError) {
     return (
-      <VStack spacing={config.spacing} alignItems="center">
-        <Image
-          src={logoUrl}
-          alt={`${agencyName} logo`}
-          height={config.imgHeight}
-          width={config.imgWidth}
-          objectFit="contain"
-          onError={() => setImageError(true)}
-          loading="lazy"
-        />
-        {showText && (
-          <Text 
-            fontSize={config.textSize}
-            fontWeight="bold"
-            color="brand.600"
-            textAlign="center"
-            noOfLines={1}
-          >
-            {agencyName}
-          </Text>
-        )}
-      </VStack>
-    );
-  }
-
-  // Fallback: Default placeholder icon
-  return (
-    <VStack spacing={config.spacing} alignItems="center">
       <Box
+        bg={{ base: 'blue.50', lg: 'transparent' }}
+        borderRadius="lg"
+        padding={{ base: '4px', sm: '6px', md: '8px', lg: '0px', xl: '0px' }}
+        boxShadow={{ base: '0 2px 8px rgba(0, 0, 0, 0.08)', lg: 'none' }}
+        border={{ base: '1px solid', lg: 'none' }}
+        borderColor={{ base: 'blue.200', lg: 'transparent' }}
         display="flex"
         alignItems="center"
         justifyContent="center"
-        height={config.imgHeight}
-        width={config.imgWidth}
-        bg="brand.100"
-        borderRadius="md"
-        border="1px solid"
-        borderColor="brand.200"
+        _hover={{
+          boxShadow: { base: '0 4px 12px rgba(0, 0, 0, 0.12)', lg: 'none' },
+          borderColor: { base: 'gray.200', lg: 'transparent' },
+          transition: 'all 0.2s'
+        }}
       >
-        <Icon
-          as={BuildingOfficeIcon}
-          w={config.imgHeight}
-          h={config.imgHeight}
-          color="brand.600"
-        />
+        <VStack 
+          spacing={{ base: 1, md: 2, lg: 3 }} 
+          alignItems="center"
+        >
+          <Image
+            src={logoUrl}
+            alt={`${agencyName} logo`}
+            maxWidth={{ base: '50px', sm: '60px', md: '90px', lg: '90px', xl: '190px' }}
+            maxHeight={{ base: '20px', sm: '24px', md: '36px', lg: '30px', xl: '70px' }}
+            height="auto"
+            width="auto"
+            objectFit="contain"
+            onError={() => setImageError(true)}
+            loading="lazy"
+          />
+          {showText && brandingType !== 'LOGO' && (
+            <Text 
+              fontSize={{ base: 'xs', sm: 'sm', md: 'md', lg: 'lg' }}
+              fontWeight="bold"
+              color="brand.600"
+              textAlign="center"
+              noOfLines={1}
+            >
+              {agencyName}
+            </Text>
+          )}
+        </VStack>
       </Box>
-      {showText && (
-        <Text 
-          fontSize={config.textSize}
+    );
+  }
+
+  // Fallback: Display text branding or default icon
+  return (
+    <Box
+      bg={{ base: 'blue.50', lg: 'transparent' }}
+      borderRadius="lg"
+      padding={{ base: '4px', sm: '6px', md: '8px', lg: '0px', xl: '0px' }}
+      boxShadow={{ base: '0 2px 8px rgba(0, 0, 0, 0.08)', lg: 'none' }}
+      border={{ base: '1px solid', lg: 'none' }}
+      borderColor={{ base: 'blue.200', lg: 'transparent' }}
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      _hover={{
+        boxShadow: { base: '0 4px 12px rgba(0, 0, 0, 0.12)', lg: 'none' },
+        borderColor: { base: 'gray.200', lg: 'transparent' },
+        transition: 'all 0.2s'
+      }}
+      minHeight={{ base: '24px', sm: '28px', md: '40px', lg: '0px' }}
+    >
+      {(agencyName && (shouldShowText || brandingType === 'TEXT')) ? (
+        <Text
+          fontSize={{ base: 'xs', sm: 'sm', md: 'md', lg: 'lg' }}
           fontWeight="bold"
-          color="brand.600"
+          color="blue.600"
           textAlign="center"
-          noOfLines={1}
+          noOfLines={2}
+          px={{ base: 2, md: 3 }}
         >
           {agencyName}
         </Text>
+      ) : (
+        <VStack spacing={{ base: 1, md: 2 }} alignItems="center">
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            bg="brand.100"
+            borderRadius="md"
+            border="1px solid"
+            borderColor="brand.200"
+            w={{ base: '40px', sm: '48px', md: '60px', lg: '80px' }}
+            h={{ base: '40px', sm: '48px', md: '60px', lg: '80px' }}
+          >
+            <Icon
+              as={BuildingOfficeIcon}
+              w={{ base: 5, sm: 6, md: 8, lg: 10 }}
+              h={{ base: 5, sm: 6, md: 8, lg: 10 }}
+              color="brand.600"
+            />
+          </Box>
+        </VStack>
       )}
-    </VStack>
+    </Box>
   );
 };
 

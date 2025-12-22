@@ -95,12 +95,14 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    setUser,
     token,
     loading,
     login,
     register,
     logout,
-    isAuthenticated
+    isAuthenticated,
+    fetchUserProfile
   };
 
   return (

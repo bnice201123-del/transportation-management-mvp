@@ -70,7 +70,8 @@ import {
   RepeatIcon,
   ExternalLinkIcon,
   CheckCircleIcon,
-  CheckIcon
+  CheckIcon,
+  ArrowBackIcon
 } from '@chakra-ui/icons';
 import { 
   FaUsers, 
@@ -1459,6 +1460,19 @@ const AdminOverview = () => {
       <Navbar />
       <Box flex="1" p={{ base: 4, md: 6 }} w="100%" overflowX="hidden">
         <VStack align="stretch" spacing={{ base: 5, md: 6 }}>
+            {/* Back to Admin Button - Desktop Only */}
+            <Flex mb={2} justifyContent="flex-start" display={{ base: 'none', lg: 'flex' }}>
+              <Button
+                leftIcon={<ArrowBackIcon />}
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/admin')}
+                colorScheme="blue"
+              >
+                Back to Admin Dashboard
+              </Button>
+            </Flex>
+
             {/* Modern Header with Gradient Background */}
             <Box 
               bgGradient="linear(to-r, blue.500, purple.600)" 

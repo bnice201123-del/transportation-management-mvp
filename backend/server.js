@@ -107,6 +107,9 @@ app.use(express.urlencoded({ extended: true }));
 // Apply sanitization middleware to all requests
 app.use(sanitizeRequestBody);
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
+
 // Initialize Passport
 app.use(passport.initialize());
 

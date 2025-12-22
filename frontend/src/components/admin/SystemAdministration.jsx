@@ -35,7 +35,8 @@ import {
   InfoIcon,
   EditIcon,
   TimeIcon,
-  CalendarIcon
+  CalendarIcon,
+  ArrowBackIcon
 } from '@chakra-ui/icons';
 import { FaUserPlus, FaUserCog, FaUserShield, FaFileImport, FaServer, FaLock, FaShieldAlt, FaDatabase, FaHistory, FaUsers, FaCog, FaKey } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
@@ -184,6 +185,19 @@ const SystemAdministration = () => {
       <Navbar />
       <Container maxW="full" py={{ base: 4, md: 6, lg: 8 }} px={{ base: 4, md: 6 }}>
         <VStack spacing={{ base: 6, md: 8, lg: 10 }} align="stretch">
+          {/* Back to Admin Button - Desktop Only */}
+          <Flex mb={2} justifyContent="flex-start" display={{ base: 'none', lg: 'flex' }}>
+            <Button
+              leftIcon={<ArrowBackIcon />}
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/admin')}
+              colorScheme="blue"
+            >
+              Back to Admin Dashboard
+            </Button>
+          </Flex>
+
           {/* Header */}
           <Box
             bg={headerBg}

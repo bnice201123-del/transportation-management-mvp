@@ -186,9 +186,10 @@ const Navbar = ({ title }) => {
               >
                 <BrandingLogo 
                   logoUrl={user?.logoUrl}
-                  agencyName={user?.firstName || 'Drive'}
-                  size="sm"
-                  showText={false}
+                  agencyName={user?.companyName || user?.firstName || 'Drive'}
+                  size="2xl"
+                  showText={true}
+                  brandingType={user?.brandingType}
                 />
               </Box>
 
@@ -273,9 +274,10 @@ const Navbar = ({ title }) => {
                 >
                   <BrandingLogo 
                     logoUrl={user?.logoUrl}
-                    agencyName={user?.firstName || 'Drive'}
+                    agencyName={user?.companyName || user?.firstName || 'Drive'}
                     size="md"
                     showText={true}
+                    brandingType={user?.brandingType}
                   />
                 </Box>
               </HStack>

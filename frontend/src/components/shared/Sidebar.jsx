@@ -839,9 +839,10 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
             <HStack spacing={3} align="center">
               <BrandingLogo 
                 logoUrl={user?.logoUrl}
-                agencyName={user?.firstName || 'Drive'}
+                agencyName={user?.companyName || user?.firstName || 'Drive'}
                 size="sm"
                 showText={true}
+                brandingType={user?.brandingType}
               />
             </HStack>
           </DrawerHeader>

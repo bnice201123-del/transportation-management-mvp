@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -116,7 +117,8 @@ import {
   TimeIcon,
   CalendarIcon,
   LockIcon,
-  UnlockIcon
+  UnlockIcon,
+  ArrowBackIcon
 } from '@chakra-ui/icons';
 import { 
   FaServer, 
@@ -177,8 +179,10 @@ import SettingsSearchFilter from './SettingsSearchFilter';
 import ApprovalQueue from '../scheduler/ApprovalQueue';
 import settingsValidators from '../../utils/settingsValidation';
 import LogoUpload from './LogoUpload';
+import BrandingSettings from './BrandingSettings';
 
 const AdminSettings = () => {
+  const navigate = useNavigate();
   // State management
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1080,6 +1084,18 @@ const AdminSettings = () => {
       >
         <Container maxW={containerMaxW} py={{ base: 4, md: 6 }} px={{ base: 4, md: 6 }}>
           <VStack spacing={{ base: 4, md: 6 }} align="stretch">
+            {/* Back to Admin Button - Desktop Only */}
+            <Flex mb={2} justifyContent="flex-start" display={{ base: 'none', lg: 'flex' }}>
+              <Button
+                leftIcon={<ArrowBackIcon />}
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/admin')}
+                colorScheme="blue"
+              >
+                Back to Admin Dashboard
+              </Button>
+            </Flex>
             {/* Enhanced Responsive Header */}
             <ScaleFade in={true} initialScale={0.9}>
               <Card bg={cardBg} borderColor={borderColor} shadow="lg" borderRadius="xl">
@@ -2091,19 +2107,32 @@ const AdminSettings = () => {
                       {activeTabKey === 'branding' && (
                         <VStack spacing={6} align="stretch">
                           <Heading size="md" color={textColor}>Agency Branding</Heading>
-                          <Text color="gray.500">Customize your agency logo and branding</Text>
+                          <Text color="gray.500">Configure your agency logo and branding preferences</Text>
                           <Divider />
-                          <LogoUpload 
-                            currentLogo={user?.logoUrl}
-                            onSuccess={() => {
-                              toast({
-                                title: 'Success',
-                                description: 'Logo updated successfully',
-                                status: 'success',
-                                duration: 3000,
-                              });
-                            }}
-                          />
+                          
+                          {/* Branding Choice Section */}
+                          <BrandingSettings />
+
+                          <Divider />
+
+                          {/* Logo Upload Section */}
+                          <Box>
+                            <Heading size="sm" mb={2}>Upload Logo or Set Company Name</Heading>
+                            <Text fontSize="sm" color="gray.500" mb={4}>
+                              Upload your agency logo or enter a company name for text branding
+                            </Text>
+                            <LogoUpload 
+                              currentLogo={user?.logoUrl}
+                              onSuccess={() => {
+                                toast({
+                                  title: 'Success',
+                                  description: 'Branding updated successfully',
+                                  status: 'success',
+                                  duration: 3000,
+                                });
+                              }}
+                            />
+                          </Box>
                         </VStack>
                       )}
 

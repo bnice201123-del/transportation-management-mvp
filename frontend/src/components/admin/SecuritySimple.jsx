@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -78,7 +79,8 @@ import {
   InfoIcon,
   TimeIcon,
   BellIcon,
-  RepeatIcon
+  RepeatIcon,
+  ArrowBackIcon
 } from '@chakra-ui/icons';
 import { 
   FaShieldAlt, 
@@ -96,6 +98,7 @@ import {
 import Navbar from '../shared/Navbar';
 
 const SecuritySimple = () => {
+  const navigate = useNavigate();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -244,6 +247,19 @@ const SecuritySimple = () => {
       <Navbar />
       <Container maxW="7xl" py={8}>
         <VStack spacing={6} align="stretch">
+          {/* Back to Admin Button - Desktop Only */}
+          <Flex mb={2} justifyContent="flex-start" display={{ base: 'none', lg: 'flex' }}>
+            <Button
+              leftIcon={<ArrowBackIcon />}
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/admin')}
+              colorScheme="blue"
+            >
+              Back to Admin Dashboard
+            </Button>
+          </Flex>
+
           {/* Header */}
           <Box>
             <Heading size="lg" color={textColor} mb={2}>

@@ -88,6 +88,18 @@ const userSchema = new mongoose.Schema({
     default: null,
     trim: true
   },
+  companyName: {
+    type: String, // Text-based company name for branding
+    default: null,
+    trim: true,
+    maxlength: 100
+  },
+  brandingType: {
+    type: String, // Type of branding: 'TEXT' or 'LOGO'
+    enum: ['TEXT', 'LOGO'],
+    default: 'TEXT', // Default to text branding
+    required: false
+  },
   isActive: {
     type: Boolean,
     default: true

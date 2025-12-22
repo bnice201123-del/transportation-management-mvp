@@ -31,8 +31,8 @@ import {
 import {
   FiChevronRight,
   FiMapPin,
-  FiBattery2,
-  FiSignal,
+  FiBattery,
+  FiWifi,
   FiClock,
   FiSearch,
   FiFilter,
@@ -469,7 +469,7 @@ const VehicleTrackerList = ({ onSelectTracker }) => {
                     <VStack spacing={1} align="stretch">
                       <HStack justify="space-between" fontSize="sm">
                         <HStack spacing={1}>
-                          <Icon as={FiBattery2} />
+                          <Icon as={FiBattery} />
                           <Text>Battery</Text>
                         </HStack>
                         <Text fontWeight="bold">
@@ -493,7 +493,7 @@ const VehicleTrackerList = ({ onSelectTracker }) => {
                     <HStack justify="space-between" fontSize="sm">
                       <HStack spacing={1}>
                         <Icon
-                          as={FiSignal}
+                          as={FiWifi}
                           color={getSignalColor(tracker.signalStrength)}
                         />
                         <Text>Signal</Text>

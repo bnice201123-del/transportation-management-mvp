@@ -78,7 +78,9 @@ const activityLogSchema = new mongoose.Schema({
       'vehicle_assignment_created',
       'vehicle_assignment_completed',
       'vehicle_assignment_cancelled',
-      'vehicle_replaced'
+      'vehicle_replaced',
+      'logo_uploaded',
+      'branding_updated'
     ]
   },
   description: {

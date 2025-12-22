@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -89,7 +90,8 @@ import {
   InfoIcon,
   TriangleUpIcon,
   TriangleDownIcon,
-  ArrowUpIcon
+  ArrowUpIcon,
+  ArrowBackIcon
 } from '@chakra-ui/icons';
 import { FaCar, FaUser, FaRoute, FaDollarSign, FaChartLine, FaClock, FaMapMarkerAlt, FaLeaf } from 'react-icons/fa';
 import axios from '../../config/axios';
@@ -97,6 +99,7 @@ import Navbar from '../shared/Navbar';
 import { useAuth } from '../../contexts/AuthContext';
 
 const AdminStatistics = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -573,6 +576,19 @@ const AdminStatistics = () => {
       >
         <Box p={{ base: 3, md: 4 }} w="100%">
         <VStack spacing={{ base: 4, md: 6 }} align="stretch">
+          {/* Back to Admin Button - Desktop Only */}
+          <Flex mb={2} justifyContent="flex-start" display={{ base: 'none', lg: 'flex' }}>
+            <Button
+              leftIcon={<ArrowBackIcon />}
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/admin')}
+              colorScheme="blue"
+            >
+              Back to Admin Dashboard
+            </Button>
+          </Flex>
+
           {/* Enhanced Header with Mobile Responsive Design */}
           <Box>
             <Flex 

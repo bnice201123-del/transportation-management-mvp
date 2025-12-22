@@ -899,13 +899,16 @@ router.post('/upload-logo', authenticateToken, authorizeRoles('admin'), logoUplo
       return res.status(400).json({ message: 'No file provided' });
     }
 
-    // Construct the file URL (relative path for serving from uploads folder)
-    const logoUrl = `/uploads/logos/${req.file.filename}`;
+    // Construct the file URL - use full URL for image loading (works cross-origin)
+    const relativePath = `/uploads/logos/${req.file.filename}`;
+    const protocol = req.protocol || 'http';
+    const host = req.get('host');
+    const fullLogoUrl = `${protocol}://${host}${relativePath}`;
 
     // Update user with new logo
     const user = await User.findByIdAndUpdate(
       userId,
-      { logoUrl: logoUrl },
+      { logoUrl: fullLogoUrl },
       { new: true }
     );
 
@@ -921,12 +924,91 @@ router.post('/upload-logo', authenticateToken, authorizeRoles('admin'), logoUplo
 
     res.json({
       message: 'Logo uploaded successfully',
-      logoUrl: logoUrl,
+      logoUrl: fullLogoUrl,
       user: user.toJSON()
     });
   } catch (error) {
     console.error('Logo upload error:', error);
     res.status(500).json({ message: 'Error uploading logo' });
+  }
+});
+
+// Save company name for text-based branding
+router.post('/save-company-name', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { companyName } = req.body;
+
+    if (!companyName || companyName.trim() === '') {
+      return res.status(400).json({ message: 'Company name cannot be empty' });
+    }
+
+    // Update user with company name
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { companyName: companyName.trim() },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await logActivity(
+      userId,
+      'company_name_updated',
+      `Company name updated: ${companyName}`
+    );
+
+    res.json({
+      message: 'Company name saved successfully',
+      companyName: user.companyName,
+      user: user.toJSON()
+    });
+  } catch (error) {
+    console.error('Company name save error:', error);
+    res.status(500).json({ message: 'Error saving company name' });
+  }
+});
+
+// Update branding type (TEXT or LOGO)
+router.post('/update-branding-type', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { brandingType } = req.body;
+
+    // Validate branding type
+    if (!brandingType || !['TEXT', 'LOGO'].includes(brandingType)) {
+      return res.status(400).json({ 
+        message: 'Invalid branding type. Must be TEXT or LOGO' 
+      });
+    }
+
+    // Update user with branding type
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { brandingType },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await logActivity(
+      userId,
+      'branding_type_updated',
+      `Branding type switched to: ${brandingType}`
+    );
+
+    res.json({
+      message: `Branding type updated to ${brandingType}`,
+      brandingType: user.brandingType,
+      user: user.toJSON()
+    });
+  } catch (error) {
+    console.error('Branding type update error:', error);
+    res.status(500).json({ message: 'Error updating branding type' });
   }
 });
 

@@ -74,6 +74,11 @@ import UserProfile from './components/shared/UserProfile';
 import NotificationsPage from './components/shared/NotificationsPage';
 import NotificationSettings from './components/shared/NotificationSettings';
 import AccountPreferences from './components/settings/AccountPreferences';
+import VehicleTrackerList from './components/driver/VehicleTrackerList';
+import TrackerDetailView from './components/driver/TrackerDetailView';
+import TrackerConfigPanel from './components/driver/TrackerConfigPanel';
+import DriverSettings from './components/driver/DriverSettings';
+import DriverNavigation from './components/driver/DriverNavigation';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { isAuthenticated, user, loading } = useAuth();

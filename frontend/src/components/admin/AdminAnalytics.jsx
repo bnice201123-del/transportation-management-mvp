@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Grid,
@@ -79,7 +80,8 @@ import {
   CheckCircleIcon,
   InfoIcon,
   DownloadIcon,
-  RepeatIcon
+  RepeatIcon,
+  ArrowBackIcon
 } from '@chakra-ui/icons';
 import { 
   FaCar, 
@@ -99,6 +101,7 @@ import axios from 'axios';
 import Navbar from '../shared/Navbar';
 
 const AdminAnalytics = () => {
+  const navigate = useNavigate();
   const [analytics, setAnalytics] = useState(null);
   const [timeRange, setTimeRange] = useState('7d');
   const [loading, setLoading] = useState(true);
@@ -609,6 +612,19 @@ const AdminAnalytics = () => {
       <Navbar />
       <Box flex="1" p={{ base: 3, md: 4 }} w="100%" overflowX="hidden">
           <VStack align="stretch" spacing={{ base: 4, md: 6 }}>
+            {/* Back to Admin Button - Desktop Only */}
+            <Flex mb={2} justifyContent="flex-start" display={{ base: 'none', lg: 'flex' }}>
+              <Button
+                leftIcon={<ArrowBackIcon />}
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/admin')}
+                colorScheme="blue"
+              >
+                Back to Admin Dashboard
+              </Button>
+            </Flex>
+
             {/* Header Card */}
             <Card bg={headerBg} borderColor={borderColor} shadow="md" borderRadius="lg">
               <CardBody p={{ base: 4, md: 6, lg: 8 }}>

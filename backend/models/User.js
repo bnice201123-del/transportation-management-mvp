@@ -371,6 +371,71 @@ const userSchema = new mongoose.Schema({
     encryptedAt: Date,
     keyVersion: Number,
     encryptedFields: [String] // Track which fields are encrypted
+  },
+  // Dual Login System (Driver Section Only)
+  driverId: {
+    type: String,
+    trim: true,
+    unique: true,
+    sparse: true,
+    match: /^DRV-\d{3}-\d{4}$/, // Format: DRV-XXX-YYYY
+    index: true
+  },
+  driverIdGeneratedAt: {
+    type: Date
+  },
+  driverIdExpiryDate: {
+    type: Date
+  },
+  loginType: {
+    type: String,
+    enum: ['standard', 'driver_number', 'vehicle_phone'],
+    default: 'standard'
+  },
+  accountType: {
+    type: String,
+    enum: ['regular', 'vehicle_tracker'],
+    default: 'regular'
+  },
+  vehicleAssociation: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Vehicle',
+    sparse: true // Only required for vehicle_tracker accounts
+  },
+  dualLoginEnabled: {
+    type: Boolean,
+    default: false
+  },
+  dualLoginEnabledAt: {
+    type: Date
+  },
+  vehicleTrackerSettings: {
+    phoneNumber: {
+      type: String,
+      trim: true,
+      sparse: true
+    },
+    simCardNumber: {
+      type: String,
+      trim: true
+    },
+    isActive: {
+      type: Boolean,
+      default: false
+    },
+    lastTrackedAt: Date,
+    trackingFrequency: {
+      type: Number,
+      default: 30 // seconds
+    },
+    lowBatteryThreshold: {
+      type: Number,
+      default: 20 // percent
+    },
+    alertsEnabled: {
+      type: Boolean,
+      default: true
+    }
   }
 }, {
   timestamps: true

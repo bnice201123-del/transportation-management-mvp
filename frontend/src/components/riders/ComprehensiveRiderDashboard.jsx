@@ -786,15 +786,20 @@ const ComprehensiveRiderDashboard = () => {
                   colorScheme="pink"
                 >
                   <TabList 
-                    flexWrap="wrap"
+                    flexWrap={{ base: "wrap", md: "nowrap" }}
                     borderBottom="2px solid"
                     borderColor="gray.200"
                     bg="gray.50"
+                    display="flex"
+                    flexDirection={{ base: "column", sm: "row" }}
+                    justifyContent={{ base: "flex-start", md: "space-around" }}
                   >
                     <Tab 
-                      flex={{ base: "1", sm: "initial" }}
+                      width={{ base: "100%", sm: "auto", md: "auto" }}
+                      flex={{ base: "none", sm: "initial", md: "1" }}
                       fontSize={{ base: "sm", md: "md" }}
                       py={{ base: 3, md: 4 }}
+                      textAlign="center"
                       _selected={{ 
                         color: "pink.600", 
                         borderColor: "pink.500",
@@ -804,9 +809,11 @@ const ComprehensiveRiderDashboard = () => {
                       🏠 Dashboard
                     </Tab>
                     <Tab 
-                      flex={{ base: "1", sm: "initial" }}
+                      width={{ base: "100%", sm: "auto", md: "auto" }}
+                      flex={{ base: "none", sm: "initial", md: "1" }}
                       fontSize={{ base: "sm", md: "md" }}
                       py={{ base: 3, md: 4 }}
+                      textAlign="center"
                       _selected={{ 
                         color: "pink.600", 
                         borderColor: "pink.500",
@@ -816,9 +823,11 @@ const ComprehensiveRiderDashboard = () => {
                       👥 All Riders
                     </Tab>
                     <Tab 
-                      flex={{ base: "1", sm: "initial" }}
+                      width={{ base: "100%", sm: "auto", md: "auto" }}
+                      flex={{ base: "none", sm: "initial", md: "1" }}
                       fontSize={{ base: "sm", md: "md" }}
                       py={{ base: 3, md: 4 }}
+                      textAlign="center"
                       _selected={{ 
                         color: "pink.600", 
                         borderColor: "pink.500",
@@ -828,9 +837,11 @@ const ComprehensiveRiderDashboard = () => {
                       📊 Trip History
                     </Tab>
                     <Tab 
-                      flex={{ base: "1", sm: "initial" }}
+                      width={{ base: "100%", sm: "auto", md: "auto" }}
+                      flex={{ base: "none", sm: "initial", md: "1" }}
                       fontSize={{ base: "sm", md: "md" }}
                       py={{ base: 3, md: 4 }}
+                      textAlign="center"
                       _selected={{ 
                         color: "pink.600", 
                         borderColor: "pink.500",
@@ -840,9 +851,11 @@ const ComprehensiveRiderDashboard = () => {
                       📈 Analytics
                     </Tab>
                     <Tab 
-                      flex={{ base: "1", sm: "initial" }}
+                      width={{ base: "100%", sm: "auto", md: "auto" }}
+                      flex={{ base: "none", sm: "initial", md: "1" }}
                       fontSize={{ base: "sm", md: "md" }}
                       py={{ base: 3, md: 4 }}
+                      textAlign="center"
                       _selected={{ 
                         color: "pink.600", 
                         borderColor: "pink.500",
@@ -986,8 +999,12 @@ const ComprehensiveRiderDashboard = () => {
                         <Card>
                           <CardBody>
                             <VStack spacing={4} align="stretch">
-                              <HStack spacing={4} flexWrap="wrap">
-                                <InputGroup flex="1" minW="200px">
+                              <VStack 
+                                spacing={{ base: 3, md: 4 }} 
+                                align="stretch"
+                                flexDirection={{ base: "column", md: "row" }}
+                              >
+                                <InputGroup flex={{ base: "1", md: "2" }} minW={{ base: "100%", md: "200px" }}>
                                   <InputLeftElement>
                                     <SearchIcon color="gray.400" />
                                   </InputLeftElement>
@@ -995,13 +1012,15 @@ const ComprehensiveRiderDashboard = () => {
                                     placeholder="Search riders by name, email, or phone..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
+                                    fontSize={{ base: "sm", md: "md" }}
                                   />
                                 </InputGroup>
                                 <Select 
                                   placeholder="Filter by status" 
-                                  maxW="200px"
+                                  maxW={{ base: "100%", md: "200px" }}
                                   value={filterStatus}
                                   onChange={(e) => setFilterStatus(e.target.value)}
+                                  fontSize={{ base: "sm", md: "md" }}
                                 >
                                   <option value="all">All Status</option>
                                   <option value="active">Active</option>
@@ -1012,10 +1031,13 @@ const ComprehensiveRiderDashboard = () => {
                                   leftIcon={<AddIcon />}
                                   colorScheme="pink"
                                   onClick={onNewRiderOpen}
+                                  width={{ base: "100%", md: "auto" }}
+                                  fontSize={{ base: "sm", md: "md" }}
+                                  py={{ base: 2.5, md: "auto" }}
                                 >
                                   Add Rider
                                 </Button>
-                              </HStack>
+                              </VStack>
                             </VStack>
                           </CardBody>
                         </Card>

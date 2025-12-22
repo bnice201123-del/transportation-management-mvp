@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Container,
@@ -91,7 +91,6 @@ import {
   List,
   ListItem,
   ListIcon,
-  useClipboard,
   Accordion,
   AccordionItem,
   AccordionButton,
@@ -175,6 +174,7 @@ import SettingsRollback from './SettingsRollback';
 import SettingsComparison from './SettingsComparison';
 import SettingsImportExport from './SettingsImportExport';
 import SettingsSearchFilter from './SettingsSearchFilter';
+import ApprovalQueue from '../scheduler/ApprovalQueue';
 import settingsValidators from '../../utils/settingsValidation';
 import LogoUpload from './LogoUpload';
 
@@ -191,13 +191,11 @@ const AdminSettings = () => {
   const [lastSaved, setLastSaved] = useState(null);
   const [changeHistory, setChangeHistory] = useState([]);
   const [backupStatus, setBackupStatus] = useState('idle');
-  const [expandedSections, setExpandedSections] = useState([0]); // First section expanded by default
-  const [systemHealth, setSystemHealth] = useState({ status: 'healthy', score: 95 });
-  const [autoSave, setAutoSave] = useState(false);
   const [disabledCategories, setDisabledCategories] = useState(new Set()); // Track disabled categories
   const [validationErrors, setValidationErrors] = useState({}); // Track validation errors per field
-  const [filteredSettings, setFilteredSettings] = useState({}); // Track filtered settings from search
-  const [showSearchFilter, setShowSearchFilter] = useState(false); // Toggle search filter visibility
+  const [systemHealth] = useState({ status: 'healthy', score: 95 });
+  const [autoSave] = useState(false);
+  const [_filteredSettings, _setFilteredSettings] = useState({}); // Track filtered settings from search
   
   // Refs
   const scrollRef = useRef(null);
@@ -210,14 +208,13 @@ const AdminSettings = () => {
   const { isOpen: isExportOpen, onOpen: onExportOpen, onClose: onExportClose } = useDisclosure();
   const { isOpen: isImportOpen, onOpen: onImportOpen, onClose: onImportClose } = useDisclosure();
   const { isOpen: isBackupOpen, onOpen: onBackupOpen, onClose: onBackupClose } = useDisclosure();
-  const { isOpen: isHistoryOpen, onOpen: onHistoryOpen, onClose: onHistoryClose } = useDisclosure();
 
   // Responsive design hooks
-  const isMobile = useBreakpointValue({ base: true, md: false });
-  const sidebarWidth = useBreakpointValue({ base: '100%', md: '300px', lg: '350px' });
+  const _isMobile = useBreakpointValue({ base: true, md: false });
+  const _sidebarWidth = useBreakpointValue({ base: '100%', md: '300px', lg: '350px' });
   const containerMaxW = useBreakpointValue({ base: 'full', md: 'full' });
-  const tabOrientation = useBreakpointValue({ base: 'horizontal', lg: 'vertical' });
-  const gridCols = useBreakpointValue({ base: 1, md: 2, lg: 3, xl: 4 });
+  const _tabOrientation = useBreakpointValue({ base: 'horizontal', lg: 'vertical' });
+  const _gridCols = useBreakpointValue({ base: 1, md: 2, lg: 3, xl: 4 });
   
   // Color mode values
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -226,15 +223,17 @@ const AdminSettings = () => {
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const accentColor = useColorModeValue('blue.500', 'blue.300');
   const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
-  const hoverBg = useColorModeValue('gray.100', 'gray.700');
-  const inputBg = useColorModeValue('white', 'gray.700');
-  const successColor = useColorModeValue('green.500', 'green.300');
-  const warningColor = useColorModeValue('orange.500', 'orange.300');
-  const errorColor = useColorModeValue('red.500', 'red.300');
+  const _hoverBg = useColorModeValue('gray.100', 'gray.700');
+  const _inputBg = useColorModeValue('white', 'gray.700');
+  const _successColor = useColorModeValue('green.500', 'green.300');
+  const _warningColor = useColorModeValue('orange.500', 'orange.300');
+  const _errorColor = useColorModeValue('red.500', 'red.300');
   const searchInputBg = useColorModeValue('white', 'gray.700');
+  const sidebarButtonHoverBg = useColorModeValue('blue.100', 'gray.700');
+  const sidebarButtonActiveBg = useColorModeValue('blue.600', 'blue.500');
 
-  // Enhanced settings configuration with validation and integration hooks
-  const settingsConfig = {
+  // Enhanced settings configuration with validation and integration hooks (kept for reference)
+  const _settingsConfig = {
     system: {
       title: 'System Configuration',
       icon: FaServer,
@@ -432,11 +431,11 @@ const AdminSettings = () => {
     return settings[category]?.[field]?.value;
   };
 
-  const updateSettingValue = (category, field, value) => {
+  const _updateSettingValue = (category, field, value) => {
     handleSettingChange(category, field, value);
   };
 
-  const validateSetting = (category, field, value) => {
+  const _validateSetting = (category, field, value) => {
     const setting = mockSettings[category]?.[field];
     if (!setting) return true;
 
@@ -462,7 +461,7 @@ const AdminSettings = () => {
     return null;
   };
 
-  const exportSettings = () => {
+  const _exportSettings = () => {
     const exportData = {
       settings,
       timestamp: new Date().toISOString(),
@@ -472,7 +471,7 @@ const AdminSettings = () => {
     return exportData;
   };
 
-  const importSettings = (importData) => {
+  const _importSettings = (importData) => {
     if (importData && importData.settings) {
       setSettings(importData.settings);
       setHasChanges(true);
@@ -501,10 +500,12 @@ const AdminSettings = () => {
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [hasChanges, autoSave]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSave]);
 
   useEffect(() => {
     fetchSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchSettings = async () => {
@@ -697,8 +698,8 @@ const AdminSettings = () => {
         timestamp: new Date().toISOString(),
         recipients: notificationConfig.recipients
       });
-    } catch (error) {
-      console.error('Error sending notification:', error);
+    } catch (_error) {
+      console.error('Error sending notification:', _error);
       // Don't show error to user - notifications are non-critical
     }
   };
@@ -800,7 +801,8 @@ const AdminSettings = () => {
       
       setHasChanges(false);
       setLastSaved(new Date());
-    } catch (error) {
+    } catch (err) {
+      console.error('Save error:', err);
       toast({
         title: 'Error saving settings',
         description: 'Failed to save settings. Please try again.',
@@ -842,7 +844,8 @@ const AdminSettings = () => {
         duration: 3000,
         isClosable: true
       });
-    } catch (error) {
+    } catch (exportErr) {
+      console.error('Export error:', exportErr);
       toast({
         title: 'Export Failed',
         description: 'Failed to export settings',
@@ -879,10 +882,10 @@ const AdminSettings = () => {
       } else {
         throw new Error('Invalid settings file format');
       }
-    } catch (error) {
+    } catch (err) {
       toast({
         title: 'Import Failed',
-        description: 'Failed to import settings: ' + error.message,
+        description: 'Failed to import settings: ' + err.message,
         status: 'error',
         duration: 5000,
         isClosable: true
@@ -911,7 +914,8 @@ const AdminSettings = () => {
       });
       
       setTimeout(() => setBackupStatus('idle'), 2000);
-    } catch (error) {
+    } catch (backupErr) {
+      console.error('Backup error:', backupErr);
       setBackupStatus('failed');
       toast({
         title: 'Backup Failed',
@@ -967,8 +971,8 @@ const AdminSettings = () => {
       try {
         const parsed = JSON.parse(saved);
         setDisabledCategories(new Set(parsed));
-      } catch (error) {
-        console.error('Error loading disabled categories:', error);
+      } catch (_error) {
+        console.error('Error loading disabled categories:', _error);
       }
     }
   }, []);
@@ -990,6 +994,7 @@ const AdminSettings = () => {
     { label: 'Security Alerts', icon: FaExclamationTriangle, key: 'security-alerts' },
     { label: 'Login Attempts', icon: FaShieldAlt, key: 'login-attempts' },
     { label: 'Geo-Security', icon: FaMap, key: 'geo-security' },
+    { label: 'Approvals', icon: FaClipboardList, key: 'approvals' },
     { label: 'Sidebar', icon: FaBars, key: 'sidebar-settings' },
     { label: 'Branding', icon: FaPalette, key: 'branding' },
     { label: 'Templates', icon: FaCog, key: 'templates' },
@@ -1013,8 +1018,8 @@ const AdminSettings = () => {
     return allTabs.findIndex(tab => tab.key === key);
   };
 
-  // Get current tab index in filtered tabs (for display/selection)
-  const activeTabIndexInFiltered = filteredTabs.findIndex(tab => tab.key === activeTabKey);
+  // Get current tab index in filtered tabs (for display/selection) - kept for reference
+  const _activeTabIndexInFiltered = filteredTabs.findIndex(tab => tab.key === activeTabKey);
 
   // Get actual tab index in allTabs (for TabPanels)
   const activeTabIndex = getTabIndexByKey(activeTabKey);
@@ -1302,47 +1307,119 @@ const AdminSettings = () => {
               </Card>
             )}
 
-            {/* Main Settings Tabs */}
-            <Card bg={cardBg} borderColor={borderColor} shadow="sm">
-              <CardBody p={0}>
-                <Tabs 
-                  index={activeTabIndex >= 0 ? activeTabIndex : 0} 
-                  onChange={(index) => {
-                    const selectedTab = allTabs[index];
-                    if (selectedTab) {
-                      setActiveTabKey(selectedTab.key);
-                    }
-                  }}
-                  variant="line"
-                  colorScheme="blue"
-                >
-                  <TabList 
-                    overflowX="auto" 
-                    css={{
-                      '&::-webkit-scrollbar': { display: 'none' },
-                      scrollbarWidth: 'none'
-                    }}
-                    px={6}
-                    pt={6}
-                  >
-                    {allTabs.map((tab) => (
-                      <Tab key={tab.key} minW="fit-content" display={filteredTabs.some(t => t.key === tab.key) ? 'flex' : 'none'}>
-                        <HStack spacing={2}>
-                          <Icon as={tab.icon} boxSize={4} />
-                          <Text>{tab.label}</Text>
-                        </HStack>
-                      </Tab>
-                    ))}
-                  </TabList>
+            {/* Main Settings - Desktop Sidebar Layout */}
+            <Grid
+              templateColumns={{ base: '1fr', lg: '280px 1fr' }}
+              gap={{ base: 0, lg: 6 }}
+              alignItems="start"
+            >
+              {/* Left Sidebar - Navigation Menu (Desktop Only) */}
+              <Box
+                display={{ base: 'none', lg: 'block' }}
+                bg={cardBg}
+                borderColor={borderColor}
+                borderWidth="1px"
+                borderRadius="xl"
+                shadow="sm"
+                p={0}
+                height="fit-content"
+                position="sticky"
+                top="100px"
+              >
+                <VStack spacing={0} align="stretch">
+                  {/* Search in Sidebar */}
+                  <Box p={4} borderBottomWidth="1px" borderColor={borderColor}>
+                    <InputGroup size="sm">
+                      <InputLeftElement pointerEvents="none">
+                        <SearchIcon color="gray.400" boxSize={3} />
+                      </InputLeftElement>
+                      <Input
+                        placeholder="Search..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        bg={searchInputBg}
+                        fontSize="sm"
+                        _placeholder={{ color: 'gray.400' }}
+                      />
+                    </InputGroup>
+                  </Box>
 
-                  <TabPanels>
+                  {/* Navigation Menu Items */}
+                  <VStack spacing={0} align="stretch" flex={1} maxH="calc(100vh - 300px)" overflowY="auto">
+                    {filteredTabs.map((tab) => (
+                      <Button
+                        key={tab.key}
+                        onClick={() => setActiveTabKey(tab.key)}
+                        variant={activeTabKey === tab.key ? 'solid' : 'ghost'}
+                        colorScheme={activeTabKey === tab.key ? 'blue' : 'gray'}
+                        justifyContent="flex-start"
+                        borderRadius="0"
+                        px={4}
+                        py={3}
+                        height="auto"
+                        fontSize="sm"
+                        fontWeight={activeTabKey === tab.key ? '600' : '500'}
+                        transition="all 0.2s ease-in-out"
+                        _hover={{
+                          bg: activeTabKey === tab.key ? sidebarButtonActiveBg : sidebarButtonHoverBg,
+                          transform: 'translateX(4px)',
+                          shadow: 'md'
+                        }}
+                        _active={{
+                          transform: 'translateX(2px)'
+                        }}
+                        leftIcon={<Icon as={tab.icon} boxSize={4} />}
+                      >
+                        {tab.label}
+                      </Button>
+                    ))}
+                  </VStack>
+                </VStack>
+              </Box>
+
+              {/* Main Content Area */}
+              <Card bg={cardBg} borderColor={borderColor} shadow="sm">
+                <CardBody p={0}>
+                  {/* Mobile Tab Navigation (Mobile Only) */}
+                  <Box display={{ base: 'block', lg: 'none' }}>
+                    <Tabs 
+                      index={activeTabIndex >= 0 ? activeTabIndex : 0} 
+                      onChange={(index) => {
+                        const selectedTab = allTabs[index];
+                        if (selectedTab) {
+                          setActiveTabKey(selectedTab.key);
+                        }
+                      }}
+                      variant="line"
+                      colorScheme="blue"
+                    >
+                      <TabList 
+                        overflowX="auto" 
+                        css={{
+                          '&::-webkit-scrollbar': { display: 'none' },
+                          scrollbarWidth: 'none'
+                        }}
+                        px={6}
+                        pt={6}
+                      >
+                        {allTabs.map((tab) => (
+                          <Tab key={tab.key} minW="fit-content" display={filteredTabs.some(t => t.key === tab.key) ? 'flex' : 'none'}>
+                            <HStack spacing={2}>
+                              <Icon as={tab.icon} boxSize={4} />
+                              <Text>{tab.label}</Text>
+                            </HStack>
+                          </Tab>
+                        ))}
+                      </TabList>
+
+                      <TabPanels>
                     {/* Search & Filter Panel */}
                     <TabPanel p={6}>
                       <VStack spacing={6} align="stretch">
                         <SettingsSearchFilter 
                           settings={settings}
                           changeHistory={changeHistory}
-                          onFilteredSettingsChange={setFilteredSettings}
+                          onFilteredSettingsChange={_setFilteredSettings}
                         />
                       </VStack>
                     </TabPanel>
@@ -1614,6 +1691,13 @@ const AdminSettings = () => {
                       </VStack>
                     </TabPanel>
 
+                    {/* Approvals Tab */}
+                    <TabPanel p={6}>
+                      <VStack spacing={6} align="stretch">
+                        <ApprovalQueue />
+                      </VStack>
+                    </TabPanel>
+
                     {/* Sidebar Settings Tab */}
                     <TabPanel p={6}>
                       <VStack spacing={6} align="stretch">
@@ -1696,9 +1780,382 @@ const AdminSettings = () => {
                       </VStack>
                     </TabPanel>
                   </TabPanels>
-                </Tabs>
-              </CardBody>
-            </Card>
+                    </Tabs>
+                  </Box>
+
+                  {/* Desktop Content Rendering (Conditional based on activeTabKey) */}
+                  <Box display={{ base: 'none', lg: 'block' }} p={6}>
+                    <VStack spacing={6} align="stretch">
+                      {/* Render content based on active tab */}
+                      {activeTabKey === 'search-filter' && (
+                        <SettingsSearchFilter 
+                          settings={settings}
+                          changeHistory={changeHistory}
+                          onFilteredSettingsChange={_setFilteredSettings}
+                        />
+                      )}
+                      
+                      {activeTabKey === 'system' && (
+                        <>
+                          <Card bg={isCategoryDisabled('system') ? 'gray.100' : cardBg} borderWidth={2} borderColor={isCategoryDisabled('system') ? 'orange.300' : borderColor}>
+                            <CardBody>
+                              <HStack justify="space-between" align="center">
+                                <VStack align="start" spacing={1}>
+                                  <HStack>
+                                    <Icon as={FaServer} color={isCategoryDisabled('system') ? 'gray.400' : 'blue.500'} />
+                                    <Heading size="md" color={isCategoryDisabled('system') ? 'gray.500' : textColor}>
+                                      System Configuration
+                                    </Heading>
+                                  </HStack>
+                                  <Text fontSize="sm" color={isCategoryDisabled('system') ? 'gray.500' : mutedTextColor}>
+                                    {isCategoryDisabled('system') 
+                                      ? '⚠️ This category is disabled. Enable it to modify settings.' 
+                                      : 'Core system settings and application configuration'}
+                                  </Text>
+                                </VStack>
+                                <HStack spacing={3}>
+                                  <Text fontSize="sm" fontWeight="medium" color={isCategoryDisabled('system') ? 'orange.500' : 'green.500'}>
+                                    {isCategoryDisabled('system') ? 'Disabled' : 'Enabled'}
+                                  </Text>
+                                  <Switch 
+                                    size="lg" 
+                                    colorScheme={isCategoryDisabled('system') ? 'orange' : 'green'}
+                                    isChecked={!isCategoryDisabled('system')}
+                                    onChange={() => toggleCategoryEnabled('system')}
+                                  />
+                                </HStack>
+                              </HStack>
+                            </CardBody>
+                          </Card>
+
+                          <VStack spacing={4} align="stretch" opacity={isCategoryDisabled('system') ? 0.5 : 1}>
+                            <SettingRow
+                              label="Site Name"
+                              description="The name of your transportation system"
+                            >
+                              <Input
+                                value={settings.system?.siteName || ''}
+                                onChange={(e) => handleSettingChange('system', 'siteName', e.target.value)}
+                                placeholder="Enter site name"
+                                isDisabled={isCategoryDisabled('system')}
+                              />
+                            </SettingRow>
+
+                            <SettingRow
+                              label="Company Name"
+                              description="Your company's official name"
+                            >
+                              <Input
+                                value={settings.system?.companyName || ''}
+                                onChange={(e) => handleSettingChange('system', 'companyName', e.target.value)}
+                                placeholder="Enter company name"
+                                isDisabled={isCategoryDisabled('system')}
+                              />
+                            </SettingRow>
+
+                            <SettingRow
+                              label="Support Email"
+                              description="Email for system support inquiries"
+                            >
+                              <Input
+                                type="email"
+                                value={settings.system?.supportEmail || ''}
+                                onChange={(e) => handleSettingChange('system', 'supportEmail', e.target.value)}
+                                placeholder="support@company.com"
+                                isDisabled={isCategoryDisabled('system')}
+                              />
+                            </SettingRow>
+
+                            <SettingRow
+                              label="Timezone"
+                              description="Default timezone for the system"
+                            >
+                              <Select
+                                value={settings.system?.timezone || 'UTC'}
+                                onChange={(e) => handleSettingChange('system', 'timezone', e.target.value)}
+                                isDisabled={isCategoryDisabled('system')}
+                              >
+                                <option>UTC</option>
+                                <option>EST</option>
+                                <option>CST</option>
+                                <option>MST</option>
+                                <option>PST</option>
+                              </Select>
+                            </SettingRow>
+
+                            <SettingRow
+                              label="Maintenance Mode"
+                              description="Put the application in maintenance mode"
+                            >
+                              <Switch
+                                isChecked={settings.system?.maintenanceMode}
+                                onChange={(e) => handleSettingChange('system', 'maintenanceMode', e.target.checked)}
+                                colorScheme="orange"
+                                isDisabled={isCategoryDisabled('system')}
+                              />
+                            </SettingRow>
+
+                            <SettingRow
+                              label="API Rate Limit"
+                              description="Requests per minute per user"
+                            >
+                              <NumberInput
+                                value={settings.system?.apiRateLimit}
+                                onChange={(value) => handleSettingChange('system', 'apiRateLimit', parseInt(value))}
+                                min={10}
+                                isDisabled={isCategoryDisabled('system')}
+                                max={10000}
+                              >
+                                <NumberInputField />
+                              </NumberInput>
+                            </SettingRow>
+
+                            <SettingRow
+                              label="Max Login Attempts"
+                              description="Maximum failed login attempts before lockout"
+                            >
+                              <NumberInput
+                                value={settings.system?.maxLoginAttempts}
+                                onChange={(value) => handleSettingChange('system', 'maxLoginAttempts', parseInt(value))}
+                                min={3}
+                                isDisabled={isCategoryDisabled('system')}
+                                max={20}
+                              >
+                                <NumberInputField />
+                              </NumberInput>
+                            </SettingRow>
+
+                            <SettingRow
+                              label="Session Timeout"
+                              description="Session timeout in minutes (0 = no timeout)"
+                            >
+                              <NumberInput
+                                value={settings.system?.sessionTimeout}
+                                onChange={(value) => handleSettingChange('system', 'sessionTimeout', parseInt(value))}
+                                min={0}
+                                isDisabled={isCategoryDisabled('system')}
+                                max={1440}
+                              >
+                                <NumberInputField />
+                              </NumberInput>
+                            </SettingRow>
+
+                            <SettingRow
+                              label="Enable Two-Factor Auth"
+                              description="Require 2FA for all users"
+                            >
+                              <Switch
+                                isChecked={settings.system?.twoFactorAuth}
+                                onChange={(e) => handleSettingChange('system', 'twoFactorAuth', e.target.checked)}
+                                colorScheme="green"
+                                isDisabled={isCategoryDisabled('system')}
+                              />
+                            </SettingRow>
+                          </VStack>
+                        </>
+                      )}
+
+                      {activeTabKey === 'security' && (
+                        <VStack spacing={6} align="stretch">
+                          <Heading size="md" color={textColor}>Security & Authentication</Heading>
+                          <Text color="gray.500">Security policies and authentication settings</Text>
+                          <Divider />
+                          
+                          <SettingRow
+                            label="Password Min Length"
+                            description="Minimum password length requirement"
+                          >
+                            <NumberInput
+                              value={settings.security?.passwordMinLength}
+                              onChange={(value) => handleSettingChange('security', 'passwordMinLength', parseInt(value))}
+                              min={6}
+                              isDisabled={isCategoryDisabled('security')}
+                              max={50}
+                            >
+                              <NumberInputField />
+                            </NumberInput>
+                          </SettingRow>
+
+                          <SettingRow
+                            label="Two-Factor Authentication"
+                            description="Require 2FA for admin accounts"
+                          >
+                            <Switch
+                              isChecked={settings.security?.twoFactorAuth}
+                              onChange={(e) => handleSettingChange('security', 'twoFactorAuth', e.target.checked)}
+                              colorScheme="blue"
+                            />
+                          </SettingRow>
+
+                          <SettingRow
+                            label="SSL Required"
+                            description="Force HTTPS connections"
+                          >
+                            <Switch
+                              isChecked={settings.security?.sslRequired}
+                              onChange={(e) => handleSettingChange('security', 'sslRequired', e.target.checked)}
+                              colorScheme="green"
+                            />
+                          </SettingRow>
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'notifications' && (
+                        <VStack spacing={6} align="stretch">
+                          <Heading size="md" color={textColor}>Notification Settings</Heading>
+                          <Text color="gray.500">Configure notification preferences and channels.</Text>
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'maps' && (
+                        <VStack spacing={6} align="stretch">
+                          <Heading size="md" color={textColor}>Maps & GPS Configuration</Heading>
+                          <Text color="gray.500">Configure map settings and GPS tracking options.</Text>
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'business' && (
+                        <VStack spacing={6} align="stretch">
+                          <Heading size="md" color={textColor}>Business Settings</Heading>
+                          <Text color="gray.500">Configure business rules, pricing, and operations.</Text>
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'integration' && (
+                        <VStack spacing={6} align="stretch">
+                          <Heading size="md" color={textColor}>Integration Settings</Heading>
+                          <Text color="gray.500">Manage third-party integrations and APIs.</Text>
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'audit' && (
+                        <VStack spacing={6} align="stretch">
+                          <AuditLogViewer />
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'holidays' && (
+                        <VStack spacing={6} align="stretch">
+                          <HolidayManagement />
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'rate-limits' && (
+                        <VStack spacing={6} align="stretch">
+                          <RateLimitMonitor />
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'sessions' && (
+                        <VStack spacing={6} align="stretch">
+                          <SessionManager />
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'encryption' && (
+                        <VStack spacing={6} align="stretch">
+                          <EncryptionManager />
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'permissions' && (
+                        <VStack spacing={6} align="stretch">
+                          <PermissionMatrix />
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'security-alerts' && (
+                        <VStack spacing={6} align="stretch">
+                          <SecurityMonitor />
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'login-attempts' && (
+                        <VStack spacing={6} align="stretch">
+                          <LoginAttemptMonitor />
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'geo-security' && (
+                        <VStack spacing={6} align="stretch">
+                          <GeoSecurityManager />
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'sidebar-settings' && (
+                        <VStack spacing={6} align="stretch">
+                          <SidebarSettings />
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'branding' && (
+                        <VStack spacing={6} align="stretch">
+                          <Heading size="md" color={textColor}>Agency Branding</Heading>
+                          <Text color="gray.500">Customize your agency logo and branding</Text>
+                          <Divider />
+                          <LogoUpload 
+                            currentLogo={user?.logoUrl}
+                            onSuccess={() => {
+                              toast({
+                                title: 'Success',
+                                description: 'Logo updated successfully',
+                                status: 'success',
+                                duration: 3000,
+                              });
+                            }}
+                          />
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'templates' && (
+                        <VStack spacing={6} align="stretch">
+                          <Heading size="md" color={textColor}>Email Templates</Heading>
+                          <Text color="gray.500">Customize email notification templates</Text>
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'notifications-config' && (
+                        <VStack spacing={6} align="stretch">
+                          <SettingsNotifications />
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'rollback' && (
+                        <VStack spacing={6} align="stretch">
+                          <SettingsRollback 
+                            currentSettings={settings}
+                            onRollback={handleRollback}
+                          />
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'comparison' && (
+                        <VStack spacing={6} align="stretch">
+                          <SettingsComparison 
+                            currentSettings={settings}
+                          />
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'import-export' && (
+                        <VStack spacing={6} align="stretch">
+                          <SettingsImportExport 
+                            currentSettings={settings}
+                            onImport={handleImport}
+                          />
+                        </VStack>
+                      )}
+
+                      {activeTabKey === 'settings-history' && (
+                        <VStack spacing={6} align="stretch">
+                          <SettingsHistory />
+                        </VStack>
+                      )}
+                    </VStack>
+                  </Box>
+                </CardBody>
+              </Card>
+            </Grid>
 
             {/* Scroll to Top Button */}
             <Box position="fixed" bottom="20px" right="20px" zIndex={10}>

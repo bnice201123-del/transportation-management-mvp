@@ -124,8 +124,8 @@ const DriversManagement = () => {
     <>
       <Navbar title="Drivers" />
       
-      {/* Process Menu */}
-      <Flex justify="center" mt={6} mb={6}>
+      {/* Process Menu - hidden on mobile, available in sidebar */}
+      <Flex justify="center" mt={6} mb={6} display={{ base: 'none', md: 'flex' }}>
         <Box 
           position="relative"
           onMouseLeave={() => {

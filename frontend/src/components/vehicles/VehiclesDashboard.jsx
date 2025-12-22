@@ -289,8 +289,9 @@ const VehiclesDashboard = () => {
         {/* Stats Cards - Responsive Grid */}
         <Grid 
           templateColumns={{ 
-            base: "1fr", 
+            base: "1fr",
             sm: "repeat(2, 1fr)", 
+            md: "repeat(2, 1fr)",
             lg: "repeat(4, 1fr)" 
           }} 
           gap={{ base: 4, md: 6 }} 

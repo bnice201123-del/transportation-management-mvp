@@ -35,14 +35,21 @@ import {
   Radio,
   RadioGroup,
   Stack,
-  Divider
+  Divider,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay
 } from '@chakra-ui/react';
 import {
   CalendarIcon,
   TimeIcon,
   PhoneIcon,
   EmailIcon,
-  EditIcon
+  EditIcon,
+  WarningIcon
 } from '@chakra-ui/icons';
 import {
   FaUser,
@@ -55,16 +62,23 @@ import {
   FaDollarSign,
   FaStickyNote,
   FaSave,
-  FaTimes
+  FaTimes,
+  FaExclamationTriangle
 } from 'react-icons/fa';
 import axios from '../../config/axios';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
+import useConflictDetection from '../../hooks/useConflictDetection';
+import ConflictDetectionModal from './ConflictDetectionModal';
 
 const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  
+  // Conflict detection
+  const conflictDetection = useConflictDetection();
+  const [shouldProceedWithSave, setShouldProceedWithSave] = useState(false);
   
   // Form data
   const [formData, setFormData] = useState({
@@ -131,34 +145,34 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
   // Fetch drivers and vehicles when modal opens
   useEffect(() => {
     if (isOpen) {
+      const fetchDriversAndVehicles = async () => {
+        try {
+          setLoading(true);
+          
+          const [driversResponse, vehiclesResponse] = await Promise.all([
+            axios.get('/api/users?role=driver&status=active'),
+            axios.get('/api/vehicles?status=active')
+          ]);
+
+          setDrivers(driversResponse.data || []);
+          setVehicles(vehiclesResponse.data || []);
+        } catch (error) {
+          console.error('Error fetching drivers and vehicles:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load drivers and vehicles',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
+
       fetchDriversAndVehicles();
     }
-  }, [isOpen]);
-
-  const fetchDriversAndVehicles = async () => {
-    try {
-      setLoading(true);
-      
-      const [driversResponse, vehiclesResponse] = await Promise.all([
-        axios.get('/api/users?role=driver&status=active'),
-        axios.get('/api/vehicles?status=active')
-      ]);
-
-      setDrivers(driversResponse.data || []);
-      setVehicles(vehiclesResponse.data || []);
-    } catch (error) {
-      console.error('Error fetching drivers and vehicles:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load drivers and vehicles',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [isOpen, toast]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -200,7 +214,7 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
     }
 
     // Phone number validation
-    if (formData.riderPhone && !/^\+?[\d\s\-\(\)]+$/.test(formData.riderPhone)) {
+    if (formData.riderPhone && !/^\+?[\d\s\-()]+$/.test(formData.riderPhone)) {
       newErrors.riderPhone = 'Please enter a valid phone number';
     }
 
@@ -246,8 +260,26 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
       return;
     }
 
+    // Check for scheduling conflicts if driver is assigned
+    if (formData.assignedDriver && !shouldProceedWithSave) {
+      conflictDetection.checkConflicts(
+        {
+          riderName: formData.riderName,
+          scheduledDate: formData.scheduledDate,
+          scheduledTime: formData.scheduledTime,
+          pickupAddress: formData.pickupAddress,
+          dropoffAddress: formData.dropoffAddress,
+          estimatedDuration: formData.estimatedDuration || 60
+        },
+        formData.assignedDriver,
+        formData.assignedVehicle
+      );
+      return;
+    }
+
     try {
       setSaving(true);
+      setShouldProceedWithSave(false);
 
       // Prepare data for API
       const updateData = {
@@ -311,7 +343,36 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
   if (!trip) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="5xl" scrollBehavior="inside">
+    <>
+      {/* Conflict Detection Modal */}
+      <ConflictDetectionModal
+        isOpen={conflictDetection.isOpen}
+        onClose={() => {
+          conflictDetection.onClose();
+          setShouldProceedWithSave(false);
+        }}
+        tripData={conflictDetection.tripDataForCheck}
+        driverId={conflictDetection.driverIdForCheck}
+        vehicleId={conflictDetection.vehicleIdForCheck}
+        onConflictsDetected={conflictDetection.onConflictsDetected}
+        onProceedWithConflicts={() => {
+          conflictDetection.onProceedWithConflicts();
+          setShouldProceedWithSave(true);
+          conflictDetection.onClose();
+          // Re-trigger save
+          setTimeout(() => handleSave(), 100);
+        }}
+        onProceedWithoutConflicts={() => {
+          conflictDetection.onProceedWithoutConflicts();
+          setShouldProceedWithSave(true);
+          conflictDetection.onClose();
+          // Re-trigger save
+          setTimeout(() => handleSave(), 100);
+        }}
+      />
+
+      {/* Main Trip Edit Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} size="5xl" scrollBehavior="inside">
       <ModalOverlay />
       <ModalContent maxH="95vh">
         <ModalHeader>
@@ -726,6 +787,7 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
         </ModalFooter>
       </ModalContent>
     </Modal>
+    </>
   );
 };
 

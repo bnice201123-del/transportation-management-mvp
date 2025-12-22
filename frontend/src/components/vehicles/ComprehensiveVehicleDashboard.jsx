@@ -130,6 +130,8 @@ const ComprehensiveVehicleDashboard = () => {
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customColorInput, setCustomColorInput] = useState(false);
+  const [isProcessMenuOpen, setIsProcessMenuOpen] = useState(false);
+  const processMenuTimeoutRef = React.useRef(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -138,6 +140,12 @@ const ComprehensiveVehicleDashboard = () => {
   // Modal states
   const { isOpen: isNewVehicleOpen, onOpen: onNewVehicleOpen, onClose: onNewVehicleClose } = useDisclosure();
   const { isOpen: isEditVehicleOpen, onOpen: onEditVehicleOpen, onClose: onEditVehicleClose } = useDisclosure();
+
+  // Process menu navigation handler
+  const handleProcessMenuNavigation = (path) => {
+    setIsProcessMenuOpen(false);
+    navigate(path);
+  };
 
   // Color scheme - Orange for vehicles to match Operations menu
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -473,8 +481,101 @@ const ComprehensiveVehicleDashboard = () => {
     <Box minH="100vh" bg={bgColor}>
       <Navbar title="Vehicle Management" />
       
+      {/* Process Menu */}
+      <Flex justify="center" mt={6} mb={6} position="relative" zIndex={100}>
+        <Box 
+          position="relative"
+          onMouseLeave={() => {
+            processMenuTimeoutRef.current = setTimeout(() => {
+              setIsProcessMenuOpen(false);
+            }, 150);
+          }}
+          onMouseEnter={() => {
+            if (processMenuTimeoutRef.current) {
+              clearTimeout(processMenuTimeoutRef.current);
+            }
+            setIsProcessMenuOpen(true);
+          }}
+        >
+          <Button
+            variant="solid"
+            size={{ base: "sm", md: "md" }}
+            colorScheme="orange"
+            bg="orange.600"
+            _hover={{ bg: "orange.700" }}
+            onClick={() => setIsProcessMenuOpen(!isProcessMenuOpen)}
+          >
+            Process
+          </Button>
+          
+          {isProcessMenuOpen && (
+            <Box
+              position="absolute"
+              top="100%"
+              left="50%"
+              transform="translateX(-50%)"
+              mt={2}
+              bg={cardBg}
+              border="1px solid"
+              borderColor="gray.200"
+              borderRadius="md"
+              shadow="lg"
+              zIndex={101}
+              minW="400px"
+            >
+              <Grid templateColumns="repeat(3, 1fr)" gap={0}>
+                {/* Column 1: Trips */}
+                <Box borderRight="1px solid" borderColor="gray.200" p={4}>
+                  <VStack align="start" spacing={2}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/scheduler')}>
+                      Manage Trips
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/maps/tracking')}>
+                      View Map
+                    </Button>
+                  </VStack>
+                </Box>
+
+                {/* Column 2: Trip Views */}
+                <Box borderRight="1px solid" borderColor="gray.200" p={4}>
+                  <VStack align="start" spacing={2}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/upcoming')}>
+                      Upcoming
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/completed')}>
+                      Completed
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/all')}>
+                      All Trips
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/trips/active')}>
+                      Active
+                    </Button>
+                  </VStack>
+                </Box>
+
+                {/* Column 3: Navigation */}
+                <Box p={4}>
+                  <VStack align="start" spacing={2}>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/drivers')}>
+                      Drivers
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/vehicles')}>
+                      Vehicles
+                    </Button>
+                    <Button variant="ghost" justifyContent="start" w="full" onClick={() => handleProcessMenuNavigation('/riders')}>
+                      Riders
+                    </Button>
+                  </VStack>
+                </Box>
+              </Grid>
+            </Box>
+          )}
+        </Box>
+      </Flex>
+      
       <Box pt={{ base: 4, md: 0 }}>
-        <Container maxW="container.xl" py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>
+        <Container maxW="100%" py={{ base: 4, md: 6 }} px={{ base: 4, md: 6, lg: 8 }}>
           <VStack spacing={{ base: 6, md: 8 }} align="stretch">
             {/* Welcome Header */}
             <Box textAlign="center" py={{ base: 4, md: 6 }}>
@@ -496,7 +597,8 @@ const ComprehensiveVehicleDashboard = () => {
             {/* Quick Stats Cards */}
             <Grid 
               templateColumns={{ 
-                base: "repeat(2, 1fr)", 
+                base: "1fr",
+                sm: "repeat(2, 1fr)", 
                 md: "repeat(4, 1fr)" 
               }} 
               gap={{ base: 4, md: 6 }}
@@ -597,15 +699,20 @@ const ComprehensiveVehicleDashboard = () => {
                   colorScheme="orange"
                 >
                   <TabList 
-                    flexWrap="wrap"
+                    flexWrap={{ base: "wrap", md: "nowrap" }}
                     borderBottom="2px solid"
                     borderColor="gray.200"
                     bg="gray.50"
+                    display="flex"
+                    flexDirection={{ base: "column", sm: "row" }}
+                    justifyContent={{ base: "flex-start", md: "space-around" }}
                   >
                     <Tab 
-                      flex={{ base: "1", sm: "initial" }}
+                      width={{ base: "100%", sm: "auto", md: "auto" }}
+                      flex={{ base: "none", sm: "initial", md: "1" }}
                       fontSize={{ base: "sm", md: "md" }}
                       py={{ base: 3, md: 4 }}
+                      textAlign="center"
                       _selected={{ 
                         color: "orange.600", 
                         borderColor: "orange.500",
@@ -615,9 +722,11 @@ const ComprehensiveVehicleDashboard = () => {
                       🏠 Dashboard
                     </Tab>
                     <Tab 
-                      flex={{ base: "1", sm: "initial" }}
+                      width={{ base: "100%", sm: "auto", md: "auto" }}
+                      flex={{ base: "none", sm: "initial", md: "1" }}
                       fontSize={{ base: "sm", md: "md" }}
                       py={{ base: 3, md: 4 }}
+                      textAlign="center"
                       _selected={{ 
                         color: "orange.600", 
                         borderColor: "orange.500",
@@ -627,9 +736,11 @@ const ComprehensiveVehicleDashboard = () => {
                       🚗 All Vehicles
                     </Tab>
                     <Tab 
-                      flex={{ base: "1", sm: "initial" }}
+                      width={{ base: "100%", sm: "auto", md: "auto" }}
+                      flex={{ base: "none", sm: "initial", md: "1" }}
                       fontSize={{ base: "sm", md: "md" }}
                       py={{ base: 3, md: 4 }}
+                      textAlign="center"
                       _selected={{ 
                         color: "orange.600", 
                         borderColor: "orange.500",
@@ -639,7 +750,8 @@ const ComprehensiveVehicleDashboard = () => {
                       🔧 Maintenance
                     </Tab>
                     <Tab 
-                      flex={{ base: "1", sm: "initial" }}
+                      width={{ base: "100%", sm: "auto" }}
+                      flex={{ base: "none", sm: "initial" }}
                       fontSize={{ base: "sm", md: "md" }}
                       py={{ base: 3, md: 4 }}
                       _selected={{ 
@@ -651,9 +763,11 @@ const ComprehensiveVehicleDashboard = () => {
                       ➕ New Vehicle
                     </Tab>
                     <Tab 
-                      flex={{ base: "1", sm: "initial" }}
+                      width={{ base: "100%", sm: "auto", md: "auto" }}
+                      flex={{ base: "none", sm: "initial", md: "1" }}
                       fontSize={{ base: "sm", md: "md" }}
                       py={{ base: 3, md: 4 }}
+                      textAlign="center"
                       _selected={{ 
                         color: "orange.600", 
                         borderColor: "orange.500",
@@ -663,9 +777,11 @@ const ComprehensiveVehicleDashboard = () => {
                       📈 Analytics
                     </Tab>
                     <Tab 
-                      flex={{ base: "1", sm: "initial" }}
+                      width={{ base: "100%", sm: "auto", md: "auto" }}
+                      flex={{ base: "none", sm: "initial", md: "1" }}
                       fontSize={{ base: "sm", md: "md" }}
                       py={{ base: 3, md: 4 }}
+                      textAlign="center"
                       _selected={{ 
                         color: "orange.600", 
                         borderColor: "orange.500",

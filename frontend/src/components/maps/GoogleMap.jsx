@@ -94,7 +94,7 @@ const MapComponent = ({
 
   // Handle markers
   useEffect(() => {
-    if (map && markers) {
+    if (map && markers && window.google && window.google.maps && window.google.maps.marker) {
       // Clear existing markers
       markersRef.current.forEach(marker => {
         if (marker.map) {
@@ -133,7 +133,7 @@ const MapComponent = ({
         }
 
         // Create AdvancedMarkerElement
-        const marker = new google.maps.marker.AdvancedMarkerElement({
+        const marker = new window.google.maps.marker.AdvancedMarkerElement({
           position: markerData.position,
           map,
           title: markerData.title || `Marker ${index + 1}`,

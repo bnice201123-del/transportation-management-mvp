@@ -529,7 +529,7 @@ const getLocationText = (location) => {
   return (
     <>
       <Navbar title="Dispatch Control Center" />
-      {/* Breadcrumb Navigation with Process Menu - Positioned at Top */}
+      {/* Breadcrumb Navigation - Positioned at Top */}
       <Box 
         position="sticky" 
         top={0} 
@@ -556,18 +556,16 @@ const getLocationText = (location) => {
             </Breadcrumb>
             <Spacer />
             
-            {/* Process Menu - Desktop Version - Centered */}
+            {/* Process Menu - Desktop Version Only */}
             <Box 
               position="relative" 
               display={{ base: "none", md: "block" }}
               onMouseLeave={() => {
-                // Delay closing to allow mouse to move to dropdown
                 processMenuTimeoutRef.current = setTimeout(() => {
                   setIsProcessMenuOpen(false);
                 }, 150);
               }}
               onMouseEnter={() => {
-                // Clear any pending timeout when re-entering
                 if (processMenuTimeoutRef.current) {
                   clearTimeout(processMenuTimeoutRef.current);
                 }
@@ -586,7 +584,6 @@ const getLocationText = (location) => {
                 </Button>
               </Tooltip>
               
-              {/* 3-Column Dropdown Menu on Hover or Click */}
               {isProcessMenuOpen && (
                 <Box
                   position="absolute"
@@ -604,7 +601,6 @@ const getLocationText = (location) => {
                   zIndex={1000}
                   pointerEvents="auto"
                   onMouseEnter={() => {
-                    // Clear timeout when hovering over menu
                     if (processMenuTimeoutRef.current) {
                       clearTimeout(processMenuTimeoutRef.current);
                     }
@@ -768,54 +764,6 @@ const getLocationText = (location) => {
                       >
                         Recurring Trips
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        justifyContent="flex-start" 
-                        w="full" 
-                        onClick={() => handleProcessMenuNavigation('/analytics')}
-                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
-                      >
-                        📊 Analytics Dashboard
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        justifyContent="flex-start" 
-                        w="full" 
-                        onClick={() => {
-                          const csvContent = 'Trip ID,Rider,Driver,Status,Date\\n';
-                          const link = document.createElement('a');
-                          link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
-                          link.download = 'dispatch-data.csv';
-                          link.click();
-                        }}
-                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
-                      >
-                        📥 Export as CSV
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        justifyContent="flex-start" 
-                        w="full" 
-                        onClick={() => {
-                          const jsonContent = JSON.stringify({ trips: [], dispatchers: [] }, null, 2);
-                          const link = document.createElement('a');
-                          link.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(jsonContent);
-                          link.download = 'dispatch-data.json';
-                          link.click();
-                        }}
-                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
-                      >
-                        📥 Export as JSON
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        justifyContent="flex-start" 
-                        w="full" 
-                        onClick={() => window.print()}
-                        _hover={{ bg: "blue.50", color: "blue.600", fontWeight: "bold" }}
-                      >
-                        🖨️ Print Schedule
-                      </Button>
                     </VStack>
                   </Grid>
                 </Box>
@@ -823,74 +771,9 @@ const getLocationText = (location) => {
             </Box>
             
             <Spacer />
+            <ReturnToDispatchButton variant="ghost" size="sm" showText={true} />
+            <Spacer />
           </Flex>
-          
-          {/* Process Menu - Mobile Version - Full Width Below Breadcrumb */}
-          <Menu>
-            <MenuButton
-              as={Button}
-              variant="outline"
-              size="sm"
-              colorScheme="blue"
-              display={{ base: "block", md: "none" }}
-              w="full"
-            >
-              Process
-            </MenuButton>
-            <MenuList minW="200px">
-              <MenuItem onClick={onOpen}>
-                Create Trip
-              </MenuItem>
-              <MenuItem onClick={() => navigate('/trips/manage')}>
-                Manage Trips
-              </MenuItem>
-              <MenuItem onClick={() => navigate('/trips/map')}>
-                View Map
-              </MenuItem>
-              <MenuDivider />
-              <MenuItem onClick={() => navigate('/trips/upcoming')}>
-                Upcoming
-              </MenuItem>
-              <MenuItem onClick={() => navigate('/trips/completed')}>
-                Completed
-              </MenuItem>
-              <MenuItem onClick={() => navigate('/trips/all')}>
-                All Trips
-              </MenuItem>
-              <MenuItem onClick={() => navigate('/trips/active')}>
-                Active
-              </MenuItem>
-              <MenuDivider />
-              <MenuItem onClick={() => navigate('/riders')}>
-                All Riders
-              </MenuItem>
-              <MenuItem onClick={() => navigate('/users')}>
-                All Users
-              </MenuItem>
-              <MenuItem onClick={() => navigate('/drivers')}>
-                Drivers
-              </MenuItem>
-              <MenuDivider />
-              <MenuItem onClick={() => navigate('/tracking')}>
-                Tracking
-              </MenuItem>
-              <MenuItem onClick={() => navigate('/profile')}>
-                Profile
-              </MenuItem>
-              <MenuItem onClick={() => navigate('/schedule')}>
-                Schedule
-              </MenuItem>
-              <MenuItem onClick={() => navigate('/search')}>
-                Search
-              </MenuItem>
-              <MenuItem onClick={() => navigate('/trips/recurring')}>
-                Recurring Trips
-              </MenuItem>
-            </MenuList>
-          </Menu>
-          
-          <Spacer />
-          <ReturnToDispatchButton variant="ghost" size="sm" showText={true} />
         </VStack>
       </Box>
       <Box bg="gray.50" minH="calc(100vh - 80px)" w="100%" overflowX="hidden">

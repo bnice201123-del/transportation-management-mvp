@@ -506,7 +506,7 @@ const LiveTracking = () => {
       <Navbar title="Live Vehicle Tracking" />
       
       {/* Process Menu */}
-      <Flex justify="center" mt={6} mb={6} position="relative" zIndex={2000}>
+      <Flex justify="center" mt={6} mb={6} position="relative" zIndex={2000} display={{ base: "none", md: "flex" }}>
         <Box 
           position="relative"
           onMouseLeave={() => {
@@ -728,7 +728,7 @@ const LiveTracking = () => {
           </Flex>
 
           {/* Statistics Cards */}
-          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: 3, md: 4 }}>
+          <SimpleGrid columns={{ base: 1, sm: 2, md: 4 }} spacing={{ base: 3, md: 4 }}>
             <Card bg={cardBg}>
               <CardBody p={{ base: 3, md: 6 }}>
                 <Stat>

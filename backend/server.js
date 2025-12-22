@@ -54,6 +54,8 @@ import mapsRoutes from './routes/maps.js';
 import driverPreferencesRoutes from './routes/driverPreferences.js';
 import fleetManagementRoutes from './routes/fleetManagement.js';
 import driverManagementRoutes from './routes/driverManagement.js';
+import approvalsRoutes from './routes/approvals.js';
+import dualLoginRoutes from './routes/dualLogin.js';
 import { globalLimiter } from './middleware/rateLimiter.js';
 
 // Import services
@@ -133,6 +135,7 @@ app.use('/api/holidays', holidaysRoutes);
 app.use('/api/2fa', twoFactorRoutes);
 app.use('/api/phone-verification', phoneVerificationRoutes);
 app.use('/api/auth', oauthRoutes);
+app.use('/api/approvals', approvalsRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/gdpr', gdprRoutes);
 app.use('/api/rate-limit', rateLimitRoutes);
@@ -158,6 +161,8 @@ app.use('/api/maps', mapsRoutes);
 app.use('/api/driver-preferences', driverPreferencesRoutes);
 app.use('/api/fleet-management', fleetManagementRoutes);
 app.use('/api/driver-management', driverManagementRoutes);
+app.use('/api/approvals', approvalsRoutes);
+app.use('/api/drivers', dualLoginRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

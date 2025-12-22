@@ -2,7 +2,7 @@ import express from 'express';
 import User from '../models/User.js';
 import VehicleTracker from '../models/VehicleTracker.js';
 import DualLoginService from '../services/dualLoginService.js';
-import { authenticateToken, requirePermission } from '../middleware/authMiddleware.js';
+import { authenticateToken, requirePermission } from '../middleware/auth.js';
 import rateLimit from 'express-rate-limit';
 
 const router = express.Router();

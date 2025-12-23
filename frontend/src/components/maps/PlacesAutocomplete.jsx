@@ -115,14 +115,20 @@ const PlacesAutocomplete = ({
       }
     }
 
-    console.log('PlacesAutocomplete handlePlaceSelect:', { placeId, description, structured, fullAddress });
+    console.log('PlacesAutocomplete handlePlaceSelect:', { placeId, description, structured, fullAddress, onChangeType: typeof onChange, onChange });
 
     // Always update parent form state with the address
     if (onChange) {
-      console.log('Calling onChange with:', fullAddress);
-      onChange(fullAddress);
+      console.log('typeof onChange:', typeof onChange, 'Calling onChange with:', fullAddress);
+      // Call onChange with the address string directly
+      try {
+        onChange(fullAddress);
+        console.log('onChange callback executed successfully');
+      } catch (err) {
+        console.error('Error calling onChange:', err);
+      }
     } else {
-      console.warn('onChange callback not provided to PlacesAutocomplete');
+      console.warn('onChange callback is undefined!');
     }
 
     // Also call onPlaceSelected if provided

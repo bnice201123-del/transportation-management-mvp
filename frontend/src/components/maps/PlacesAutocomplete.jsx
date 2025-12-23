@@ -116,17 +116,17 @@ const PlacesAutocomplete = ({
     }
 
     // Call onChange callback to update parent state
-    console.log('handlePlaceSelect: fullAddress:', fullAddress);
     if (onChange && typeof onChange === 'function') {
-      console.log('onChange exists, calling it with address:', fullAddress);
+      console.log('PlacesAutocomplete: onChange callback exists');
+      console.log('PlacesAutocomplete: Calling onChange with fullAddress:', fullAddress);
       try {
         onChange(fullAddress);
-        console.log('onChange executed successfully');
+        console.log('PlacesAutocomplete: onChange executed');
       } catch (error) {
-        console.error('ERROR in onChange:', error, error.stack);
+        console.error('PlacesAutocomplete: ERROR in onChange:', error);
       }
     } else {
-      console.warn('onChange is not a function');
+      console.warn('PlacesAutocomplete: onChange is not a function');
     }
 
     // Also call onPlaceSelected if provided

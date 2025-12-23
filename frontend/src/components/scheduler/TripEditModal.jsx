@@ -175,14 +175,14 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
   }, [isOpen, toast]);
 
   const handleInputChange = (field, value) => {
+    console.log('TripEditModal.handleInputChange - field:', field, 'value:', value);
     try {
-      console.log('TripEditModal.handleInputChange called with:', { field, value });
       setFormData(prev => {
         const updated = {
           ...prev,
           [field]: value
         };
-        console.log('formData updated:', field, '=', value);
+        console.log('TripEditModal: Updated state for field', field, '=', value);
         return updated;
       });
 
@@ -194,17 +194,11 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
         }));
       }
     } catch (error) {
-      console.error('ERROR in handleInputChange:', error, error.stack);
+      console.error('TripEditModal.handleInputChange ERROR:', error);
     }
   };
 
   const validateForm = () => {
-    console.log('=== validateForm called ===');
-    console.log('formData.pickupLocation:', formData.pickupLocation);
-    console.log('formData.dropoffLocation:', formData.dropoffLocation);
-    console.log('pickupAddress?.trim():', formData.pickupLocation?.address?.trim());
-    console.log('dropoffAddress?.trim():', formData.dropoffLocation?.address?.trim());
-    
     const newErrors = {};
 
     // Required fields validation
@@ -213,12 +207,10 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
     }
 
     if (!formData.pickupLocation?.address?.trim()) {
-      console.log('pickupLocation address is empty!');
       newErrors.pickupAddress = 'Pickup address is required';
     }
 
     if (!formData.dropoffLocation?.address?.trim()) {
-      console.log('dropoffLocation address is empty!');
       newErrors.dropoffAddress = 'Dropoff address is required';
     }
 
@@ -502,38 +494,21 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
                       placeholder="Enter pickup location address"
                       value={formData.pickupLocation?.address || ''}
                       onChange={(address) => {
-                        console.log('=== CALLBACK: pickup onChange called ===');
-                        console.log('Address value:', address);
-                        console.log('Current formData.pickupLocation before update:', formData.pickupLocation);
-                        setFormData(prev => {
-                          const updated = {
-                            ...prev,
-                            pickupLocation: { ...prev.pickupLocation, address }
-                          };
-                          console.log('Updated formData.pickupLocation:', updated.pickupLocation);
-                          return updated;
-                        });
-                        // Clear error
+                        setFormData(prev => ({
+                          ...prev,
+                          pickupLocation: { address }
+                        }));
                         if (errors.pickupAddress) {
-                          setErrors(prev => ({
-                            ...prev,
-                            pickupAddress: null
-                          }));
+                          setErrors(prev => ({ ...prev, pickupAddress: null }));
                         }
                       }}
                       onPlaceSelected={(place) => {
-                        console.log('=== CALLBACK: pickup onPlaceSelected called ===');
-                        console.log('Place:', place);
                         setFormData(prev => ({
                           ...prev,
-                          pickupLocation: { ...prev.pickupLocation, address: place.address }
+                          pickupLocation: { address: place.address }
                         }));
-                        // Clear error
                         if (errors.pickupAddress) {
-                          setErrors(prev => ({
-                            ...prev,
-                            pickupAddress: null
-                          }));
+                          setErrors(prev => ({ ...prev, pickupAddress: null }));
                         }
                       }}
                     />

@@ -175,13 +175,11 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
   }, [isOpen, toast]);
 
   const handleInputChange = (field, value) => {
-    console.log('TripEditModal handleInputChange:', { field, value });
     setFormData(prev => {
       const updated = {
         ...prev,
         [field]: value
       };
-      console.log('Updated formData:', { field, value, currentValue: updated[field] });
       return updated;
     });
 
@@ -195,16 +193,6 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
   };
 
   const validateForm = () => {
-    console.log('validateForm called with formData:', {
-      pickupAddress: formData.pickupAddress,
-      pickupAddressLength: formData.pickupAddress?.length,
-      pickupAddressType: typeof formData.pickupAddress,
-      dropoffAddress: formData.dropoffAddress,
-      dropoffAddressLength: formData.dropoffAddress?.length,
-      dropoffAddressType: typeof formData.dropoffAddress,
-      riderName: formData.riderName
-    });
-    
     const newErrors = {};
 
     // Required fields validation
@@ -264,13 +252,6 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
   };
 
   const handleSave = async () => {
-    console.log('handleSave called, current formData:', {
-      pickupAddress: formData.pickupAddress,
-      dropoffAddress: formData.dropoffAddress,
-      riderName: formData.riderName,
-      fullFormData: formData
-    });
-    
     if (!validateForm()) {
       toast({
         title: 'Validation Error',

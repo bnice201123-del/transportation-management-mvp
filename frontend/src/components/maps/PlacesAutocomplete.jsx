@@ -115,44 +115,41 @@ const PlacesAutocomplete = ({
       }
     }
 
-    console.log('PlacesAutocomplete handlePlaceSelect:', { 
-      placeId, 
-      description, 
-      structured, 
-      fullAddress, 
-      onChangeType: typeof onChange, 
-      onChange,
-      isFunction: typeof onChange === 'function'
-    });
+    console.log('PlacesAutocomplete handlePlaceSelect - Selected address:', fullAddress);
 
-    // Always update parent form state with the address
-    if (onChange) {
-      console.log('onChange exists! Type:', typeof onChange, 'Is function:', typeof onChange === 'function');
-      console.log('Calling onChange with:', fullAddress);
-      if (typeof onChange === 'function') {
-        console.log('onChange function source:', onChange.toString().substring(0, 100));
-      }
-      // Call onChange with the address string directly
+    // Directly set the input value to ensure it displays
+    if (inputRef.current) {
+      inputRef.current.value = fullAddress;
+      console.log('Set inputRef.current.value to:', fullAddress);
+    }
+
+    // Always call onChange to update parent state
+    if (onChange && typeof onChange === 'function') {
+      console.log('Calling onChange callback with:', fullAddress);
       try {
-        const result = onChange(fullAddress);
-        console.log('onChange callback executed successfully, returned:', result);
+        onChange(fullAddress);
+        console.log('onChange executed successfully');
       } catch (err) {
-        console.error('Error calling onChange:', err);
+        console.error('Error in onChange:', err);
       }
     } else {
-      console.warn('onChange callback is undefined!');
+      console.warn('onChange is not a function:', typeof onChange);
     }
 
     // Also call onPlaceSelected if provided
-    if (onPlaceSelected && fullAddress) {
-      console.log('Calling onPlaceSelected with:', fullAddress);
-      onPlaceSelected({
-        placeId: placeId || '',
-        address: fullAddress,
-        name: fullAddress.split(',')[0]?.trim() || fullAddress,
-        location: { lat: 0, lng: 0 },
-        types: []
-      });
+    if (onPlaceSelected && typeof onPlaceSelected === 'function' && fullAddress) {
+      console.log('Calling onPlaceSelected with address:', fullAddress);
+      try {
+        onPlaceSelected({
+          placeId: placeId || '',
+          address: fullAddress,
+          name: fullAddress.split(',')[0]?.trim() || fullAddress,
+          location: { lat: 0, lng: 0 },
+          types: []
+        });
+      } catch (err) {
+        console.error('Error in onPlaceSelected:', err);
+      }
     }
 
     setShowPredictions(false);

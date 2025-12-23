@@ -11,6 +11,7 @@ import Dashboard from './components/Dashboard';
 import TestPage from './components/TestPage';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
+import AgencyRegistration from './components/auth/AgencyRegistration';
 import SchedulerDashboard from './components/scheduler/SchedulerDashboard';
 import RecurringTrips from './components/scheduler/RecurringTrips';
 import CompletedTrips from './components/scheduler/CompletedTrips';
@@ -115,6 +116,11 @@ const AppRoutes = () => {
       <Route 
         path="/login" 
         element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} 
+      />
+      
+      <Route 
+        path="/register" 
+        element={!isAuthenticated ? <AgencyRegistration /> : <Navigate to="/dashboard" replace />} 
       />
 
       {/* Dashboard route - automatically redirects to appropriate role dashboard */}

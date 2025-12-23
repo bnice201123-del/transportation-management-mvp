@@ -278,6 +278,137 @@ router.post('/register-admin', async (req, res) => {
   }
 });
 
+// Public agency registration endpoint
+router.post('/register-agency', authLimiter, async (req, res) => {
+  try {
+    const {
+      companyName,
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+      companyPhone,
+      companyEmail,
+      companyAddress,
+      companyCity,
+      companyState,
+      companyZipCode,
+      companyIndustry
+    } = req.body;
+
+    // Validate required fields
+    if (!companyName || !email || !password || !firstName || !lastName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Company name, email, password, first name, and last name are required'
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long'
+      });
+    }
+
+    // Check if user already exists with this email
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'An account with this email already exists'
+      });
+    }
+
+    // Check if company already exists
+    const existingCompany = await User.findOne({ companyName: companyName.trim() });
+    if (existingCompany) {
+      return res.status(400).json({
+        success: false,
+        message: 'A company with this name is already registered'
+      });
+    }
+
+    // Check for duplicate phone number if provided
+    if (phone) {
+      const existingPhone = await User.findOne({ phone });
+      if (existingPhone) {
+        return res.status(400).json({
+          success: false,
+          message: 'An account with this phone number already exists'
+        });
+      }
+    }
+
+    // Create new agency admin user
+    const userData = {
+      companyName: companyName.trim(),
+      email: email.toLowerCase(),
+      password,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      role: 'admin',
+      roles: ['admin'],
+      phone,
+      // Company details
+      companyPhone: companyPhone || phone,
+      companyEmail: companyEmail || email,
+      companyAddress,
+      companyCity,
+      companyState,
+      companyZipCode,
+      companyIndustry: companyIndustry || 'transportation',
+      // Default branding
+      brandingType: 'TEXT',
+      // Account status
+      isActive: true
+    };
+
+    const user = new User(userData);
+    await user.save();
+
+    // Log activity
+    await logActivity(
+      user._id,
+      'agency_registered',
+      `New agency registered: ${companyName}`
+    );
+
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        role: user.role,
+        companyName: user.companyName
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Agency registered successfully. Please log in with your credentials.',
+      token,
+      user: {
+        _id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        companyName: user.companyName,
+        role: user.role,
+        phone: user.phone
+      }
+    });
+  } catch (error) {
+    console.error('Agency registration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during agency registration. Please try again.'
+    });
+  }
+});
+
 // Login user (supports both username and email)
 router.post('/login', authLimiter, async (req, res) => {
   try {

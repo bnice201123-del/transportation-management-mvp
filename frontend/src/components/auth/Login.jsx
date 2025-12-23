@@ -330,9 +330,33 @@ const Login = () => {
                 </VStack>
               </Box>
 
-              <Text textAlign="center" color="gray.500" fontSize="sm">
-                Need an account? Contact your administrator.
-              </Text>
+              <Divider my={4} />
+
+              <VStack spacing={3} width="100%" textAlign="center">
+                <Box>
+                  <Text fontSize="sm" color="gray.600" mb={2}>
+                    New to our platform?
+                  </Text>
+                  <Link
+                    as={RouterLink}
+                    to="/register"
+                    _hover={{ textDecoration: 'none' }}
+                  >
+                    <Button
+                      width="full"
+                      variant="outline"
+                      colorScheme="brand"
+                      size="md"
+                    >
+                      Create Agency Account
+                    </Button>
+                  </Link>
+                </Box>
+
+                <Text textAlign="center" color="gray.500" fontSize="xs">
+                  Existing employee? Contact your administrator for credentials.
+                </Text>
+              </VStack>
             </VStack>
           </CardBody>
         </Card>

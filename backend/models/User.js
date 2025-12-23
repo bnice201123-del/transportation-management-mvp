@@ -100,6 +100,43 @@ const userSchema = new mongoose.Schema({
     default: 'TEXT', // Default to text branding
     required: false
   },
+  // Company/Agency contact information
+  companyEmail: {
+    type: String,
+    default: null,
+    trim: true,
+    lowercase: true
+  },
+  companyPhone: {
+    type: String,
+    default: null,
+    trim: true
+  },
+  companyAddress: {
+    type: String,
+    default: null,
+    trim: true
+  },
+  companyCity: {
+    type: String,
+    default: null,
+    trim: true
+  },
+  companyState: {
+    type: String,
+    default: null,
+    trim: true
+  },
+  companyZipCode: {
+    type: String,
+    default: null,
+    trim: true
+  },
+  companyIndustry: {
+    type: String,
+    default: 'transportation',
+    trim: true
+  },
   isActive: {
     type: Boolean,
     default: true

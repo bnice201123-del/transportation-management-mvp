@@ -115,7 +115,23 @@ const PlacesAutocomplete = ({
       }
     }
 
-    // Call onChange callback to update parent state
+    console.log('PlacesAutocomplete: handlePlaceSelect called with fullAddress:', fullAddress);
+    console.log('PlacesAutocomplete: onChange type:', typeof onChange);
+    console.log('PlacesAutocomplete: onChange callback:', onChange);
+
+    // Call onPlaceSelected first (this is the newer approach)
+    if (onPlaceSelected && typeof onPlaceSelected === 'function' && fullAddress) {
+      console.log('PlacesAutocomplete: Calling onPlaceSelected with fullAddress:', fullAddress);
+      onPlaceSelected({
+        placeId: placeId || '',
+        address: fullAddress,
+        name: fullAddress.split(',')[0]?.trim() || fullAddress,
+        location: { lat: 0, lng: 0 },
+        types: []
+      });
+    }
+
+    // Also call onChange callback to update parent state
     if (onChange && typeof onChange === 'function') {
       console.log('PlacesAutocomplete: onChange callback exists');
       console.log('PlacesAutocomplete: Calling onChange with fullAddress:', fullAddress);
@@ -127,17 +143,6 @@ const PlacesAutocomplete = ({
       }
     } else {
       console.warn('PlacesAutocomplete: onChange is not a function');
-    }
-
-    // Also call onPlaceSelected if provided
-    if (onPlaceSelected && typeof onPlaceSelected === 'function' && fullAddress) {
-      onPlaceSelected({
-        placeId: placeId || '',
-        address: fullAddress,
-        name: fullAddress.split(',')[0]?.trim() || fullAddress,
-        location: { lat: 0, lng: 0 },
-        types: []
-      });
     }
 
     setShowPredictions(false);

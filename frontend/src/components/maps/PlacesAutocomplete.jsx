@@ -85,6 +85,10 @@ const PlacesAutocomplete = ({
       return;
     }
 
+    // Use description as the address (from autocomplete suggestion)
+    // This is the most reliable way to get the full address text
+    const address = description || '';
+
     try {
       // Use the new Place API (recommended as of March 2025)
       // This replaces the deprecated PlacesService
@@ -100,7 +104,8 @@ const PlacesAutocomplete = ({
 
       const placeData = {
         placeId: place.id,
-        address: place.formattedAddress,
+        // Use formattedAddress if available, fall back to description
+        address: place.formattedAddress || address,
         name: place.displayName,
         location: {
           lat: place.location.lat,
@@ -113,8 +118,9 @@ const PlacesAutocomplete = ({
         onPlaceSelected(placeData);
       }
 
+      // Always update the input with the description/address
       if (onChange) {
-        onChange(description);
+        onChange(placeData.address);
       }
     } catch (error) {
       console.error('Error fetching place details with new Place API:', error);
@@ -134,7 +140,7 @@ const PlacesAutocomplete = ({
             if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
               const placeData = {
                 placeId: place.place_id,
-                address: place.formatted_address,
+                address: place.formatted_address || address,
                 name: place.name,
                 location: {
                   lat: place.geometry.location.lat(),
@@ -147,14 +153,19 @@ const PlacesAutocomplete = ({
                 onPlaceSelected(placeData);
               }
 
+              // Always update the input with the address
               if (onChange) {
-                onChange(description);
+                onChange(placeData.address);
               }
             }
           }
         );
       } catch (fallbackError) {
         console.error('Fallback PlacesService also failed:', fallbackError);
+        // Even if both APIs fail, update with the description from the dropdown
+        if (onChange) {
+          onChange(address);
+        }
       }
     }
 

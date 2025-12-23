@@ -399,6 +399,22 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
             </Center>
           ) : (
             <VStack spacing={6} align="stretch">
+              {/* Error Summary Alert */}
+              {Object.keys(errors).length > 0 && (
+                <Alert status="error" borderRadius="md" variant="subtle">
+                  <AlertIcon />
+                  <Box>
+                    <Text fontWeight="bold" mb={2}>Please fix the following errors:</Text>
+                    <VStack align="start" spacing={1} ml={2}>
+                      {Object.entries(errors).map(([field, message], index) => (
+                        <Text key={field} fontSize="sm">
+                          {index + 1}. {message}
+                        </Text>
+                      ))}
+                    </VStack>
+                  </Box>
+                </Alert>
+              )}
               {/* Rider Information */}
               <Box>
                 <Text fontSize="lg" fontWeight="semibold" mb={4} color="blue.600">

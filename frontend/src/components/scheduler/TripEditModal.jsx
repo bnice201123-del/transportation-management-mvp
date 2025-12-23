@@ -175,10 +175,15 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
   }, [isOpen, toast]);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    console.log('TripEditModal handleInputChange:', { field, value });
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [field]: value
+      };
+      console.log('Updated formData:', { field, value, currentValue: updated[field] });
+      return updated;
+    });
 
     // Clear field error when user starts typing
     if (errors[field]) {

@@ -115,18 +115,19 @@ const PlacesAutocomplete = ({
       }
     }
 
-    // Log for debugging
-    if (!fullAddress) {
-      console.warn('PlacesAutocomplete: Could not construct address from', { description, structured });
-    }
+    console.log('PlacesAutocomplete handlePlaceSelect:', { placeId, description, structured, fullAddress });
 
-    // Always update parent form state with whatever address we have
+    // Always update parent form state with the address
     if (onChange) {
+      console.log('Calling onChange with:', fullAddress);
       onChange(fullAddress);
+    } else {
+      console.warn('onChange callback not provided to PlacesAutocomplete');
     }
 
     // Also call onPlaceSelected if provided
     if (onPlaceSelected && fullAddress) {
+      console.log('Calling onPlaceSelected with:', fullAddress);
       onPlaceSelected({
         placeId: placeId || '',
         address: fullAddress,

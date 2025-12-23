@@ -79,94 +79,86 @@ const PlacesAutocomplete = ({
     }
   };
 
-  const handlePlaceSelect = async (placeId, description) => {
+  const handlePlaceSelect = (placeId, description) => {
     if (!window.google || !window.google.maps || !window.google.maps.places) {
       console.error('Google Maps Places API not loaded');
       return;
     }
 
-    // Use description as the address (from autocomplete suggestion)
-    // This is the most reliable way to get the full address text
+    // Use the description from autocomplete suggestion as the address
+    // This is the most reliable and immediate way to update the form
     const address = description || '';
 
+    // Immediately call onChange with the address to update parent form state
+    if (onChange) {
+      onChange(address);
+    }
+
+    // Then optionally fetch additional place details asynchronously (non-blocking)
     try {
-      // Use the new Place API (recommended as of March 2025)
-      // This replaces the deprecated PlacesService
-      const { Place } = await google.maps.importLibrary('places');
-      const place = new Place({
-        id: placeId
-      });
+      // Try the new Place API (recommended as of March 2025)
+      const placeDetailsPromise = (async () => {
+        try {
+          const { Place } = await window.google.maps.importLibrary('places');
+          const place = new Place({
+            id: placeId
+          });
 
-      // Fetch place details with the new API
-      await place.fetchFields({
-        fields: ['displayName', 'formattedAddress', 'location', 'id', 'types']
-      });
+          await place.fetchFields({
+            fields: ['displayName', 'formattedAddress', 'location', 'id', 'types']
+          });
 
-      const placeData = {
-        placeId: place.id,
-        // Use formattedAddress if available, fall back to description
-        address: place.formattedAddress || address,
-        name: place.displayName,
-        location: {
-          lat: place.location.lat,
-          lng: place.location.lng
-        },
-        types: place.types || []
-      };
-
-      if (onPlaceSelected) {
-        onPlaceSelected(placeData);
-      }
-
-      // Always update the input with the description/address
-      if (onChange) {
-        onChange(placeData.address);
-      }
-    } catch (error) {
-      console.error('Error fetching place details with new Place API:', error);
-      
-      // Fallback to PlacesService for backward compatibility
-      try {
-        const service = new window.google.maps.places.PlacesService(
-          document.createElement('div')
-        );
-
-        service.getDetails(
-          {
-            placeId: placeId,
-            fields: ['name', 'formatted_address', 'geometry', 'place_id', 'types']
-          },
-          (place, status) => {
-            if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
-              const placeData = {
-                placeId: place.place_id,
-                address: place.formatted_address || address,
-                name: place.name,
-                location: {
-                  lat: place.geometry.location.lat(),
-                  lng: place.geometry.location.lng()
-                },
-                types: place.types
-              };
-
-              if (onPlaceSelected) {
-                onPlaceSelected(placeData);
-              }
-
-              // Always update the input with the address
-              if (onChange) {
-                onChange(placeData.address);
-              }
-            }
+          // If we got a better formatted address, use it
+          if (place.formattedAddress && onPlaceSelected) {
+            onPlaceSelected({
+              placeId: place.id,
+              address: place.formattedAddress,
+              name: place.displayName,
+              location: {
+                lat: place.location.lat,
+                lng: place.location.lng
+              },
+              types: place.types || []
+            });
           }
-        );
-      } catch (fallbackError) {
-        console.error('Fallback PlacesService also failed:', fallbackError);
-        // Even if both APIs fail, update with the description from the dropdown
-        if (onChange) {
-          onChange(address);
+        } catch (newApiError) {
+          console.debug('New Place API not available, using fallback:', newApiError);
+          
+          // Fallback to PlacesService for backward compatibility
+          try {
+            const service = new window.google.maps.places.PlacesService(
+              document.createElement('div')
+            );
+
+            service.getDetails(
+              {
+                placeId: placeId,
+                fields: ['name', 'formatted_address', 'geometry', 'place_id', 'types']
+              },
+              (place, status) => {
+                if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
+                  if (onPlaceSelected) {
+                    onPlaceSelected({
+                      placeId: place.place_id,
+                      address: place.formatted_address,
+                      name: place.name,
+                      location: {
+                        lat: place.geometry.location.lat(),
+                        lng: place.geometry.location.lng()
+                      },
+                      types: place.types
+                    });
+                  }
+                }
+              }
+            );
+          } catch (fallbackError) {
+            console.debug('PlacesService also failed:', fallbackError);
+          }
         }
-      }
+      })();
+    } catch (error) {
+      console.debug('Error in async place details fetch:', error);
     }
 
     setShowPredictions(false);

@@ -115,41 +115,29 @@ const PlacesAutocomplete = ({
       }
     }
 
-    console.log('PlacesAutocomplete handlePlaceSelect - Selected address:', fullAddress);
-
-    // Directly set the input value to ensure it displays
-    if (inputRef.current) {
-      inputRef.current.value = fullAddress;
-      console.log('Set inputRef.current.value to:', fullAddress);
-    }
-
-    // Always call onChange to update parent state
+    // Call onChange callback to update parent state
+    console.log('handlePlaceSelect: fullAddress:', fullAddress);
     if (onChange && typeof onChange === 'function') {
-      console.log('Calling onChange callback with:', fullAddress);
+      console.log('onChange exists, calling it with address:', fullAddress);
       try {
         onChange(fullAddress);
         console.log('onChange executed successfully');
-      } catch (err) {
-        console.error('Error in onChange:', err);
+      } catch (error) {
+        console.error('ERROR in onChange:', error, error.stack);
       }
     } else {
-      console.warn('onChange is not a function:', typeof onChange);
+      console.warn('onChange is not a function');
     }
 
     // Also call onPlaceSelected if provided
     if (onPlaceSelected && typeof onPlaceSelected === 'function' && fullAddress) {
-      console.log('Calling onPlaceSelected with address:', fullAddress);
-      try {
-        onPlaceSelected({
-          placeId: placeId || '',
-          address: fullAddress,
-          name: fullAddress.split(',')[0]?.trim() || fullAddress,
-          location: { lat: 0, lng: 0 },
-          types: []
-        });
-      } catch (err) {
-        console.error('Error in onPlaceSelected:', err);
-      }
+      onPlaceSelected({
+        placeId: placeId || '',
+        address: fullAddress,
+        name: fullAddress.split(',')[0]?.trim() || fullAddress,
+        location: { lat: 0, lng: 0 },
+        types: []
+      });
     }
 
     setShowPredictions(false);

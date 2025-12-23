@@ -85,8 +85,8 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
     riderName: '',
     riderPhone: '',
     riderEmail: '',
-    pickupAddress: '',
-    dropoffAddress: '',
+    pickupLocation: { address: '' },
+    dropoffLocation: { address: '' },
     scheduledDate: '',
     scheduledTime: '',
     status: 'scheduled',
@@ -118,8 +118,8 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
         riderName: trip.riderName || '',
         riderPhone: trip.riderPhone || '',
         riderEmail: trip.riderEmail || '',
-        pickupAddress: trip.pickupLocation?.address || '',
-        dropoffAddress: trip.dropoffLocation?.address || '',
+        pickupLocation: { address: trip.pickupLocation?.address || '' },
+        dropoffLocation: { address: trip.dropoffLocation?.address || '' },
         scheduledDate: trip.scheduledDate ? new Date(trip.scheduledDate).toISOString().split('T')[0] : '',
         scheduledTime: trip.scheduledTime || '',
         status: trip.status || 'scheduled',
@@ -175,24 +175,36 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
   }, [isOpen, toast]);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => {
-      const updated = {
-        ...prev,
-        [field]: value
-      };
-      return updated;
-    });
+    try {
+      console.log('TripEditModal.handleInputChange called with:', { field, value });
+      setFormData(prev => {
+        const updated = {
+          ...prev,
+          [field]: value
+        };
+        console.log('formData updated:', field, '=', value);
+        return updated;
+      });
 
-    // Clear field error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: null
-      }));
+      // Clear field error when user starts typing
+      if (errors[field]) {
+        setErrors(prev => ({
+          ...prev,
+          [field]: null
+        }));
+      }
+    } catch (error) {
+      console.error('ERROR in handleInputChange:', error, error.stack);
     }
   };
 
   const validateForm = () => {
+    console.log('=== validateForm called ===');
+    console.log('formData.pickupLocation:', formData.pickupLocation);
+    console.log('formData.dropoffLocation:', formData.dropoffLocation);
+    console.log('pickupAddress?.trim():', formData.pickupLocation?.address?.trim());
+    console.log('dropoffAddress?.trim():', formData.dropoffLocation?.address?.trim());
+    
     const newErrors = {};
 
     // Required fields validation
@@ -200,11 +212,13 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
       newErrors.riderName = 'Rider name is required';
     }
 
-    if (!formData.pickupAddress.trim()) {
+    if (!formData.pickupLocation?.address?.trim()) {
+      console.log('pickupLocation address is empty!');
       newErrors.pickupAddress = 'Pickup address is required';
     }
 
-    if (!formData.dropoffAddress.trim()) {
+    if (!formData.dropoffLocation?.address?.trim()) {
+      console.log('dropoffLocation address is empty!');
       newErrors.dropoffAddress = 'Dropoff address is required';
     }
 
@@ -270,8 +284,8 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
           riderName: formData.riderName,
           scheduledDate: formData.scheduledDate,
           scheduledTime: formData.scheduledTime,
-          pickupAddress: formData.pickupAddress,
-          dropoffAddress: formData.dropoffAddress,
+          pickupAddress: formData.pickupLocation?.address,
+          dropoffAddress: formData.dropoffLocation?.address,
           estimatedDuration: formData.estimatedDuration || 60
         },
         formData.assignedDriver,
@@ -290,11 +304,11 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
         riderPhone: formData.riderPhone.trim(),
         riderEmail: formData.riderEmail.trim(),
         pickupLocation: {
-          address: formData.pickupAddress.trim(),
+          address: formData.pickupLocation?.address?.trim() || '',
           notes: ''
         },
         dropoffLocation: {
-          address: formData.dropoffAddress.trim(),
+          address: formData.dropoffLocation?.address?.trim() || '',
           notes: ''
         },
         scheduledDate: new Date(formData.scheduledDate),
@@ -486,9 +500,42 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
                     <FormLabel fontSize="sm">Pickup Address</FormLabel>
                     <PlacesAutocomplete
                       placeholder="Enter pickup location address"
-                      value={formData.pickupAddress}
-                      onChange={(address) => handleInputChange('pickupAddress', address)}
-                      onPlaceSelected={(place) => handleInputChange('pickupAddress', place.address)}
+                      value={formData.pickupLocation?.address || ''}
+                      onChange={(address) => {
+                        console.log('=== CALLBACK: pickup onChange called ===');
+                        console.log('Address value:', address);
+                        console.log('Current formData.pickupLocation before update:', formData.pickupLocation);
+                        setFormData(prev => {
+                          const updated = {
+                            ...prev,
+                            pickupLocation: { ...prev.pickupLocation, address }
+                          };
+                          console.log('Updated formData.pickupLocation:', updated.pickupLocation);
+                          return updated;
+                        });
+                        // Clear error
+                        if (errors.pickupAddress) {
+                          setErrors(prev => ({
+                            ...prev,
+                            pickupAddress: null
+                          }));
+                        }
+                      }}
+                      onPlaceSelected={(place) => {
+                        console.log('=== CALLBACK: pickup onPlaceSelected called ===');
+                        console.log('Place:', place);
+                        setFormData(prev => ({
+                          ...prev,
+                          pickupLocation: { ...prev.pickupLocation, address: place.address }
+                        }));
+                        // Clear error
+                        if (errors.pickupAddress) {
+                          setErrors(prev => ({
+                            ...prev,
+                            pickupAddress: null
+                          }));
+                        }
+                      }}
                     />
                     <FormErrorMessage>{errors.pickupAddress}</FormErrorMessage>
                   </FormControl>
@@ -497,9 +544,35 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
                     <FormLabel fontSize="sm">Dropoff Address</FormLabel>
                     <PlacesAutocomplete
                       placeholder="Enter dropoff location address"
-                      value={formData.dropoffAddress}
-                      onChange={(address) => handleInputChange('dropoffAddress', address)}
-                      onPlaceSelected={(place) => handleInputChange('dropoffAddress', place.address)}
+                      value={formData.dropoffLocation?.address || ''}
+                      onChange={(address) => {
+                        console.log('CALLBACK: dropoff onChange', address);
+                        setFormData(prev => ({
+                          ...prev,
+                          dropoffLocation: { ...prev.dropoffLocation, address }
+                        }));
+                        // Clear error
+                        if (errors.dropoffAddress) {
+                          setErrors(prev => ({
+                            ...prev,
+                            dropoffAddress: null
+                          }));
+                        }
+                      }}
+                      onPlaceSelected={(place) => {
+                        console.log('CALLBACK: dropoff onPlaceSelected', place);
+                        setFormData(prev => ({
+                          ...prev,
+                          dropoffLocation: { ...prev.dropoffLocation, address: place.address }
+                        }));
+                        // Clear error
+                        if (errors.dropoffAddress) {
+                          setErrors(prev => ({
+                            ...prev,
+                            dropoffAddress: null
+                          }));
+                        }
+                      }}
                     />
                     <FormErrorMessage>{errors.dropoffAddress}</FormErrorMessage>
                   </FormControl>

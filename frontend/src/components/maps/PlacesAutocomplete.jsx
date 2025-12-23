@@ -80,85 +80,24 @@ const PlacesAutocomplete = ({
   };
 
   const handlePlaceSelect = (placeId, description) => {
-    if (!window.google || !window.google.maps || !window.google.maps.places) {
-      console.error('Google Maps Places API not loaded');
-      return;
-    }
+    // Simply use the description text from the autocomplete suggestion
+    // This is the most reliable way to populate the address field
+    const fullAddress = description?.trim() || '';
 
-    // Use the description from autocomplete suggestion as the address
-    // This is the most reliable and immediate way to update the form
-    const address = description || '';
-
-    // Immediately call onChange with the address to update parent form state
+    // Update parent form immediately with the address
     if (onChange) {
-      onChange(address);
+      onChange(fullAddress);
     }
 
-    // Then optionally fetch additional place details asynchronously (non-blocking)
-    try {
-      // Try the new Place API (recommended as of March 2025)
-      const placeDetailsPromise = (async () => {
-        try {
-          const { Place } = await window.google.maps.importLibrary('places');
-          const place = new Place({
-            id: placeId
-          });
-
-          await place.fetchFields({
-            fields: ['displayName', 'formattedAddress', 'location', 'id', 'types']
-          });
-
-          // If we got a better formatted address, use it
-          if (place.formattedAddress && onPlaceSelected) {
-            onPlaceSelected({
-              placeId: place.id,
-              address: place.formattedAddress,
-              name: place.displayName,
-              location: {
-                lat: place.location.lat,
-                lng: place.location.lng
-              },
-              types: place.types || []
-            });
-          }
-        } catch (newApiError) {
-          console.debug('New Place API not available, using fallback:', newApiError);
-          
-          // Fallback to PlacesService for backward compatibility
-          try {
-            const service = new window.google.maps.places.PlacesService(
-              document.createElement('div')
-            );
-
-            service.getDetails(
-              {
-                placeId: placeId,
-                fields: ['name', 'formatted_address', 'geometry', 'place_id', 'types']
-              },
-              (place, status) => {
-                if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
-                  if (onPlaceSelected) {
-                    onPlaceSelected({
-                      placeId: place.place_id,
-                      address: place.formatted_address,
-                      name: place.name,
-                      location: {
-                        lat: place.geometry.location.lat(),
-                        lng: place.geometry.location.lng()
-                      },
-                      types: place.types
-                    });
-                  }
-                }
-              }
-            );
-          } catch (fallbackError) {
-            console.debug('PlacesService also failed:', fallbackError);
-          }
-        }
-      })();
-    } catch (error) {
-      console.debug('Error in async place details fetch:', error);
+    // Call onPlaceSelected with basic place data
+    if (onPlaceSelected && fullAddress) {
+      onPlaceSelected({
+        placeId: placeId,
+        address: fullAddress,
+        name: fullAddress.split(',')[0], // Use first part as name
+        location: { lat: 0, lng: 0 }, // Placeholder - can be enhanced later
+        types: []
+      });
     }
 
     setShowPredictions(false);

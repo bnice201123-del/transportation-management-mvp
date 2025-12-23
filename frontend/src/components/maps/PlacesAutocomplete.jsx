@@ -53,14 +53,31 @@ const PlacesAutocomplete = ({
         setIsLoading(false);
         if (suggestions && suggestions.length > 0) {
           // Transform suggestions to match our expected format
-          const transformedPredictions = suggestions.map(suggestion => ({
-            place_id: suggestion.placePrediction.placeId,
-            description: suggestion.placePrediction.text.text,
-            structured_formatting: {
-              main_text: suggestion.placePrediction.text.text.split(',')[0],
-              secondary_text: suggestion.placePrediction.text.text.split(',').slice(1).join(',').trim()
+          const transformedPredictions = suggestions.map(suggestion => {
+            // Get full text from the suggestion
+            let fullText = '';
+            try {
+              // Try different possible paths for the text
+              if (suggestion.placePrediction?.text?.text) {
+                fullText = suggestion.placePrediction.text.text;
+              } else if (suggestion.placePrediction?.mainText) {
+                fullText = suggestion.placePrediction.mainText;
+              } else if (suggestion.mainText) {
+                fullText = suggestion.mainText;
+              }
+            } catch (e) {
+              console.debug('Error extracting text:', e);
             }
-          }));
+
+            return {
+              place_id: suggestion.placePrediction?.placeId || suggestion.placeId || '',
+              description: fullText,
+              structured_formatting: {
+                main_text: fullText.split(',')[0]?.trim() || fullText,
+                secondary_text: fullText.split(',').slice(1).join(',')?.trim() || ''
+              }
+            };
+          });
           setPredictions(transformedPredictions);
           setShowPredictions(true);
         } else {
@@ -80,33 +97,40 @@ const PlacesAutocomplete = ({
   };
 
   const handlePlaceSelect = (placeId, description, structured) => {
-    // Construct full address from description and structured formatting
-    let fullAddress = description?.trim() || '';
-    
-    // If description is empty, reconstruct from structured formatting
-    if (!fullAddress && structured) {
+    // Build full address with fallback logic
+    let fullAddress = '';
+
+    // First try: use description (full text from API)
+    if (description && description.trim()) {
+      fullAddress = description.trim();
+    }
+    // Second try: reconstruct from structured formatting
+    else if (structured) {
       const main = structured.main_text?.trim() || '';
       const secondary = structured.secondary_text?.trim() || '';
-      fullAddress = secondary ? `${main}, ${secondary}` : main;
+      if (secondary) {
+        fullAddress = `${main}, ${secondary}`;
+      } else {
+        fullAddress = main;
+      }
     }
 
-    // Ensure we have an address
+    // Log for debugging
     if (!fullAddress) {
-      console.warn('No address text found in prediction');
-      return;
+      console.warn('PlacesAutocomplete: Could not construct address from', { description, structured });
     }
 
-    // Update parent form immediately with the address
+    // Always update parent form state with whatever address we have
     if (onChange) {
       onChange(fullAddress);
     }
 
-    // Call onPlaceSelected with basic place data
-    if (onPlaceSelected) {
+    // Also call onPlaceSelected if provided
+    if (onPlaceSelected && fullAddress) {
       onPlaceSelected({
-        placeId: placeId,
+        placeId: placeId || '',
         address: fullAddress,
-        name: fullAddress.split(',')[0],
+        name: fullAddress.split(',')[0]?.trim() || fullAddress,
         location: { lat: 0, lng: 0 },
         types: []
       });

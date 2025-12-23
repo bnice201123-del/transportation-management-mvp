@@ -79,10 +79,22 @@ const PlacesAutocomplete = ({
     }
   };
 
-  const handlePlaceSelect = (placeId, description) => {
-    // Simply use the description text from the autocomplete suggestion
-    // This is the most reliable way to populate the address field
-    const fullAddress = description?.trim() || '';
+  const handlePlaceSelect = (placeId, description, structured) => {
+    // Construct full address from description and structured formatting
+    let fullAddress = description?.trim() || '';
+    
+    // If description is empty, reconstruct from structured formatting
+    if (!fullAddress && structured) {
+      const main = structured.main_text?.trim() || '';
+      const secondary = structured.secondary_text?.trim() || '';
+      fullAddress = secondary ? `${main}, ${secondary}` : main;
+    }
+
+    // Ensure we have an address
+    if (!fullAddress) {
+      console.warn('No address text found in prediction');
+      return;
+    }
 
     // Update parent form immediately with the address
     if (onChange) {
@@ -90,12 +102,12 @@ const PlacesAutocomplete = ({
     }
 
     // Call onPlaceSelected with basic place data
-    if (onPlaceSelected && fullAddress) {
+    if (onPlaceSelected) {
       onPlaceSelected({
         placeId: placeId,
         address: fullAddress,
-        name: fullAddress.split(',')[0], // Use first part as name
-        location: { lat: 0, lng: 0 }, // Placeholder - can be enhanced later
+        name: fullAddress.split(',')[0],
+        location: { lat: 0, lng: 0 },
         types: []
       });
     }
@@ -158,7 +170,11 @@ const PlacesAutocomplete = ({
                 p={3}
                 cursor="pointer"
                 _hover={{ bg: "gray.100" }}
-                onClick={() => handlePlaceSelect(prediction.place_id, prediction.description)}
+                onClick={() => handlePlaceSelect(
+                  prediction.place_id, 
+                  prediction.description,
+                  prediction.structured_formatting
+                )}
                 borderBottom="1px solid"
                 borderColor="gray.100"
                 _last={{ borderBottom: "none" }}

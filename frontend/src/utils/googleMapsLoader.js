@@ -62,34 +62,38 @@ export const loadGoogleMapsAPI = () => {
       return;
     }
 
-    // Use callback method to avoid retry issues
-    const callbackName = 'initGoogleMaps';
-    window[callbackName] = () => {
-      // Wait a bit for places library to be fully ready
-      setTimeout(() => {
+    // Use loading=async for optimal performance (recommended by Google)
+    // This is the best-practice loading pattern recommended by Google
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry,drawing&loading=async`;
+    script.async = true;
+    script.defer = true;
+
+    script.onload = () => {
+      // Wait a bit for the maps library to be fully initialized
+      let attempts = 0;
+      const maxAttempts = 50; // 5 seconds
+      
+      const checkInterval = setInterval(() => {
+        attempts++;
+        
         if (window.google && window.google.maps && window.google.maps.places) {
+          clearInterval(checkInterval);
           isLoaded = true;
           isLoading = false;
           loadPromise = null;
-          delete window[callbackName];
           resolve();
-        } else {
+        } else if (attempts >= maxAttempts) {
+          clearInterval(checkInterval);
           isLoading = false;
           loadPromise = null;
-          delete window[callbackName];
-          reject(new Error('Google Maps places library not available'));
+          reject(new Error('Google Maps places library not available after load'));
         }
       }, 100);
     };
 
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry,drawing&callback=${callbackName}`;
-    script.async = true;
-    script.defer = true;
-
     script.onerror = () => {
       isLoading = false;
       loadPromise = null;
-      delete window[callbackName];
       reject(new Error('Failed to load Google Maps API script'));
     };
 

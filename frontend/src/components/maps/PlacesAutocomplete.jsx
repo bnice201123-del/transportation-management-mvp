@@ -79,45 +79,84 @@ const PlacesAutocomplete = ({
     }
   };
 
-  const handlePlaceSelect = (placeId, description) => {
+  const handlePlaceSelect = async (placeId, description) => {
     if (!window.google || !window.google.maps || !window.google.maps.places) {
       console.error('Google Maps Places API not loaded');
       return;
     }
 
-    // Create a PlacesService to get place details
-    const service = new window.google.maps.places.PlacesService(
-      document.createElement('div')
-    );
+    try {
+      // Use the new Place API (recommended as of March 2025)
+      // This replaces the deprecated PlacesService
+      const { Place } = await google.maps.importLibrary('places');
+      const place = new Place({
+        id: placeId
+      });
 
-    service.getDetails(
-      {
-        placeId: placeId,
-        fields: ['name', 'formatted_address', 'geometry', 'place_id', 'types']
-      },
-      (place, status) => {
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
-          const placeData = {
-            placeId: place.place_id,
-            address: place.formatted_address,
-            name: place.name,
-            location: {
-              lat: place.geometry.location.lat(),
-              lng: place.geometry.location.lng()
-            },
-            types: place.types
-          };
+      // Fetch place details with the new API
+      await place.fetchFields({
+        fields: ['displayName', 'formattedAddress', 'location', 'id', 'types']
+      });
 
-          if (onPlaceSelected) {
-            onPlaceSelected(placeData);
-          }
+      const placeData = {
+        placeId: place.id,
+        address: place.formattedAddress,
+        name: place.displayName,
+        location: {
+          lat: place.location.lat,
+          lng: place.location.lng
+        },
+        types: place.types || []
+      };
 
-          if (onChange) {
-            onChange(description);
-          }
-        }
+      if (onPlaceSelected) {
+        onPlaceSelected(placeData);
       }
-    );
+
+      if (onChange) {
+        onChange(description);
+      }
+    } catch (error) {
+      console.error('Error fetching place details with new Place API:', error);
+      
+      // Fallback to PlacesService for backward compatibility
+      try {
+        const service = new window.google.maps.places.PlacesService(
+          document.createElement('div')
+        );
+
+        service.getDetails(
+          {
+            placeId: placeId,
+            fields: ['name', 'formatted_address', 'geometry', 'place_id', 'types']
+          },
+          (place, status) => {
+            if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
+              const placeData = {
+                placeId: place.place_id,
+                address: place.formatted_address,
+                name: place.name,
+                location: {
+                  lat: place.geometry.location.lat(),
+                  lng: place.geometry.location.lng()
+                },
+                types: place.types
+              };
+
+              if (onPlaceSelected) {
+                onPlaceSelected(placeData);
+              }
+
+              if (onChange) {
+                onChange(description);
+              }
+            }
+          }
+        );
+      } catch (fallbackError) {
+        console.error('Fallback PlacesService also failed:', fallbackError);
+      }
+    }
 
     setShowPredictions(false);
     setPredictions([]);

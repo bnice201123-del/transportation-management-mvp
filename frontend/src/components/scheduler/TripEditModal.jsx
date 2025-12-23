@@ -183,11 +183,21 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
         const response = await axios.get('/api/riders', {
           params: riderSearch ? { search: riderSearch } : {}
         });
-        setRiders(response.data.riders || response.data || []);
-        console.log('Riders loaded:', response.data);
+        
+        // Handle both array response and object with riders property
+        let ridersData = Array.isArray(response.data) 
+          ? response.data 
+          : response.data.riders || [];
+        
+        // Filter out any null/undefined entries
+        ridersData = ridersData.filter(r => r && r._id);
+        
+        console.log('Riders loaded from API:', ridersData.length, 'riders');
+        console.log('Riders data:', ridersData);
+        
+        setRiders(ridersData);
       } catch (error) {
         console.error('Failed to load riders:', error);
-        // Fallback to empty array
         setRiders([]);
       } finally {
         setLoadingRiders(false);
@@ -558,11 +568,17 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
                       {loadingRiders ? (
                         <option>Loading riders...</option>
                       ) : riders.length > 0 ? (
-                        riders.map(rider => (
-                          <option key={rider._id} value={rider._id}>
-                            {rider.name || rider.firstName + ' ' + rider.lastName || 'Unknown'} ({rider.email || 'N/A'})
-                          </option>
-                        ))
+                        riders.map(rider => {
+                          const displayName = rider.name || 
+                            (rider.firstName && rider.lastName ? `${rider.firstName} ${rider.lastName}` : 
+                            rider.firstName || rider.lastName || 'Unknown');
+                          const displayEmail = rider.email || 'N/A';
+                          return (
+                            <option key={rider._id} value={rider._id}>
+                              {displayName} ({displayEmail})
+                            </option>
+                          );
+                        })
                       ) : (
                         <option>No riders found</option>
                       )}

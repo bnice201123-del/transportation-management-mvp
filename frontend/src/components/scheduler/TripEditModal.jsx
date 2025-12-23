@@ -494,15 +494,20 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
                       placeholder="Enter pickup location address"
                       value={formData.pickupLocation?.address || ''}
                       onChange={(address) => {
-                        setFormData(prev => ({
-                          ...prev,
-                          pickupLocation: { address }
-                        }));
+                        console.log('TripEditModal: pickup onChange called with:', address);
+                        setFormData(prev => {
+                          console.log('TripEditModal: Setting pickupLocation.address to:', address);
+                          return {
+                            ...prev,
+                            pickupLocation: { address }
+                          };
+                        });
                         if (errors.pickupAddress) {
                           setErrors(prev => ({ ...prev, pickupAddress: null }));
                         }
                       }}
                       onPlaceSelected={(place) => {
+                        console.log('TripEditModal: pickup onPlaceSelected called');
                         setFormData(prev => ({
                           ...prev,
                           pickupLocation: { address: place.address }
@@ -521,23 +526,28 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
                       placeholder="Enter dropoff location address"
                       value={formData.dropoffLocation?.address || ''}
                       onChange={(address) => {
-                        console.log('CALLBACK: dropoff onChange', address);
-                        setFormData(prev => ({
-                          ...prev,
-                          dropoffLocation: { ...prev.dropoffLocation, address }
-                        }));
-                        // Clear error
-                        if (errors.dropoffAddress) {
-                          setErrors(prev => ({
+                        console.log('TripEditModal: dropoff onChange called with:', address);
+                        setFormData(prev => {
+                          console.log('TripEditModal: Setting dropoffLocation.address to:', address);
+                          return {
                             ...prev,
-                            dropoffAddress: null
-                          }));
+                            dropoffLocation: { address }
+                          };
+                        });
+                        if (errors.dropoffAddress) {
+                          setErrors(prev => ({ ...prev, dropoffAddress: null }));
                         }
                       }}
                       onPlaceSelected={(place) => {
-                        console.log('CALLBACK: dropoff onPlaceSelected', place);
+                        console.log('TripEditModal: dropoff onPlaceSelected called');
                         setFormData(prev => ({
                           ...prev,
+                          dropoffLocation: { address: place.address }
+                        }));
+                        if (errors.dropoffAddress) {
+                          setErrors(prev => ({ ...prev, dropoffAddress: null }));
+                        }
+                      }}
                           dropoffLocation: { ...prev.dropoffLocation, address: place.address }
                         }));
                         // Clear error

@@ -199,6 +199,13 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
   };
 
   const validateForm = () => {
+    console.log('=== TripEditModal: validateForm START ===');
+    console.log('formData state:', formData);
+    console.log('pickupLocation:', formData.pickupLocation);
+    console.log('pickupLocation.address:', formData.pickupLocation?.address);
+    console.log('dropoffLocation:', formData.dropoffLocation);
+    console.log('dropoffLocation.address:', formData.dropoffLocation?.address);
+    
     const newErrors = {};
 
     // Required fields validation
@@ -206,12 +213,20 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
       newErrors.riderName = 'Rider name is required';
     }
 
+    console.log('After riderName check, pickupLocation.address:', formData.pickupLocation?.address);
     if (!formData.pickupLocation?.address?.trim()) {
+      console.log('VALIDATION FAIL: pickupLocation.address is empty or undefined');
       newErrors.pickupAddress = 'Pickup address is required';
+    } else {
+      console.log('VALIDATION PASS: pickupLocation.address has value:', formData.pickupLocation.address);
     }
 
+    console.log('After dropoffLocation check...');
     if (!formData.dropoffLocation?.address?.trim()) {
+      console.log('VALIDATION FAIL: dropoffLocation.address is empty or undefined');
       newErrors.dropoffAddress = 'Dropoff address is required';
+    } else {
+      console.log('VALIDATION PASS: dropoffLocation.address has value:', formData.dropoffLocation.address);
     }
 
     if (!formData.scheduledDate) {
@@ -254,11 +269,28 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const isValid = Object.keys(newErrors).length === 0;
+    console.log('Validation errors:', newErrors);
+    console.log('Form is valid:', isValid);
+    console.log('=== TripEditModal: validateForm END ===');
+    return isValid;
   };
 
   const handleSave = async () => {
-    if (!validateForm()) {
+    const pickupAddr = formData.pickupLocation?.address || 'EMPTY';
+    const dropoffAddr = formData.dropoffLocation?.address || 'EMPTY';
+    alert(`handleSave clicked!\nPickup: ${pickupAddr}\nDropoff: ${dropoffAddr}`);
+    
+    console.log('=== TripEditModal: handleSave CLICKED ===');
+    console.log('Current formData:', formData);
+    console.log('Current pickupLocation:', formData.pickupLocation);
+    console.log('Current dropoffLocation:', formData.dropoffLocation);
+    
+    const validationResult = validateForm();
+    console.log('validateForm returned:', validationResult);
+    
+    if (!validationResult) {
+      console.log('STOPPING: Validation failed');
       toast({
         title: 'Validation Error',
         description: 'Please fix the errors in the form',
@@ -267,6 +299,8 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
         isClosable: true,
       });
       return;
+    } else {
+      console.log('Validation passed, proceeding with save');
     }
 
     // Check for scheduling conflicts if driver is assigned

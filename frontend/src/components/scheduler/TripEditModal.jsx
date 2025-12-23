@@ -548,16 +548,6 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
                           setErrors(prev => ({ ...prev, dropoffAddress: null }));
                         }
                       }}
-                          dropoffLocation: { ...prev.dropoffLocation, address: place.address }
-                        }));
-                        // Clear error
-                        if (errors.dropoffAddress) {
-                          setErrors(prev => ({
-                            ...prev,
-                            dropoffAddress: null
-                          }));
-                        }
-                      }}
                     />
                     <FormErrorMessage>{errors.dropoffAddress}</FormErrorMessage>
                   </FormControl>

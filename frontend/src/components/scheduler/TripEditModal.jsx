@@ -75,10 +75,16 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  const [riders, setRiders] = useState([]);
+  const [riderSearch, setRiderSearch] = useState('');
+  const [loadingRiders, setLoadingRiders] = useState(false);
   
   // Conflict detection
   const conflictDetection = useConflictDetection();
   const [shouldProceedWithSave, setShouldProceedWithSave] = useState(false);
+  
+  // Check if creating new trip or editing
+  const isCreating = !trip;
   
   // Form data
   const [formData, setFormData] = useState({
@@ -139,8 +145,59 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
         estimatedDuration: trip.estimatedDuration || '',
         estimatedDistance: trip.estimatedDistance || ''
       });
+    } else {
+      // Reset form for creating new trip
+      setFormData({
+        riderName: '',
+        riderPhone: '',
+        riderEmail: '',
+        pickupLocation: { address: '' },
+        dropoffLocation: { address: '' },
+        scheduledDate: '',
+        scheduledTime: '',
+        status: 'scheduled',
+        assignedDriver: '',
+        assignedVehicle: '',
+        fare: '',
+        passengers: 1,
+        notes: '',
+        specialInstructions: '',
+        wheelchairAccessible: false,
+        priority: 'medium',
+        paymentMethod: 'cash',
+        tripType: 'regular',
+        isRecurring: false,
+        recurringPattern: 'weekly',
+        emergencyContact: '',
+        estimatedDuration: '',
+        estimatedDistance: ''
+      });
     }
   }, [trip]);
+
+  // Fetch riders from API
+  useEffect(() => {
+    const fetchRiders = async () => {
+      try {
+        setLoadingRiders(true);
+        const response = await axios.get('/api/riders', {
+          params: riderSearch ? { search: riderSearch } : {}
+        });
+        setRiders(response.data.riders || response.data || []);
+        console.log('Riders loaded:', response.data);
+      } catch (error) {
+        console.error('Failed to load riders:', error);
+        // Fallback to empty array
+        setRiders([]);
+      } finally {
+        setLoadingRiders(false);
+      }
+    };
+
+    if (isOpen && isCreating) {
+      fetchRiders();
+    }
+  }, [isOpen, isCreating, riderSearch]);
 
   // Fetch drivers and vehicles when modal opens
   useEffect(() => {
@@ -422,10 +479,14 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
           <HStack>
             <EditIcon color="blue" />
             <Box>
-              <Text fontSize="xl" fontWeight="bold">Edit Trip</Text>
-              <Text fontSize="sm" color="gray.600">
-                Trip ID: {trip.tripId || trip._id?.substring(0, 8)}
+              <Text fontSize="xl" fontWeight="bold">
+                {isCreating ? 'Create New Trip' : 'Edit Trip'}
               </Text>
+              {!isCreating && (
+                <Text fontSize="sm" color="gray.600">
+                  Trip ID: {trip.tripId || trip._id?.substring(0, 8)}
+                </Text>
+              )}
             </Box>
           </HStack>
         </ModalHeader>
@@ -458,6 +519,63 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
                   </Box>
                 </Alert>
               )}
+              {/* Rider Selection - Only for Creating New Trips */}
+              {isCreating && (
+                <Box>
+                  <Text fontSize="lg" fontWeight="semibold" mb={4} color="blue.600">
+                    <HStack>
+                      <FaUser />
+                      <Text>Search and Select Rider</Text>
+                    </HStack>
+                  </Text>
+                  
+                  <FormControl mb={4}>
+                    <FormLabel fontSize="sm">Search Rider</FormLabel>
+                    <Input
+                      placeholder="Search by name, email, or ID..."
+                      value={riderSearch}
+                      onChange={(e) => setRiderSearch(e.target.value)}
+                    />
+                  </FormControl>
+
+                  <FormControl isRequired mb={6}>
+                    <FormLabel fontSize="sm">Select a Rider</FormLabel>
+                    <Select
+                      placeholder="Select a rider"
+                      isDisabled={loadingRiders}
+                      onChange={(e) => {
+                        const selectedRider = riders.find(r => r._id === e.target.value);
+                        if (selectedRider) {
+                          setFormData(prev => ({
+                            ...prev,
+                            riderName: selectedRider.name || selectedRider.firstName + ' ' + selectedRider.lastName || '',
+                            riderEmail: selectedRider.email || '',
+                            riderPhone: selectedRider.phone || ''
+                          }));
+                        }
+                      }}
+                    >
+                      {loadingRiders ? (
+                        <option>Loading riders...</option>
+                      ) : riders.length > 0 ? (
+                        riders.map(rider => (
+                          <option key={rider._id} value={rider._id}>
+                            {rider.name || rider.firstName + ' ' + rider.lastName || 'Unknown'} ({rider.email || 'N/A'})
+                          </option>
+                        ))
+                      ) : (
+                        <option>No riders found</option>
+                      )}
+                    </Select>
+                    <Text fontSize="xs" color="gray.600" mt={2}>
+                      {riders.length} rider(s) {riderSearch ? 'found' : 'available'}
+                    </Text>
+                  </FormControl>
+
+                  <Divider my={6} />
+                </Box>
+              )}
+
               {/* Rider Information */}
               <Box>
                 <Text fontSize="lg" fontWeight="semibold" mb={4} color="blue.600">

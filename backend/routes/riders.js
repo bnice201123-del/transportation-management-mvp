@@ -8,6 +8,8 @@ const router = express.Router();
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const riders = await Rider.find().sort({ createdAt: -1 });
+    console.log(`GET /api/riders: Returning ${riders.length} riders`);
+    console.log('First rider:', riders[0]);
     res.json(riders);
   } catch (error) {
     console.error('Error fetching riders:', error);

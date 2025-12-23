@@ -7,9 +7,17 @@ const router = express.Router();
 // Get all riders
 router.get('/', authenticateToken, async (req, res) => {
   try {
+    // Get all riders for now, then add filtering if needed
     const riders = await Rider.find().sort({ createdAt: -1 });
-    console.log(`GET /api/riders: Returning ${riders.length} riders`);
-    console.log('First rider:', riders[0]);
+    
+    console.log(`✅ GET /api/riders: Found ${riders.length} total riders`);
+    riders.forEach((rider, index) => {
+      const name = rider.firstName + ' ' + rider.lastName;
+      const email = rider.email || 'N/A';
+      const phone = rider.phone || 'N/A';
+      console.log(`   ${index + 1}. ${name} | ${email} | ${phone}`);
+    });
+    
     res.json(riders);
   } catch (error) {
     console.error('Error fetching riders:', error);

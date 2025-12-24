@@ -181,7 +181,13 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
       try {
         setLoadingRiders(true);
         const response = await axios.get('/api/riders', {
-          params: riderSearch ? { search: riderSearch } : {}
+          params: riderSearch ? { search: riderSearch } : {},
+          // Disable caching
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
         });
         
         // Handle both array response and object with riders property

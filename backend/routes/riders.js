@@ -7,6 +7,11 @@ const router = express.Router();
 // Get all riders
 router.get('/', authenticateToken, async (req, res) => {
   try {
+    // Prevent caching
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    
     // Get all riders for now, then add filtering if needed
     const riders = await Rider.find().sort({ createdAt: -1 });
     

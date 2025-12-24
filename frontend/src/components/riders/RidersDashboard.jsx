@@ -62,42 +62,6 @@ import {
 import Navbar from '../shared/Navbar';
 import PlacesAutocomplete from '../maps/PlacesAutocomplete';
 
-const mockRiders = [
-  {
-    id: 1,
-    name: 'John Smith',
-    email: 'john.smith@email.com',
-    phone: '+1-555-0123',
-    status: 'active',
-    totalRides: 45,
-    lastRide: '2025-10-30',
-    memberSince: '2024-01-15'
-  },
-  {
-    id: 2,
-    name: 'Maria Garcia',
-    email: 'maria.garcia@email.com',
-    phone: '+1-555-0234',
-    status: 'active',
-    totalRides: 32,
-    lastRide: '2025-10-29',
-    memberSince: '2024-03-20'
-  }
-];
-
-const mockRideHistory = [
-  {
-    id: 101,
-    date: '2025-10-31',
-    time: '09:30 AM',
-    from: '123 Main St',
-    to: 'City Hospital',
-    driver: 'John Doe',
-    status: 'completed',
-    duration: '25 min'
-  }
-];
-
 const RidersDashboard = () => {
   const [riders, setRiders] = useState([]);
   const [filteredRiders, setFilteredRiders] = useState([]);
@@ -116,8 +80,23 @@ const RidersDashboard = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
 
   useEffect(() => {
-    setRiders(mockRiders);
-    setFilteredRiders(mockRiders);
+    // Fetch riders from API instead of using mock data
+    const fetchRiders = async () => {
+      try {
+        const response = await fetch('/api/riders');
+        if (response.ok) {
+          const data = await response.json();
+          setRiders(data);
+          setFilteredRiders(data);
+        }
+      } catch (error) {
+        console.error('Error fetching riders:', error);
+        setRiders([]);
+        setFilteredRiders([]);
+      }
+    };
+    
+    fetchRiders();
   }, []);
 
   useEffect(() => {
@@ -140,7 +119,7 @@ const RidersDashboard = () => {
 
   const handleViewHistory = (rider) => {
     setSelectedRider(rider);
-    setRideHistory(mockRideHistory);
+    setRideHistory([]);
     onHistoryOpen();
   };
 

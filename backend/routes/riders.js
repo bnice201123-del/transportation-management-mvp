@@ -16,13 +16,8 @@ router.get('/', authenticateToken, async (req, res) => {
     const allRiders = await Rider.find().sort({ createdAt: -1 });
     console.log(`\n📊 Total riders in database: ${allRiders.length}`);
     
-    // Detailed breakdown
-    allRiders.forEach((r, i) => {
-      console.log(`  ${i+1}. ${r.firstName} ${r.lastName} | Email: ${r.email || 'NONE'} | Status: ${r.status}`);
-    });
-    
-    // Now apply filter - only return riders with REAL email addresses (not example.com and not empty)
-    // AND status must be active
+    // Filter for LEGITIMATE riders only
+    // Exclude: @test.com, @example.com, @placeholder.com, or any email-less riders
     const riders = allRiders.filter(r => {
       // Must have active status
       if (r.status !== 'active') return false;
@@ -30,9 +25,14 @@ router.get('/', authenticateToken, async (req, res) => {
       // Must have an email
       if (!r.email) return false;
       
-      // Must not be a test email domain
-      if (r.email.includes('@example.com')) return false;
-      if (r.email.includes('@placeholder.com')) return false;
+      // Exclude ALL test/placeholder domains
+      const testDomains = ['@test.com', '@example.com', '@placeholder.com', '@localhost'];
+      const hasTestDomain = testDomains.some(domain => r.email.toLowerCase().includes(domain));
+      if (hasTestDomain) return false;
+      
+      // Must have legitimate looking email structure
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(r.email)) return false;
       
       return true;
     });

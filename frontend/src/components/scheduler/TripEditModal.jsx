@@ -199,11 +199,18 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
           : response.data.riders || [];
         
         // Filter out any null/undefined entries and exclude test data
-        // Keep only riders with legitimate email addresses (not @example.com)
+        // Keep only riders with legitimate email addresses (not test/placeholder domains)
         ridersData = ridersData.filter(r => {
           if (!r || !r._id) return false;
-          // Exclude test data with @example.com domains
-          if (r.email && r.email.includes('@example.com')) return false;
+          
+          // Must have an email
+          if (!r.email) return false;
+          
+          // Exclude all test domains
+          const testDomains = ['@test.com', '@example.com', '@placeholder.com', '@localhost'];
+          const hasTestDomain = testDomains.some(domain => r.email.toLowerCase().includes(domain));
+          if (hasTestDomain) return false;
+          
           return true;
         });
         

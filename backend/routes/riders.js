@@ -12,14 +12,32 @@ router.get('/', authenticateToken, async (req, res) => {
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
     
-    // Get all riders - filter to only include legitimate riders
-    // Exclude test data with @example.com email addresses
-    const riders = await Rider.find({
-      status: 'active',
-      email: { $not: { $regex: /@example\.com$/ } }
-    }).sort({ createdAt: -1 });
+    // Get ALL riders first to see what we have
+    const allRiders = await Rider.find().sort({ createdAt: -1 });
+    console.log(`\n📊 Total riders in database: ${allRiders.length}`);
     
-    console.log(`✅ GET /api/riders: Found ${riders.length} legitimate riders`);
+    // Detailed breakdown
+    allRiders.forEach((r, i) => {
+      console.log(`  ${i+1}. ${r.firstName} ${r.lastName} | Email: ${r.email || 'NONE'} | Status: ${r.status}`);
+    });
+    
+    // Now apply filter - only return riders with REAL email addresses (not example.com and not empty)
+    // AND status must be active
+    const riders = allRiders.filter(r => {
+      // Must have active status
+      if (r.status !== 'active') return false;
+      
+      // Must have an email
+      if (!r.email) return false;
+      
+      // Must not be a test email domain
+      if (r.email.includes('@example.com')) return false;
+      if (r.email.includes('@placeholder.com')) return false;
+      
+      return true;
+    });
+    
+    console.log(`✅ GET /api/riders: Returning ${riders.length} legitimate riders (filtered from ${allRiders.length} total)`);
     riders.forEach((rider, index) => {
       const name = rider.firstName + ' ' + rider.lastName;
       const email = rider.email || 'N/A';

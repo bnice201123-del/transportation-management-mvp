@@ -198,10 +198,16 @@ const TripEditModal = ({ isOpen, onClose, trip, onSave }) => {
           ? response.data 
           : response.data.riders || [];
         
-        // Filter out any null/undefined entries
-        ridersData = ridersData.filter(r => r && r._id);
+        // Filter out any null/undefined entries and exclude test data
+        // Keep only riders with legitimate email addresses (not @example.com)
+        ridersData = ridersData.filter(r => {
+          if (!r || !r._id) return false;
+          // Exclude test data with @example.com domains
+          if (r.email && r.email.includes('@example.com')) return false;
+          return true;
+        });
         
-        console.log('Riders loaded from API:', ridersData.length, 'riders');
+        console.log('Riders loaded from API:', ridersData.length, 'riders (after filtering)');
         console.log('Riders data:', ridersData);
         
         setRiders(ridersData);

@@ -12,10 +12,14 @@ router.get('/', authenticateToken, async (req, res) => {
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
     
-    // Get all riders for now, then add filtering if needed
-    const riders = await Rider.find().sort({ createdAt: -1 });
+    // Get all riders - filter to only include legitimate riders
+    // Exclude test data with @example.com email addresses
+    const riders = await Rider.find({
+      status: 'active',
+      email: { $not: { $regex: /@example\.com$/ } }
+    }).sort({ createdAt: -1 });
     
-    console.log(`✅ GET /api/riders: Found ${riders.length} total riders`);
+    console.log(`✅ GET /api/riders: Found ${riders.length} legitimate riders`);
     riders.forEach((rider, index) => {
       const name = rider.firstName + ' ' + rider.lastName;
       const email = rider.email || 'N/A';
